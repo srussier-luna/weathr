@@ -247,12 +247,18 @@ impl House {
                 continue;
             }
 
+            let is_solid = matches!(kind, RowKind::Wall | RowKind::Base);
+            let first = line.find(|ch| ch != ' ').unwrap_or(line.len());
+            let last = line.rfind(|ch| ch != ' ').unwrap_or(0);
             let mut window_start = 0;
             for (j, ch) in line.chars().enumerate() {
                 if ch == '[' {
                     window_start = j;
                 }
                 if ch == ' ' {
+                    if is_solid && (first..=last).contains(&j) {
+                        renderer.render_char(x + j as u16, row, ' ', Color::Reset)?;
+                    }
                     continue;
                 }
                 let color = match kind {
