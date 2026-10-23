@@ -28,6 +28,26 @@ pub struct Config {
     pub units: WeatherUnits,
     #[serde(default)]
     pub silent: bool,
+    #[serde(default, rename = "courrier")]
+    pub mail: Mail,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Mail {
+    #[serde(default = "default_mail_hour", rename = "heure")]
+    pub hour: u32,
+}
+
+impl Default for Mail {
+    fn default() -> Self {
+        Self {
+            hour: default_mail_hour(),
+        }
+    }
+}
+
+fn default_mail_hour() -> u32 {
+    9
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -135,6 +155,10 @@ impl Config {
 
         if self.location.longitude < -180.0 || self.location.longitude > 180.0 {
             return Err(ConfigError::InvalidLongitude(self.location.longitude));
+        }
+
+        if self.mail.hour > 23 {
+            return Err(ConfigError::InvalidMailHour(self.mail.hour));
         }
 
         Ok(())
@@ -318,6 +342,7 @@ longitude = 0.0
             hide_hud: false,
             units: WeatherUnits::default(),
             silent: false,
+            mail: Mail::default(),
         };
         let result = config.validate();
         assert!(result.is_err());
@@ -339,6 +364,7 @@ longitude = 0.0
             hide_hud: false,
             units: WeatherUnits::default(),
             silent: false,
+            mail: Mail::default(),
         };
         let result = config.validate();
         assert!(result.is_err());
@@ -360,6 +386,7 @@ longitude = 0.0
             hide_hud: false,
             units: WeatherUnits::default(),
             silent: false,
+            mail: Mail::default(),
         };
         let result = config.validate();
         assert!(result.is_err());
@@ -381,6 +408,7 @@ longitude = 0.0
             hide_hud: false,
             units: WeatherUnits::default(),
             silent: false,
+            mail: Mail::default(),
         };
         let result = config.validate();
         assert!(result.is_err());
@@ -402,6 +430,7 @@ longitude = 0.0
             hide_hud: false,
             units: WeatherUnits::default(),
             silent: false,
+            mail: Mail::default(),
         };
         let result = config.validate();
         assert!(result.is_ok());
@@ -675,5 +704,18 @@ auto = false
             env::remove_var("WEATHR_LATITUDE");
             env::remove_var("WEATHR_LONGITUDE");
         }
+    }
+
+    #[test]
+    fn test_mail_hour_from_config() {
+        let config: Config = toml::from_str("[courrier]\nheure = 6").unwrap();
+        assert_eq!(config.mail.hour, 6);
+        assert!(config.validate().is_ok());
+
+        let config: Config = toml::from_str("[courrier]\nheure = 24").unwrap();
+        assert_eq!(config.validate().unwrap_err().kind(), "InvalidMailHour");
+
+        let config: Config = toml::from_str("").unwrap();
+        assert_eq!(config.mail.hour, 9);
     }
 }

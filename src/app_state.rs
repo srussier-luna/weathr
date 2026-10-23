@@ -1,9 +1,12 @@
 use crate::config::LocationDisplay;
+use crate::holiday::Holiday;
 use crate::weather::{
     WeatherCondition, WeatherConditions, WeatherData, WeatherLocation, WeatherUnits,
     format_precipitation, format_temperature, format_wind_speed,
 };
-use std::time::Instant;
+use std::time::{Duration, Instant};
+
+const RAINBOW_DURATION: Duration = Duration::from_secs(30 * 60);
 
 pub struct AppState {
     pub current_weather: Option<WeatherData>,
@@ -12,6 +15,15 @@ pub struct AppState {
     pub loading_state: LoadingState,
     pub cached_weather_info: String,
     pub weather_info_needs_update: bool,
+    pub displayed_clock: String,
+    pub demo_label: Option<String>,
+    pub is_mail_waiting: bool,
+    pub umbrella: Option<String>,
+    pub finds_hint: Option<&'static str>,
+    pub badges_earned: usize,
+    pub badges_total: usize,
+    pub holiday: Holiday,
+    pub rainbow_until: Option<Instant>,
     pub location: WeatherLocation,
     pub city_name: Option<String>,
     pub location_display: LocationDisplay,
@@ -34,6 +46,15 @@ impl AppState {
             loading_state: LoadingState::new(),
             cached_weather_info: String::new(),
             weather_info_needs_update: true,
+            displayed_clock: String::new(),
+            demo_label: None,
+            is_mail_waiting: false,
+            umbrella: None,
+            finds_hint: None,
+            badges_earned: 0,
+            badges_total: 0,
+            holiday: Holiday::default(),
+            rainbow_until: None,
             location,
             city_name,
             location_display,
@@ -43,6 +64,8 @@ impl AppState {
     }
 
     pub fn update_weather(&mut self, weather: WeatherData) {
+        let was_raining =
+            self.weather_conditions.is_raining || self.weather_conditions.is_thunderstorm;
         self.weather_conditions.is_thunderstorm = weather.condition.is_thunderstorm();
         self.weather_conditions.is_snowing = weather.condition.is_snowing();
         self.weather_conditions.is_raining =
@@ -51,8 +74,57 @@ impl AppState {
         self.weather_conditions.is_foggy = weather.condition.is_foggy();
         self.weather_conditions.is_day = weather.is_day;
 
+        let is_raining =
+            self.weather_conditions.is_raining || self.weather_conditions.is_thunderstorm;
+        if was_raining && !is_raining && !self.weather_conditions.is_snowing {
+            self.rainbow_until = Some(Instant::now() + RAINBOW_DURATION);
+        }
+
         self.current_weather = Some(weather);
         self.is_offline = false;
+        self.weather_info_needs_update = true;
+    }
+
+    pub fn set_rainbow(&mut self, until: Option<Instant>) {
+        self.rainbow_until = until;
+    }
+
+    pub fn shows_rainbow(&self) -> bool {
+        let conditions = &self.weather_conditions;
+        self.rainbow_until
+            .is_some_and(|until| Instant::now() < until)
+            && conditions.is_day
+            && !conditions.is_raining
+            && !conditions.is_thunderstorm
+            && !conditions.is_snowing
+    }
+
+    pub fn set_finds_hint(&mut self, hint: Option<&'static str>) {
+        if hint != self.finds_hint {
+            self.finds_hint = hint;
+            self.weather_info_needs_update = true;
+        }
+    }
+
+    pub fn set_umbrella(&mut self, message: Option<String>) {
+        if message != self.umbrella {
+            self.umbrella = message;
+            self.weather_info_needs_update = true;
+        }
+    }
+
+    pub fn set_progress_summary(&mut self, is_mail_waiting: bool, earned: usize, total: usize) {
+        let summary = (is_mail_waiting, earned, total);
+        if summary != (self.is_mail_waiting, self.badges_earned, self.badges_total) {
+            self.is_mail_waiting = is_mail_waiting;
+            self.badges_earned = earned;
+            self.badges_total = total;
+            self.weather_info_needs_update = true;
+        }
+    }
+
+    pub fn set_demo_label(&mut self, label: Option<String>) {
+        self.demo_label = label;
         self.weather_info_needs_update = true;
     }
 
@@ -92,6 +164,12 @@ impl AppState {
     }
 
     pub fn update_cached_info(&mut self) {
+        let clock = chrono::Local::now().format("%H:%M").to_string();
+        if clock != self.displayed_clock {
+            self.displayed_clock = clock;
+            self.weather_info_needs_update = true;
+        }
+
         if !self.weather_info_needs_update {
             return;
         }
@@ -131,9 +209,36 @@ impl AppState {
                 format_precipitation(weather.precipitation, self.units.precipitation);
 
             let offline_indicator = if self.is_offline { "OFFLINE | " } else { "" };
+            let demo_indicator = self
+                .demo_label
+                .as_ref()
+                .map(|label| format!("{} | ", label))
+                .unwrap_or_default();
+
+            let umbrella_indicator = self
+                .umbrella
+                .as_ref()
+                .map(|message| format!("{message} | "))
+                .unwrap_or_default();
+            let finds_indicator = self
+                .finds_hint
+                .map(|hint| format!("{hint} | "))
+                .unwrap_or_default();
+            let mail_indicator = if self.is_mail_waiting {
+                "Lettre ! [c] | "
+            } else {
+                ""
+            };
 
             format!(
-                "{}Weather: {} | Temp: {:.1}{} | Wind: {:.1}{} | Precip: {:.1}{}{} | Press 'q' to quit",
+                "{} | {}{}{}Badges {}/{} [b] | Aide [h] | {}{}Weather: {} | Temp: {:.1}{} | Wind: {:.1}{} | Precip: {:.1}{}{} | Press 'q' to quit",
+                self.displayed_clock,
+                umbrella_indicator,
+                finds_indicator,
+                mail_indicator,
+                self.badges_earned,
+                self.badges_total,
+                demo_indicator,
                 offline_indicator,
                 self.get_condition_text(),
                 temp,
@@ -145,7 +250,11 @@ impl AppState {
                 location_str
             )
         } else {
-            format!("Weather: Loading... {}", self.loading_state.current_char())
+            format!(
+                "{} | Weather: Loading... {}",
+                self.displayed_clock,
+                self.loading_state.current_char()
+            )
         };
 
         self.weather_info_needs_update = false;

@@ -1,6 +1,35 @@
+use crate::holiday::Holiday;
 use crate::render::TerminalRenderer;
+use crate::scene::tree::Tree;
 use crossterm::style::Color;
 use std::io;
+
+const MAILBOX_WIDTH: u16 = 7;
+const MAILBOX_DAY: Color = Color::Rgb {
+    r: 255,
+    g: 204,
+    b: 0,
+};
+const MAILBOX_NIGHT: Color = Color::Rgb {
+    r: 150,
+    g: 120,
+    b: 0,
+};
+
+#[derive(Clone, Copy)]
+pub struct GardenPlan {
+    pub tree: Option<Tree>,
+    pub mailbox_x: Option<u16>,
+}
+
+impl GardenPlan {
+    pub fn new(house_x: u16, horizon_y: u16) -> Self {
+        Self {
+            tree: Tree::fit(house_x, horizon_y),
+            mailbox_x: house_x.checked_sub(MAILBOX_WIDTH),
+        }
+    }
+}
 
 #[derive(Default)]
 pub struct Decorations;
@@ -11,6 +40,8 @@ pub struct DecorationRenderConfig {
     pub house_width: u16,
     pub width: u16,
     pub is_day: bool,
+    pub is_snowing: bool,
+    pub holiday: Holiday,
 }
 
 impl Decorations {
@@ -23,25 +54,11 @@ impl Decorations {
         renderer: &mut TerminalRenderer,
         config: &DecorationRenderConfig,
     ) -> io::Result<()> {
-        // Render Tree (Left of house)
-        let (tree_lines, tree_color) = self.get_tree(config.is_day);
-        let tree_height = tree_lines.len() as u16;
-        let tree_y = config.horizon_y.saturating_sub(tree_height);
-        let tree_x = config.house_x.saturating_sub(20);
+        let plan = GardenPlan::new(config.house_x, config.horizon_y);
 
-        if tree_x > 0 {
-            for (i, line) in tree_lines.iter().enumerate() {
-                for (j, ch) in line.chars().enumerate() {
-                    if ch != ' ' {
-                        renderer.render_char(
-                            tree_x + j as u16,
-                            tree_y + i as u16,
-                            ch,
-                            tree_color,
-                        )?;
-                    }
-                }
-            }
+        // Render Tree (Left of house)
+        if let Some(tree) = plan.tree {
+            tree.render(renderer, config.is_day, &config.holiday, config.is_snowing)?;
         }
 
         // Render Fence (Right of house)
@@ -68,10 +85,9 @@ impl Decorations {
         // Render Mailbox (On ground top level, left of tree)
         let (mailbox_lines, mailbox_color) = self.get_mailbox(config.is_day);
         let mailbox_height = mailbox_lines.len() as u16;
-        let mailbox_x = tree_x.saturating_sub(10); // Left of tree
         let mailbox_y = config.horizon_y.saturating_sub(mailbox_height); // On ground top
 
-        if mailbox_x < config.width {
+        if let Some(mailbox_x) = plan.mailbox_x.filter(|x| *x < config.width) {
             for (i, line) in mailbox_lines.iter().enumerate() {
                 for (j, ch) in line.chars().enumerate() {
                     if ch != ' ' {
@@ -113,23 +129,6 @@ impl Decorations {
         Ok(())
     }
 
-    fn get_tree(&self, is_day: bool) -> (Vec<&'static str>, Color) {
-        (
-            vec![
-                "      ####      ",
-                "    ########    ",
-                "   ##########   ",
-                "    ########    ",
-                "      _||_      ",
-            ],
-            if is_day {
-                Color::DarkGreen
-            } else {
-                Color::Rgb { r: 0, g: 50, b: 0 }
-            },
-        )
-    }
-
     fn get_fence(&self, is_day: bool) -> (Vec<&'static str>, Color) {
         (
             vec!["|--|--|--|--|", "|  |  |  |  |"],
@@ -139,8 +138,8 @@ impl Decorations {
 
     fn get_mailbox(&self, is_day: bool) -> (Vec<&'static str>, Color) {
         (
-            vec![" ___ ", "|___|", "  |  "],
-            if is_day { Color::Blue } else { Color::DarkBlue },
+            vec![" .--. ", "|____|", "  ||  "],
+            if is_day { MAILBOX_DAY } else { MAILBOX_NIGHT },
         )
     }
 

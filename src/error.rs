@@ -148,6 +148,9 @@ pub enum ConfigError {
     #[error("invalid longitude {0} (must be between -180 and 180)")]
     InvalidLongitude(f64),
 
+    #[error("invalid mail hour {0} (must be between 0 and 23)")]
+    InvalidMailHour(u32),
+
     #[error("invalid value for ${name} (expected a float, got {value:?})")]
     InvalidEnvVar { name: &'static str, value: String },
 }
@@ -161,6 +164,7 @@ impl ConfigError {
             ConfigError::NoConfigDir => "NoConfigDir",
             ConfigError::InvalidLatitude(_) => "InvalidLatitude",
             ConfigError::InvalidLongitude(_) => "InvalidLongitude",
+            ConfigError::InvalidMailHour(_) => "InvalidMailHour",
             ConfigError::InvalidEnvVar { .. } => "InvalidEnvVar",
         }
     }

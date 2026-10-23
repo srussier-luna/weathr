@@ -176,6 +176,15 @@ impl TerminalRenderer {
         Ok(())
     }
 
+    pub fn char_at(&self, x: u16, y: u16) -> Option<char> {
+        if x < self.width && y < self.height {
+            let buffer_idx = (y as usize) * (self.width as usize) + (x as usize);
+            self.buffer.get(buffer_idx).map(|cell| cell.character)
+        } else {
+            None
+        }
+    }
+
     pub fn flash_screen(&mut self) -> io::Result<()> {
         let flash_color = self.capabilities.adjust_color(Color::White);
         for cell in &mut self.buffer {

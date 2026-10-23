@@ -33,6 +33,7 @@ pub struct RaindropSystem {
     terminal_height: u16,
     intensity: RainIntensity,
     wind_x: f32,
+    spawn_y: f32,
 }
 
 impl RaindropSystem {
@@ -52,6 +53,7 @@ impl RaindropSystem {
             terminal_height,
             intensity,
             wind_x: 0.0,
+            spawn_y: 0.0,
         };
         let wind_dir = if rand::random::<bool>() { 1.0 } else { -1.0 };
         system.set_intensity_with_dir(intensity, wind_dir);
@@ -72,6 +74,10 @@ impl RaindropSystem {
             RainIntensity::Storm => 0.8,
         };
         self.wind_x = base_wind * direction_multiplier;
+    }
+
+    pub fn set_spawn_y(&mut self, y: f32) {
+        self.spawn_y = y;
     }
 
     pub fn set_wind(&mut self, speed_kmh: f32, direction_deg: f32) {
@@ -134,7 +140,7 @@ impl RaindropSystem {
 
         self.drops.push(Raindrop {
             x,
-            y: 0.0,
+            y: self.spawn_y,
             speed_y: speed_y + (rng.random::<f32>() * 0.2),
             speed_x: self.wind_x + (rng.random::<f32>() * 0.1 - 0.05),
             character: chars[char_idx],

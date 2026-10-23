@@ -24,7 +24,7 @@ impl WeatherNormalizer {
         }
     }
 
-    fn wmo_code_to_condition(code: i32) -> WeatherCondition {
+    pub fn wmo_code_to_condition(code: i32) -> WeatherCondition {
         match code {
             0 => WeatherCondition::Clear,
             1 => WeatherCondition::PartlyCloudy,

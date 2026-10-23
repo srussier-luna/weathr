@@ -2,12 +2,23 @@ mod animation;
 mod animation_manager;
 mod app;
 mod app_state;
+mod badges;
 mod cache;
+mod chronicles;
 mod config;
+mod demo;
 mod error;
 mod geolocation;
+mod holiday;
+mod letters;
+mod overlay;
+mod progress;
+mod rain_alert;
+mod remote_weather;
 mod render;
 mod scene;
+mod updater;
+mod views;
 mod weather;
 
 use clap::{CommandFactory, Parser};
@@ -64,6 +75,15 @@ struct Cli {
     #[arg(short, long, help = "Enable falling autumn leaves")]
     leaves: bool,
 
+    #[arg(long, help = "Simulate Christmas Day (tree and presents)")]
+    christmas: bool,
+
+    #[arg(long, help = "Simulate July 14th fireworks (at night)")]
+    fireworks: bool,
+
+    #[arg(long, help = "Cycle through every weather scene, 1 second each")]
+    demo: bool,
+
     #[arg(long, help = "Auto-detect location via IP (uses ipinfo.io)")]
     auto_location: bool,
 
@@ -92,6 +112,12 @@ struct Cli {
 
     #[arg(long, value_name = "SHELL", value_enum)]
     pub completions: Option<Shell>,
+
+    #[arg(
+        long,
+        help = "Update weathr from its git repository, then rebuild and reinstall it"
+    )]
+    update: bool,
 }
 
 #[tokio::main]
@@ -150,6 +176,13 @@ async fn main() -> io::Result<()> {
         let mut out = io::stdout();
         generate(shell, &mut cmd, "weathr", &mut out);
         return Ok(());
+    }
+
+    if cli.update {
+        return updater::update_now();
+    }
+    if !cli.silent {
+        updater::offer_update().await;
     }
 
     let mut config = match Config::load() {
@@ -283,8 +316,18 @@ async fn main() -> io::Result<()> {
 
     let mut app = app::App::new(
         &config,
-        cli.simulate,
-        cli.night,
+        app::SimulationOptions {
+            condition: cli.simulate,
+            night: cli.night || cli.fireworks,
+            holiday: if cli.christmas {
+                Some(holiday::Holiday::christmas())
+            } else if cli.fireworks {
+                Some(holiday::Holiday::national_day())
+            } else {
+                None
+            },
+            demo: cli.demo,
+        },
         cli.leaves,
         term_width,
         term_height,

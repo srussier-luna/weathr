@@ -1,14 +1,38 @@
 pub mod airplanes;
 pub mod birds;
+pub mod cat;
 pub mod chimney;
+pub mod cloud_bank;
 pub mod clouds;
+pub mod constellation;
+pub mod creepy;
+pub mod dog;
+pub mod duck;
+pub mod finds;
 pub mod fireflies;
+pub mod fireworks;
 pub mod fog;
+pub mod frog;
+pub mod garden;
+pub mod gust;
+pub mod halloween;
+pub mod kid;
 pub mod leaves;
+pub mod lore;
 pub mod moon;
+pub mod new_year;
+pub mod owl;
+pub mod postman;
+pub mod rainbow;
 pub mod raindrops;
+pub mod snail;
 pub mod snow;
+pub mod snow_cover;
+pub mod snowman;
+pub mod spring;
+pub mod squirrel;
 pub mod stars;
+pub mod sun_path;
 pub mod sunny;
 pub mod thunderstorm;
 
@@ -37,6 +61,10 @@ impl AnimationController {
     pub fn next_frame<A: Animation>(&mut self, animation: &A) -> usize {
         self.current_frame = (self.current_frame + 1) % animation.frame_count();
         self.current_frame
+    }
+
+    pub fn current<'a, A: Animation>(&self, animation: &'a A) -> &'a [String] {
+        animation.get_frame(self.current_frame)
     }
 
     pub fn render_frame<A: Animation>(

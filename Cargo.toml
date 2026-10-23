@@ -26,6 +26,7 @@ tokio = { version = "1", features = [
     "macros",
     "signal",
     "fs",
+    "process",
 ] }
 reqwest = { version = "0.13", features = ["json"] }
 async-trait = "0.1"

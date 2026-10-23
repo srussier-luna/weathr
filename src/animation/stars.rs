@@ -118,12 +118,16 @@ impl StarSystem {
             self.shooting_star = Some(ShootingStar {
                 x: start_x as f32,
                 y: start_y as f32,
-                speed_x: if rng.random::<bool>() { 1.5 } else { -1.5 },
-                speed_y: 0.5 + (rng.random::<f32>() * 0.5),
-                length: 5,
+                speed_x: if rng.random::<bool>() { 0.9 } else { -0.9 },
+                speed_y: 0.3 + (rng.random::<f32>() * 0.2),
+                length: 9,
                 active: true,
             });
         }
+    }
+
+    pub fn has_shooting_star(&self) -> bool {
+        self.shooting_star.as_ref().is_some_and(|star| star.active)
     }
 
     pub fn render(&self, renderer: &mut TerminalRenderer) -> io::Result<()> {
@@ -167,8 +171,12 @@ impl StarSystem {
                     && trail_y >= 0
                     && trail_y < self.terminal_height as i16
                 {
-                    let ch = if i == 1 { '+' } else { '.' };
-                    renderer.render_char(trail_x as u16, trail_y as u16, ch, Color::White)?;
+                    let (ch, color) = match i {
+                        1 => ('+', Color::White),
+                        2..=4 => ('-', Color::Grey),
+                        _ => ('.', Color::DarkGrey),
+                    };
+                    renderer.render_char(trail_x as u16, trail_y as u16, ch, color)?;
                 }
             }
         }

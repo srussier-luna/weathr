@@ -20,6 +20,7 @@ pub struct SnowSystem {
     terminal_height: u16,
     intensity: SnowIntensity,
     wind_x: f32,
+    spawn_y: f32,
 }
 
 impl SnowSystem {
@@ -36,11 +37,16 @@ impl SnowSystem {
             terminal_height,
             intensity,
             wind_x: 0.0,
+            spawn_y: 0.0,
         };
         // Initialize with some default wind
         let wind_dir = if rand::random::<bool>() { 0.2 } else { -0.2 };
         system.set_intensity_with_dir(intensity, wind_dir);
         system
+    }
+
+    pub fn set_spawn_y(&mut self, y: f32) {
+        self.spawn_y = y;
     }
 
     pub fn set_intensity(&mut self, intensity: SnowIntensity) {
@@ -83,7 +89,7 @@ impl SnowSystem {
 
         self.flakes.push(Snowflake {
             x,
-            y: 0.0,
+            y: self.spawn_y,
             speed_y: base_speed_y + (rng.random::<f32>() * 0.05),
             speed_x: self.wind_x + (rng.random::<f32>() * 0.1 - 0.05),
             sway_offset: rng.random::<f32>() * 100.0, // Random phase for sway

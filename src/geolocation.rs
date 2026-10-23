@@ -7,6 +7,8 @@ const IPINFO_URL: &str = "https://ipinfo.io/json";
 const NOMINATIM_URL: &str = "https://nominatim.openstreetmap.org/reverse";
 const MAX_RETRIES: u32 = 3;
 const INITIAL_RETRY_DELAY_MS: u64 = 500;
+const CORE_LOCATION_CLI: &str = "CoreLocationCLI";
+const CORE_LOCATION_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Deserialize, Debug)]
 struct IpInfoResponse {
@@ -22,11 +24,49 @@ pub struct GeoLocation {
 }
 
 pub async fn detect_location() -> Result<GeoLocation, GeolocationError> {
+    if let Some(location) = detect_device_location().await {
+        return Ok(location);
+    }
+
     if let Some(cached) = cache::load_cached_location().await {
         return Ok(cached);
     }
 
     detect_location_with_retry().await
+}
+
+async fn detect_device_location() -> Option<GeoLocation> {
+    let command = tokio::process::Command::new(CORE_LOCATION_CLI)
+        .args(["--format", "%latitude %longitude %locality"])
+        .kill_on_drop(true)
+        .output();
+    let output = tokio::time::timeout(CORE_LOCATION_TIMEOUT, command)
+        .await
+        .ok()?
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    parse_device_location(&String::from_utf8_lossy(&output.stdout))
+}
+
+fn parse_device_location(output: &str) -> Option<GeoLocation> {
+    let mut parts = output.trim().splitn(3, ' ');
+    let latitude = parts.next()?.parse().ok()?;
+    let longitude = parts.next()?.parse().ok()?;
+    let city = parts
+        .next()
+        .map(str::trim)
+        .filter(|city| !city.is_empty())
+        .map(str::to_string);
+
+    Some(GeoLocation {
+        latitude,
+        longitude,
+        city,
+    })
 }
 
 async fn detect_location_with_retry() -> Result<GeoLocation, GeolocationError> {
