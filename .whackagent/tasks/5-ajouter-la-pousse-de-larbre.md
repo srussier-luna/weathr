@@ -9,7 +9,14 @@ created: 2026-10-23
 ## Context / Decisions
 
 - The Arbre grows with the days since install, in 4 stages:
-  - day 1: small sprout `\|/` on the ground, no canopy, no trunk;
+  - day 1: a baby tree — the smallest tree the drawing allows (`Tree` at its minimum height, ~4 canopy rows, thin trunk), not a sprout:
+    ```
+      ########
+    ############
+    ############
+      ########
+        _||_
+    ```
   - day 4: the current tree at 1/3 of its fitted height;
   - day 8: at 2/3;
   - day 12 and after: full size, same as today.
@@ -23,7 +30,7 @@ created: 2026-10-23
 
 ## Acceptance criteria
 
-- [ ] Progress started today (day 1): a small `\|/` sprout stands left of the house, no canopy, no trunk.
+- [ ] Progress started today (day 1): a baby tree stands left of the house — small round canopy (~4 rows) on a thin trunk with roots `_||_`.
 - [ ] Day 4: the Arbre is about 1/3 of its full height; day 8: about 2/3; day 12 and after: full height, as before this task.
 - [ ] On day 7 at 8:59 the Arbre has its day-4 size; with weathr left open, at `courrier.heure` (9:00 by default) on day 8 it switches to the 2/3 size without restart.
 - [ ] Seasons apply at every stage: a young Arbre in December is a small decorated fir.
