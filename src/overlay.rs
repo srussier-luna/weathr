@@ -1,4 +1,4 @@
-use crate::badges::{BADGES, BadgeKind, KINDS};
+use crate::badges::{BADGES, Badge, BadgeKind, KINDS};
 use crate::render::TerminalRenderer;
 use crossterm::style::Color;
 use std::collections::BTreeSet;
@@ -44,13 +44,6 @@ pub fn render_badges(
 ) -> io::Result<()> {
     let box_width = MAX_BADGES_WIDTH.min(renderer.get_size().0.saturating_sub(4));
     let inner = inner_width(box_width);
-    let longest_cell = BADGES
-        .iter()
-        .map(|badge| badge.name.chars().count() + 5)
-        .max()
-        .unwrap_or(1);
-    let columns = (inner / longest_cell).clamp(1, MAX_BADGE_COLUMNS);
-    let column_width = inner / columns;
     let plural = if streak > 1 { "s" } else { "" };
     let mut lines = vec![format!("Série en cours : {streak} jour{plural} d'affilée")];
 
@@ -60,25 +53,25 @@ pub fn render_badges(
             .iter()
             .filter(|badge| earned.contains(badge.id))
             .count();
-        if !lines.is_empty() {
-            lines.push(String::new());
-        }
+        lines.push(String::new());
         lines.push(format!("{} ({}/{})", kind.title(), count, badges.len()));
 
-        for row in badges.chunks(columns) {
+        let cells: Vec<String> = badges
+            .iter()
+            .map(|badge| badge_cell(badge, earned.contains(badge.id)))
+            .collect();
+        let longest_cell = cells
+            .iter()
+            .map(|cell| cell.chars().count() + 1)
+            .max()
+            .unwrap_or(1);
+        let columns = (inner / longest_cell).clamp(1, MAX_BADGE_COLUMNS);
+        let column_width = inner / columns;
+
+        for row in cells.chunks(columns) {
             let line: String = row
                 .iter()
-                .map(|badge| {
-                    let is_earned = earned.contains(badge.id);
-                    let mark = if is_earned { 'x' } else { ' ' };
-                    let name = if is_earned || badge.kind != BadgeKind::Secret {
-                        badge.name
-                    } else {
-                        HIDDEN_BADGE
-                    };
-                    let cell = format!("[{mark}] {name}");
-                    format!("{cell:<width$} ", width = column_width.saturating_sub(1))
-                })
+                .map(|cell| format!("{cell:<width$} ", width = column_width.saturating_sub(1)))
                 .collect();
             lines.push(line.trim_end().to_string());
         }
@@ -90,6 +83,15 @@ pub fn render_badges(
         .count();
     let title = format!("Badges {}/{}", total_earned, BADGES.len());
     render_box(renderer, &title, &lines, BADGES_FOOTER, box_width)
+}
+
+fn badge_cell(badge: &Badge, is_earned: bool) -> String {
+    let mark = if is_earned { 'x' } else { ' ' };
+    match (is_earned, badge.kind, badge.hint) {
+        (false, BadgeKind::Secret, _) => format!("[{mark}] {HIDDEN_BADGE}"),
+        (true, _, Some(hint)) => format!("[{mark}] {} ({hint})", badge.name),
+        _ => format!("[{mark}] {}", badge.name),
+    }
 }
 
 fn box_width(renderer: &TerminalRenderer) -> u16 {
@@ -152,6 +154,24 @@ fn wrap(text: &str, width: usize) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_secret_badges_explain_themselves_once_earned() {
+        let patience = BADGES.iter().find(|badge| badge.id == "patience").unwrap();
+        let clear = BADGES.iter().find(|badge| badge.id == "clear").unwrap();
+        assert_eq!(badge_cell(patience, false), "[ ] ???");
+        assert_eq!(
+            badge_cell(patience, true),
+            "[x] Patience (weathr ouvert 1 h d'affilée)"
+        );
+        assert_eq!(badge_cell(clear, true), "[x] Ciel dégagé");
+        assert!(
+            BADGES
+                .iter()
+                .filter(|badge| badge.kind == BadgeKind::Secret)
+                .all(|badge| badge.hint.is_some())
+        );
+    }
 
     #[test]
     fn test_wrap_respects_width() {

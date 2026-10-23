@@ -25,10 +25,25 @@ pub struct Badge {
     pub id: &'static str,
     pub name: &'static str,
     pub kind: BadgeKind,
+    pub hint: Option<&'static str>,
 }
 
 const fn badge(id: &'static str, name: &'static str, kind: BadgeKind) -> Badge {
-    Badge { id, name, kind }
+    Badge {
+        id,
+        name,
+        kind,
+        hint: None,
+    }
+}
+
+const fn secret(id: &'static str, name: &'static str, hint: &'static str) -> Badge {
+    Badge {
+        id,
+        name,
+        kind: BadgeKind::Secret,
+        hint: Some(hint),
+    }
 }
 
 pub const KINDS: [BadgeKind; 5] = [
@@ -71,12 +86,24 @@ pub const BADGES: [Badge; 37] = [
     badge("riddle_1", "Première énigme", BadgeKind::Loyalty),
     badge("riddle_10", "Dix énigmes", BadgeKind::Loyalty),
     badge("all_objects", "Tous les objets", BadgeKind::Loyalty),
-    badge("night_owl", "Oiseau de nuit", BadgeKind::Secret),
-    badge("early_bird", "Lève-tôt", BadgeKind::Secret),
-    badge("star_hunter", "Chasseur d'étoiles", BadgeKind::Secret),
-    badge("full_weather", "Collection complète", BadgeKind::Secret),
-    badge("patience", "Patience", BadgeKind::Secret),
-    badge("night_reading", "Lecture nocturne", BadgeKind::Secret),
+    secret("night_owl", "Oiseau de nuit", "ouvert entre minuit et 5 h"),
+    secret("early_bird", "Lève-tôt", "ouvert entre 5 h et 7 h"),
+    secret(
+        "star_hunter",
+        "Chasseur d'étoiles",
+        "3 étoiles filantes sans fermer weathr",
+    ),
+    secret(
+        "full_weather",
+        "Collection complète",
+        "tous les badges météo",
+    ),
+    secret("patience", "Patience", "weathr ouvert 1 h d'affilée"),
+    secret(
+        "night_reading",
+        "Lecture nocturne",
+        "une lettre lue entre 22 h et 6 h",
+    ),
 ];
 
 pub fn weather_badges() -> impl Iterator<Item = &'static Badge> {
