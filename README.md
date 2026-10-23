@@ -1,320 +1,236 @@
 # weathr
 
-[![Crates.io](https://img.shields.io/crates/v/weathr.svg)](https://crates.io/crates/weathr)
-[![Downloads](https://img.shields.io/crates/d/weathr.svg)](https://crates.io/crates/weathr)
-[![License](https://img.shields.io/crates/l/weathr.svg)](https://github.com/veirt/weathr/blob/main/LICENSE)
+Une météo animée en ASCII dans le terminal, avec un petit village qui vit au rythme des saisons, du vrai temps qu'il fait et du courrier de ses habitants.
 
-A terminal weather app with ASCII animations driven by real-time weather data.
+Version personnalisée de [Veirt/weathr](https://github.com/Veirt/weathr) : la météo en temps réel vient toujours d'Open-Meteo, mais la scène s'enrichit d'un jardin, d'animaux, d'une histoire en lettres, de badges et d'une mise à jour proposée au lancement.
 
-Features real-time weather from Open-Meteo with animated rain, snow, thunderstorms, flying airplanes, day/night cycles, and auto-location detection.
+## Aperçu
 
-## Demo
+|                              Hiver · neige                               |                             Printemps · pluie                              |                               Été · soleil                               |
+| :----------------------------------------------------------------------: | :------------------------------------------------------------------------: | :----------------------------------------------------------------------: |
+| <img src="docs/winter-snow.gif" width="100%" alt="Hiver sous la neige"> | <img src="docs/spring-rain.gif" width="100%" alt="Printemps sous la pluie"> | <img src="docs/summer-sun.gif" width="100%" alt="Été en plein soleil"> |
 
-|                                    Thunderstorm Night                                     |                             Snow                              |
-| :---------------------------------------------------------------------------------------: | :-----------------------------------------------------------: |
-| <img src="docs/thunderstorm-night.gif" width="600" height="400" alt="Thunderstorm Night"> | <img src="docs/snow.gif" width="600" height="400" alt="Snow"> |
-
-## Contents
+## Sommaire
 
 - [Installation](#installation)
-- [Packaging Status](#packaging-status)
+- [Mise à jour](#mise-à-jour)
+- [Utilisation](#utilisation)
+- [Le village](#le-village)
 - [Configuration](#configuration)
-- [Usage](#usage)
-- [Privacy](#privacy)
-- [Roadmap](#roadmap)
-- [License](#license)
-
-## Packaging Status
-
-[![Packaging status](https://repology.org/badge/vertical-allrepos/weathr.svg)](https://repology.org/project/weathr/versions)
+- [Fichiers créés](#fichiers-créés)
+- [Confidentialité](#confidentialité)
+- [Licence](#licence)
+- [Crédits](#crédits)
 
 ## Installation
 
-### Via Cargo
+Il faut [Rust](https://www.rust-lang.org/tools/install) et git. Le dépôt est privé : demander une invitation au préalable.
 
 ```bash
-cargo install weathr
+git clone git@github.com:srussier-luna/weathr.git ~/.weathr
+cargo build --release --manifest-path ~/.weathr/Cargo.toml
+cp ~/.weathr/target/release/weathr ~/.local/bin/weathr
 ```
 
-### Build from Source
+Le dossier cloné doit rester en place : c'est lui que weathr met à jour.
 
-You need Rust installed.
+## Mise à jour
+
+- Au lancement, une fois par jour, weathr vérifie s'il y a des nouveautés sur le dépôt.
+- S'il y en a, il liste jusqu'à 5 changements et demande `Mettre à jour maintenant ? [O/n]`.
+- En acceptant, il récupère le code, recompile, remplace le binaire et redémarre.
+- La vérification est ignorée avec `--silent`, sans terminal interactif, ou si le dossier source a des modifications locales.
+- Mise à jour manuelle à tout moment :
 
 ```bash
-git clone https://github.com/veirt/weathr.git
-cd weathr
-cargo install --path .
+weathr --update
 ```
 
-### Homebrew (macOS)
-
-```bash
-brew install Veirt/veirt/weathr
-```
-
-### MacPorts (macOS)
-
-```bash
-sudo port install weathr
-```
-
-### Arch Linux
-
-Available in AUR:
-
-```bash
-yay -S weathr
-```
-
-or
-
-```bash
-yay -S weathr-bin
-```
-
-### Nix flake (NixOS)
-
-Available as a flake:
-
-```nix
-inputs = {
-    weathr.url = "github:Veirt/weathr";
-};
-```
-
-Add to packages:
-
-```nix
-environment.systemPackages = [
-    inputs.weathr.packages.${system}.default
-];
-```
-
-or use home-manager module option:
-
-```nix
-imports = [
-    inputs.weathr.homeModules.weathr
-];
-
-programs.weathr = {
-    enable = true;
-    settings = {
-        hide_hud = true;
-    };
-};
-```
-
-### Windows
-
-Available through Winget:
-
-```
-winget install -i Veirt.weathr
-```
-
-## Configuration
-
-The config file location depends on your platform:
-
-- **Linux**: `~/.config/weathr/config.toml` (or `$XDG_CONFIG_HOME/weathr/config.toml`)
-- **macOS**: `~/Library/Application Support/weathr/config.toml`
-- **Windows**: `~/AppData/Roaming/weathr/config.toml`
-
-You can also place a `config.toml` in the current working directory, which takes priority over the default location.
-
-### Setup
-
-```bash
-# Linux
-mkdir -p ~/.config/weathr
-
-# macOS
-mkdir -p ~/Library/Application\ Support/weathr
-
-# Windows (PowerShell)
-New-Item -Path $env:APPDATA/weathr -Type Directory
-
-# Windows (Command Prompt)
-mkdir %APPDATA%/weathr
-```
-
-Edit the config file at the appropriate path for your platform:
-
-```toml
-# Hide the HUD (Heads Up Display) with weather details
-hide_hud = false
-
-# Run silently without startup messages (errors still shown)
-silent = false
-
-[location]
-# Location coordinates (overridden if auto = true)
-latitude = 52.5200
-longitude = 13.4050
-
-# Auto-detect location via IP (defaults to true if config missing)
-auto = false
-
-# Hide the location name in the UI
-hide = false
-
-# How to display the location in the HUD: "coordinates" | "city" | "mixed"
-display = "mixed"
-
-# Optional: manually override the city name shown in the HUD.
-# When set, skips reverse geocoding entirely.
-# city = "Berlin"
-
-# Language for the resolved city name. "auto" uses the locale of the coordinates.
-# Accepts BCP-47 language tags: "en", "de", "ru", "ja", etc.
-# city_name_language = "auto"
-
-[units]
-# Temperature unit: "celsius" or "fahrenheit"
-temperature = "celsius"
-
-# Wind speed unit: "kmh", "ms", "mph", or "kn"
-wind_speed = "kmh"
-
-# Precipitation unit: "mm" or "inch"
-precipitation = "mm"
-```
-
-### Location Display Modes
-
-The `display` option controls how the location appears in the HUD. City names are resolved
-via reverse geocoding (Nominatim/OpenStreetMap). When a city cannot be resolved (e.g. open
-sea or no Nominatim match), all modes fall back to showing coordinates.
-
-| Mode          | City resolved                         | City not resolved            |
-| :------------ | :------------------------------------ | :--------------------------- |
-| `coordinates` | `Location: 52.52°N, 13.41°E`          | `Location: 52.52°N, 13.41°E` |
-| `city`        | `Location: Berlin`                    | `Location: 52.52°N, 13.41°E` |
-| `mixed`       | `Location: Berlin (52.52°N, 13.41°E)` | `Location: 52.52°N, 13.41°E` |
-
-### Example Locations
-
-```toml
-# Tokyo, Japan
-latitude = 35.6762
-longitude = 139.6503
-
-# Sydney, Australia
-latitude = -33.8688
-longitude = 151.2093
-```
-
-## Usage
-
-Run with real-time weather:
+## Utilisation
 
 ```bash
 weathr
 ```
 
-### CLI Options
+### Touches
 
-Simulate weather conditions for testing:
+| Touche          | Action                                    |
+| :-------------- | :---------------------------------------- |
+| `c`             | lire le courrier                          |
+| `←` `→`         | parcourir les lettres ou les pages        |
+| `1` `2`         | répondre à une question                   |
+| `e`             | répondre à l'énigme de la gazette         |
+| `r`             | ramasser un objet ou une bouteille        |
+| `l`             | relire les lettres reçues (`↑` `↓` `Entrée`) |
+| `a`             | album des souvenirs                       |
+| `b`             | badges                                    |
+| `h`             | aide                                      |
+| `Échap`         | fermer la fenêtre                         |
+| `q` / `Ctrl+C`  | quitter                                   |
+
+### Options
 
 ```bash
-# Simulate rain
+# Simuler une météo
 weathr --simulate rain
-
-# Simulate snow at night
 weathr --simulate snow --night
 
-# Clear day with falling leaves
+# Fêtes
+weathr --christmas
+weathr --fireworks
+
+# Feuilles qui tombent et rafales
 weathr --simulate clear --leaves
+
+# Faire défiler toutes les scènes, 1 seconde chacune
+weathr --demo
 ```
 
-Available weather conditions:
+Météos disponibles :
 
-- Clear Skies: `clear`, `partly-cloudy`, `cloudy`, `overcast`
-- Precipitation: `fog`, `drizzle`, `rain`, `freezing-rain`, `rain-showers`
-- Snow: `snow`, `snow-grains`, `snow-showers`
-- Storms: `thunderstorm`, `thunderstorm-hail`
+- Ciel : `clear`, `partly-cloudy`, `cloudy`, `overcast`
+- Pluie : `fog`, `drizzle`, `rain`, `freezing-rain`, `rain-showers`
+- Neige : `snow`, `snow-grains`, `snow-showers`
+- Orage : `thunderstorm`, `thunderstorm-hail`
 
-Override configuration:
+Autres options :
 
 ```bash
-# Use imperial units (°F, mph, inch)
-weathr --imperial
-
-# Use metric units (°C, km/h, mm) - default
-weathr --metric
-
-# Auto-detect location via IP
-weathr --auto-location
-
-# Hide location coordinates
-weathr --hide-location
-
-# Hide status HUD
-weathr --hide-hud
-
-# Run silently (suppress non-error output)
-weathr --silent
-
-# Combine flags
-weathr --imperial --auto-location
+weathr --imperial        # °F, mph, inch
+weathr --metric          # °C, km/h, mm (par défaut)
+weathr --auto-location   # position détectée via l'adresse IP
+weathr --hide-location   # masquer la position
+weathr --hide-hud        # masquer la barre d'état
+weathr --silent          # pas de messages au démarrage
 ```
 
-### Keyboard Controls
+`NO_COLOR=1 weathr` désactive les couleurs.
 
-- `q` or `Q` - Quit
-- `Ctrl+C` - Exit
+## Le village
 
-### Environment Variables
+### Saisons et fêtes
 
-The application respects several environment variables:
+- Les saisons suivent les dates astronomiques : printemps le 20 mars, été le 21 juin, automne le 22 septembre, hiver le 21 décembre.
+- L'arbre fleurit au printemps, verdit l'été, se colore à l'automne et devient un sapin en hiver.
+- Noël (24–25 décembre) : sapin et cadeaux.
+- Nouvel An (± 7 jours) : bannière et feu d'artifice.
+- Pâques (± 7 jours) : décorations dans le jardin.
+- 14 juillet : feu d'artifice la nuit.
+- Octobre : citrouilles et esprits d'Halloween.
 
-- `NO_COLOR` - When set, disables all color output (accessibility feature)
-- `COLORTERM` - Detects truecolor support (values: "truecolor", "24bit")
-- `TERM` - Used for terminal capability detection (e.g., "xterm-256color")
+### Scène et animaux
 
-Examples:
+- Montagnes, rivière qui descend jusqu'à un étang, maison aux fenêtres qui s'éteignent le soir.
+- Soleil qui suit la vraie course du jour, constellations de saison les nuits claires.
+- Neige qui s'accumule, puis bonhomme de neige quand la couche est épaisse.
+- Arc-en-ciel quand la pluie s'arrête en journée.
+- Chat, chien et sa niche, écureuil, chouette la nuit.
+- Canard, grenouille et escargot sous la pluie.
+- Léo, l'enfant du village, qui saute dans les flaques.
+- Le facteur passe à vélo à l'heure du courrier.
 
-```bash
-# Disable colors for accessibility
-NO_COLOR=1 weathr
+### Courrier
+
+- Chaque jour, de nouvelles lettres arrivent à l'heure du courrier (9 h par défaut).
+- Une centaine de lettres datées : habitants, voisins, archives et un voisin du n°13 un peu inquiétant.
+- Certaines lettres posent une question : la réponse change la suite et la scène.
+- Chaque lundi, une gazette avec rumeurs, annonces et une énigme.
+- Une recette le 1er de chaque mois, une carte postale chaque semaine.
+- Lire les lettres débloque des éléments dans le décor : banc, puits, cabane dans l'arbre, montgolfière…
+- Plus tard, des objets apparaissent au sol et des bouteilles descendent la rivière, à ramasser avec `r`.
+
+### Badges
+
+- 37 badges en 5 familles : Météo, Fêtes, Rares, Fidélité, Secrets.
+- Exemples : voir chaque type de vraie météo, ouvrir l'app entre minuit et 5 h, revenir 7 jours d'affilée.
+- Les badges météo ne comptent pas en mode simulé.
+
+### Alerte pluie
+
+- Toutes les 10 minutes, weathr regarde les prévisions proches.
+- Si la pluie arrive, la barre d'état affiche `Pluie vers HH:MM : prends ton parapluie !`.
+
+## Configuration
+
+Le fichier `config.toml` se trouve dans :
+
+- **macOS** : `~/Library/Application Support/weathr/config.toml`
+- **Linux** : `~/.config/weathr/config.toml` (ou `$XDG_CONFIG_HOME/weathr/config.toml`)
+- **Windows** : `~/AppData/Roaming/weathr/config.toml`
+
+Un `config.toml` dans le dossier courant est prioritaire.
+
+```toml
+# Masquer la barre d'état
+hide_hud = false
+
+# Pas de messages au démarrage (les erreurs restent affichées)
+silent = false
+
+[location]
+# Coordonnées (ignorées si auto = true)
+latitude = 48.8566
+longitude = 2.3522
+
+# Position détectée automatiquement (true par défaut si pas de config)
+auto = false
+
+# Masquer la position
+hide = false
+
+# Affichage : "coordinates" | "city" | "mixed"
+display = "mixed"
+
+# Nom de ville forcé, sans recherche
+# city = "Paris"
+
+# Langue du nom de ville ("auto" ou un code comme "fr", "en")
+# city_name_language = "auto"
+
+[units]
+temperature = "celsius"     # "celsius" ou "fahrenheit"
+wind_speed = "kmh"          # "kmh", "ms", "mph" ou "kn"
+precipitation = "mm"        # "mm" ou "inch"
+
+[courrier]
+# Heure d'arrivée du courrier (0 à 23)
+heure = 9
 ```
 
-## Privacy
+### Affichage de la position
 
-### Location Detection
+| Mode          | Ville trouvée                        | Ville introuvable           |
+| :------------ | :----------------------------------- | :-------------------------- |
+| `coordinates` | `Location: 48.86°N, 2.35°E`          | `Location: 48.86°N, 2.35°E` |
+| `city`        | `Location: Paris`                    | `Location: 48.86°N, 2.35°E` |
+| `mixed`       | `Location: Paris (48.86°N, 2.35°E)`  | `Location: 48.86°N, 2.35°E` |
 
-When using `auto = true` in config or the `--auto-location` flag, the application makes a request to `ipinfo.io` to detect your approximate location based on your IP address.
+## Fichiers créés
 
-This is optional. You can disable auto-location and manually specify coordinates in your config file to avoid external API calls.
+Dans le même dossier que `config.toml` :
 
-## Roadmap
+- `progress.json` : avancement (lettres lues, badges, réponses, objets trouvés, série de jours).
+- `lettres.txt` : les 60 lettres du village, modifiables. Un en-tête `=== N | expéditeur` remplace la lettre N ou en ajoute une à partir de 61.
+- `update_check` : date de la dernière vérification de mise à jour.
 
-- [ ] Support for OpenWeatherMap, WeatherAPI, etc.
-- [x] Installation via AUR.
-- [ ] Key bindings for manual refresh, speed up animations, pause animations, and toggle HUD.
+## Confidentialité
 
-## License
+- Météo, alerte pluie et récapitulatif de la gazette : la position est envoyée à `api.open-meteo.com`.
+- Cartes postales : seules les coordonnées de la ville de la carte sont envoyées à Open-Meteo.
+- Nom de ville : recherche via Nominatim (OpenStreetMap).
+- Position automatique : sur macOS, la commande locale `CoreLocationCLI` est essayée d'abord, puis `ipinfo.io` via l'adresse IP.
+- Pour éviter tout appel de localisation, mettre `auto = false` et renseigner les coordonnées.
+- Mise à jour : `git fetch` vers le dépôt d'origine du dossier cloné.
 
-GPL-3.0-or-later
+## Licence
 
-## Credits
+GPL-3.0-or-later, comme le projet d'origine.
 
-### Weather Data
+## Crédits
 
-Weather data provided by [Open-Meteo.com](https://open-meteo.com/) under the [CC BY 4.0 license](https://creativecommons.org/licenses/by/4.0/).
+- Projet d'origine : [Veirt/weathr](https://github.com/Veirt/weathr).
+- Données météo : [Open-Meteo.com](https://open-meteo.com/), licence [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- Géocodage : [Nominatim](https://nominatim.openstreetmap.org/), données © [contributeurs OpenStreetMap](https://www.openstreetmap.org/copyright), licence [ODbL](https://opendatacommons.org/licenses/odbl/).
+- Art ASCII ([asciiart.eu](https://www.asciiart.eu/)) : maison et avion de Joan G. Stark, soleil de Hayley Jane Wakenshaw (Flump), lune de Joan G. Stark.
 
-### Geocoding
-
-City name resolution powered by [Nominatim](https://nominatim.openstreetmap.org/) (OpenStreetMap).
-Data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), licensed under [ODbL](https://opendatacommons.org/licenses/odbl/).
-
-### ASCII Art
-
-- **Source**: https://www.asciiart.eu/
-- **House**: Joan G. Stark
-- **Airplane**: Joan G. Stark
-- **Sun**: Hayley Jane Wakenshaw (Flump)
-- **Moon**: Joan G. Stark
-
-_Note: If any ASCII art is uncredited or misattributed, it belongs to the original owner._
+_Si un dessin ASCII n'est pas crédité ou mal attribué, il appartient à son auteur d'origine._
