@@ -290,7 +290,7 @@ impl App {
             letters,
             timeline,
             overlay: None,
-            is_simulated,
+            is_simulated: is_simulated || simulation.night,
             toasts: VecDeque::new(),
             toast_until: None,
             session_start: Instant::now(),
