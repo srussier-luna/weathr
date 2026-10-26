@@ -1,7 +1,7 @@
 use crate::animation::lore::Unlocks;
 use crate::animation_manager::AnimationManager;
 use crate::app_state::AppState;
-use crate::badges;
+use crate::badges::{self, Badge};
 use crate::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::config::Config;
 use crate::demo::{Demo, SCENE_DURATION};
@@ -63,6 +63,23 @@ fn unlocks_for(timeline: &[(usize, Entry)], progress: &Progress) -> Unlocks {
         }),
         &progress.answers,
     )
+}
+
+fn earn(earned: &mut BTreeSet<String>, ids: Vec<&'static str>) -> Vec<&'static Badge> {
+    ids.into_iter()
+        .filter(|id| earned.insert(id.to_string()))
+        .filter_map(badges::find)
+        .collect()
+}
+
+fn next_overlay(
+    overlay: Option<Overlay>,
+    pending_badges: &mut VecDeque<&'static Badge>,
+) -> Option<Overlay> {
+    match overlay {
+        None => pending_badges.pop_front().map(Overlay::NewBadge),
+        open => open,
+    }
 }
 
 fn mail_date(mail_hour: u32) -> NaiveDate {
@@ -171,6 +188,7 @@ enum Overlay {
     Bottle(usize),
     Help,
     Index(usize),
+    NewBadge(&'static Badge),
 }
 
 pub struct App {
@@ -188,6 +206,7 @@ pub struct App {
     is_simulated: bool,
     toasts: VecDeque<String>,
     toast_until: Option<Instant>,
+    pending_badges: VecDeque<&'static Badge>,
     session_start: Instant,
     stars_seen: u32,
     was_star_visible: bool,
@@ -293,6 +312,7 @@ impl App {
             is_simulated: is_simulated || simulation.night,
             toasts: VecDeque::new(),
             toast_until: None,
+            pending_badges: VecDeque::new(),
             session_start: Instant::now(),
             stars_seen: 0,
             was_star_visible: false,
@@ -400,21 +420,15 @@ impl App {
     }
 
     fn award(&mut self, ids: Vec<&'static str>) {
-        let new_badges: Vec<&str> = ids
-            .into_iter()
-            .filter(|id| self.progress.badges.insert(id.to_string()))
-            .map(badges::name)
-            .collect();
+        let new_badges = earn(&mut self.progress.badges, ids);
         if !new_badges.is_empty() {
-            let label = if new_badges.len() > 1 {
-                "Nouveaux badges"
-            } else {
-                "Nouveau badge"
-            };
-            let message = format!("* {} : {} ! *", label, new_badges.join(", "));
-            self.toasts.push_back(message);
+            self.pending_badges.extend(new_badges);
             self.progress.save();
         }
+    }
+
+    fn open_pending_badge(&mut self) {
+        self.overlay = next_overlay(self.overlay, &mut self.pending_badges);
     }
 
     fn has_read_all_letters(&self) -> bool {
@@ -553,6 +567,7 @@ impl App {
                 pages.swap_remove(page)
             }
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
+            Some(Overlay::NewBadge(badge)) => views::badge_card_view(badge),
             Some(Overlay::Index(selected)) => views::index_view(
                 self.read_entries(),
                 selected,
@@ -753,6 +768,13 @@ impl App {
         }
     }
 
+    fn press_enter(&mut self) {
+        match self.overlay {
+            Some(Overlay::NewBadge(_)) => self.overlay = None,
+            _ => self.reread_selected(),
+        }
+    }
+
     fn toggle_help(&mut self) {
         self.overlay = match self.overlay {
             Some(Overlay::Help) => None,
@@ -882,6 +904,7 @@ impl App {
             )?;
 
             self.collect_badges();
+            self.open_pending_badge();
             self.update_toasts();
             self.refresh_rain_alert();
             self.state.update_loading_animation();
@@ -931,7 +954,7 @@ impl App {
                         KeyCode::Char('l') | KeyCode::Char('L') => self.toggle_index(),
                         KeyCode::Up => self.select_in_index(-1),
                         KeyCode::Down => self.select_in_index(1),
-                        KeyCode::Enter => self.reread_selected(),
+                        KeyCode::Enter => self.press_enter(),
                         KeyCode::Char('r') | KeyCode::Char('R') => self.pick_up(),
                         KeyCode::Char('e') | KeyCode::Char('E') => self.start_riddle(),
                         KeyCode::Esc => self.overlay = None,
@@ -951,5 +974,45 @@ impl App {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn card_id(overlay: Option<Overlay>) -> Option<&'static str> {
+        match overlay {
+            Some(Overlay::NewBadge(badge)) => Some(badge.id),
+            _ => None,
+        }
+    }
+
+    #[test]
+    fn test_new_badges_open_one_card_each_in_award_order() {
+        let mut earned = BTreeSet::from(["clear".to_string()]);
+        let mut pending: VecDeque<_> =
+            earn(&mut earned, vec!["rain", "clear", "patience", "rain"]).into();
+        assert_eq!(pending.len(), 2);
+
+        let overlay = next_overlay(None, &mut pending);
+        assert_eq!(card_id(overlay), Some("rain"));
+        let overlay = next_overlay(overlay, &mut pending);
+        assert_eq!(card_id(overlay), Some("rain"));
+        assert_eq!(card_id(next_overlay(None, &mut pending)), Some("patience"));
+        assert!(next_overlay(None, &mut pending).is_none());
+    }
+
+    #[test]
+    fn test_badge_card_waits_for_the_open_window_to_close() {
+        let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["night_reading"]).into();
+
+        let overlay = next_overlay(Some(Overlay::Letter(3)), &mut pending);
+        assert!(matches!(overlay, Some(Overlay::Letter(3))));
+        assert_eq!(pending.len(), 1);
+        assert_eq!(
+            card_id(next_overlay(None, &mut pending)),
+            Some("night_reading")
+        );
     }
 }

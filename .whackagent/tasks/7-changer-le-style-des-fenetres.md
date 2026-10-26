@@ -1,6 +1,6 @@
 ---
 issue: 7
-status: todo
+status: to-test
 wiki: [[render]], [[mail]]
 note: "Grill #4 23/10 : ajoute aussi une tâche, design de la lettre et événement badge reçu"
 created: 2026-10-23
@@ -97,8 +97,34 @@ created: 2026-10-23
 
 ## Implementation
 
+- Task branch brought up to `develop` before coding (it forked before `develop` existed); old spec commit merged back with `-s ours`, no history rewritten.
+- `src/overlay.rs`: `Frame` (9 frames), `Line::Centered`, `Line::Rule`, pure `frame_rows` + `pack`; `render_box` draws frame edges in the frame color, text in the previous role colors. Too-wide footers and titles wrap between key groups.
+- `src/views.rs`: one frame per window; Gazette gets its front-page title and a `----` rule before the Énigme (its `n/total` counter is gone); `badge_card_view` + `medal`.
+- `src/badges.rs`: `icon: [&str; 3]` on all 37 Badges (validated table), `find(id)`.
+- `src/app.rs`: `Overlay::NewBadge`, `pending_badges` queue, pure `earn` + `next_overlay`; `[Entrée]` closes the card; row-0 "Nouveau badge" toast removed.
+- Frame colors (rgb): Lettre 222,196,140 · Gazette 205,205,195 · Carte postale 190,170,235 · Archives 230,160,80 · Recette 240,140,140 · Bouteille 100,180,225 · Album 150,210,150 · Badges + card 255,210,90.
+- Badge card: star frame, no title, centered content, footer `[Entrée] ou [Echap] fermer`.
+- Proof: `cargo build` ✅ · `cargo fmt -- --check` ✅ · `cargo clippy --all-targets` only the known `double_must_use` in `src/weather/provider.rs` ✅ · `cargo test` 161 passed ✅ (9 new).
+- Open points for the user:
+  - Gazette no longer shows its `n/total` counter (sketch followed literally).
+  - Pressing `c`, `b`, `a`, `l` or `h` while a Badge card is open replaces it; the card is lost, the Badge stays earned.
+  - Milestone Badges (streak, Énigme, Bouteille, Patience…) are still awarded in forced modes, as before this task: their cards show there too.
+  - `Nouveau badge !` uses a plain space before `!`, like every existing string; wording module asks for U+202F.
+
 ## Review
 
 ## Verification
+
+Agent drove the release binary in a pty, fake HOME, seeded progress:
+
+- ✅ Lettre torn-edge frame (village, creepy, Sam, Nadia et Claire, Marcel), text aligned.
+- ✅ Gazette `====` rules + `|| LA GAZETTE · lundi 26 octobre ||`, `----` before the Énigme.
+- ✅ Carte postale `[~]` stamp top-right · Archives tab · Recette `o|` holes · Bouteille `~^~^` waves · Album `/--\` corners · Badges `*~*~*` border.
+- ✅ Aide and Courrier identical to `develop`, cell by cell, at 120x45 and 80x30.
+- ✅ Real rain (London): centered `Pluie` card with its medal, nothing on row 0, `[Echap]` closes.
+- ✅ Patience card shows `weathr ouvert 1 h d'affilée`.
+- ✅ Two Badges in one frame → two cards in a row.
+- ✅ Badge earned with a Lettre open → card opens after the Lettre closes.
+- ✅ 80 columns (card at 80x24): every frame whole, text inside.
 
 ## Feedback
