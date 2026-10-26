@@ -52,13 +52,13 @@ fn line(tick: usize, percent: u8) -> String {
     )
 }
 
-pub struct Progress {
+pub struct InstallProgress {
     percent: Arc<AtomicU8>,
     stop: Arc<AtomicBool>,
     ticker: Option<JoinHandle<usize>>,
 }
 
-impl Progress {
+impl InstallProgress {
     pub fn start() -> Self {
         let percent = Arc::new(AtomicU8::new(0));
         let stop = Arc::new(AtomicBool::new(false));
@@ -88,8 +88,10 @@ impl Progress {
     pub fn set(&self, percent: u8) {
         self.percent.fetch_max(percent, Ordering::Relaxed);
     }
+}
 
-    pub fn finish(mut self) {
+impl Drop for InstallProgress {
+    fn drop(&mut self) {
         self.stop.store(true, Ordering::Relaxed);
         let Some(ticker) = self.ticker.take() else {
             return;

@@ -1,6 +1,6 @@
 ---
 issue: 31
-status: to-test
+status: to-close
 wiki: [[updater]]
 note: "on garde « [weathr] Une nouvelle version est disponible : », « [weathr] Mettre à jour maintenant ? [O/n] o », « [weathr] Installation en cours » ; mettre un /|\\- qui tourne en mode loader à côté de Installation en cours avec une progress bar ; pas besoin de toutes ces lignes (git pull, fichiers, cargo)"
 created: 2026-10-26
@@ -29,7 +29,7 @@ created: 2026-10-26
   [weathr] Mettre à jour maintenant ? [O/n] o
   [weathr] Installation en cours /  [=========>          ] 45 %
   ```
-  - Banner (feedback round 1) replaces « [weathr] Une nouvelle version est disponible. » before the prompt (`offer_update`); `--update` shows it too, before the progress line (feedback round 2).
+  - Banner (feedback round 1) replaces « [weathr] Une nouvelle version est disponible. » before the prompt (`offer_update`); `--update` shows it too, before the progress line (feedback round 2), but logo + postman only, without « Une nouvelle version est arrivée ! » (validation: `--update` never checks that a version exists).
   - Logo « WEATHR » in ANSI Shadow, bold, sunset gradient per column (stops `255,200,60` → `255,110,80` → `220,60,140` → `140,70,200`, 24-bit colour); outline chars `╗╔╝╚═║` in the same colour ×0.45.
   - Postman centered under the logo: two yellow rows `255,210,70`, wheels grey `150,150,165`, ground `~` green `110,200,110`.
   - « Une nouvelle version est arrivée ! » in the gradient colour at 0.3.
@@ -56,7 +56,7 @@ created: 2026-10-26
 - [ ] `cargo fmt --check`, `cargo test` all green (clippy ignored for this task, feedback round 2).
 - [ ] Update available, answer `o`: only the banner, the prompt and the progress line above are shown; no git file list, no `Compiling…`, no change list.
 - [ ] Banner: « WEATHR » block logo in sunset gradient with darker outline, postman centered below, then « Une nouvelle version est arrivée ! », then the prompt.
-- [ ] `weathr --update`: banner, then the progress line, then « weathr est à jour. ».
+- [ ] `weathr --update`: logo + postman (no « Une nouvelle version est arrivée ! »), then the progress line, then « weathr est à jour. ».
 - [ ] During the build: spinner turns and the percentage rises past 10 %; bar reaches 100 % before the restart.
 - [ ] No « Mise à jour terminée » line before the restart.
 - [ ] Failing build (e.g. broken source): `[weathr] Mise à jour impossible. Détails dans …/update.log`; that file holds cargo's error.
@@ -76,7 +76,27 @@ created: 2026-10-26
 - Round 1 hunks (feedback): `src/updater/banner.rs` (new: `LOGO`, `SUNSET`, `OUTLINE` ×0.45, `POSTMAN`, `gradient`, `darker`, `draw`/`show` via crossterm `queue!`, 3 tests) · `src/updater/mod.rs` (`mod banner;`, `banner::show()` replaces the « nouvelle version disponible » line in `offer_update`).
 - Round 2 hunks (feedback, inline): `src/updater/mod.rs` — `banner::show()` at the start of `update_now`, before `update`.
 
+- Validation autofix: banner skipped when stdout not TTY · `update_now() -> bool`, `[weathr] {error}`, `main` exits 1 · `non_interactive_git_env` shared by fetch + pull, keeps user SSH config (`uses_default_ssh`) · `Progress` → `InstallProgress`, cleanup in `Drop` · `check` → `append_log` + `ensure_success` · `--update` banner without message (`banner::show(None)`, `NEW_VERSION_MESSAGE`) · test split `test_cargo_other_reason_is_ignored`.
+
 ## Review
+
+### Round validation — 2026-10-26
+
+LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓
+
+- 🟠 [correctness] banner escape codes when stdout piped (`banner.rs`) → fixed (autofix 1)
+- 🟠 [correctness] `--update` failure debug-printed by `main` → fixed (autofix 1, 2)
+- 🟡 [correctness] « nouvelle version arrivée » under `--update` → fixed by user decision: logo + postman only (autofix 2)
+- 🟡 [correctness] `git pull` could prompt for credentials → fixed (autofix 1)
+- 🟡 [structure] `Progress` name clash with saved progress → fixed, `InstallProgress` (autofix 1)
+- 🟡 [elegance] `build` fabricated `Output`, `check` name clash → fixed (autofix 1)
+- 🟡 [elegance] `finish(mut self)` → `Drop` (autofix 1)
+- 🟡 [style] test name didn't cover `build-finished` → fixed (autofix 1)
+- 🟡 [correctness] forced `GIT_SSH_COMMAND` ignored user `core.sshCommand` (from autofix 1) → fixed (autofix 2)
+- 🟡 [structure] process exit inside updater (from autofix 1) → fixed (autofix 2)
+- 🟡 [structure] `NEW_VERSION` name → `NEW_VERSION_MESSAGE` (autofix 3)
+
+VERDICT: clean · 3 autofix rounds · proof: build ✅ fmt ✅ test ✅ (210) · clippy ignored for this task
 
 ## Verification
 

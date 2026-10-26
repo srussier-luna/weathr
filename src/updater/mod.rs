@@ -2,13 +2,13 @@ mod banner;
 mod progress;
 
 use chrono::Local;
-use progress::Progress;
+use progress::InstallProgress;
 use std::env;
 use std::fs;
 use std::io::{self, BufRead, BufReader, IsTerminal, Read, Write};
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output, Stdio};
+use std::process::{Command, ExitStatus, Stdio};
 use std::thread;
 use std::time::Duration;
 
@@ -17,6 +17,7 @@ const CHECK_FILE: &str = "update_check";
 const FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 const LOG_FILE: &str = "update.log";
 const PREFIX: &str = "[weathr]";
+const NEW_VERSION_MESSAGE: &str = "Une nouvelle version est arrivée\u{202F}!";
 
 pub async fn offer_update() {
     if !io::stdin().is_terminal() || has_checked_today() {
@@ -32,7 +33,7 @@ pub async fn offer_update() {
         return;
     }
 
-    banner::show();
+    banner::show(Some(NEW_VERSION_MESSAGE));
     if !ask_confirmation() {
         return;
     }
@@ -45,17 +46,28 @@ pub async fn offer_update() {
     }
 }
 
-pub fn update_now() -> io::Result<()> {
+pub fn update_now() -> bool {
+    match update_source() {
+        Ok(()) => {
+            println!("{PREFIX} weathr est à jour.");
+            true
+        }
+        Err(error) => {
+            eprintln!("{PREFIX} {error}");
+            false
+        }
+    }
+}
+
+fn update_source() -> io::Result<()> {
     let source = Path::new(SOURCE_DIR);
     if !is_git_checkout(source) {
         return Err(io::Error::other(format!(
             "dépôt git introuvable : {SOURCE_DIR}"
         )));
     }
-    banner::show();
-    update(source)?;
-    println!("{PREFIX} weathr est à jour.");
-    Ok(())
+    banner::show(None);
+    update(source)
 }
 
 fn is_git_checkout(source: &Path) -> bool {
@@ -86,18 +98,26 @@ async fn fetch(source: &Path) -> bool {
     command
         .args(["fetch", "--quiet"])
         .current_dir(source)
-        .env("GIT_TERMINAL_PROMPT", "0")
+        .envs(non_interactive_git_env(source))
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .kill_on_drop(true);
-    if env::var_os("GIT_SSH_COMMAND").is_none() {
-        command.env("GIT_SSH_COMMAND", "ssh -o BatchMode=yes");
-    }
     matches!(
         tokio::time::timeout(FETCH_TIMEOUT, command.status()).await,
         Ok(Ok(status)) if status.success()
     )
+}
+
+fn non_interactive_git_env(source: &Path) -> impl Iterator<Item = (&'static str, &'static str)> {
+    let ssh = uses_default_ssh(source).then_some(("GIT_SSH_COMMAND", "ssh -o BatchMode=yes"));
+    [("GIT_TERMINAL_PROMPT", "0")].into_iter().chain(ssh)
+}
+
+fn uses_default_ssh(source: &Path) -> bool {
+    env::var_os("GIT_SSH_COMMAND").is_none()
+        && env::var_os("GIT_SSH").is_none()
+        && git_output(source, &["config", "core.sshCommand"]).is_none()
 }
 
 fn has_pending_changes(source: &Path) -> bool {
@@ -121,10 +141,10 @@ fn accepts(answer: &str) -> bool {
 }
 
 fn update(source: &Path) -> io::Result<()> {
-    let progress = Progress::start();
+    let progress = InstallProgress::start();
     let mut log = String::new();
     let result = install_update(source, &progress, &mut log);
-    progress.finish();
+    drop(progress);
     result.map_err(|error| {
         log.push_str(&error.to_string());
         log.push('\n');
@@ -132,13 +152,17 @@ fn update(source: &Path) -> io::Result<()> {
     })
 }
 
-fn install_update(source: &Path, progress: &Progress, log: &mut String) -> io::Result<()> {
+fn install_update(source: &Path, progress: &InstallProgress, log: &mut String) -> io::Result<()> {
     let pull = Command::new("git")
         .args(["pull", "--ff-only"])
         .current_dir(source)
+        .envs(non_interactive_git_env(source))
         .stdin(Stdio::null())
-        .output();
-    check(pull, "git pull", log)?;
+        .output()
+        .map_err(|error| command_error(error, "git pull"))?;
+    append_log(log, &pull.stdout);
+    append_log(log, &pull.stderr);
+    ensure_success(pull.status, "git pull")?;
     progress.set(progress::AFTER_PULL);
 
     build(source, progress, log)?;
@@ -148,7 +172,7 @@ fn install_update(source: &Path, progress: &Progress, log: &mut String) -> io::R
     Ok(())
 }
 
-fn build(source: &Path, progress: &Progress, log: &mut String) -> io::Result<()> {
+fn build(source: &Path, progress: &InstallProgress, log: &mut String) -> io::Result<()> {
     let total = fs::read_to_string(source.join("Cargo.lock"))
         .map(|lock| progress::package_count(&lock))
         .unwrap_or_default();
@@ -191,15 +215,8 @@ fn build(source: &Path, progress: &Progress, log: &mut String) -> io::Result<()>
     let stderr = stderr
         .and_then(|reader| reader.join().ok())
         .unwrap_or_default();
-    check(
-        Ok(Output {
-            status,
-            stdout: Vec::new(),
-            stderr,
-        }),
-        "cargo build",
-        log,
-    )
+    append_log(log, &stderr);
+    ensure_success(status, "cargo build")
 }
 
 #[derive(Debug, PartialEq)]
@@ -225,11 +242,12 @@ fn cargo_message(line: &str) -> CargoMessage {
     }
 }
 
-fn check(output: io::Result<Output>, name: &str, log: &mut String) -> io::Result<()> {
-    let output = output.map_err(|error| command_error(error, name))?;
-    log.push_str(&String::from_utf8_lossy(&output.stdout));
-    log.push_str(&String::from_utf8_lossy(&output.stderr));
-    if output.status.success() {
+fn append_log(log: &mut String, output: &[u8]) {
+    log.push_str(&String::from_utf8_lossy(output));
+}
+
+fn ensure_success(status: ExitStatus, name: &str) -> io::Result<()> {
+    if status.success() {
         Ok(())
     } else {
         Err(io::Error::other(format!("{name} a échoué")))
@@ -347,6 +365,10 @@ mod tests {
     #[test]
     fn test_cargo_plain_line_is_kept_as_text() {
         assert_eq!(cargo_message("warning: something"), CargoMessage::Text);
+    }
+
+    #[test]
+    fn test_cargo_other_reason_is_ignored() {
         assert_eq!(
             cargo_message(r#"{"reason":"build-finished","success":true}"#),
             CargoMessage::Other

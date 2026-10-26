@@ -1,6 +1,6 @@
 use crossterm::queue;
 use crossterm::style::{Attribute, Color, Print, ResetColor, SetAttribute, SetForegroundColor};
-use std::io::{self, Write};
+use std::io::{self, IsTerminal, Write};
 
 type Rgb = [u8; 3];
 
@@ -29,14 +29,16 @@ const POSTMAN: [(&str, Rgb); 4] = [
     ("  (*)/ (*)      ||", GREY),
     ("~~~~~~~~~~~~~~~~~~~~~", GREEN),
 ];
-const MESSAGE: &str = "Une nouvelle version est arrivée\u{202F}!";
 const MESSAGE_POSITION: f64 = 0.3;
 
-pub fn show() {
-    let _ = draw(&mut io::stdout());
+pub fn show(message: Option<&str>) {
+    if !io::stdout().is_terminal() {
+        return;
+    }
+    let _ = draw(&mut io::stdout(), message);
 }
 
-fn draw(out: &mut impl Write) -> io::Result<()> {
+fn draw(out: &mut impl Write, message: Option<&str>) -> io::Result<()> {
     let logo_width = width(LOGO);
     for row in LOGO {
         queue!(out, SetAttribute(Attribute::Bold))?;
@@ -67,13 +69,15 @@ fn draw(out: &mut impl Write) -> io::Result<()> {
     }
     writeln!(out)?;
 
-    queue!(
-        out,
-        SetForegroundColor(rgb(gradient(MESSAGE_POSITION))),
-        Print(MESSAGE),
-        ResetColor
-    )?;
-    writeln!(out)?;
+    if let Some(message) = message {
+        queue!(
+            out,
+            SetForegroundColor(rgb(gradient(MESSAGE_POSITION))),
+            Print(message),
+            ResetColor
+        )?;
+        writeln!(out)?;
+    }
     out.flush()
 }
 

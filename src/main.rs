@@ -180,7 +180,10 @@ async fn main() -> io::Result<()> {
     }
 
     if cli.update {
-        return updater::update_now();
+        if !updater::update_now() {
+            std::process::exit(1);
+        }
+        return Ok(());
     }
     if !cli.silent {
         updater::offer_update().await;
