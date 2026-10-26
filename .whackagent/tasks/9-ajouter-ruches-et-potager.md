@@ -23,10 +23,10 @@ created: 2026-10-26
   - Listed in the Lieux menu only from the Potager's Arrival.
   - **Top-down view at an angle** (~45°): beds seen from above, receding slightly. Not the garden's side view.
   - **No sky** (Place without sky, #21): no sun, moon, stars or shooting stars. Real weather still shows: rain and snow fall over the beds, day/night light on the ground.
-  - **Stages by Jour de jeu**: tilled → sprouts → vegetables, each on the day of the Lettre that explains it.
-  - **Real seasons** on top: winter → bare, mulched beds whatever the stage; vegetables only spring to autumn.
+  - **9 empty Carrés** (3 × 3 tilled beds) from the Potager's Arrival. No growth by Jour de jeu: sowing, watering, growth and harvest are #44 (grill 2026-10-26).
+  - **Real seasons** on top: winter → bare, mulched beds.
 - **Variants**: season 2 answers (#8) about ruche or Potager change their look here (`Choices`). Unanswered → default variant.
-- Forced modes (`--demo`, `--simulate`, …): ruche and Potager present at their final stage.
+- Forced modes (`--demo`, `--simulate`, …): ruche and Potager present (Potager with its 9 empty Carrés).
 - Out of scope: hens and goat (#10), other season 2 garden variants (#20), fête scene (#11).
 
 ## Acceptance criteria
@@ -38,8 +38,8 @@ created: 2026-10-26
 - [ ] Before the Potager's Arrival: Potager not in the Lieux menu (`m`).
 - [ ] After: `m` → Potager opens the scene, seen from above at an angle, no sky; `Esc` returns to the garden.
 - [ ] Potager, rain: raindrops over the beds. Night: ground darker.
-- [ ] Potager in summer: tilled, sprouts, vegetables on their three Jours de jeu (`--day`).
-- [ ] Potager in winter: bare mulched beds at every stage.
+- [ ] Potager after its Arrival, summer: 9 empty tilled Carrés (3 × 3), whatever the Jour de jeu.
+- [ ] Potager in winter: bare mulched beds.
 - [ ] Each season 2 answer about ruche or Potager shows its variant; unanswered → default.
 
 ## Implementation
