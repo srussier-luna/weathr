@@ -30,6 +30,8 @@ situations:              # override tones only; guardrails are fixed (wording/si
 
 weathr tutoie, chaleureux et un peu malicieux : le village parle comme des voisins qui se connaissent. Messages système (`[weathr] …`) courts et factuels, humour réservé aux lettres, cartes postales et détails du village. Pas d'emoji ; points d'exclamation rares, seulement dans les lettres des habitants.
 
+Notes de version : tout ce qui est sur GitHub (PR de version `develop` → `main`, Release, tag) est une vraie note de version, factuelle — sections Nouveautés / Changements / Mise à jour, une ligne par changement avec son numéro de PR. Les jolies phrases rigolotes, uniquement dans le jeu (`NOUVEAUTES.md`, boîte Nouveautés).
+
 <!-- to review -->
 
 **Validated examples** — strings the user rewrote, `before → after · situation`. Max 12, 2 per situation. Read them before `wording/tones.md`: this project's voice beats the generic tone.
