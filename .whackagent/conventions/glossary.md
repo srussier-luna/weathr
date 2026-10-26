@@ -29,6 +29,7 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Habitant | animal | | | animal du jardin (Minouche, Biscuit…), arrive à sa 1re Lettre |
 | Voisin | | | | personne d'une autre maison du village (Sam, Nadia et Claire…) |
 | Arbre | | | `Tree` | grand arbre à gauche de la maison, pousse du jour 1 au jour 12 |
+| Perséides | | | | étoiles filantes plus fréquentes la nuit, du 9 au 15 août ; Badge dédié |
 <!-- | Inbox | mailbox | Messages | `Inbox` | received mail, not archived, all accounts | -->
 <!-- | Message | mail | Email | `Message` | one mail. States: Draft, Sent, Pending | -->
 
