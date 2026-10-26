@@ -11,6 +11,7 @@ use crate::letters::{self, Entry, Letter};
 use crate::overlay;
 use crate::progress::Progress;
 use crate::rain_alert::{self, RainAlert};
+use crate::release_notes::{self, Section};
 use crate::remote_weather::{self, Reply, Request};
 use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
@@ -35,7 +36,7 @@ const STARS_FOR_HUNTER: u32 = 3;
 const REMOTE_CHECK_FRAMES: u32 = 300;
 const MAX_ANSWER_LENGTH: usize = 30;
 const REMOTE_CHANNEL_SIZE: usize = 16;
-const INDEX_MARGIN_ROWS: u16 = 12;
+const OVERLAY_MARGIN_ROWS: u16 = 12;
 const NIGHT_READING_HOURS: [std::ops::Range<u32>; 2] = [22..24, 0..6];
 
 fn is_night_hour() -> bool {
@@ -89,6 +90,24 @@ fn requeue_replaced_badge(
     {
         pending_badges.push_front(badge);
     }
+}
+
+fn notes_on_launch(
+    progress: &mut Progress,
+    sections: Vec<Section>,
+    is_fresh_install: bool,
+) -> Vec<Section> {
+    if is_fresh_install {
+        if let Some(newest) = sections.first() {
+            progress.mark_notes_seen(newest.date);
+        }
+        return Vec::new();
+    }
+    release_notes::unseen(&sections, progress.notes_seen_date()).to_vec()
+}
+
+fn overlay_rows(height: u16) -> usize {
+    height.saturating_sub(OVERLAY_MARGIN_ROWS) as usize
 }
 
 fn mail_date(mail_hour: u32) -> NaiveDate {
@@ -198,6 +217,7 @@ enum Overlay {
     Help,
     Index(usize),
     NewBadge(&'static Badge),
+    Notes(usize),
 }
 
 #[derive(Default)]
@@ -236,6 +256,7 @@ pub struct App {
     progress: Progress,
     letters: Vec<Letter>,
     timeline: Vec<(usize, Entry)>,
+    release_notes: Vec<Section>,
     overlay: Option<Overlay>,
     is_simulated: bool,
     toasts: VecDeque<String>,
@@ -317,8 +338,14 @@ impl App {
             });
         }
 
+        let is_fresh_install = !Progress::exists();
         let mut progress = Progress::load();
-        if progress.record_visit() {
+        let release_notes = if is_simulated || simulation.night || config.silent {
+            Vec::new()
+        } else {
+            notes_on_launch(&mut progress, release_notes::load(), is_fresh_install)
+        };
+        if progress.record_visit() || is_fresh_install {
             progress.save();
         }
         let rain_receiver =
@@ -341,7 +368,8 @@ impl App {
             progress,
             letters,
             timeline,
-            overlay: None,
+            overlay: (!release_notes.is_empty()).then_some(Overlay::Notes(0)),
+            release_notes,
             is_simulated: is_simulated || simulation.night,
             toasts: VecDeque::new(),
             toast_until: None,
@@ -599,10 +627,15 @@ impl App {
             }
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
             Some(Overlay::NewBadge(badge)) => views::badge_card_view(badge),
+            Some(Overlay::Notes(first)) => views::notes_view(
+                &self.release_notes,
+                first,
+                overlay_rows(renderer.get_size().1),
+            ),
             Some(Overlay::Index(selected)) => views::index_view(
                 self.read_entries(),
                 selected,
-                renderer.get_size().1.saturating_sub(INDEX_MARGIN_ROWS) as usize,
+                overlay_rows(renderer.get_size().1),
                 &self.mail_context(),
             ),
             Some(Overlay::Help) => views::help_view(
@@ -791,6 +824,26 @@ impl App {
         }
     }
 
+    fn scroll(&mut self, step: isize, rows: usize) {
+        match self.overlay {
+            Some(Overlay::Notes(first)) => {
+                let last = views::notes_scroll_limit(&self.release_notes, rows);
+                self.overlay = Some(Overlay::Notes(first.saturating_add_signed(step).min(last)));
+            }
+            _ => self.select_in_index(step),
+        }
+    }
+
+    fn mark_notes_seen_when_left(&mut self, previous: Option<Overlay>) {
+        if matches!(previous, Some(Overlay::Notes(_)))
+            && !matches!(self.overlay, Some(Overlay::Notes(_)))
+            && let Some(newest) = self.release_notes.first()
+        {
+            self.progress.mark_notes_seen(newest.date);
+            self.progress.save();
+        }
+    }
+
     fn reread_selected(&mut self) {
         if let Some(Overlay::Index(selected)) = self.overlay
             && selected < self.read_entries().len()
@@ -801,7 +854,7 @@ impl App {
 
     fn press_enter(&mut self) {
         match self.overlay {
-            Some(Overlay::NewBadge(_)) => self.overlay = None,
+            Some(Overlay::NewBadge(_) | Overlay::Notes(_)) => self.overlay = None,
             _ => self.reread_selected(),
         }
     }
@@ -966,6 +1019,7 @@ impl App {
                     }
                     Event::Key(key_event) => {
                         let previous = self.overlay;
+                        let rows = overlay_rows(renderer.get_size().1);
                         match key_event.code {
                             KeyCode::Char('q') | KeyCode::Char('Q') => break,
                             KeyCode::Char('c')
@@ -985,8 +1039,8 @@ impl App {
                             KeyCode::Char('a') | KeyCode::Char('A') => self.toggle_album(),
                             KeyCode::Char('h') | KeyCode::Char('H') => self.toggle_help(),
                             KeyCode::Char('l') | KeyCode::Char('L') => self.toggle_index(),
-                            KeyCode::Up => self.select_in_index(-1),
-                            KeyCode::Down => self.select_in_index(1),
+                            KeyCode::Up => self.scroll(-1, rows),
+                            KeyCode::Down => self.scroll(1, rows),
                             KeyCode::Enter => self.press_enter(),
                             KeyCode::Char('r') | KeyCode::Char('R') => self.pick_up(),
                             KeyCode::Char('e') | KeyCode::Char('E') => self.start_riddle(),
@@ -996,6 +1050,7 @@ impl App {
                             _ => {}
                         }
                         requeue_replaced_badge(previous, self.overlay, &mut self.pending_badges);
+                        self.mark_notes_seen_when_left(previous);
                     }
                     _ => {}
                 }
@@ -1036,6 +1091,38 @@ mod tests {
         assert_eq!(card_id(overlay), Some("rain"));
         assert_eq!(card_id(next_overlay(None, &mut pending)), Some("patience"));
         assert!(next_overlay(None, &mut pending).is_none());
+    }
+
+    fn notes() -> Vec<Section> {
+        release_notes::parse("## 2026-10-26\n- Neuve\n## 2026-10-12\n- Ancienne\n")
+    }
+
+    #[test]
+    fn test_fresh_install_shows_no_notes_and_marks_newest_seen() {
+        let mut progress = Progress::default();
+        assert!(notes_on_launch(&mut progress, notes(), true).is_empty());
+        assert_eq!(progress.notes_seen_on.as_deref(), Some("2026-10-26"));
+        assert!(notes_on_launch(&mut progress, notes(), false).is_empty());
+    }
+
+    #[test]
+    fn test_old_save_without_seen_date_shows_newest_notes_only() {
+        let mut progress = Progress::default();
+        let shown = notes_on_launch(&mut progress, notes(), false);
+        assert_eq!(shown, notes()[..1]);
+        assert_eq!(progress.notes_seen_on, None);
+    }
+
+    #[test]
+    fn test_notes_after_seen_date_show_newest_first() {
+        let mut progress = Progress {
+            notes_seen_on: Some("2026-10-01".to_string()),
+            ..Progress::default()
+        };
+        assert_eq!(notes_on_launch(&mut progress, notes(), false), notes());
+
+        progress.mark_notes_seen(notes()[0].date);
+        assert!(notes_on_launch(&mut progress, notes(), false).is_empty());
     }
 
     #[test]

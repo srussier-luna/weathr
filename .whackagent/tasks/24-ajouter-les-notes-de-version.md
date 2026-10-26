@@ -1,6 +1,6 @@
 ---
 issue: 24
-status: todo
+status: to-test
 wiki: [[updater]], [[render]], [[mail]]
 note: "ajouter un encadrer avec une petite release note pour prevenir l'utilisateur de ce qui change dans la mise a jour qu'il vien d'installer"
 created: 2026-10-26
@@ -41,8 +41,20 @@ created: 2026-10-26
 
 ## Implementation
 
+- `NOUVEAUTES.md` (new): first section `## 2026-10-26` — Perséides, Géminides, window frames, big Badge card, this box.
+- `src/release_notes.rs` (new): `parse` (sections `## YYYY-MM-DD`, newest first, malformed headings skipped) and `unseen(sections, seen)`.
+- `src/progress.rs`: `notes_seen_on` field (`#[serde(default)]`), `Progress::exists()` for fresh-install detection before `load`.
+- `src/app.rs`: `Overlay::Notes(scroll)`, `notes_on_launch`, `mark_notes_seen_when_left`, `scroll`; no box under `--silent`, `--demo`, forced modes. `INDEX_MARGIN_ROWS` → `OVERLAY_MARGIN_ROWS`.
+- `src/views.rs`: `notes_view` (Frame::Plain, title `Nouveautés`, dates in French), `notes_scroll_limit`.
+- `src/main.rs`: `mod release_notes;`.
+- Notes leave `seen` marked when the box is replaced by another overlay too (`h`, `l`…); `q` quits without marking.
+- Build: `cargo build` ✅ · `cargo fmt --check` ✅ · `cargo test` ✅ (12 new tests).
+- ⚠️ `cargo clippy -- -D warnings` ❌ on a pre-existing lint, untouched file: `clippy::double_must_use`, `src/weather/provider.rs:23` (`async_trait`, clippy 0.1.99). With that lint allowed, clippy is clean on this diff.
+
 ## Review
 
 ## Verification
+
+manual validation — not run by agent
 
 ## Feedback
