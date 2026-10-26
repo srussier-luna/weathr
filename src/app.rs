@@ -76,9 +76,18 @@ fn next_overlay(
     overlay: Option<Overlay>,
     pending_badges: &mut VecDeque<&'static Badge>,
 ) -> Option<Overlay> {
-    match overlay {
-        None => pending_badges.pop_front().map(Overlay::NewBadge),
-        open => open,
+    overlay.or_else(|| pending_badges.pop_front().map(Overlay::NewBadge))
+}
+
+fn requeue_replaced_badge(
+    previous: Option<Overlay>,
+    current: Option<Overlay>,
+    pending_badges: &mut VecDeque<&'static Badge>,
+) {
+    if let (Some(Overlay::NewBadge(badge)), Some(current)) = (previous, current)
+        && !matches!(current, Overlay::NewBadge(_))
+    {
+        pending_badges.push_front(badge);
     }
 }
 
@@ -933,35 +942,39 @@ impl App {
                     {
                         self.handle_riddle_key(key_event.code);
                     }
-                    Event::Key(key_event) => match key_event.code {
-                        KeyCode::Char('q') | KeyCode::Char('Q') => break,
-                        KeyCode::Char('c')
-                            if key_event.modifiers.contains(KeyModifiers::CONTROL) =>
-                        {
-                            break;
+                    Event::Key(key_event) => {
+                        let previous = self.overlay;
+                        match key_event.code {
+                            KeyCode::Char('q') | KeyCode::Char('Q') => break,
+                            KeyCode::Char('c')
+                                if key_event.modifiers.contains(KeyModifiers::CONTROL) =>
+                            {
+                                break;
+                            }
+                            KeyCode::Char('c') | KeyCode::Char('C') => self.press_mail(),
+                            KeyCode::Char('b') | KeyCode::Char('B') => {
+                                self.overlay = match self.overlay {
+                                    Some(Overlay::Badges) => None,
+                                    _ => Some(Overlay::Badges),
+                                };
+                            }
+                            KeyCode::Char('1') => self.answer_letter(1),
+                            KeyCode::Char('2') => self.answer_letter(2),
+                            KeyCode::Char('a') | KeyCode::Char('A') => self.toggle_album(),
+                            KeyCode::Char('h') | KeyCode::Char('H') => self.toggle_help(),
+                            KeyCode::Char('l') | KeyCode::Char('L') => self.toggle_index(),
+                            KeyCode::Up => self.select_in_index(-1),
+                            KeyCode::Down => self.select_in_index(1),
+                            KeyCode::Enter => self.press_enter(),
+                            KeyCode::Char('r') | KeyCode::Char('R') => self.pick_up(),
+                            KeyCode::Char('e') | KeyCode::Char('E') => self.start_riddle(),
+                            KeyCode::Esc => self.overlay = None,
+                            KeyCode::Left => self.browse(-1),
+                            KeyCode::Right => self.browse(1),
+                            _ => {}
                         }
-                        KeyCode::Char('c') | KeyCode::Char('C') => self.press_mail(),
-                        KeyCode::Char('b') | KeyCode::Char('B') => {
-                            self.overlay = match self.overlay {
-                                Some(Overlay::Badges) => None,
-                                _ => Some(Overlay::Badges),
-                            };
-                        }
-                        KeyCode::Char('1') => self.answer_letter(1),
-                        KeyCode::Char('2') => self.answer_letter(2),
-                        KeyCode::Char('a') | KeyCode::Char('A') => self.toggle_album(),
-                        KeyCode::Char('h') | KeyCode::Char('H') => self.toggle_help(),
-                        KeyCode::Char('l') | KeyCode::Char('L') => self.toggle_index(),
-                        KeyCode::Up => self.select_in_index(-1),
-                        KeyCode::Down => self.select_in_index(1),
-                        KeyCode::Enter => self.press_enter(),
-                        KeyCode::Char('r') | KeyCode::Char('R') => self.pick_up(),
-                        KeyCode::Char('e') | KeyCode::Char('E') => self.start_riddle(),
-                        KeyCode::Esc => self.overlay = None,
-                        KeyCode::Left => self.browse(-1),
-                        KeyCode::Right => self.browse(1),
-                        _ => {}
-                    },
+                        requeue_replaced_badge(previous, self.overlay, &mut self.pending_badges);
+                    }
                     _ => {}
                 }
             }
@@ -1014,5 +1027,19 @@ mod tests {
             card_id(next_overlay(None, &mut pending)),
             Some("night_reading")
         );
+    }
+
+    #[test]
+    fn test_badge_card_replaced_by_another_window_comes_back_first() {
+        let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["rain", "patience"]).into();
+        let card = next_overlay(None, &mut pending);
+
+        requeue_replaced_badge(card, Some(Overlay::Help), &mut pending);
+        assert_eq!(pending.len(), 2);
+        assert_eq!(card_id(next_overlay(None, &mut pending)), Some("rain"));
+
+        requeue_replaced_badge(card, card, &mut pending);
+        requeue_replaced_badge(card, None, &mut pending);
+        assert_eq!(pending.len(), 1);
     }
 }

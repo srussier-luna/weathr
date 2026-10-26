@@ -109,10 +109,7 @@ impl Frame {
 
     fn title_lines(self, title: &str, inner: usize) -> Vec<String> {
         match self {
-            Self::Newspaper => wrap(title, inner)
-                .iter()
-                .map(|line| format!("{line:^inner$}"))
-                .collect(),
+            Self::Newspaper => center(title, inner),
             Self::Postcard => {
                 let width = inner.saturating_sub(STAMP.len() + 1);
                 let mut lines = wrap(title, width);
@@ -142,13 +139,7 @@ pub fn render_view(renderer: &mut TerminalRenderer, view: &View) -> io::Result<(
         .flat_map(|line| match line {
             Line::Text(text) => wrap(text, inner),
             Line::Preformatted(text) => vec![text.chars().take(inner).collect()],
-            Line::Centered(text) if text.chars().count() <= inner => {
-                vec![format!("{text:^inner$}")]
-            }
-            Line::Centered(text) => wrap(text, inner)
-                .iter()
-                .map(|line| format!("{line:^inner$}"))
-                .collect(),
+            Line::Centered(text) => center(text, inner),
             Line::Rule => vec!["-".repeat(inner)],
             Line::Blank => vec![String::new()],
         })
@@ -307,6 +298,15 @@ fn frame_rows(
 
 fn wrap(text: &str, width: usize) -> Vec<String> {
     pack(text.split_whitespace(), " ", width)
+}
+
+fn center(text: &str, width: usize) -> Vec<String> {
+    let lines = if text.chars().count() <= width {
+        vec![text.to_string()]
+    } else {
+        wrap(text, width)
+    };
+    lines.iter().map(|line| format!("{line:^width$}")).collect()
 }
 
 fn pack<'a>(words: impl Iterator<Item = &'a str>, gap: &str, width: usize) -> Vec<String> {

@@ -338,6 +338,5 @@ mod tests {
                 badge.id
             );
         }
-        assert_eq!(find("rain").unwrap().icon, ["(___)", " / / ", "/ / /"]);
     }
 }

@@ -1,6 +1,6 @@
 ---
 issue: 7
-status: to-test
+status: to-close
 wiki: [[render]], [[mail]]
 note: "Grill #4 23/10 : ajoute aussi une tâche, design de la lettre et événement badge reçu"
 created: 2026-10-23
@@ -112,6 +112,16 @@ created: 2026-10-23
   - `Nouveau badge !` uses a plain space before `!`, like every existing string; wording module asks for U+202F.
 
 ## Review
+
+### Round validation
+
+- 🟡 [correctness] `src/app.rs` — Badge card lost when another window opened → requeued first · fixed
+- 🟡 [style] `src/views.rs` — `Nouveau badge !` → U+202F before `!` (wording) · fixed
+- 🟡 [elegance] `src/overlay.rs` — duplicated wrap-then-center → `center` helper · fixed
+- 🟡 [elegance] `src/app.rs` — match re-implementing `Option::or_else` · fixed
+- 🟡 [style] `src/badges.rs` — stray rain icon assert · fixed
+- Autofix round 2: ✅ review clean (4 lenses). Proof: fmt ✅ · clippy only known provider.rs warning ✅ · `cargo test` 162 passed ✅.
+- Changed since the user's test: a Badge card replaced by another window now comes back when that window closes; narrow no-break space before `!`.
 
 ## Verification
 

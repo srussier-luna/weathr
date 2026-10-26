@@ -322,7 +322,7 @@ pub fn badge_card_view(badge: &Badge) -> View {
     lines.extend(medal(badge.icon).into_iter().map(Line::Centered));
     lines.extend([
         Line::Blank,
-        Line::Centered("Nouveau badge !".to_string()),
+        Line::Centered("Nouveau badge\u{202F}!".to_string()),
         Line::Centered(badge.name.to_string()),
     ]);
     lines.extend(badge.hint.map(|hint| Line::Centered(hint.to_string())));
@@ -568,12 +568,16 @@ mod tests {
         let rain = badge_card_view(badges::find("rain").unwrap());
         assert_eq!(rain.frame, Frame::Stars);
         assert_eq!(centered(&rain)[1], "/ (___) \\");
-        assert_eq!(centered(&rain)[5..], ["Nouveau badge !", "Pluie"]);
+        assert_eq!(centered(&rain)[5..], ["Nouveau badge\u{202F}!", "Pluie"]);
 
         let patience = badge_card_view(badges::find("patience").unwrap());
         assert_eq!(
             centered(&patience)[5..],
-            ["Nouveau badge !", "Patience", "weathr ouvert 1 h d'affilée"]
+            [
+                "Nouveau badge\u{202F}!",
+                "Patience",
+                "weathr ouvert 1 h d'affilée"
+            ]
         );
     }
 }
