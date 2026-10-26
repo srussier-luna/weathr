@@ -1,6 +1,6 @@
 ---
 issue: 31
-status: todo
+status: to-test
 wiki: [[updater]]
 note: "on garde « [weathr] Une nouvelle version est disponible : », « [weathr] Mettre à jour maintenant ? [O/n] o », « [weathr] Installation en cours » ; mettre un /|\\- qui tourne en mode loader à côté de Installation en cours avec une progress bar ; pas besoin de toutes ces lignes (git pull, fichiers, cargo)"
 created: 2026-10-26
@@ -47,8 +47,18 @@ created: 2026-10-26
 
 ## Implementation
 
+- `src/updater.rs` → `src/updater/mod.rs` (moved) + `src/updater/progress.rs` (new): `build_percent` (10 % + 85 × artifacts/total, cap 95), `[[package]]` count from `Cargo.lock`, bar + spinner line, ticking thread (100 ms, `\r`), `finish()`.
+- `update()`: git and `cargo build --release --message-format=json` output captured; `compiler-artifact` counted; `compiler-message` rendered text + stderr kept for the log; percentage never goes down (`fetch_max`).
+- Failure → `<config>/weathr/update.log` (overwritten), `[weathr] Mise à jour impossible. Détails dans <path>`, Enter. Shared `config_path(file)` also used by `check_path`.
+- Removed: change list (`pending_changes`, `print_changes`, `MAX_LISTED_CHANGES`) and « Mise à jour terminée, redémarrage… ». Changes detected with `git rev-list --count HEAD..@{u}`.
+- Not a TTY → one plain line `[weathr] Installation en cours…`.
+- Build: `cargo build` ✅ · fmt ✅ · clippy ✅ (pre-existing `double_must_use` allowed) · `cargo test` ✅.
+- Not checked at runtime: `\r` rendering, piped output, failing-build log.
+
 ## Review
 
 ## Verification
+
+manual validation — not run by agent
 
 ## Feedback
