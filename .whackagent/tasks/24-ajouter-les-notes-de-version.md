@@ -70,5 +70,5 @@ manual validation — not run by agent
 
 Round 1 — asked: « le texte ne doit pas spoiler, dire qu'on a ajouté des pluies d'étoiles filantes saisonnières » · « Chaque fenêtre a maintenant son cadre… c'est pas très joli, il faut une phrase plus chouette et moins fonctionnalité » · « pour le Badge, enlève au milieu de l'écran » · « la dernière ligne est bien ».
 - Triage: adjustment (copy only, inline micro-fix in NOUVEAUTES.md).
-- Changed: Perséides + Géminides lines → one line without dates or Badge; frames line rewritten; « au milieu de l'écran » removed. Variant « complice » picked by the user.
+- Changed: Perséides + Géminides lines → one line without dates or Badge; frames line rewritten; « au milieu de l'écran » removed. Variant « complice » picked by the user. Badge line → « Les Badges s'annoncent maintenant en grande pompe. » (user wording).
 - Code untouched → review still valid for code; tests green.
