@@ -16,7 +16,7 @@ All moving things: sky (sun, moon, stars, clouds, birds, planes), precipitation,
 ## Shooting stars — `src/animation/stars.rs`
 
 `StarSystem::set_sky(ShootingStarSky)` picks one of three skies each night frame (`animation_manager.rs`):
-- `Covered` — `!WeatherConditions::is_clear_sky()` (rain, storm, snow, fog, any cloud incl. Éclaircies): no shooting star at all, the ones in flight dropped.
+- `Covered` — `!WeatherConditions::is_clear_sky()` (rain, storm, snow, fog, Nuageux, Couvert): no shooting star at all, the ones in flight dropped. Éclaircies count as a clear sky.
 - `Clear` — one at a time, chance 0.005 per frame when the sky is empty.
 - `MeteorShower` — `Holiday.meteor_shower` is `Some` (Perséides 9–15 Aug, Géminides 10–16 Dec): up to 16 at once, chance 0.3 per free slot, sky full in ~10 frames; going back trims the list.
 Demo has `Perséides` and `Géminides` scenes. `StarGazing` (constellations) uses the same `is_clear_sky()`.
