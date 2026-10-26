@@ -1,6 +1,6 @@
 ---
 issue: 24
-status: to-test
+status: to-close
 wiki: [[updater]], [[render]], [[mail]]
 note: "ajouter un encadrer avec une petite release note pour prevenir l'utilisateur de ce qui change dans la mise a jour qu'il vien d'installer"
 created: 2026-10-26
@@ -60,6 +60,8 @@ Round validation — LENSES: style ✓ · elegance ✓ · structure ✓ · corre
 - 🟡 [elegance] app.rs — `.to_vec()` clone → `unseen` truncates the Vec — fixed
 - 🟡 [elegance] release_notes.rs / progress.rs — duplicated `DATE_FORMAT` → shared + `parse_date` — fixed
 - 🟡 [elegance] app.rs — two bools on `notes_on_launch` → `enum Launch` — fixed
+Round validation 2 (copy delta, NOUVEAUTES.md) — LENSES ✓✓✓✓
+- 🟡 [style] NOUVEAUTES.md:6 — « courrier » is an Also word for Lettre — accepted by the user (copy validated as written)
 - Not a finding: `clippy::double_must_use` at src/weather/provider.rs:23 predates this task.
 
 ## Verification
