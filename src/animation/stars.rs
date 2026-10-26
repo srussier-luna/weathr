@@ -20,22 +20,47 @@ struct ShootingStar {
     active: bool,
 }
 
+impl ShootingStar {
+    fn spawn(terminal_width: u16, terminal_height: u16, rng: &mut impl Rng) -> Self {
+        let start_x = (rng.random::<u16>() % (terminal_width / 2)) + (terminal_width / 4);
+        let start_y = rng.random::<u16>() % (terminal_height / 4);
+
+        Self {
+            x: start_x as f32,
+            y: start_y as f32,
+            speed_x: if rng.random::<bool>() { 0.9 } else { -0.9 },
+            speed_y: 0.3 + (rng.random::<f32>() * 0.2),
+            length: 9,
+            active: true,
+        }
+    }
+
+    fn is_gone(&self, terminal_height: u16) -> bool {
+        self.x < 0.0 || self.y as u16 >= terminal_height || self.length == 0
+    }
+}
+
 pub struct StarSystem {
     stars: Vec<Star>,
-    shooting_star: Option<ShootingStar>,
+    shooting_stars: Vec<ShootingStar>,
+    is_meteor_shower: bool,
     terminal_width: u16,
     terminal_height: u16,
 }
 
 impl StarSystem {
     const MIN_DISTANCE: f32 = 3.0; // Minimum distance between stars
+    const SHOOTING_STAR_CHANCE: f32 = 0.005;
+    const METEOR_SHOWER_CHANCE: f32 = 0.3;
+    const METEOR_SHOWER_SIZE: usize = 16;
 
     pub fn new(terminal_width: u16, terminal_height: u16) -> Self {
         let stars = Self::create_stars(terminal_width, terminal_height, &[]);
 
         Self {
             stars,
-            shooting_star: None,
+            shooting_stars: Vec::new(),
+            is_meteor_shower: false,
             terminal_width,
             terminal_height,
         }
@@ -86,6 +111,18 @@ impl StarSystem {
         stars
     }
 
+    pub fn set_meteor_shower(&mut self, is_meteor_shower: bool) {
+        self.is_meteor_shower = is_meteor_shower;
+    }
+
+    fn spawn_rule(&self) -> (usize, f32) {
+        if self.is_meteor_shower {
+            (Self::METEOR_SHOWER_SIZE, Self::METEOR_SHOWER_CHANCE)
+        } else {
+            (1, Self::SHOOTING_STAR_CHANCE)
+        }
+    }
+
     pub fn update(&mut self, terminal_width: u16, terminal_height: u16, rng: &mut impl Rng) {
         if terminal_width != self.terminal_width || terminal_height != self.terminal_height {
             // Fix stars not resizing
@@ -104,30 +141,27 @@ impl StarSystem {
         }
 
         // Shooting Star Logic
-        if let Some(ref mut star) = self.shooting_star {
+        let (limit, chance) = self.spawn_rule();
+        self.shooting_stars.truncate(limit);
+        let free_slots = limit - self.shooting_stars.len();
+
+        for star in &mut self.shooting_stars {
             star.x += star.speed_x;
             star.y += star.speed_y;
+        }
+        self.shooting_stars
+            .retain(|star| !star.is_gone(terminal_height));
 
-            if star.x < 0.0 || star.y as u16 >= terminal_height || star.length == 0 {
-                self.shooting_star = None;
+        for _ in 0..free_slots {
+            if rng.random::<f32>() < chance {
+                self.shooting_stars
+                    .push(ShootingStar::spawn(terminal_width, terminal_height, rng));
             }
-        } else if rng.random::<f32>() < 0.005 {
-            let start_x = (rng.random::<u16>() % (terminal_width / 2)) + (terminal_width / 4);
-            let start_y = rng.random::<u16>() % (terminal_height / 4);
-
-            self.shooting_star = Some(ShootingStar {
-                x: start_x as f32,
-                y: start_y as f32,
-                speed_x: if rng.random::<bool>() { 0.9 } else { -0.9 },
-                speed_y: 0.3 + (rng.random::<f32>() * 0.2),
-                length: 9,
-                active: true,
-            });
         }
     }
 
     pub fn has_shooting_star(&self) -> bool {
-        self.shooting_star.as_ref().is_some_and(|star| star.active)
+        self.shooting_stars.iter().any(|star| star.active)
     }
 
     pub fn render(&self, renderer: &mut TerminalRenderer) -> io::Result<()> {
@@ -148,9 +182,7 @@ impl StarSystem {
             renderer.render_char(star.x, star.y, ch, color)?;
         }
 
-        if let Some(ref star) = self.shooting_star
-            && star.active
-        {
+        for star in self.shooting_stars.iter().filter(|star| star.active) {
             let head_x = star.x as i16;
             let head_y = star.y as i16;
 
@@ -182,5 +214,87 @@ impl StarSystem {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const WIDTH: u16 = 120;
+    const HEIGHT: u16 = 45;
+    const FRAMES: usize = 30_000;
+
+    fn shooting_stars_on_screen(stars: &StarSystem) -> usize {
+        stars
+            .shooting_stars
+            .iter()
+            .filter(|star| star.x < WIDTH as f32 && star.y < HEIGHT as f32)
+            .count()
+    }
+
+    fn sky(is_meteor_shower: bool) -> StarSystem {
+        let mut stars = StarSystem::new(WIDTH, HEIGHT);
+        stars.set_meteor_shower(is_meteor_shower);
+        stars
+    }
+
+    #[test]
+    fn test_meteor_shower_fills_the_sky_within_half_a_second() {
+        let mut rng = StdRng::seed_from_u64(15);
+        let mut stars = sky(true);
+
+        for _ in 0..15 {
+            stars.update(WIDTH, HEIGHT, &mut rng);
+        }
+
+        assert!(shooting_stars_on_screen(&stars) > 5);
+    }
+
+    #[test]
+    fn test_meteor_shower_keeps_many_shooting_stars_at_once() {
+        let mut rng = StdRng::seed_from_u64(16);
+        let mut stars = sky(true);
+        let mut crowded = 0;
+
+        for _ in 0..FRAMES {
+            stars.update(WIDTH, HEIGHT, &mut rng);
+            if shooting_stars_on_screen(&stars) > 5 {
+                crowded += 1;
+            }
+        }
+
+        assert!(crowded > FRAMES * 9 / 10, "{crowded} of {FRAMES} frames");
+    }
+
+    #[test]
+    fn test_outside_meteor_shower_one_shooting_star_at_most() {
+        let mut rng = StdRng::seed_from_u64(17);
+        let mut stars = sky(false);
+        let mut frames_with_star = 0;
+
+        for _ in 0..FRAMES {
+            stars.update(WIDTH, HEIGHT, &mut rng);
+            assert!(stars.shooting_stars.len() <= 1);
+            if stars.has_shooting_star() {
+                frames_with_star += 1;
+            }
+        }
+
+        assert!(frames_with_star > 0);
+    }
+
+    #[test]
+    fn test_meteor_shower_end_leaves_one_shooting_star_at_most() {
+        let mut rng = StdRng::seed_from_u64(18);
+        let mut stars = sky(true);
+        for _ in 0..30 {
+            stars.update(WIDTH, HEIGHT, &mut rng);
+        }
+
+        stars.set_meteor_shower(false);
+        stars.update(WIDTH, HEIGHT, &mut rng);
+
+        assert!(stars.shooting_stars.len() <= 1);
     }
 }

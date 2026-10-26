@@ -200,6 +200,27 @@ enum Overlay {
     NewBadge(&'static Badge),
 }
 
+#[derive(Default)]
+struct StarWatch {
+    seen: u32,
+    was_visible: bool,
+}
+
+impl StarWatch {
+    fn observe(&mut self, is_visible: bool, is_perseids: bool) -> Option<&'static str> {
+        if is_visible && !self.was_visible && !is_perseids {
+            self.seen += 1;
+        }
+        self.was_visible = is_visible;
+
+        is_visible.then_some(if is_perseids {
+            "perseids"
+        } else {
+            "shooting_star"
+        })
+    }
+}
+
 pub struct App {
     state: AppState,
     animations: AnimationManager,
@@ -217,8 +238,7 @@ pub struct App {
     toast_until: Option<Instant>,
     pending_badges: VecDeque<&'static Badge>,
     session_start: Instant,
-    stars_seen: u32,
-    was_star_visible: bool,
+    star_watch: StarWatch,
     rain_receiver: Option<mpsc::Receiver<Option<RainAlert>>>,
     rain_alert: Option<RainAlert>,
     riddle_input: Option<String>,
@@ -323,8 +343,7 @@ impl App {
             toast_until: None,
             pending_badges: VecDeque::new(),
             session_start: Instant::now(),
-            stars_seen: 0,
-            was_star_visible: false,
+            star_watch: StarWatch::default(),
             rain_receiver,
             rain_alert: None,
             riddle_input: None,
@@ -402,10 +421,10 @@ impl App {
 
             let holiday = self.state.holiday;
             let sightings = self.animations.sightings(&self.state.weather_conditions);
-            if sightings.shooting_star && !self.was_star_visible {
-                self.stars_seen += 1;
-            }
-            self.was_star_visible = sightings.shooting_star;
+            found.extend(
+                self.star_watch
+                    .observe(sightings.shooting_star, holiday.is_perseids),
+            );
 
             let has_all_weathers =
                 badges::weather_badges().all(|badge| self.progress.badges.contains(badge.id));
@@ -416,10 +435,9 @@ impl App {
                 (holiday.new_year.is_some(), "new_year"),
                 (holiday.is_easter, "easter"),
                 (self.state.shows_rainbow(), "rainbow"),
-                (sightings.shooting_star, "shooting_star"),
                 (sightings.postman, "postman"),
                 (sightings.snowman, "snowman"),
-                (self.stars_seen >= STARS_FOR_HUNTER, "star_hunter"),
+                (self.star_watch.seen >= STARS_FOR_HUNTER, "star_hunter"),
                 (has_all_weathers, "full_weather"),
             ];
             found.extend(events.iter().filter(|(seen, _)| *seen).map(|(_, id)| *id));
@@ -1041,5 +1059,39 @@ mod tests {
         requeue_replaced_badge(card, card, &mut pending);
         requeue_replaced_badge(card, None, &mut pending);
         assert_eq!(pending.len(), 1);
+    }
+
+    fn watch(star_watch: &mut StarWatch, frames: &[bool], is_perseids: bool) -> Vec<&'static str> {
+        frames
+            .iter()
+            .filter_map(|&is_visible| star_watch.observe(is_visible, is_perseids))
+            .collect()
+    }
+
+    #[test]
+    fn test_shooting_star_counts_once_per_star() {
+        let mut star_watch = StarWatch::default();
+        let badges = watch(&mut star_watch, &[true, true, false, true, false], false);
+
+        assert_eq!(badges, ["shooting_star"; 3]);
+        assert_eq!(star_watch.seen, 2);
+    }
+
+    #[test]
+    fn test_perseids_award_only_perseids() {
+        let mut star_watch = StarWatch::default();
+        let badges = watch(&mut star_watch, &[true, false, true, false, true], true);
+
+        assert_eq!(badges, ["perseids"; 3]);
+        assert_eq!(star_watch.seen, 0);
+    }
+
+    #[test]
+    fn test_perseids_keep_star_hunter_count() {
+        let mut star_watch = StarWatch::default();
+        watch(&mut star_watch, &[true, false, true, false], false);
+        watch(&mut star_watch, &[true, false, true, false, true], true);
+
+        assert_eq!(star_watch.seen, 2);
     }
 }

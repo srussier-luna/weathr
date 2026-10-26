@@ -25,7 +25,7 @@ Static French content: correspondents' letters + days, `CITIES` (40 Cartes posta
 
 ## Badges — `src/badges.rs`
 
-`BADGES` (`src/badges.rs:42`): 37 entries, five `BadgeKind`s — Météo, Fêtes, Rares, Fidélité, Secrets. Awarding runs every frame in `App::collect_badges` (`src/app.rs:341`): milestones (streak, letters, riddles, objects, hours) always; weather, Fête, sightings only when **not** simulated and not offline. `award` inserts ids into `progress.badges`, queues a Badge card (see [[render]]).
+`BADGES` (`src/badges.rs:42`): 38 entries, five `BadgeKind`s — Météo, Fêtes, Rares, Fidélité, Secrets. Awarding runs every frame in `App::collect_badges` (`src/app.rs:341`): milestones (streak, letters, riddles, objects, hours) always; weather, Fête, sightings only when **not** simulated and not offline. Shooting stars go through `StarWatch`: during the Perséides they award `Perséides` and never count for `Étoile filante` / `Chasseur d'étoiles`. `award` inserts ids into `progress.badges`, queues a Badge card (see [[render]]).
 
 ## Progress — `src/progress.rs`
 

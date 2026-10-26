@@ -236,6 +236,8 @@ impl AnimationManager {
         let horizon_y = term_height.saturating_sub(ground_height);
 
         if !conditions.is_day {
+            self.star_system
+                .set_meteor_shower(state.holiday.is_perseids);
             self.star_system.update(term_width, term_height, &mut rng);
             self.star_system.render(renderer)?;
             self.moon_system.update(term_width, term_height);
