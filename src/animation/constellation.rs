@@ -63,15 +63,6 @@ impl StarGazing {
         }
     }
 
-    fn is_clear_night(conditions: &WeatherConditions) -> bool {
-        !conditions.is_day
-            && !conditions.is_cloudy
-            && !conditions.is_raining
-            && !conditions.is_thunderstorm
-            && !conditions.is_snowing
-            && !conditions.is_foggy
-    }
-
     pub fn update(
         &mut self,
         layout: &GardenLayout,
@@ -79,7 +70,7 @@ impl StarGazing {
         season: Season,
         rng: &mut impl Rng,
     ) {
-        if layout.plan.tree.is_none() || !Self::is_clear_night(conditions) {
+        if layout.plan.tree.is_none() || conditions.is_day || !conditions.is_clear_sky() {
             self.remaining = 0;
             return;
         }

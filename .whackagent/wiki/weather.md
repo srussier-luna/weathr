@@ -17,7 +17,7 @@ All network calls go to Open-Meteo (weather), ipinfo.io (IP location), Nominatim
   `Result` over `mpsc(1)` channel drained by main loop (see [[architecture]]).
 - `AppState::update_weather` (`src/app_state.rs:66`) derives `WeatherConditions`
   (`src/weather/types.rs:210`): `is_raining`, `is_snowing`, `is_thunderstorm`,
-  `is_cloudy`, `is_foggy`, `is_day`. Thunderstorm beats rain. Rain stop
+  `is_cloudy`, `is_overcast`, `is_foggy`, `is_day`. `is_cloudy` (Éclaircies, Nuageux, Couvert) drives cloud drawing; `is_overcast` (Nuageux, Couvert) drives `is_clear_sky()` for shooting stars and constellations. Thunderstorm beats rain. Rain stop
   (not into snow) → 30 min rainbow.
 
 ### Units invariant
