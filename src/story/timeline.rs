@@ -1,9 +1,10 @@
 use super::clock::StoryClock;
-use super::event::{Beat, Entry, StoryEvent};
+use super::event::{Beat, Entry, StoryEvent, Thing};
 use super::sources::StorySource;
 
 pub struct Timeline {
     mail: Vec<(usize, Entry)>,
+    arrivals: Vec<(usize, Thing)>,
 }
 
 impl Timeline {
@@ -13,13 +14,15 @@ impl Timeline {
             .flat_map(|source| source.beats(clock, today))
             .collect();
         beats.sort_by_key(|beat| (beat.day, beat.event.order()));
-        let mail = beats
-            .into_iter()
-            .map(|beat| match beat.event {
-                StoryEvent::Mail(entry) => (beat.day, entry),
-            })
-            .collect();
-        Self { mail }
+        let mut mail = Vec::new();
+        let mut arrivals = Vec::new();
+        for beat in beats {
+            match beat.event {
+                StoryEvent::Mail(entry) => mail.push((beat.day, entry)),
+                StoryEvent::Arrival(thing) => arrivals.push((beat.day, thing)),
+            }
+        }
+        Self { mail, arrivals }
     }
 
     /// `Progress::letters_read` is a prefix length into this sequence.
@@ -29,6 +32,13 @@ impl Timeline {
 
     pub fn first_mail(&self, count: usize) -> &[(usize, Entry)] {
         &self.mail[..count.min(self.mail.len())]
+    }
+
+    pub fn arrived_by(&self, day: usize) -> impl Iterator<Item = Thing> + '_ {
+        self.arrivals
+            .iter()
+            .take_while(move |(arrival, _)| *arrival <= day)
+            .map(|(_, thing)| *thing)
     }
 
     pub fn delivered_by(&self, day: usize) -> usize {

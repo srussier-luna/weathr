@@ -5,5 +5,5 @@ pub mod sources;
 pub mod timeline;
 
 pub use clock::StoryClock;
-pub use event::Entry;
+pub use event::{Entry, Thing};
 pub use timeline::Timeline;

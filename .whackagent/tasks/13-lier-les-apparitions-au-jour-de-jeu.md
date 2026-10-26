@@ -1,6 +1,6 @@
 ---
 issue: 13
-status: todo
+status: to-test
 wiki: [[animation]], [[mail]]
 note: "Split de #12 (sprint Timeline histoire)."
 created: 2026-10-26
@@ -35,8 +35,27 @@ created: 2026-10-26
 
 ## Implementation
 
+stacked on: wa/14-ajouter-le-flag-day @ 1f691c2
+
+Autopilot 2026-10-26, one implementer.
+
+- `story/event.rs`: `Thing` enum (23 variants, one per `Unlocks` bool except `choices`), `StoryEvent::Arrival(Thing)`, `Beat::arrival`. Arrival sorts after mail on the same day.
+- `story/timeline.rs`: `mail()` mail-only; `arrived_by(day)`.
+- Sources declare Arrivals next to their mail: `village.rs` `ARRIVALS` by Lettre number (only if that Lettre exists), `creepy.rs` via `creepy_day()`, `archives.rs` Bottles with archive 3 via `archive_day()`. No second copy of any schedule.
+- `animation/lore.rs`: only `Unlocks::after_reading` removed; `Unlocks`, `Choices`, drawing untouched; animation doesn't import story.
+- `app.rs`: `unlocks_on(&Timeline, day, &answers)` replaces `unlocks_for`; refreshed on Jour de jeu rollover (existing `refresh_timeline`), no longer on reading.
+- Side effect by design: Album gifts page and unlock-gated animal behaviours follow the Jour de jeu too.
+- Proof: fmt ✅ · clippy ✅ · `cargo test` ✅ 177 passed. #12 golden fixtures unchanged.
+
 ## Review
 
 ## Verification
+
+Pty harness + ANSI replay into a 100×30 grid, temp `HOME` (real save shasum unchanged):
+- ✅ `--day 3` no bench · `--day 4` bench.
+- ✅ `--day 12` vs `--day 13 --night`: well + wet footprints only on 13.
+- ✅ `--day 21` vs `22`: treehouse 0 → 1 · `--day 58` vs `59`: chest 0 → 1.
+- ✅ Aide: `--day 40` lists `[r] ramasser une bouteille`, `--day 39` doesn't.
+- ✅ Unit: every Apparition off on day−1, on on its day · day 30 with 2 Lettres read → bench, well, treehouse · rollover 08:59/09:00 · choices default until answered.
 
 ## Feedback
