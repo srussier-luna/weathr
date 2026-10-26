@@ -93,6 +93,10 @@ impl WeatherCondition {
         matches!(self, Self::PartlyCloudy | Self::Cloudy | Self::Overcast)
     }
 
+    pub fn is_overcast(&self) -> bool {
+        matches!(self, Self::Cloudy | Self::Overcast)
+    }
+
     pub fn is_foggy(&self) -> bool {
         matches!(self, Self::Fog)
     }
@@ -212,13 +216,14 @@ pub struct WeatherConditions {
     pub is_snowing: bool,
     pub is_thunderstorm: bool,
     pub is_cloudy: bool,
+    pub is_overcast: bool,
     pub is_foggy: bool,
     pub is_day: bool,
 }
 
 impl WeatherConditions {
     pub fn is_clear_sky(&self) -> bool {
-        !self.is_cloudy
+        !self.is_overcast
             && !self.is_raining
             && !self.is_thunderstorm
             && !self.is_snowing
@@ -233,6 +238,7 @@ impl Default for WeatherConditions {
             is_snowing: false,
             is_thunderstorm: false,
             is_cloudy: false,
+            is_overcast: false,
             is_foggy: false,
             is_day: true,
         }
@@ -244,8 +250,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_clear_sky_has_no_cloud_rain_snow_or_fog() {
+    fn test_clear_sky_has_no_overcast_rain_snow_or_fog() {
         let clear = WeatherConditions::default();
+        let sky = |condition: WeatherCondition| WeatherConditions {
+            is_cloudy: condition.is_cloudy(),
+            is_overcast: condition.is_overcast(),
+            ..clear
+        };
         assert!(clear.is_clear_sky());
         assert!(
             WeatherConditions {
@@ -254,12 +265,11 @@ mod tests {
             }
             .is_clear_sky()
         );
+        assert!(sky(WeatherCondition::PartlyCloudy).is_clear_sky());
 
         let covered = [
-            WeatherConditions {
-                is_cloudy: true,
-                ..clear
-            },
+            sky(WeatherCondition::Cloudy),
+            sky(WeatherCondition::Overcast),
             WeatherConditions {
                 is_raining: true,
                 ..clear
