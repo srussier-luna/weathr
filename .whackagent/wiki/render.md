@@ -20,9 +20,12 @@ How cells reach terminal, how modal screens (Courrier, Lettre, Album, Aide, Badg
 
 ## Overlays — `src/overlay.rs`
 
-- `View { title, lines, footer }` (`src/overlay.rs:20`) = single data shape for every modal. `Line` is `Text` (word-wrapped), `Preformatted` (truncated) or `Blank`.
-- `render_view` draws centred `+--+` box, max 66 columns; `render_badges` = only special layout (columns grouped by `BadgeKind`, secret badges show `???`).
-- Toasts (new Badge, found object, riddle result) drawn by `App::render_overlays` on row 0, one at a time, 4 s.
+- `View { title, lines, footer, frame }` = single data shape for every modal. `Line` is `Text` (word-wrapped), `Preformatted` (truncated), `Centered`, `Rule` or `Blank`.
+- `Frame` = one look per window, so each kind reads at a glance: parchment (Lettre, `Nouvel habitant`), newspaper (Gazette), stamp (Carte postale), folder tab (Archives), punched card (Recette), waves (Bouteille), photo corners (Album), stars (Badges + Badge card), plain (Aide, Courrier). Each frame has its own color.
+- `render_view` draws the frame centred, max 66 columns; `frame_rows` is the pure layout part (tested). Footers or titles wider than the frame wrap between key groups.
+- `render_badges` = only special layout (columns grouped by `BadgeKind`, secret badges show `???`).
+- New Badge → centred card (`Overlay::NewBadge`): medal with the Badge's own 3×5 drawing (`Badge.icon`), name, condition for secrets. Queue `pending_badges`, one card per Badge, opens only when no window is open; a card replaced by another window comes back first.
+- Toasts (found object, riddle result) drawn by `App::render_overlays` on row 0, one at a time, 4 s.
 
 ## Views — `src/views.rs`
 

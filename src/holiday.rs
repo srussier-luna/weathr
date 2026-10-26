@@ -32,6 +32,7 @@ pub struct Holiday {
     pub new_year: Option<i32>,
     pub is_spring: bool,
     pub is_easter: bool,
+    pub is_perseids: bool,
     pub is_winter: bool,
     pub season: Season,
 }
@@ -53,6 +54,7 @@ impl Holiday {
             is_spring: (3, 20) <= (month, day) && (month, day) <= (6, 20),
             is_easter: easter_sunday(date.year())
                 .is_some_and(|easter| (date - easter).num_days().abs() <= EASTER_WINDOW_DAYS),
+            is_perseids: month == 8 && matches!(day, 9..=15),
             is_winter: matches!(month, 12 | 1 | 2),
             season: Season::on(month, day),
         }
@@ -97,6 +99,13 @@ impl Holiday {
             is_spring: true,
             is_easter: true,
             season: Season::Spring,
+            ..Self::default()
+        }
+    }
+
+    pub fn perseids() -> Self {
+        Self {
+            is_perseids: true,
             ..Self::default()
         }
     }
@@ -160,6 +169,16 @@ mod tests {
         assert!(Holiday::on(date(2026, 3, 29)).is_easter);
         assert!(Holiday::on(date(2026, 4, 12)).is_easter);
         assert!(!Holiday::on(date(2026, 4, 13)).is_easter);
+    }
+
+    #[test]
+    fn test_perseids_window() {
+        assert!(!Holiday::on(date(2026, 8, 8)).is_perseids);
+        assert!(Holiday::on(date(2026, 8, 9)).is_perseids);
+        assert!(Holiday::on(date(2026, 8, 15)).is_perseids);
+        assert!(!Holiday::on(date(2026, 8, 16)).is_perseids);
+        assert!(Holiday::on(date(2027, 8, 12)).is_perseids);
+        assert!(!Holiday::on(date(2027, 7, 12)).is_perseids);
     }
 
     #[test]

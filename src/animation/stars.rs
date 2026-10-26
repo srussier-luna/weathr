@@ -23,12 +23,15 @@ struct ShootingStar {
 pub struct StarSystem {
     stars: Vec<Star>,
     shooting_star: Option<ShootingStar>,
+    is_perseids: bool,
     terminal_width: u16,
     terminal_height: u16,
 }
 
 impl StarSystem {
     const MIN_DISTANCE: f32 = 3.0; // Minimum distance between stars
+    const SHOOTING_STAR_CHANCE: f32 = 0.005;
+    const PERSEIDS_SHOOTING_STAR_CHANCE: f32 = 0.05;
 
     pub fn new(terminal_width: u16, terminal_height: u16) -> Self {
         let stars = Self::create_stars(terminal_width, terminal_height, &[]);
@@ -36,6 +39,7 @@ impl StarSystem {
         Self {
             stars,
             shooting_star: None,
+            is_perseids: false,
             terminal_width,
             terminal_height,
         }
@@ -86,6 +90,18 @@ impl StarSystem {
         stars
     }
 
+    pub fn set_perseids(&mut self, is_perseids: bool) {
+        self.is_perseids = is_perseids;
+    }
+
+    fn shooting_star_chance(&self) -> f32 {
+        if self.is_perseids {
+            Self::PERSEIDS_SHOOTING_STAR_CHANCE
+        } else {
+            Self::SHOOTING_STAR_CHANCE
+        }
+    }
+
     pub fn update(&mut self, terminal_width: u16, terminal_height: u16, rng: &mut impl Rng) {
         if terminal_width != self.terminal_width || terminal_height != self.terminal_height {
             // Fix stars not resizing
@@ -111,7 +127,7 @@ impl StarSystem {
             if star.x < 0.0 || star.y as u16 >= terminal_height || star.length == 0 {
                 self.shooting_star = None;
             }
-        } else if rng.random::<f32>() < 0.005 {
+        } else if rng.random::<f32>() < self.shooting_star_chance() {
             let start_x = (rng.random::<u16>() % (terminal_width / 2)) + (terminal_width / 4);
             let start_y = rng.random::<u16>() % (terminal_height / 4);
 
@@ -182,5 +198,42 @@ impl StarSystem {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const WIDTH: u16 = 120;
+    const HEIGHT: u16 = 45;
+    const FRAMES: u32 = 300_000;
+
+    fn count_shooting_stars(is_perseids: bool) -> u32 {
+        let mut rng = StdRng::seed_from_u64(15);
+        let mut stars = StarSystem::new(WIDTH, HEIGHT);
+        stars.set_perseids(is_perseids);
+        let mut count = 0;
+        let mut was_visible = false;
+
+        for _ in 0..FRAMES {
+            stars.update(WIDTH, HEIGHT, &mut rng);
+            let is_visible = stars.has_shooting_star();
+            if is_visible && !was_visible {
+                count += 1;
+            }
+            was_visible = is_visible;
+        }
+
+        count
+    }
+
+    #[test]
+    fn test_perseids_bring_about_three_times_more_shooting_stars() {
+        let normal = count_shooting_stars(false);
+        let perseids = count_shooting_stars(true);
+        let ratio = perseids as f32 / normal as f32;
+
+        assert!((2.5..=3.5).contains(&ratio), "ratio {ratio}");
     }
 }
