@@ -20,7 +20,7 @@ created: 2026-10-26
   - No Carte postale from Sam on days 107 to 120 (last two weeks).
 - **12 choices** `[1]`/`[2]` in season 2 Lettres, same mechanism as season 1 (`Choice`, answers in `progress.json`).
   - Each one has an **echo**: a later Lettre recalls the answer.
-  - Garden variants of these answers → split out (new draft task, blocked by #8). #9 and #10 draw variants on ruches, potager, poules from the same answers.
+  - Every choice has a visible target. `## Implementation` lists each choice id + its target: season 1 thing (#20), ruche or Potager (#9), hens or goat (#10). Ids and targets only, no story.
 - Things that appear in the garden (ruches, potager, poules, chèvre, fête scene) are #9, #10, #11. #8 is text + choices + echoes only.
 - `lettres.txt` override: same rule as today (`=== N` replaces Lettre N). A custom Lettre 61+ now replaces a season 2 Lettre.
 - Tone and wording: `{conventions}/wording.md`, village voice, `tu`.
