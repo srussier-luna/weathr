@@ -40,11 +40,17 @@ impl ShootingStar {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum ShootingStarSky {
+    Covered,
+    Clear,
+    MeteorShower,
+}
+
 pub struct StarSystem {
     stars: Vec<Star>,
     shooting_stars: Vec<ShootingStar>,
-    is_meteor_shower: bool,
-    is_sky_clear: bool,
+    sky: ShootingStarSky,
     terminal_width: u16,
     terminal_height: u16,
 }
@@ -61,8 +67,7 @@ impl StarSystem {
         Self {
             stars,
             shooting_stars: Vec::new(),
-            is_meteor_shower: false,
-            is_sky_clear: true,
+            sky: ShootingStarSky::Clear,
             terminal_width,
             terminal_height,
         }
@@ -113,24 +118,18 @@ impl StarSystem {
         stars
     }
 
-    pub fn set_meteor_shower(&mut self, is_meteor_shower: bool) {
-        self.is_meteor_shower = is_meteor_shower;
-    }
-
-    pub fn set_sky_clear(&mut self, is_sky_clear: bool) {
-        self.is_sky_clear = is_sky_clear;
-        if !is_sky_clear {
+    pub fn set_sky(&mut self, sky: ShootingStarSky) {
+        self.sky = sky;
+        if sky == ShootingStarSky::Covered {
             self.shooting_stars.clear();
         }
     }
 
     fn spawn_rule(&self) -> (usize, f32) {
-        if !self.is_sky_clear {
-            (0, 0.0)
-        } else if self.is_meteor_shower {
-            (Self::METEOR_SHOWER_SIZE, Self::METEOR_SHOWER_CHANCE)
-        } else {
-            (1, Self::SHOOTING_STAR_CHANCE)
+        match self.sky {
+            ShootingStarSky::Covered => (0, 0.0),
+            ShootingStarSky::Clear => (1, Self::SHOOTING_STAR_CHANCE),
+            ShootingStarSky::MeteorShower => (Self::METEOR_SHOWER_SIZE, Self::METEOR_SHOWER_CHANCE),
         }
     }
 
@@ -244,16 +243,16 @@ mod tests {
             .count()
     }
 
-    fn sky(is_meteor_shower: bool) -> StarSystem {
+    fn sky(sky: ShootingStarSky) -> StarSystem {
         let mut stars = StarSystem::new(WIDTH, HEIGHT);
-        stars.set_meteor_shower(is_meteor_shower);
+        stars.set_sky(sky);
         stars
     }
 
     #[test]
     fn test_meteor_shower_fills_the_sky_within_half_a_second() {
         let mut rng = StdRng::seed_from_u64(15);
-        let mut stars = sky(true);
+        let mut stars = sky(ShootingStarSky::MeteorShower);
 
         for _ in 0..15 {
             stars.update(WIDTH, HEIGHT, &mut rng);
@@ -265,7 +264,7 @@ mod tests {
     #[test]
     fn test_meteor_shower_keeps_many_shooting_stars_at_once() {
         let mut rng = StdRng::seed_from_u64(16);
-        let mut stars = sky(true);
+        let mut stars = sky(ShootingStarSky::MeteorShower);
         let mut crowded = 0;
 
         for _ in 0..FRAMES {
@@ -281,7 +280,7 @@ mod tests {
     #[test]
     fn test_outside_meteor_shower_one_shooting_star_at_most() {
         let mut rng = StdRng::seed_from_u64(17);
-        let mut stars = sky(false);
+        let mut stars = sky(ShootingStarSky::Clear);
         let mut frames_with_star = 0;
 
         for _ in 0..FRAMES {
@@ -298,12 +297,12 @@ mod tests {
     #[test]
     fn test_meteor_shower_end_leaves_one_shooting_star_at_most() {
         let mut rng = StdRng::seed_from_u64(18);
-        let mut stars = sky(true);
+        let mut stars = sky(ShootingStarSky::MeteorShower);
         for _ in 0..30 {
             stars.update(WIDTH, HEIGHT, &mut rng);
         }
 
-        stars.set_meteor_shower(false);
+        stars.set_sky(ShootingStarSky::Clear);
         stars.update(WIDTH, HEIGHT, &mut rng);
 
         assert!(stars.shooting_stars.len() <= 1);
@@ -311,14 +310,14 @@ mod tests {
 
     #[test]
     fn test_covered_sky_hides_every_shooting_star() {
-        for is_meteor_shower in [false, true] {
+        for before in [ShootingStarSky::Clear, ShootingStarSky::MeteorShower] {
             let mut rng = StdRng::seed_from_u64(19);
-            let mut stars = sky(is_meteor_shower);
+            let mut stars = sky(before);
             for _ in 0..30 {
                 stars.update(WIDTH, HEIGHT, &mut rng);
             }
 
-            stars.set_sky_clear(false);
+            stars.set_sky(ShootingStarSky::Covered);
             assert!(stars.shooting_stars.is_empty());
 
             for _ in 0..FRAMES {

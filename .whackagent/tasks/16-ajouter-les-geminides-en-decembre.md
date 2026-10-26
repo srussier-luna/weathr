@@ -1,6 +1,6 @@
 ---
 issue: 16
-status: to-test
+status: to-close
 wiki: [[animation]], [[mail]]
 note: "Géminides 13–14 décembre, pendant d'hiver des Perséides, réutilise le code de #15"
 created: 2026-10-26
@@ -34,8 +34,9 @@ created: 2026-10-26
 ## Implementation
 
 - `src/holiday.rs`: `MeteorShower { Perseids, Geminids }` with `MeteorShower::on(month, day)` (9–15 Aug, 10–16 Dec); `Holiday.meteor_shower: Option<MeteorShower>` replaces `is_perseids`; `Holiday::geminids()` (December setup: fir, winter river).
-- `src/animation/stars.rs`: #15's shower reused as is (a rain: up to 16 stars at once, `set_meteor_shower`); new `set_sky_clear(bool)` — covered sky → no shooting star at all, every star in flight dropped.
-- `src/animation_manager.rs`: night block sets the shower flag and `set_sky_clear(!raining && !thunderstorm && !snowing && !foggy && !cloudy)`.
+- `src/animation/stars.rs`: one `ShootingStarSky { Covered, Clear, MeteorShower }` + `set_sky`; #15's rain reused (up to 16 at once); `Covered` → no shooting star at all, every star in flight dropped.
+- `src/weather/types.rs`: `WeatherConditions::is_clear_sky()` (+ test), shared with `StarGazing` (constellations).
+- `src/animation_manager.rs`: night block → `set_sky(Covered | MeteorShower | Clear)`.
 - `src/app.rs`: `StarWatch::observe(is_visible, Option<MeteorShower>)`; any shower stops the `Chasseur d'étoiles` count; picks `perseids` / `geminids` / `shooting_star`.
 - `src/badges.rs`: `Géminides` Badge (Fêtes, 39), medal `"* *  "` `" \ \ "` `"  \ \"`.
 - `src/demo.rs`: `Géminides` scene right after `Perséides`.
@@ -44,6 +45,14 @@ created: 2026-10-26
 - #15 landed (squash) → `develop` merged in, PR retargeted to `develop`; conflicts were only from the squash. `cargo test` 179 passed.
 
 ## Review
+
+### Round validation
+
+- 🟡 [structure] `src/animation_manager.rs` — clear-sky predicate copied from `StarGazing` → `WeatherConditions::is_clear_sky()` · fixed
+- 🟡 [elegance] `src/animation/stars.rs` — two bools for three sky states → `ShootingStarSky` enum · fixed
+- 🟡 [style] wiki `animation.md` — stale names, Géminides missing · fixed
+- Round 2: code clean (4 lenses). Proof: fmt ✅ · clippy only the known provider.rs warning ✅ · `cargo test` 181 passed ✅.
+- Changed since the user's test: Géminides are a rain like the Perséides (after #15 landed); internal refactor only otherwise.
 
 ## Verification
 

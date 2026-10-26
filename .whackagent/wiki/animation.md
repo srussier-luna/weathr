@@ -15,7 +15,11 @@ All moving things: sky (sun, moon, stars, clouds, birds, planes), precipitation,
 
 ## Shooting stars — `src/animation/stars.rs`
 
-One shooting star at a time at night (chance 0.005 per frame when the sky is empty). During a meteor shower (`set_meteor_shower`, fed by `Holiday.is_perseids`, 9–15 August) the sky keeps up to 16 at once, chance 0.3 per free slot, full in ~10 frames; the shower end trims back to one. Demo has a `Perséides` scene.
+`StarSystem::set_sky(ShootingStarSky)` picks one of three skies each night frame (`animation_manager.rs`):
+- `Covered` — `!WeatherConditions::is_clear_sky()` (rain, storm, snow, fog, any cloud incl. Éclaircies): no shooting star at all, the ones in flight dropped.
+- `Clear` — one at a time, chance 0.005 per frame when the sky is empty.
+- `MeteorShower` — `Holiday.meteor_shower` is `Some` (Perséides 9–15 Aug, Géminides 10–16 Dec): up to 16 at once, chance 0.3 per free slot, sky full in ~10 frames; going back trims the list.
+Demo has `Perséides` and `Géminides` scenes. `StarGazing` (constellations) uses the same `is_clear_sky()`.
 
 ## Sun path
 

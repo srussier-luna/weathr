@@ -216,6 +216,16 @@ pub struct WeatherConditions {
     pub is_day: bool,
 }
 
+impl WeatherConditions {
+    pub fn is_clear_sky(&self) -> bool {
+        !self.is_cloudy
+            && !self.is_raining
+            && !self.is_thunderstorm
+            && !self.is_snowing
+            && !self.is_foggy
+    }
+}
+
 impl Default for WeatherConditions {
     fn default() -> Self {
         Self {
@@ -225,6 +235,50 @@ impl Default for WeatherConditions {
             is_cloudy: false,
             is_foggy: false,
             is_day: true,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_clear_sky_has_no_cloud_rain_snow_or_fog() {
+        let clear = WeatherConditions::default();
+        assert!(clear.is_clear_sky());
+        assert!(
+            WeatherConditions {
+                is_day: false,
+                ..clear
+            }
+            .is_clear_sky()
+        );
+
+        let covered = [
+            WeatherConditions {
+                is_cloudy: true,
+                ..clear
+            },
+            WeatherConditions {
+                is_raining: true,
+                ..clear
+            },
+            WeatherConditions {
+                is_thunderstorm: true,
+                ..clear
+            },
+            WeatherConditions {
+                is_snowing: true,
+                ..clear
+            },
+            WeatherConditions {
+                is_foggy: true,
+                ..clear
+            },
+        ];
+        for conditions in covered {
+            assert!(!conditions.is_clear_sky(), "{conditions:?}");
         }
     }
 }
