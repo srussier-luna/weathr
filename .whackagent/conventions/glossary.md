@@ -26,6 +26,9 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret |
 | Fête | jour férié | | `Holiday` | jour spécial qui décore la scène |
 | Facteur | postier | | `Postman` | livre les Lettres à la boîte aux lettres |
+| Jour de jeu | jour | | `StoryClock` | jour de l'histoire depuis le début, change à `courrier.heure` → [[mail]] |
+| Timeline | | | `Timeline` | événements de l'histoire classés par Jour de jeu |
+| Apparition | déblocage | | `Arrival` | objet ou Habitant qui arrive au jardin un Jour de jeu |
 <!-- | Inbox | mailbox | Messages | `Inbox` | received mail, not archived, all accounts | -->
 <!-- | Message | mail | Email | `Message` | one mail. States: Draft, Sent, Pending | -->
 
