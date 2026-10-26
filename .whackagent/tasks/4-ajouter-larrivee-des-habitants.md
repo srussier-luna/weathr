@@ -8,29 +8,26 @@ created: 2026-10-23
 
 ## Context / Decisions
 
-- Each Habitant (garden animal) enters the garden when its first Lettre is read, not on day 1.
-  - Minouche: Lettre 3 · Biscuit (with its doghouse): Lettre 9 · Hulotte: Lettre 12 · Coin-Coin: Lettre 18 · Gustave: Lettre 21 · Noisette: Lettre 27 · Rainette: Lettre 30.
-  - Lettre number = village Lettre read count, same mechanism as gifted props (`Unlocks::after_reading` in `src/animation/lore.rs`). Derived, never stored.
+- Re-grilled in #12 (2026-10-26): Habitants arrive by **Jour de jeu**, not by reading. Stardew-like: you see a newcomer, the Lettre explains. No arrival card.
+- Builds on #13: each Habitant = one `StoryEvent::Arrival(Thing)` beat on the Timeline, the garden reads `Timeline` + today's Jour de jeu.
+- Each Habitant enters the garden on the Jour de jeu of the Lettre that introduces it, not on day 1:
+  - Minouche: day 3 · Biscuit (with its doghouse): day 9 · Hulotte: day 12 · Coin-Coin: day 18 · Gustave: day 21 · Noisette: day 27 · Rainette: day 30.
+  - Derived from the Timeline, never stored.
 - Existing visibility rules stay: Coin-Coin only in rain, Hulotte only at night, etc. Arrival only adds a gate.
 - Léo stays as today: out of scope, handled by #6.
-- Forced modes (`--demo`, `--simulate`, `--christmas`, `--fireworks`, `--night`) show every Habitant, never an arrival card.
-- Arrival card ("parchemin"), shown once per Habitant, on first appearance:
-  - Reuses the current Lettre window (`overlay::render_view`). The parchment look comes later with #7 (Lettres design).
-  - Title `Nouvel habitant`, the Habitant's ASCII sprite, then `<Nom> s'installe dans le jardin.`; `[Echap]` closes it.
-  - Opens as soon as no other window (Lettre, Album, Badges, Aide…) is open.
-  - Several Habitants due at once → one card each, in Lettre order.
-  - "Already announced" is saved in progress, so a card never comes back after a restart.
-- Players updating with Lettres already read: Habitants already due are present at once and marked announced, no card.
+- Forced modes (`--demo`, `--simulate`, `--christmas`, `--fireworks`, `--night`) show every Habitant.
+- Players updating late: Habitants already due are present at once.
 - Glossary: `Habitant` = garden animal, `Voisin` = person from another house.
 
 ## Acceptance criteria
 
-- [ ] Fresh progress (no Lettre read): no Habitant in the garden — no cat, no dog and no doghouse, no owl, no duck, no snail, no squirrel, no frog.
-- [ ] Reading Lettre 3 makes Minouche appear; Lettre 9 Biscuit and its doghouse; 12 Hulotte (at night); 18 Coin-Coin (in rain); 21 Gustave; 27 Noisette; 30 Rainette.
-- [ ] Closing Lettre 9 opens a `Nouvel habitant` card with Biscuit's sprite and `Biscuit s'installe dans le jardin.`; `[Echap]` closes it.
-- [ ] After closing it and restarting weathr, Biscuit's card never shows again.
-- [ ] Progress file with 40 Lettres read and no announced Habitants: every Habitant present at launch, no card.
-- [ ] `weathr --demo`: every Habitant visible from the first scene, no card.
+- [ ] `weathr --day 1`: no Habitant in the garden — no cat, no dog and no doghouse, no owl, no duck, no snail, no squirrel, no frog.
+- [ ] `--day 3` shows Minouche; `--day 9` Biscuit and its doghouse; `--day 12` Hulotte (at night); `--day 18` Coin-Coin (in rain); `--day 21` Gustave; `--day 27` Noisette; `--day 30` Rainette.
+- [ ] Arrival does not depend on reading: progress on day 10 with no Lettre read still shows Minouche and Biscuit.
+- [ ] No `Nouvel habitant` card, ever.
+- [ ] Progress started 40 days ago: every Habitant present at launch.
+- [ ] `weathr --demo`: every Habitant visible from the first scene.
+- [ ] `cargo test` covers the arrival day of each Habitant against the Timeline.
 
 ## Implementation
 
