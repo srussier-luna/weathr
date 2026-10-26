@@ -20,7 +20,7 @@ created: 2026-10-26
   - Players updating late: Habitants already due are present at once (same as #4).
 - **Present in both scenes at once**: garden and Potager each draw the same hens and goat.
 - **Garden**: right of the fence. Poulailler and goat shelter behind the fence. No room → not drawn, no crash.
-- **Potager**: hens peck between the beds, goat beside them; their shelters drawn there too.
+- **Potager**: drawn in its top-down view (#9): hens peck between the beds, goat beside them, their shelters seen from above.
 - **Shelters**: hens in the poulailler, goat in its shelter at night, in rain and thunderstorm (like Biscuit's doghouse). Outside otherwise, snow included.
 - **Variants**: season 2 answers (#8) about hens or goat change their look (`Choices`). Unanswered → default.
 - Forced modes (`--demo`, `--simulate`, …): every hen and the goat present.
