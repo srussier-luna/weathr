@@ -23,7 +23,8 @@ struct ShootingStar {
 pub struct StarSystem {
     stars: Vec<Star>,
     shooting_star: Option<ShootingStar>,
-    is_perseids: bool,
+    is_meteor_shower: bool,
+    is_sky_clear: bool,
     terminal_width: u16,
     terminal_height: u16,
 }
@@ -31,7 +32,7 @@ pub struct StarSystem {
 impl StarSystem {
     const MIN_DISTANCE: f32 = 3.0; // Minimum distance between stars
     const SHOOTING_STAR_CHANCE: f32 = 0.005;
-    const PERSEIDS_SHOOTING_STAR_CHANCE: f32 = 0.05;
+    const METEOR_SHOWER_SHOOTING_STAR_CHANCE: f32 = 0.05;
 
     pub fn new(terminal_width: u16, terminal_height: u16) -> Self {
         let stars = Self::create_stars(terminal_width, terminal_height, &[]);
@@ -39,7 +40,8 @@ impl StarSystem {
         Self {
             stars,
             shooting_star: None,
-            is_perseids: false,
+            is_meteor_shower: false,
+            is_sky_clear: true,
             terminal_width,
             terminal_height,
         }
@@ -90,13 +92,22 @@ impl StarSystem {
         stars
     }
 
-    pub fn set_perseids(&mut self, is_perseids: bool) {
-        self.is_perseids = is_perseids;
+    pub fn set_meteor_shower(&mut self, is_meteor_shower: bool) {
+        self.is_meteor_shower = is_meteor_shower;
+    }
+
+    pub fn set_sky_clear(&mut self, is_sky_clear: bool) {
+        self.is_sky_clear = is_sky_clear;
+        if !is_sky_clear {
+            self.shooting_star = None;
+        }
     }
 
     fn shooting_star_chance(&self) -> f32 {
-        if self.is_perseids {
-            Self::PERSEIDS_SHOOTING_STAR_CHANCE
+        if !self.is_sky_clear {
+            0.0
+        } else if self.is_meteor_shower {
+            Self::METEOR_SHOWER_SHOOTING_STAR_CHANCE
         } else {
             Self::SHOOTING_STAR_CHANCE
         }
@@ -209,10 +220,11 @@ mod tests {
     const HEIGHT: u16 = 45;
     const FRAMES: u32 = 300_000;
 
-    fn count_shooting_stars(is_perseids: bool) -> u32 {
+    fn count_shooting_stars(is_meteor_shower: bool, is_sky_clear: bool) -> u32 {
         let mut rng = StdRng::seed_from_u64(15);
         let mut stars = StarSystem::new(WIDTH, HEIGHT);
-        stars.set_perseids(is_perseids);
+        stars.set_meteor_shower(is_meteor_shower);
+        stars.set_sky_clear(is_sky_clear);
         let mut count = 0;
         let mut was_visible = false;
 
@@ -229,11 +241,17 @@ mod tests {
     }
 
     #[test]
-    fn test_perseids_bring_about_three_times_more_shooting_stars() {
-        let normal = count_shooting_stars(false);
-        let perseids = count_shooting_stars(true);
-        let ratio = perseids as f32 / normal as f32;
+    fn test_meteor_shower_brings_about_three_times_more_shooting_stars() {
+        let normal = count_shooting_stars(false, true);
+        let meteor_shower = count_shooting_stars(true, true);
+        let ratio = meteor_shower as f32 / normal as f32;
 
         assert!((2.5..=3.5).contains(&ratio), "ratio {ratio}");
+    }
+
+    #[test]
+    fn test_covered_sky_hides_every_shooting_star() {
+        assert_eq!(count_shooting_stars(false, false), 0);
+        assert_eq!(count_shooting_stars(true, false), 0);
     }
 }

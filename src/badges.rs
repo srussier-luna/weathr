@@ -67,7 +67,7 @@ pub const KINDS: [BadgeKind; 5] = [
     BadgeKind::Secret,
 ];
 
-pub const BADGES: [Badge; 38] = [
+pub const BADGES: [Badge; 39] = [
     badge(
         "clear",
         "Ciel dégagé",
@@ -187,6 +187,12 @@ pub const BADGES: [Badge; 38] = [
         "Perséides",
         BadgeKind::Holiday,
         ["  * *", " / / ", "/ /  "],
+    ),
+    badge(
+        "geminids",
+        "Géminides",
+        BadgeKind::Holiday,
+        ["* *  ", " \\ \\ ", "  \\ \\"],
     ),
     badge(
         "rainbow",

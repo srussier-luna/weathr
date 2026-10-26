@@ -1,4 +1,4 @@
-use crate::holiday::Holiday;
+use crate::holiday::{Holiday, MeteorShower};
 use crate::weather::WeatherCondition;
 use chrono::{Datelike, Local};
 use std::time::{Duration, Instant};
@@ -62,6 +62,7 @@ impl Demo {
             ),
             scene(WeatherCondition::Clear, true, Holiday::easter()),
             scene(WeatherCondition::Clear, false, Holiday::perseids()),
+            scene(WeatherCondition::Clear, false, Holiday::geminids()),
             DemoScene {
                 rainbow: true,
                 ..scene(WeatherCondition::PartlyCloudy, true, Holiday::default())
@@ -104,8 +105,11 @@ impl Demo {
             " New Year"
         } else if scene.holiday.is_easter {
             " Spring"
-        } else if scene.holiday.is_perseids {
-            " Perséides"
+        } else if let Some(meteor_shower) = scene.holiday.meteor_shower {
+            match meteor_shower {
+                MeteorShower::Perseids => " Perséides",
+                MeteorShower::Geminids => " Géminides",
+            }
         } else if scene.rainbow {
             " Rainbow"
         } else if !scene.is_day {
