@@ -25,11 +25,11 @@ Static French content: correspondents' letters + days, `CITIES` (40 Cartes posta
 
 ## Badges — `src/badges.rs`
 
-`BADGES` (`src/badges.rs:42`): 37 entries, five `BadgeKind`s — Météo, Fêtes, Rares, Fidélité, Secrets. Awarding runs every frame in `App::collect_badges` (`src/app.rs:341`): milestones (streak, letters, riddles, objects, hours) always; weather, Fête, sightings only when **not** simulated and not offline. `award` inserts ids into `progress.badges`, queues toast.
+`BADGES` (`src/badges.rs:42`): 39 entries, five `BadgeKind`s — Météo, Fêtes, Rares, Fidélité, Secrets. Awarding runs every frame in `App::collect_badges` (`src/app.rs:341`): milestones (streak, letters, riddles, objects, hours) always; weather, Fête, sightings only when **not** simulated and not offline. Shooting stars go through `StarWatch`: during a meteor shower they award `Perséides` or `Géminides` and never count for `Étoile filante` / `Chasseur d'étoiles`. `award` inserts ids into `progress.badges`, queues a Badge card (see [[render]]).
 
 ## Progress — `src/progress.rs`
 
-`Progress` (`src/progress.rs:10`) = whole save, JSON in `<config>/weathr/progress.json`: start date, `letters_read`, badges, answers, streak, riddles, found objects, bottles, cached postcard/gazette weather. All fields `#[serde(default)]` so old saves keep loading — keep so when adding fields. Saved eagerly after each change; write errors ignored.
+`Progress` (`src/progress.rs:10`) = whole save, JSON in `<config>/weathr/progress.json`: start date, `letters_read`, badges, answers, streak, riddles, found objects, bottles, cached postcard/gazette weather, `notes_seen_on` (release notes, see [[updater]]). All fields `#[serde(default)]` so old saves keep loading — keep so when adding fields. Saved eagerly after each change; write errors ignored.
 
 ## Screens and keys
 
