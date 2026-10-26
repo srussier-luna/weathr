@@ -13,6 +13,10 @@ All moving things: sky (sun, moon, stars, clouds, birds, planes), precipitation,
 - Inputs pushed from app: `update_rain/snow/fog_intensity`, `update_wind`, `set_season`, `set_unlocks`, `set_mail_hour`, `set_mail_waiting`, `set_finds_remaining`.
 - Outputs read back: `sightings()` (shooting star, Facteur delivering, snowman → Badges), `visible_finds()` and `take_object/take_bottle` (key `r`).
 
+## Shooting stars — `src/animation/stars.rs`
+
+One shooting star at a time at night (chance 0.005 per frame when the sky is empty). During a meteor shower (`set_meteor_shower`, fed by `Holiday.is_perseids`, 9–15 August) the sky keeps up to 16 at once, chance 0.3 per free slot, full in ~10 frames; the shower end trims back to one. Demo has a `Perséides` scene.
+
 ## Sun path
 
 `sun_path::day_progress` (`src/animation/sun_path.rs:6`) computes sunrise/sunset from latitude, longitude, date. Sun travels arc across screen, turns orange at twilight. Polar day/night → `None` → centred fallback sprite.
