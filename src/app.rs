@@ -6,7 +6,7 @@ use crate::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::config::Config;
 use crate::demo::{Demo, SCENE_DURATION};
 use crate::error::WeatherError;
-use crate::holiday::Holiday;
+use crate::holiday::{Holiday, MeteorShower};
 use crate::letters::{self, Entry, Letter};
 use crate::overlay;
 use crate::progress::Progress;
@@ -207,16 +207,20 @@ struct StarWatch {
 }
 
 impl StarWatch {
-    fn observe(&mut self, is_visible: bool, is_perseids: bool) -> Option<&'static str> {
-        if is_visible && !self.was_visible && !is_perseids {
+    fn observe(
+        &mut self,
+        is_visible: bool,
+        meteor_shower: Option<MeteorShower>,
+    ) -> Option<&'static str> {
+        if is_visible && !self.was_visible && meteor_shower.is_none() {
             self.seen += 1;
         }
         self.was_visible = is_visible;
 
-        is_visible.then_some(if is_perseids {
-            "perseids"
-        } else {
-            "shooting_star"
+        is_visible.then_some(match meteor_shower {
+            Some(MeteorShower::Perseids) => "perseids",
+            Some(MeteorShower::Geminids) => "geminids",
+            None => "shooting_star",
         })
     }
 }
@@ -423,7 +427,7 @@ impl App {
             let sightings = self.animations.sightings(&self.state.weather_conditions);
             found.extend(
                 self.star_watch
-                    .observe(sightings.shooting_star, holiday.is_perseids),
+                    .observe(sightings.shooting_star, holiday.meteor_shower),
             );
 
             let has_all_weathers =
@@ -1061,37 +1065,58 @@ mod tests {
         assert_eq!(pending.len(), 1);
     }
 
-    fn watch(star_watch: &mut StarWatch, frames: &[bool], is_perseids: bool) -> Vec<&'static str> {
+    const METEOR_SHOWER_BADGES: [(MeteorShower, &str); 2] = [
+        (MeteorShower::Perseids, "perseids"),
+        (MeteorShower::Geminids, "geminids"),
+    ];
+
+    fn watch(
+        star_watch: &mut StarWatch,
+        frames: &[bool],
+        meteor_shower: Option<MeteorShower>,
+    ) -> Vec<&'static str> {
         frames
             .iter()
-            .filter_map(|&is_visible| star_watch.observe(is_visible, is_perseids))
+            .filter_map(|&is_visible| star_watch.observe(is_visible, meteor_shower))
             .collect()
     }
 
     #[test]
     fn test_shooting_star_counts_once_per_star() {
         let mut star_watch = StarWatch::default();
-        let badges = watch(&mut star_watch, &[true, true, false, true, false], false);
+        let badges = watch(&mut star_watch, &[true, true, false, true, false], None);
 
         assert_eq!(badges, ["shooting_star"; 3]);
         assert_eq!(star_watch.seen, 2);
     }
 
     #[test]
-    fn test_perseids_award_only_perseids() {
-        let mut star_watch = StarWatch::default();
-        let badges = watch(&mut star_watch, &[true, false, true, false, true], true);
+    fn test_meteor_shower_awards_only_its_badge() {
+        for (meteor_shower, badge) in METEOR_SHOWER_BADGES {
+            let mut star_watch = StarWatch::default();
+            let badges = watch(
+                &mut star_watch,
+                &[true, false, true, false, true],
+                Some(meteor_shower),
+            );
 
-        assert_eq!(badges, ["perseids"; 3]);
-        assert_eq!(star_watch.seen, 0);
+            assert_eq!(badges, [badge; 3]);
+            assert_eq!(star_watch.seen, 0);
+        }
     }
 
     #[test]
-    fn test_perseids_keep_star_hunter_count() {
-        let mut star_watch = StarWatch::default();
-        watch(&mut star_watch, &[true, false, true, false], false);
-        watch(&mut star_watch, &[true, false, true, false, true], true);
+    fn test_meteor_shower_keeps_star_hunter_count() {
+        for (meteor_shower, _) in METEOR_SHOWER_BADGES {
+            let mut star_watch = StarWatch::default();
+            watch(&mut star_watch, &[true, false, true, false], None);
+            watch(
+                &mut star_watch,
+                &[true, false, true, false, true],
+                Some(meteor_shower),
+            );
 
-        assert_eq!(star_watch.seen, 2);
+            assert_eq!(star_watch.seen, 2);
+        }
     }
 }

@@ -34,7 +34,7 @@ use crate::animation::{
     snowman::Snowman,
     spring::Spring,
     squirrel::Squirrel,
-    stars::StarSystem,
+    stars::{ShootingStarSky, StarSystem},
     sunny::SunnyAnimation,
     thunderstorm::ThunderstormSystem,
 };
@@ -236,8 +236,13 @@ impl AnimationManager {
         let horizon_y = term_height.saturating_sub(ground_height);
 
         if !conditions.is_day {
-            self.star_system
-                .set_meteor_shower(state.holiday.is_perseids);
+            self.star_system.set_sky(if !conditions.is_clear_sky() {
+                ShootingStarSky::Covered
+            } else if state.holiday.meteor_shower.is_some() {
+                ShootingStarSky::MeteorShower
+            } else {
+                ShootingStarSky::Clear
+            });
             self.star_system.update(term_width, term_height, &mut rng);
             self.star_system.render(renderer)?;
             self.moon_system.update(term_width, term_height);

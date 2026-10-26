@@ -23,6 +23,22 @@ impl Season {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum MeteorShower {
+    Perseids,
+    Geminids,
+}
+
+impl MeteorShower {
+    pub fn on(month: u32, day: u32) -> Option<Self> {
+        match (month, day) {
+            (8, 9..=15) => Some(Self::Perseids),
+            (12, 10..=16) => Some(Self::Geminids),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct Holiday {
     pub is_december: bool,
@@ -32,7 +48,7 @@ pub struct Holiday {
     pub new_year: Option<i32>,
     pub is_spring: bool,
     pub is_easter: bool,
-    pub is_perseids: bool,
+    pub meteor_shower: Option<MeteorShower>,
     pub is_winter: bool,
     pub season: Season,
 }
@@ -54,7 +70,7 @@ impl Holiday {
             is_spring: (3, 20) <= (month, day) && (month, day) <= (6, 20),
             is_easter: easter_sunday(date.year())
                 .is_some_and(|easter| (date - easter).num_days().abs() <= EASTER_WINDOW_DAYS),
-            is_perseids: month == 8 && matches!(day, 9..=15),
+            meteor_shower: MeteorShower::on(month, day),
             is_winter: matches!(month, 12 | 1 | 2),
             season: Season::on(month, day),
         }
@@ -105,7 +121,17 @@ impl Holiday {
 
     pub fn perseids() -> Self {
         Self {
-            is_perseids: true,
+            meteor_shower: Some(MeteorShower::Perseids),
+            ..Self::default()
+        }
+    }
+
+    pub fn geminids() -> Self {
+        Self {
+            is_december: true,
+            meteor_shower: Some(MeteorShower::Geminids),
+            is_winter: true,
+            season: Season::Autumn,
             ..Self::default()
         }
     }
@@ -171,14 +197,34 @@ mod tests {
         assert!(!Holiday::on(date(2026, 4, 13)).is_easter);
     }
 
+    fn meteor_shower(year: i32, month: u32, day: u32) -> Option<MeteorShower> {
+        Holiday::on(date(year, month, day)).meteor_shower
+    }
+
     #[test]
     fn test_perseids_window() {
-        assert!(!Holiday::on(date(2026, 8, 8)).is_perseids);
-        assert!(Holiday::on(date(2026, 8, 9)).is_perseids);
-        assert!(Holiday::on(date(2026, 8, 15)).is_perseids);
-        assert!(!Holiday::on(date(2026, 8, 16)).is_perseids);
-        assert!(Holiday::on(date(2027, 8, 12)).is_perseids);
-        assert!(!Holiday::on(date(2027, 7, 12)).is_perseids);
+        let perseids = Some(MeteorShower::Perseids);
+
+        assert!(meteor_shower(2026, 8, 8).is_none());
+        assert!(meteor_shower(2026, 8, 9) == perseids);
+        assert!(meteor_shower(2026, 8, 15) == perseids);
+        assert!(meteor_shower(2026, 8, 16).is_none());
+        assert!(meteor_shower(2027, 8, 12) == perseids);
+        assert!(meteor_shower(2027, 7, 12).is_none());
+    }
+
+    #[test]
+    fn test_geminids_window() {
+        let geminids = Some(MeteorShower::Geminids);
+
+        assert!(meteor_shower(2026, 12, 9).is_none());
+        assert!(meteor_shower(2026, 12, 10) == geminids);
+        assert!(meteor_shower(2026, 12, 13) == geminids);
+        assert!(meteor_shower(2026, 12, 16) == geminids);
+        assert!(meteor_shower(2026, 12, 17).is_none());
+        assert!(meteor_shower(2026, 12, 20).is_none());
+        assert!(meteor_shower(2027, 12, 14) == geminids);
+        assert!(meteor_shower(2027, 11, 13).is_none());
     }
 
     #[test]
