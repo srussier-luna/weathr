@@ -54,7 +54,7 @@ pub const KINDS: [BadgeKind; 5] = [
     BadgeKind::Secret,
 ];
 
-pub const BADGES: [Badge; 37] = [
+pub const BADGES: [Badge; 38] = [
     badge("clear", "Ciel dégagé", BadgeKind::Weather),
     badge("partly_cloudy", "Éclaircies", BadgeKind::Weather),
     badge("cloudy", "Nuageux", BadgeKind::Weather),
@@ -74,6 +74,7 @@ pub const BADGES: [Badge; 37] = [
     badge("halloween", "Halloween", BadgeKind::Holiday),
     badge("new_year", "Nouvel An", BadgeKind::Holiday),
     badge("easter", "Pâques", BadgeKind::Holiday),
+    badge("perseids", "Perséides", BadgeKind::Holiday),
     badge("rainbow", "Arc-en-ciel", BadgeKind::Rare),
     badge("shooting_star", "Étoile filante", BadgeKind::Rare),
     badge("postman", "Facteur", BadgeKind::Rare),

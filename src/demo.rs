@@ -61,6 +61,7 @@ impl Demo {
                 Holiday::new_year(Local::now().year() + 1),
             ),
             scene(WeatherCondition::Clear, true, Holiday::easter()),
+            scene(WeatherCondition::Clear, false, Holiday::perseids()),
             DemoScene {
                 rainbow: true,
                 ..scene(WeatherCondition::PartlyCloudy, true, Holiday::default())
@@ -103,6 +104,8 @@ impl Demo {
             " New Year"
         } else if scene.holiday.is_easter {
             " Spring"
+        } else if scene.holiday.is_perseids {
+            " Perséides"
         } else if scene.rainbow {
             " Rainbow"
         } else if !scene.is_day {
