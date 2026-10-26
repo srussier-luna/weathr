@@ -1,6 +1,6 @@
 ---
 issue: 25
-status: to-test
+status: to-close
 wiki: [[animation]], [[weather]]
 note: "etoile filante si eclaircie"
 created: 2026-10-26
@@ -30,6 +30,10 @@ created: 2026-10-26
 - Proof: build ✅ · fmt ✅ · clippy only the known provider.rs warning ✅ · `cargo test` all green ✅.
 
 ## Review
+
+### Round validation
+
+- ✅ review clean (4 lenses), nothing changed since the user's test.
 
 ## Verification
 
