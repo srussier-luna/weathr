@@ -1,3 +1,4 @@
+mod banner;
 mod progress;
 
 use chrono::Local;
@@ -31,7 +32,7 @@ pub async fn offer_update() {
         return;
     }
 
-    println!("{PREFIX} Une nouvelle version est disponible.");
+    banner::show();
     if !ask_confirmation() {
         return;
     }

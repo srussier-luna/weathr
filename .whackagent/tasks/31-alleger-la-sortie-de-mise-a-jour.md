@@ -13,10 +13,27 @@ created: 2026-10-26
 - No blocker, no sprint. All in `src/updater.rs` ([[updater]]).
 - **Output of an accepted update, nothing else**:
   ```
-  [weathr] Une nouvelle version est disponible.
+  ██╗    ██╗███████╗ █████╗ ████████╗██╗  ██╗██████╗
+  ██║    ██║██╔════╝██╔══██╗╚══██╔══╝██║  ██║██╔══██╗
+  ██║ █╗ ██║█████╗  ███████║   ██║   ███████║██████╔╝
+  ██║███╗██║██╔══╝  ██╔══██║   ██║   ██╔══██║██╔══██╗
+  ╚███╔███╔╝███████╗██║  ██║   ██║   ██║  ██║██║  ██║
+   ╚══╝╚══╝ ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝
+
+                    __o       .--.
+                  _`\<,_     |____|>
+                 (*)/ (*)      ||
+               ~~~~~~~~~~~~~~~~~~~~~
+
+  Une nouvelle version est arrivée !
   [weathr] Mettre à jour maintenant ? [O/n] o
   [weathr] Installation en cours /  [=========>          ] 45 %
   ```
+  - Banner (feedback round 1) replaces « [weathr] Une nouvelle version est disponible. », only before the prompt (`offer_update`), never for `--update`.
+  - Logo « WEATHR » in ANSI Shadow, bold, sunset gradient per column (stops `255,200,60` → `255,110,80` → `220,60,140` → `140,70,200`, 24-bit colour); outline chars `╗╔╝╚═║` in the same colour ×0.45.
+  - Postman centered under the logo: two yellow rows `255,210,70`, wheels grey `150,150,165`, ground `~` green `110,200,110`.
+  - « Une nouvelle version est arrivée ! » in the gradient colour at 0.3.
+  - Reference rendering: scratchpad `logo_preview4.py`, variant N.
   - The change list (`• <commit subject>`, `… et N autres`) is removed: the Nouveautés box (#24) tells what changed after restart.
   - `git pull` and `cargo build` output fully captured, never printed.
   - Last line rewritten in place (`\r`): spinner `/ | \ -` turning, bar and percentage.
@@ -37,7 +54,9 @@ created: 2026-10-26
 ## Acceptance criteria
 
 - [ ] `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test` all green.
-- [ ] Update available, answer `o`: only the three lines above are shown; no git file list, no `Compiling…`, no change list.
+- [ ] Update available, answer `o`: only the banner, the prompt and the progress line above are shown; no git file list, no `Compiling…`, no change list.
+- [ ] Banner: « WEATHR » block logo in sunset gradient with darker outline, postman centered below, then « Une nouvelle version est arrivée ! », then the prompt.
+- [ ] `weathr --update`: no banner.
 - [ ] During the build: spinner turns and the percentage rises past 10 %; bar reaches 100 % before the restart.
 - [ ] No « Mise à jour terminée » line before the restart.
 - [ ] Failing build (e.g. broken source): `[weathr] Mise à jour impossible. Détails dans …/update.log`; that file holds cargo's error.
@@ -54,6 +73,7 @@ created: 2026-10-26
 - Not a TTY → one plain line `[weathr] Installation en cours…`.
 - Build: `cargo build` ✅ · fmt ✅ · clippy ✅ (pre-existing `double_must_use` allowed) · `cargo test` ✅.
 - Not checked at runtime: `\r` rendering, piped output, failing-build log.
+- Round 1 hunks (feedback): `src/updater/banner.rs` (new: `LOGO`, `SUNSET`, `OUTLINE` ×0.45, `POSTMAN`, `gradient`, `darker`, `draw`/`show` via crossterm `queue!`, 3 tests) · `src/updater/mod.rs` (`mod banner;`, `banner::show()` replaces the « nouvelle version disponible » line in `offer_update`).
 
 ## Review
 
@@ -61,4 +81,16 @@ created: 2026-10-26
 
 manual validation — not run by agent
 
+round 2: manual validation — not run by agent · run: yours
+
 ## Feedback
+
+### Round 1 — 2026-10-26
+
+- Asked: « Remplacer la ligne « [weathr] Une nouvelle version est disponible. » par une bannière façon oh-my-zsh » — variant N: « WEATHR » block logo, sunset gradient, postman below, « Une nouvelle version est arrivée ! », then the prompt.
+- Triage: adjustment → criteria updated (banner, no banner for `--update`).
+- Changes: implementer — `src/updater/banner.rs` (new), `src/updater/mod.rs`. Banner rendering matches the Python preview cell by cell, except the narrow no-break space before `!` (wording.md).
+- Build: `cargo build` ✅ · fmt ✅ · `cargo test` ✅ · clippy ❌ only on pre-existing `double_must_use` in `src/weather/provider.rs` (unchanged from develop).
+- Review: deferred → /wa-validate.
+- Verify: manual validation — not run by agent.
+- Rule captured: none.
