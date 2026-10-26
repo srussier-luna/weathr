@@ -29,7 +29,7 @@ Static French content: correspondents' letters + days, `CITIES` (40 Cartes posta
 
 ## Progress — `src/progress.rs`
 
-`Progress` (`src/progress.rs:10`) = whole save, JSON in `<config>/weathr/progress.json`: start date, `letters_read`, badges, answers, streak, riddles, found objects, bottles, cached postcard/gazette weather. All fields `#[serde(default)]` so old saves keep loading — keep so when adding fields. Saved eagerly after each change; write errors ignored.
+`Progress` (`src/progress.rs:10`) = whole save, JSON in `<config>/weathr/progress.json`: start date, `letters_read`, badges, answers, streak, riddles, found objects, bottles, cached postcard/gazette weather, `notes_seen_on` (release notes, see [[updater]]). All fields `#[serde(default)]` so old saves keep loading — keep so when adding fields. Saved eagerly after each change; write errors ignored.
 
 ## Screens and keys
 
