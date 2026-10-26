@@ -18,8 +18,8 @@ created: 2026-10-26
 - **No spoilers** beyond what is written here: details of the fête come from #8's Lettres.
 - **Fête scene** = Nadia and Claire's house: verger, their rucher, stands, lampions.
 - **Jours de jeu 119 and 120**: weathr opens on the fête scene instead of the garden, from `courrier.heure`.
-  - `Esc` goes back to the garden. A key (via #21) brings you back to the fête, only on these two days.
-- **After day 120: no way back.** The scene and its key disappear. Overrides the 23/10 note ("une touche permet d'y retourner").
+  - `Esc` goes back to the garden. The Lieux menu (`m`, #21) lists the Fête du miel, only on these two days.
+- **After day 120: no way back.** The scene leaves the Lieux menu. Overrides the 23/10 note ("une touche permet d'y retourner").
 - **Guests**: Nadia, Claire, the Voisins of the Lettres, and every Habitant already arrived.
 - **Sam**: absent on day 119. Present from the start of day 120, with a suitcase.
 - **Real weather**: same sky as the garden. Rain → stands under tarps. Night → lampions lit.
@@ -29,11 +29,11 @@ created: 2026-10-26
 ## Acceptance criteria
 
 - [ ] `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test` all green.
-- [ ] `--day 118`: weathr opens on the garden, no fête key.
+- [ ] `--day 118`: weathr opens on the garden, Fête du miel not in the Lieux menu.
 - [ ] `--day 119`: weathr opens on the fête scene: house, verger, rucher, stands, lampions; Nadia, Claire, Voisins, arrived Habitants; no Sam.
 - [ ] `--day 120`: same scene, Sam present with a suitcase.
-- [ ] Day 119 or 120: `Esc` → garden; the fête key → back to the fête.
-- [ ] `--day 121`: garden, fête key does nothing, Aide doesn't list it.
+- [ ] Day 119 or 120: `Esc` → garden; `m` → Fête du miel → back to the fête.
+- [ ] `--day 121`: garden, Fête du miel not in the Lieux menu.
 - [ ] Day 119, rain: stands under tarps. Night: lampions lit.
 
 ## Implementation
