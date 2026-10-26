@@ -47,8 +47,9 @@ One precise screen. Team names, in the discussion language. UI projects only.
 | Lettre | | `entry_view` | une Lettre ouverte, numéro / total |
 | Album | | `album_pages` | Badges et souvenirs collectés |
 | Aide | help | `help_view` | touches disponibles selon déblocages |
-| Potager | | | scène du potager, touche p ; pousse par Jour de jeu, suit les saisons |
+| Potager | | | scène du potager vue de dessus en biais, sans ciel ; pousse par Jour de jeu, suit les saisons |
 | Fête du miel | scène de fête | | maison de Nadia et Claire, Jours de jeu 119–120 seulement |
+| Lieux | menu des lieux | | menu touche m : Jardin, Potager, Fête du miel disponibles |
 <!-- | Login screen | login page | `LoginView` | email + password, forgot-password link | -->
 
 ## Parts
