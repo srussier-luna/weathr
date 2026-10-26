@@ -14,6 +14,7 @@ mod letters;
 mod overlay;
 mod progress;
 mod rain_alert;
+mod release_notes;
 mod remote_weather;
 mod render;
 mod scene;

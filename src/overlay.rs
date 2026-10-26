@@ -130,6 +130,10 @@ pub struct View {
     pub frame: Frame,
 }
 
+pub fn text_width(renderer: &TerminalRenderer, frame: Frame) -> usize {
+    frame.inner_width(frame.fit(box_width(renderer)))
+}
+
 pub fn render_view(renderer: &mut TerminalRenderer, view: &View) -> io::Result<()> {
     let box_width = view.frame.fit(box_width(renderer));
     let inner = view.frame.inner_width(box_width);
@@ -296,7 +300,7 @@ fn frame_rows(
     rows
 }
 
-fn wrap(text: &str, width: usize) -> Vec<String> {
+pub fn wrap(text: &str, width: usize) -> Vec<String> {
     pack(text.split_whitespace(), " ", width)
 }
 
