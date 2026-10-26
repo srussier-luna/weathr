@@ -108,6 +108,23 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_frozen_clock_delivers_every_mail_up_to_its_day() {
+        let today = date(2026, 10, 26);
+        let frozen = StoryClock::frozen(today, 9, 12);
+        let late = date(2026, 10, 27).and_hms_opt(10, 0, 0).unwrap();
+        let day = frozen.day_on(late);
+        let preview = Timeline::new(&sources::registered(VILLAGE_COUNT), &frozen, day);
+
+        let expected = timeline(frozen.date_of(1), 12)
+            .mail()
+            .filter(|(delivery, _)| *delivery <= 12)
+            .count();
+        assert_eq!(day, 12);
+        assert_eq!(preview.delivered_by(day), expected);
+        assert!(expected > 12);
+    }
+
     struct Dummy;
 
     impl StorySource for Dummy {

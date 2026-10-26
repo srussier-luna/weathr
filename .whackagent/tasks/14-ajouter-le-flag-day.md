@@ -1,6 +1,6 @@
 ---
 issue: 14
-status: todo
+status: to-test
 wiki: [[mail]], [[architecture]], [[updater]]
 note: "Split de #12 (sprint Timeline histoire). Sert à vérifier #13, #4, #5 à l'écran."
 created: 2026-10-26
@@ -32,8 +32,31 @@ created: 2026-10-26
 
 ## Implementation
 
+stacked on: wa/12-migrer-lhistoire-sur-la-timeline @ 14c7322
+
+Autopilot 2026-10-26, one implementer.
+
+- `main.rs`: `--day <N>` (`NonZeroUsize`, help "Preview the story on day N in a fresh game, without touching your save") → `SimulationOptions.day`. 3 clap tests.
+- `app.rs`: day mode → `StoryClock::frozen(today, mail_hour, N)`, `Progress::in_memory(clock.date_of(1))`, `letters::read()`. HUD label `Jour N` via `set_demo_label` unless `--demo`. `award()` no-op when `!awards_badges` (all Badges, milestones included).
+- `progress.rs`: `#[serde(skip)] in_memory` flag → `save()` no-op. `Progress::in_memory(start)`.
+- `story/clock.rs`: `StoryClock::frozen` → `day_on` always N. Still no `Local::now` in `src/story`.
+- `story/content/letters.rs`: `read()` (defaults + `lettres.txt` overrides, never writes); `load()` = `read()` + write defaults if missing.
+- Proof: fmt ✅ · clippy ✅ · `cargo test` ✅ 172 passed.
+
+Open points (spec wording, not blocking):
+- HUD: label sits in the `--demo` slot, i.e. `… Aide [h] | Jour 8 | Weather: …`, not at the very start. Spec said both "starts with" and "same slot as --demo"; the slot won. Moving it first = one-line change, would move the `--demo` label too.
+- Courrier (`l`) lists only Lettres already read, as before: fresh `--day` game shows `Lettres reçues (0)`. Days 1–N are read with `c` (`Lettre 1/12` on day 8).
+
 ## Review
 
 ## Verification
+
+Pty harness, `HOME` = temp dir seeded with a save on day 30 (real save shasum unchanged after all runs):
+- ✅ `--day 8 --simulate rain --night`, keys `l`,`c`,`c`,`q`: HUD `Jour 8`, `Lettre 1/12`, exit 0; seeded `progress.json` byte-identical; no `lettres.txt` created; 0 Badge toast.
+- ✅ `--day 12 --simulate clear`: `Jour 12`, `Lettre 1/19`, 0 Badge toast.
+- ✅ `--day 3 --demo`: demo label wins.
+- ✅ `--day 0`: `error: invalid value '0' for '--day <N>'`, exit 2.
+- ✅ `--help` lists `--day <N>`.
+- ✅ Frozen past `courrier.heure`: clock + timeline unit tests.
 
 ## Feedback
