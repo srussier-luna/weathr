@@ -29,7 +29,7 @@ created: 2026-10-26
   [weathr] Mettre à jour maintenant ? [O/n] o
   [weathr] Installation en cours /  [=========>          ] 45 %
   ```
-  - Banner (feedback round 1) replaces « [weathr] Une nouvelle version est disponible. », only before the prompt (`offer_update`), never for `--update`.
+  - Banner (feedback round 1) replaces « [weathr] Une nouvelle version est disponible. » before the prompt (`offer_update`); `--update` shows it too, before the progress line (feedback round 2).
   - Logo « WEATHR » in ANSI Shadow, bold, sunset gradient per column (stops `255,200,60` → `255,110,80` → `220,60,140` → `140,70,200`, 24-bit colour); outline chars `╗╔╝╚═║` in the same colour ×0.45.
   - Postman centered under the logo: two yellow rows `255,210,70`, wheels grey `150,150,165`, ground `~` green `110,200,110`.
   - « Une nouvelle version est arrivée ! » in the gradient colour at 0.3.
@@ -53,10 +53,10 @@ created: 2026-10-26
 
 ## Acceptance criteria
 
-- [ ] `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test` all green.
+- [ ] `cargo fmt --check`, `cargo test` all green (clippy ignored for this task, feedback round 2).
 - [ ] Update available, answer `o`: only the banner, the prompt and the progress line above are shown; no git file list, no `Compiling…`, no change list.
 - [ ] Banner: « WEATHR » block logo in sunset gradient with darker outline, postman centered below, then « Une nouvelle version est arrivée ! », then the prompt.
-- [ ] `weathr --update`: no banner.
+- [ ] `weathr --update`: banner, then the progress line, then « weathr est à jour. ».
 - [ ] During the build: spinner turns and the percentage rises past 10 %; bar reaches 100 % before the restart.
 - [ ] No « Mise à jour terminée » line before the restart.
 - [ ] Failing build (e.g. broken source): `[weathr] Mise à jour impossible. Détails dans …/update.log`; that file holds cargo's error.
@@ -74,6 +74,7 @@ created: 2026-10-26
 - Build: `cargo build` ✅ · fmt ✅ · clippy ✅ (pre-existing `double_must_use` allowed) · `cargo test` ✅.
 - Not checked at runtime: `\r` rendering, piped output, failing-build log.
 - Round 1 hunks (feedback): `src/updater/banner.rs` (new: `LOGO`, `SUNSET`, `OUTLINE` ×0.45, `POSTMAN`, `gradient`, `darker`, `draw`/`show` via crossterm `queue!`, 3 tests) · `src/updater/mod.rs` (`mod banner;`, `banner::show()` replaces the « nouvelle version disponible » line in `offer_update`).
+- Round 2 hunks (feedback, inline): `src/updater/mod.rs` — `banner::show()` at the start of `update_now`, before `update`.
 
 ## Review
 
@@ -83,6 +84,8 @@ manual validation — not run by agent
 
 round 2: manual validation — not run by agent · run: yours
 
+round 3: manual validation — not run by agent · run: yours
+
 ## Feedback
 
 ### Round 1 — 2026-10-26
@@ -91,6 +94,16 @@ round 2: manual validation — not run by agent · run: yours
 - Triage: adjustment → criteria updated (banner, no banner for `--update`).
 - Changes: implementer — `src/updater/banner.rs` (new), `src/updater/mod.rs`. Banner rendering matches the Python preview cell by cell, except the narrow no-break space before `!` (wording.md).
 - Build: `cargo build` ✅ · fmt ✅ · `cargo test` ✅ · clippy ❌ only on pre-existing `double_must_use` in `src/weather/provider.rs` (unchanged from develop).
+- Review: deferred → /wa-validate.
+- Verify: manual validation — not run by agent.
+- Rule captured: none.
+
+### Round 2 — 2026-10-26
+
+- Asked: « weathr --update doit afficher la bannière » · « on ignore clippy » (#31 seulement).
+- Triage: adjustment → criteria updated (`--update` shows the banner) · adjustment → clippy dropped from this task's criteria only, project `test_command` unchanged.
+- Changes: inline — `src/updater/mod.rs` (`banner::show()` in `update_now`). Tag: `inline`.
+- Build: `cargo build` ✅ · fmt ✅ · `cargo test` ✅ · clippy not run (ignored for this task).
 - Review: deferred → /wa-validate.
 - Verify: manual validation — not run by agent.
 - Rule captured: none.

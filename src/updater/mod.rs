@@ -52,6 +52,7 @@ pub fn update_now() -> io::Result<()> {
             "dépôt git introuvable : {SOURCE_DIR}"
         )));
     }
+    banner::show();
     update(source)?;
     println!("{PREFIX} weathr est à jour.");
     Ok(())
