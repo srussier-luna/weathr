@@ -1,6 +1,6 @@
 ---
 issue: 12
-status: todo
+status: to-test
 wiki: [[mail]], [[animation]], [[architecture]]
 note: "Idée d'origine : séparer temps réel (décor) et temps du jeu (histoire), brancher les Lettres sur une timeline, journal du jour plus tard. Archi composable, tests obligatoires."
 created: 2026-10-26
@@ -62,8 +62,23 @@ src/story/
 
 ## Implementation
 
+Autopilot 2026-10-26, one implementer, 4 bricks.
+
+- `src/story/`: `clock.rs` (`StoryClock`), `event.rs` (`Entry`, `Beat`, `StoryEvent::Mail`), `timeline.rs` (`Timeline::new(sources, clock, today)`, `mail()`, `delivered_by`, `mail_at`).
+- `src/story/sources/`: `village`, `correspondents` (Sam, Nadia/Claire, Marcel share one `Correspondent` type), `archives`, `creepy`, `gazettes`, `recipes`, `postcards`. Schedule constants moved here. Gazette/recipe days via `clock.date_of`.
+- `src/story/content/`: `MailContent` + `ReadContext` (`letters`, `progress`, `clock`, `reading_hour`, `riddle_input`), `Written`, `VillageLetter`, `NightPostscript` (wraps `VillageLetter`, not `Written`: P.-S. sits before signature + question, `overlay::Line` not Clone), `Gazette`, `Postcard`. `letters.rs`, `chronicles.rs` moved here (`git mv`).
+- `views.rs` keeps index, help, album, bottle. `entry_view` + Courrier label moved to `story::content`.
+- `progress.rs`: `day_on` removed (now `StoryClock`); save format unchanged.
+- Fixtures `src/story/testdata/timeline_golden.txt`, `save_37_golden.txt` captured from pre-refactor code.
+- Edges: rollover on local wall-clock (differs only inside DST hour); out-of-range Lettre index draws nothing instead of panicking.
+- Proof: `cargo fmt -- --check` ✅ · `cargo clippy -- -D warnings` ✅ · `cargo test` ✅ 165 passed · `grep -rn "Local::now\|Utc::now" src/story` empty.
+
 ## Review
 
 ## Verification
+
+- Smoke run in a pty harness, `HOME` = temp dir (real save untouched, shasum identical): `--simulate clear` renders, `q` exits 0, no panic.
+- Baseline binary (pre-refactor) vs new, same save (`letters_read: 37`), keys `l`, Esc, `c`, 50× →: same overlay titles and text (Courrier, Lettre 38/101, Gazettes with Monday dates, Cartes postales, Archives).
+- Manual validation of the real terminal look — yours.
 
 ## Feedback

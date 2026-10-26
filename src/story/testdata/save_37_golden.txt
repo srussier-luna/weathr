@@ -1,0 +1,1582 @@
+opens: 37
+title: Lettres reçues (37)
+pre: >   1. 01/09  Rose, la boulangère
+pre:     2. 02/09  L'encre bleue
+pre:     3. 03/09  Minouche, la chatte du toit
+pre:     4. 04/09  Paulo, le pêcheur
+pre:     5. 05/09  L'encre bleue
+pre:     6. 05/09  Le voisin du n°13
+pre:     7. 06/09  Minouche, la chatte du toit
+pre:     8. 07/09  Odile, la maire
+pre:     9. 07/09  La Gazette du lundi
+pre:    10. 08/09  L'encre bleue
+pre:    11. 08/09  Sam, le voisin du moulin
+pre:    12. 09/09  Biscuit, le chien
+pre:    13. 09/09  Le voisin du n°13
+pre:    14. 10/09  Gaston, le facteur
+pre:    15. 11/09  L'encre bleue
+pre:    16. 11/09  Nadia et Claire, les apicultrices
+pre:    17. 12/09  Hulotte, le hibou
+pre:    18. 12/09  Marcel, le garde champêtre
+pre:    19. 13/09  Odile, la maire
+pre:    20. 13/09  Le voisin du n°13
+pre:    21. 14/09  L'encre bleue
+pre:    22. 14/09  Sam, le voisin du moulin
+pre:    23. 14/09  La Gazette du lundi
+pre:    24. 15/09  Biscuit, le chien
+pre:    25. 16/09  Léo, le petit voisin
+pre:    26. 17/09  L'encre bleue
+pre:    27. 17/09  Le voisin du n°13
+pre:    28. 18/09  Coin-Coin, le canard
+pre:    29. 18/09  Nadia et Claire, les apicultrices
+pre:    30. 19/09  Rose, la boulangère
+pre:    31. 20/09  L'encre bleue
+pre:    32. 20/09  Sam, le voisin du moulin
+pre:    33. 21/09  Gustave, l'escargot
+pre:    34. 21/09  Marcel, le garde champêtre
+pre:    35. 21/09  La Gazette du lundi
+pre:    36. 21/09  Le voisin du n°13
+pre:    37. 22/09  Paulo, le pêcheur
+footer: [↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer
+== entry 0 night false
+title: Lettre 1/101
+text: Bienvenue dans la maison au bout du chemin ! Ici, tout le monde se connaît. Je passe chaque matin avec mon panier de croissants : si tu sens une odeur de beurre, c'est moi. Je suis sourde : inutile de sonner chez moi, fais-moi plutôt signe par la fenêtre. Gaston, le facteur, t'apportera une lettre par jour. C'est la tradition du village.
+blank
+text: — Rose, la boulangère
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 1 night false
+title: Lettre 2/101
+text: Tu ne me connais pas, mais je connais très bien ta maison. Chaque pierre, chaque fenêtre. Elle cache un secret depuis longtemps. Si tu veux le découvrir, lis bien chacune de mes lettres.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 2 night false
+title: Lettre 3/101
+text: Miaou. Je suis la chatte qui dort sur ton toit. Ce toit est à moi depuis six hivers, je te le prête. D'ici, je lis les étoiles : ce mois-ci, elles te sont favorables. Quand il pleut, je rentre par la fenêtre, ne t'inquiète pas. Signé d'une patte.
+blank
+text: — Minouche, la chatte du toit
+blank
+text: Question : Rose veut m'offrir un nœud. Mes cartes hésitent : quelle couleur ?
+text: Ta réponse : Bleu
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 3 night false
+title: Lettre 4/101
+text: J'avais trop de bois flotté dans ma cabane, alors je t'ai fabriqué un banc. Je l'ai posé devant ta maison. On y voit très bien le coucher du soleil. Paulo, ton voisin de la rivière.
+blank
+text: — Paulo, le pêcheur
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 4 night false
+title: Lettre 5/101
+text: Première énigme : je suis la plus vieille habitante du jardin, j'étais là avant la maison, et chaque automne je perds mes cheveux. Qui suis-je ?
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 5 night false
+title: Lettre 6/101 (glissée sous la porte)
+text: Bonjour. J'habite au numéro 13, juste derrière chez toi. Tu ne vois pas ma maison d'ici, c'est normal. Je voulais simplement te dire que la lumière de ta cuisine est très jolie, le soir.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 6 night false
+title: Lettre 7/101
+text: Rose m'a offert un nœud. Les astres l'avaient annoncé : je suis désormais la chatte la plus élégante du village. Biscuit est jaloux, mais Biscuit ne lit pas les étoiles. Regarde bien mon oreille !
+blank
+text: Il est bleu, comme tu me l'as conseillé.
+blank
+text: — Minouche, la chatte du toit
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 7 night false
+title: Lettre 8/101
+text: Le village prépare sa grande fête. Il reste beaucoup à faire : réparer le vieux puits, décorer les maisons, trouver de la musique. Chaque habitant peut aider, et ta maison compte beaucoup pour nous.
+blank
+text: — Odile, la maire
+blank
+text: Question : Pour le toit du vieux puits, tu préfères ?
+text: Ta réponse : Des tuiles rouges
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 8 night false
+title: La Gazette 9/101, lundi 7 septembre
+text: Ta semaine : soleil et 21 °C.
+blank
+text: Les échos : On dit que Rose prépare un croissant au chocolat… et à la noisette.
+blank
+text: Petite annonce : Échange recette de tarte contre secret de pêche. Écrire à Paulo.
+blank
+text: L'énigme de la semaine : Plus j'ai de gardiens, moins je suis gardé. Qui suis-je ?
+footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
+== entry 9 night false
+title: Lettre 10/101
+text: Bravo, c'était le grand arbre. Cette nuit, quelqu'un a marché dans ton jardin. Regarde le sol : les traces mènent quelque part.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 10 night false
+title: Lettre 11/101
+text: Bonjour d'en face ! Je suis Sam, j'habite le vieux moulin au bord de la rivière. Je dessinais des cartes, autrefois. Aujourd'hui, je les regarde surtout. Ton jardin figure sur trois de mes plans, tu savais ?
+blank
+text: — Sam, le voisin du moulin
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 11 night false
+title: Lettre 12/101
+text: Wouf ! C'est moi qui dors dans la niche. Je n'ai rien vu cette nuit, je dormais. Enfin, presque. J'ai entendu des petits pas, très légers, puis un rire.
+blank
+text: — Biscuit, le chien
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 12 night false
+title: Lettre 13/101 (glissée sous la porte)
+text: Tu as bien dormi ? Moi, je dors peu. Je regarde les fenêtres du village. La tienne reste allumée plus tard que les autres.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 13 night false
+title: Lettre 14/101
+text: Trente ans que je fais la tournée à vélo ! Ta boîte aux lettres est ma préférée : elle grince joliment. Quand son drapeau rouge est levé, c'est qu'une lettre t'attend.
+blank
+text: — Gaston, le facteur
+blank
+text: Question : Veux-tu que je sonne quand je passe ?
+text: [1] Oui, sonne !   [2] Non, en silence
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 14 night false
+title: Lettre 15/101
+text: Ces traces sont petites. Elles appartiennent à quelqu'un qui aime grimper aux arbres et sauter dans les flaques. Il en sait plus qu'il ne le dit.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 15 night false
+title: Lettre 16/101
+text: Bonjour ! Nous sommes Nadia et Claire. On vient d'emménager dans la maison derrière le verger, avec nos quatre ruches. Si tu vois des abeilles dans ton jardin, ce sont les nôtres : elles adorent ton arbre.
+blank
+text: — Nadia et Claire, les apicultrices
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 16 night false
+title: Lettre 17/101
+text: Hou hou. Je veille dans le grand arbre la nuit. Je vois tout : les chauves-souris, les étoiles filantes, et parfois une petite lumière bleue qui n'est pas une étoile.
+blank
+text: — Hulotte, le hibou
+blank
+text: Question : La nuit, je hulule ou je me tais ?
+text: [1] Hulule !   [2] Tais-toi, je dors
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 17 night false
+title: Lettre 18/101
+text: Bonsoir. Marcel, garde champêtre. Je fais ma ronde chaque nuit, de la mairie jusqu'au bout de ton chemin. Si tu vois une lanterne passer derrière ta haie vers minuit, c'est moi. En général, rien à signaler.
+blank
+text: — Marcel, le garde champêtre
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 18 night false
+title: Lettre 19/101
+text: Grâce aux voisins, le vieux puits de ton jardin est réparé ! Autrefois, on y faisait des vœux. Fais-en un, ça ne coûte rien.
+blank
+text: Son toit est en tuiles rouges, comme tu l'as voulu.
+blank
+text: — Odile, la maire
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 19 night false
+title: Lettre 20/101 (glissée sous la porte)
+text: J'ai marché dans ton jardin cette nuit. J'espère que ça ne te dérange pas. Les traces vont du puits à ta porte : c'est le chemin le plus court.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 20 night false
+title: Lettre 21/101
+text: Le puits, oui. Il y a longtemps, quelqu'un y a jeté une pièce en faisant un vœu : que cette maison reste heureuse. Ce vœu, c'est moi qui l'ai fait.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 21 night false
+title: Lettre 22/101
+text: Rose m'a vendu un croissant brûlé, je l'ai mangé quand même. Le soir, je trace des routes sur de vieilles cartes, vers des villes que je n'ai jamais vues.
+blank
+text: — Sam, le voisin du moulin
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 22 night false
+title: La Gazette 23/101, lundi 14 septembre
+text: Ta semaine : les relevés ne sont pas encore arrivés.
+blank
+text: Les échos : Gaston aurait été vu en train de parler à sa sacoche. Il dément.
+blank
+text: Petite annonce : Donne cartes anciennes. Certaines mènent quelque part.
+blank
+text: L'énigme de la semaine : Je tombe sans me faire mal, je cours sans jambes, et le canard m'adore. Qui suis-je ?
+text: Bravo, énigme résolue !
+blank
+text: Réponse de la semaine dernière : secret
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 23 night false
+title: Lettre 24/101
+text: J'ai trouvé un os énorme en creusant près de ma niche ! Je l'ai laissé dehors pour que tout le monde l'admire. Personne n'y touche. Wouf.
+blank
+text: — Biscuit, le chien
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 24 night false
+title: Lettre 25/101
+text: Bonjour, c'est Léo, celui qui saute dans les flaques chez toi. Pardon pour les traces de boue. Mamie dit que ta maison était la sienne, avant. Je peux continuer à venir jouer ?
+blank
+pre: Mon dessin de ta maison :
+pre:     /\      ~~
+pre:    /  \
+pre:   /____\
+pre:   | [] |    o
+pre:   |_[]_|   /|\
+pre:            / \
+blank
+text: — Léo, le petit voisin
+blank
+text: Question : Je peux sauter dans les flaques chez toi ?
+text: [1] Oui, dans toutes !   [2] Non, pense à tes bottes
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 25 night false
+title: Lettre 26/101
+text: Sous ta boîte aux lettres, j'ai laissé une petite clé. Garde-la bien. Elle n'ouvre aucune porte de la maison.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 26 night false
+title: Lettre 27/101 (glissée sous la porte)
+text: Gaston ne passe jamais chez moi. Alors je dépose mes lettres moi-même, sous ta porte. Je fais très attention à ne pas réveiller le chien.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 27 night false
+title: Lettre 28/101
+text: Coin ! La mare au bout de ton jardin est la plus belle de la région quand il pleut. Je la partage avec la grenouille, mais elle chante faux.
+blank
+text: — Coin-Coin, le canard
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 28 night false
+title: Lettre 29/101
+text: Rose nous apprend quelques mots en langue des signes. Claire a retenu « miel » et « merci ». Nadia confond encore les deux, ce qui donne des conversations très polies.
+blank
+text: — Nadia et Claire, les apicultrices
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 29 night false
+title: Lettre 30/101
+text: Léo m'a commandé un gâteau « pour fêter la cabane », en langue des signes, rien que ça ! Il apprend vite. Une cabane ? Dans l'arbre ? Je crois qu'un projet se prépare en cachette.
+blank
+text: — Rose, la boulangère
+blank
+text: Question : Pour la cabane de Léo, quelle couleur ?
+text: [1] Rouge   [2] Bleue
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 30 night false
+title: Lettre 31/101
+text: La clé et le grand arbre vont ensemble. Mais il faut encore attendre. Les bonnes choses arrivent lentement, comme les escargots.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 31 night false
+title: Lettre 32/101
+text: J'ai retrouvé une carte du monde de mon grand-père, couverte de petites croix. Chaque croix est une ville qu'il rêvait de voir. Il n'en a vu aucune.
+blank
+text: — Sam, le voisin du moulin
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 32 night false
+title: Lettre 33/101
+text: Je suis parti de la mare il y a trois jours. J'arriverai à la boîte aux lettres… un jour. Ne m'attends pas pour le dîner.
+blank
+text: — Gustave, l'escargot
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 33 night false
+title: Lettre 34/101
+text: On m'a dit que tu posais des questions sur une maison numéro 13. Je fais cette ronde depuis vingt-deux ans. Le village a toujours eu douze maisons. Toujours.
+blank
+text: — Marcel, le garde champêtre
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 34 night false
+title: La Gazette 35/101, lundi 21 septembre
+text: Ta semaine : les relevés ne sont pas encore arrivés.
+blank
+text: Les échos : Le canard de la mare a été élu « canard le plus bavard » du canton.
+blank
+text: Petite annonce : Cherche fanfare pour la fête. Une trompette suffira.
+blank
+text: L'énigme de la semaine : Je suis plein de trous et pourtant je retiens l'eau. Qui suis-je ?
+blank
+text: Réponse de la semaine dernière : pluie
+footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
+== entry 35 night false
+title: Lettre 36/101 (glissée sous la porte)
+text: Ce soir, je suis passé te voir. Tu étais dans l'autre pièce. Je n'ai pas voulu déranger, je suis resté à la fenêtre un moment.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 36 night false
+title: Lettre 37/101
+text: Avec Léo, on a construit une cabane dans le grand arbre. Il y a une échelle, un toit et une fenêtre pour surveiller la rivière. Interdite aux adultes, paraît-il.
+blank
+text: — Paulo, le pêcheur
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 37 night false
+title: Lettre 38/101
+text: Autrefois, dans ta maison, quelqu'un posait une lanterne bleue à la fenêtre pour guider un pêcheur qui rentrait tard.
+blank
+text: — L'encre bleue
+blank
+text: Question : Garderas-tu mon secret ?
+text: [1] Oui, promis   [2] Je vais tout dire à Paulo
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 38 night false
+title: Lettre 39/101
+text: Mon cousin le grand-duc est venu me rendre visite. Il trouve ton arbre très confortable et compte rester. Nous serons deux à veiller. Hou hou.
+blank
+text: — Hulotte, le hibou
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 39 night false
+title: Lettre 40/101
+text: Il pleuvait si fort ce matin que mon vélo flottait presque. Le canard m'a doublé. Bizarre : ta boîte aux lettres était déjà ouverte, et toute humide à l'intérieur.
+blank
+text: — Gaston, le facteur
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 40 night false
+title: Lettre 41/101
+text: Premier pot de miel ! On en a déposé un sur ta boîte aux lettres. Rose en a pris dix pour ses gâteaux. Marcel n'en veut pas : il dit que nos abeilles évitent le n°13 et que ce n'est pas bon signe.
+blank
+text: — Nadia et Claire, les apicultrices
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 41 night false
+title: Lettre 42/101 (glissée sous la porte)
+text: Tu as demandé à Marcel où se trouve le numéro 13 ? Il t'a dit qu'il n'existe pas. Il dit ça à tout le monde. Il a raison de le dire.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 42 night false
+title: Lettre 43/101
+text: Ce soir, regarde la petite fenêtre en haut à gauche. La lanterne bleue est revenue. Quelqu'un pense encore au pêcheur.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 43 night false
+title: Lettre 44/101
+text: Paulo dit que les rêves se fanent comme les fleurs qu'on oublie d'arroser. Il a raison, pour une fois. J'ai acheté une valise. Elle est encore vide.
+blank
+text: — Sam, le voisin du moulin
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 44 night false
+title: Lettre 45/101
+text: Tchic tchic ! J'ai caché 147 noisettes dans ton arbre. Je ne me souviens plus où. Si tu en trouves une, elle est à moi.
+blank
+text: — Noisette, l'écureuil
+blank
+text: Question : Je peux cacher des noisettes près de ta boîte aux lettres ?
+text: [1] Oui, vas-y   [2] Non, c'est pour le courrier
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 45 night false
+title: Lettre 46/101
+text: La fête approche. Chaque maison doit apporter une décoration. La tienne aura des guirlandes, j'ai déjà prévenu Rose.
+blank
+text: — Odile, la maire
+blank
+text: Question : Pour décorer ta maison : fanions ou lampions ?
+text: [1] Des fanions   [2] Des lampions
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 46 night false
+title: Archives de la mairie 47/101 : Registre communal, 1887
+text: Mot d'Odile : puisque tu poses tant de questions, je t'ouvre les archives. Lis-les dans l'ordre, et pas trop tard le soir. — « Le conseil décide de creuser un puits dans le jardin de la maison au bout du chemin. Les ouvriers disent entendre comme des voix au fond. Le travail est achevé en onze jours. »
+blank
+text: — Copie transmise par Odile
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 47 night false
+title: La Gazette 48/101, lundi 28 septembre
+text: Ta semaine : pluie.
+blank
+text: Les échos : Quelqu'un a repeint la boîte aux lettres de la mairie en rose. Enquête en cours.
+blank
+text: Petite annonce : Perdu : noisettes, quantité inconnue. Contacter Noisette, grand arbre.
+blank
+text: L'énigme de la semaine : Plus on m'enlève, plus je deviens grand. Qui suis-je ?
+blank
+text: Réponse de la semaine dernière : eponge
+footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
+== entry 48 night false
+title: Lettre 49/101
+text: Le pêcheur s'appelle Paulo. Il ne sait pas que c'est moi qui écris. Garde le secret encore un peu.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 49 night false
+title: Lettre 50/101 (glissée sous la porte)
+text: Ton chat me connaît. Il me regarde quand je passe. Le chien aussi, mais lui fait semblant de dormir.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 50 night false
+title: Lettre 51/101
+text: Je ne chante pas faux, c'est le canard qui n'a pas d'oreille. Quand il pleut, je saute dans la mare : plouf ! C'est mon meilleur numéro.
+blank
+text: — Rainette, la grenouille
+blank
+text: Question : Qui chante le mieux, moi ou le canard ?
+text: [1] Toi, Rainette   [2] Le canard
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 51 night false
+title: Lettre 52/101
+text: Ronde de cette nuit : de la boue près du puits, encore. Des pas qui vont vers ta maison, aucun qui en revient. Ce sont sûrement les miens. J'ai dû mal compter.
+blank
+text: — Marcel, le garde champêtre
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 52 night false
+title: Lettre 53/101
+text: Avec Léo, on a accroché une guirlande lumineuse sous ton porche. Elle s'allume le soir. Tout le village la voit depuis la route !
+blank
+text: — Rose, la boulangère
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 53 night false
+title: Recette du mois 54/101 : Soupe de potiron
+text: Un potiron, une pomme de terre, un oignon, un litre de bouillon, un peu de crème. Cuis 30 min, mixe. Garde l'écorce pour la lanterne d'Halloween.
+blank
+text: — Rose, la boulangère
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 54 night false
+title: Lettre 55/101
+text: J'ai habité ta maison pendant cinquante ans. J'y ai été très heureuse. J'ai laissé quelque chose pour la personne qui vivrait là après moi.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 55 night false
+title: Lettre 56/101
+text: Grande nouvelle : j'ai eu deux chatons ! Ils sont nés une nuit de pleine lune, ce qui fait d'eux des chatons très sages. L'un a une tache en forme d'étoile. Biscuit fait semblant de ne pas les aimer.
+blank
+text: — Minouche, la chatte du toit
+blank
+text: Question : Mes chatons sont-ils noirs ou blancs, à ton avis ? Mon pendule refuse de répondre.
+text: [1] Noirs   [2] Blancs
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 56 night false
+title: Lettre 57/101
+text: Je pars demain. Je vais suivre les croix de mon grand-père, une par une. Je t'enverrai une carte postale chaque semaine, avec le temps qu'il fait là-bas. Garde un œil sur mon moulin.
+blank
+text: — Sam, le voisin du moulin
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 57 night false
+title: Lettre 58/101 (glissée sous la porte)
+text: Le puits n'est pas aussi profond qu'on le croit. Penche-toi, un soir. On entend quelqu'un répondre.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 58 night false
+title: Lettre 59/101
+text: Mamie s'appelle Jeanne. Elle habite la maison de retraite au bord de la rivière. Elle me demande toujours des nouvelles de ta maison, du grand arbre et du puits.
+blank
+pre: Minouche et ses chatons :
+pre:   /\_/\    /\_/\   /\_/\
+pre:  ( o.o )  ( -.- ) ( o.o )
+pre:   > ^ <    > ^ <   > ^ <
+blank
+text: — Léo, le petit voisin
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 59 night false
+title: Archives de la mairie 60/101 : Plan du village, 1902
+text: Sur ce plan, le village compte treize maisons. La treizième, derrière la maison au bout du chemin, a été grattée au couteau. Dans la marge, une main a écrit : « ne pas reporter ».
+blank
+text: — Copie transmise par Odile
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 60 night false
+title: Lettre 61/101
+text: Au pied du grand arbre, j'ai tracé une croix. Ne creuse pas encore. Attends ma dernière lettre.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 61 night false
+title: La Gazette 62/101, lundi 5 octobre
+text: Ta semaine : les relevés ne sont pas encore arrivés.
+blank
+text: Les échos : Paulo a pêché une botte. Il la garde « pour la paire ».
+blank
+text: Petite annonce : Vends parapluie jamais servi. Léo préfère les flaques.
+blank
+text: L'énigme de la semaine : J'ai des aiguilles mais je ne couds pas. Qui suis-je ?
+blank
+text: Réponse de la semaine dernière : trou
+footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
+== entry 62 night false
+title: Lettre 63/101
+text: Il y a une croix rouge par terre près de l'arbre. Je voulais creuser, mais Minouche m'a regardé très sévèrement. Je n'ai pas creusé. Presque pas.
+blank
+text: — Biscuit, le chien
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 63 night false
+title: Lettre 64/101
+text: Ce soir, cela fait dix ans que nous sommes mariées. C'est Odile qui nous a mariées, à la mairie, sous une pluie battante. Claire dit que ça porte bonheur. Nadia dit surtout que ça mouille. On fête ça avec une tarte au miel.
+blank
+text: — Nadia et Claire, les apicultrices
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 64 night false
+title: Lettre 65/101
+text: Les lettres à l'encre bleue arrivent avec un timbre de la maison de retraite. Les autres, celles sans timbre, je ne sais pas qui les dépose. Je ne distribue rien au numéro 13. Il n'y a pas de numéro 13.
+blank
+text: — Gaston, le facteur
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 65 night false
+title: Lettre 66/101 (glissée sous la porte)
+text: J'ai retrouvé une photo très ancienne de ta maison. Il y a quelqu'un à la fenêtre du haut. Je crois que c'est moi. Je ne me souviens pas d'avoir été photographié.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 66 night false
+title: Lettre 67/101
+text: Tu as sûrement deviné. Je m'appelle Jeanne, je suis la mamie de Léo. Paulo et moi, nous nous sommes aimés quand nous étions jeunes, puis la vie nous a séparés.
+blank
+text: — Jeanne, l'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 67 night false
+title: Lettre 68/101
+text: Cette nuit, j'ai vu Paulo regarder longtemps la lanterne bleue depuis la rivière. Les humains sont compliqués. Hou.
+blank
+text: — Hulotte, le hibou
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 68 night false
+title: Lettre 69/101
+text: Pour la fête, le village a loué une montgolfière ! Elle passera au-dessus de ta maison les jours de beau temps. Lève les yeux et fais-lui signe : le pilote adore ça.
+blank
+text: — Odile, la maire
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 69 night false
+title: Archives de la mairie 70/101 : Rapport du garde-champêtre, 1911
+text: « La rivière dépose parfois sur la berge des bouteilles fermées, avec des messages dedans. Certaines sont datées de l'année suivante. Je recommande de ne pas les ouvrir. Personne ne m'écoute. »
+blank
+text: — Copie transmise par Odile
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 70 night false
+title: Carte postale 71/101 : Lisbonne, Portugal
+text: Les tramways jaunes grimpent les collines comme des chèvres têtues.
+text: Il fait beau à Lisbonne.
+blank
+text: — Sam
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 71 night false
+title: Lettre 72/101
+text: Dans le coffre sous l'arbre, il y a nos lettres d'amour, des photos du village et une recette de Rose quand elle avait dix ans.
+blank
+text: — Jeanne, l'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 72 night false
+title: Lettre 73/101 (glissée sous la porte)
+text: Les canetons ne s'approchent jamais du puits. Les animaux savent des choses. Tu devrais les observer plus souvent.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 73 night false
+title: Lettre 74/101
+text: Coin coin ! Des canetons sont nés au bord de la mare. Ils me suivent partout, même sous la pluie. Surtout sous la pluie.
+blank
+text: — Coin-Coin, le canard
+blank
+text: Question : Un dernier œuf n'a pas encore éclos. On l'attend ?
+text: [1] Oui, attendons   [2] Deux canetons, c'est bien
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 74 night false
+title: La Gazette 75/101, lundi 12 octobre
+text: Ta semaine : les relevés ne sont pas encore arrivés.
+blank
+text: Les échos : Les chats du village tiendraient des réunions secrètes sur le toit de l'église.
+blank
+text: Petite annonce : Donne bocaux de confiture de mûres, récolte miraculeuse.
+blank
+text: L'énigme de la semaine : Je monte et je descends sans jamais bouger. Qui suis-je ?
+blank
+text: Réponse de la semaine dernière : horloge
+footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
+== entry 75 night false
+title: Lettre 76/101
+text: Une dame m'a écrit à l'encre bleue. Son écriture me rappelle quelqu'un. Il y a très longtemps, je rentrais tard de la pêche, et une lanterne bleue m'attendait…
+blank
+text: — Paulo, le pêcheur
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 76 night false
+title: Lettre 77/101
+text: Paulo a reçu ma lettre. Il m'a répondu, avec des fautes d'orthographe, comme avant. J'ai pleuré de joie. Merci d'avoir gardé la lanterne.
+blank
+text: — Jeanne, l'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 77 night false
+title: Lettre 78/101
+text: Je compte les maisons à chaque ronde. Douze. Cette nuit, j'ai compté treize fenêtres allumées. J'ai recommencé : douze. Je n'ai rien noté dans le registre. Il vaut mieux ne rien noter.
+blank
+text: — Marcel, le garde champêtre
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 78 night false
+title: Lettre 79/101
+text: J'ai retrouvé une noisette ! Ah non, c'est un bouton. Ça compte quand même. Tchic.
+blank
+text: — Noisette, l'écureuil
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 79 night false
+title: Lettre 80/101 (glissée sous la porte)
+text: Parfois, ils s'arrêtent tous en même temps et regardent dans la même direction. Quand ça arrive, ne te retourne pas. Regarde-les, eux.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 80 night false
+title: Lettre 81/101
+text: Gros secret : Paulo m'a commandé un gâteau en forme de cœur. Sur mon carnet, j'ai écrit « Pour qui ? ». Il a rougi et il est reparti sans répondre.
+blank
+text: — Rose, la boulangère
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 81 night false
+title: Archives de la mairie 82/101 : Lettre d'une habitante, 1934
+text: « Chez nous, on pose une lanterne bleue à la fenêtre quand quelqu'un n'est pas rentré. La jaune attire ceux qu'on attend. La bleue éloigne ceux qu'on n'attend pas. »
+blank
+text: — Copie transmise par Odile
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 82 night false
+title: Lettre 83/101
+text: Bientôt, je viendrai au village pour la fête. Ce sera la première fois depuis des années que je reverrai ma maison. Ta maison.
+blank
+text: — Jeanne, l'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 83 night false
+title: Lettre 84/101
+text: Une ruche a essaimé ce matin : tout un nuage d'abeilles s'est posé dans ton arbre. Claire est montée les chercher avec un carton, Nadia tenait l'échelle et donnait des conseils. Si une abeille se perd chez toi, ne t'inquiète pas, elle sait rentrer.
+blank
+text: — Nadia et Claire, les apicultrices
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 84 night false
+title: Carte postale 85/101 : Reykjavik, Islande
+text: Le vent ici a du caractère. Il a essayé de me voler cette carte.
+text: La météo s'est perdue en route.
+blank
+text: — Sam
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 85 night false
+title: Lettre 86/101
+text: Je suis arrivé à la boîte aux lettres ! Il m'a fallu des semaines. Maintenant, je repars vers la mare. À dans un mois.
+blank
+text: — Gustave, l'escargot
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 86 night false
+title: Lettre 87/101
+text: J'ai installé une girouette sur ton toit, cadeau des anciens du village. Elle indique le vent. Sauf la nuit : la nuit, elle tourne vers le puits, même quand il n'y a pas un souffle.
+blank
+text: — Gaston, le facteur
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 87 night false
+title: La Gazette 88/101, lundi 19 octobre
+text: Ta semaine : les relevés ne sont pas encore arrivés.
+blank
+text: Les échos : Odile cherche un nom pour le chemin qui mène au puits. Les propositions sont ouvertes.
+blank
+text: Petite annonce : Cours de hululement le jeudi soir. Débutants acceptés.
+blank
+text: L'énigme de la semaine : J'ai un chapeau mais pas de tête, un pied mais pas de jambe. Qui suis-je ?
+blank
+text: Réponse de la semaine dernière : escalier
+footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
+== entry 88 night false
+title: Lettre 89/101 (glissée sous la porte)
+text: Treize maisons, treize fenêtres, treize marches jusqu'à ta porte. J'ai compté. Tu devrais compter aussi.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 89 night false
+title: Lettre 90/101
+text: La clé sous la boîte aux lettres ouvre le coffre. Le jour de la fête, nous l'ouvrirons ensemble, avec Paulo et Léo.
+blank
+text: — Jeanne, l'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 90 night false
+title: Lettre 91/101
+text: Les canetons veulent apprendre à sauter comme moi. Ils tombent tous dans la mare. C'est normal, c'est une mare.
+blank
+text: — Rainette, la grenouille
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 91 night false
+title: Lettre 92/101
+text: On a préparé les décorations pour la fête. Mamie arrive bientôt !
+blank
+pre: La fête dans ton jardin :
+pre:   v v v v v v v v v
+pre:     o    o     o
+pre:    /|\  /|\   /|\   ~ musique ~
+pre:    / \  / \   / \
+blank
+text: — Léo, le petit voisin
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 92 night false
+title: Archives de la mairie 93/101 : La Gazette, 3 novembre 1956
+text: « Un promeneur affirme avoir vu de la lumière dans une maison, derrière celle du bout du chemin. Il n'y a là qu'un terrain vague. Le promeneur est reparti le lendemain, sans laisser d'adresse. »
+blank
+text: — Copie transmise par Odile
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 93 night false
+title: Lettre 94/101
+text: Il y a une dernière chose dans le coffre : une lettre écrite il y a quarante ans pour la personne qui habiterait ma maison. Pour toi.
+blank
+text: — Jeanne, l'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 94 night false
+title: Lettre 95/101 (glissée sous la porte)
+text: Jeanne connaissait mon nom, autrefois. Elle ne le prononce plus. Demande-lui pourquoi la lanterne était bleue, et pas jaune.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 95 night false
+title: Lettre 96/101
+text: Mes chatons ont appris à grimper sur la cheminée. Ils disent que, de là-haut, on entend mieux les étoiles. Je fais semblant de ne pas les connaître.
+blank
+text: — Minouche, la chatte du toit
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 96 night false
+title: Carte postale 97/101 : Marrakech, Maroc
+text: J'ai acheté une théière. Je n'ai pas de cuisine. Je l'adore.
+text: La météo s'est perdue en route.
+blank
+text: — Sam
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 97 night false
+title: Lettre 98/101
+text: Tout le village est prêt. La fête aura lieu dans ton jardin, sous le grand arbre. Rose apporte les gâteaux, Paulo s'occupe de la musique. Il ne manque plus que toi.
+blank
+text: — Odile, la maire
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 98 night false
+title: Lettre 99/101
+text: Demain, je viens. J'ai sorti ma plus belle robe bleue. Paulo dit qu'il apportera des fleurs de la rivière.
+blank
+text: — Jeanne, l'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 99 night false
+title: Lettre 100/101
+text: La fête approche, alors un conseil. Le soir, si on frappe trois coups à ta porte, ne réponds pas. Nous avons tous appris à ne pas répondre. Moi aussi, j'ai appris.
+blank
+text: — Marcel, le garde champêtre
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 100 night false
+title: La Gazette 101/101, lundi 26 octobre
+text: Ta semaine : les relevés ne sont pas encore arrivés.
+blank
+text: Les échos : Léo affirme avoir vu un écureuil faire ses comptes.
+blank
+text: Petite annonce : Perdu clé ancienne. Elle ouvre quelque chose d'important. On ne sait pas quoi.
+blank
+text: L'énigme de la semaine : Je suis à toi, mais les autres m'utilisent plus que toi. Qui suis-je ?
+blank
+text: Réponse de la semaine dernière : champignon
+footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
+== entry 0 night true
+title: Lettre 1/101
+text: Bienvenue dans la maison au bout du chemin ! Ici, tout le monde se connaît. Je passe chaque matin avec mon panier de croissants : si tu sens une odeur de beurre, c'est moi. Je suis sourde : inutile de sonner chez moi, fais-moi plutôt signe par la fenêtre. Gaston, le facteur, t'apportera une lettre par jour. C'est la tradition du village.
+blank
+text: P.-S. (d'une autre écriture, au crayon) : tu as oublié d'éteindre en bas.
+blank
+text: — Rose, la boulangère
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 1 night true
+title: Lettre 2/101
+text: Tu ne me connais pas, mais je connais très bien ta maison. Chaque pierre, chaque fenêtre. Elle cache un secret depuis longtemps. Si tu veux le découvrir, lis bien chacune de mes lettres.
+blank
+text: P.-S. : ne lis pas cette lettre près de la fenêtre.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 2 night true
+title: Lettre 3/101
+text: Miaou. Je suis la chatte qui dort sur ton toit. Ce toit est à moi depuis six hivers, je te le prête. D'ici, je lis les étoiles : ce mois-ci, elles te sont favorables. Quand il pleut, je rentre par la fenêtre, ne t'inquiète pas. Signé d'une patte.
+blank
+text: P.-S. : le chien a aboyé à 3 h 13. Tu l'as entendu ?
+blank
+text: — Minouche, la chatte du toit
+blank
+text: Question : Rose veut m'offrir un nœud. Mes cartes hésitent : quelle couleur ?
+text: Ta réponse : Bleu
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 3 night true
+title: Lettre 4/101
+text: J'avais trop de bois flotté dans ma cabane, alors je t'ai fabriqué un banc. Je l'ai posé devant ta maison. On y voit très bien le coucher du soleil. Paulo, ton voisin de la rivière.
+blank
+text: P.-S. : quelqu'un a lu cette lettre avant toi.
+blank
+text: — Paulo, le pêcheur
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 4 night true
+title: Lettre 5/101
+text: Première énigme : je suis la plus vieille habitante du jardin, j'étais là avant la maison, et chaque automne je perds mes cheveux. Qui suis-je ?
+blank
+text: P.-S. : il y a de la boue sur ton paillasson. Elle n'est pas à toi.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 5 night true
+title: Lettre 6/101 (glissée sous la porte)
+text: Bonjour. J'habite au numéro 13, juste derrière chez toi. Tu ne vois pas ma maison d'ici, c'est normal. Je voulais simplement te dire que la lumière de ta cuisine est très jolie, le soir.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 6 night true
+title: Lettre 7/101
+text: Rose m'a offert un nœud. Les astres l'avaient annoncé : je suis désormais la chatte la plus élégante du village. Biscuit est jaloux, mais Biscuit ne lit pas les étoiles. Regarde bien mon oreille !
+blank
+text: Il est bleu, comme tu me l'as conseillé.
+blank
+text: P.-S. : treize.
+blank
+text: — Minouche, la chatte du toit
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 7 night true
+title: Lettre 8/101
+text: Le village prépare sa grande fête. Il reste beaucoup à faire : réparer le vieux puits, décorer les maisons, trouver de la musique. Chaque habitant peut aider, et ta maison compte beaucoup pour nous.
+blank
+text: P.-S. : ferme bien la porte du jardin, cette nuit.
+blank
+text: — Odile, la maire
+blank
+text: Question : Pour le toit du vieux puits, tu préfères ?
+text: Ta réponse : Des tuiles rouges
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 8 night true
+title: La Gazette 9/101, lundi 7 septembre
+text: Ta semaine : soleil et 21 °C.
+blank
+text: Les échos : On dit que Rose prépare un croissant au chocolat… et à la noisette.
+blank
+text: Petite annonce : Échange recette de tarte contre secret de pêche. Écrire à Paulo.
+blank
+text: L'énigme de la semaine : Plus j'ai de gardiens, moins je suis gardé. Qui suis-je ?
+footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
+== entry 9 night true
+title: Lettre 10/101
+text: Bravo, c'était le grand arbre. Cette nuit, quelqu'un a marché dans ton jardin. Regarde le sol : les traces mènent quelque part.
+blank
+text: P.-S. : tu entends le puits ?
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 10 night true
+title: Lettre 11/101
+text: Bonjour d'en face ! Je suis Sam, j'habite le vieux moulin au bord de la rivière. Je dessinais des cartes, autrefois. Aujourd'hui, je les regarde surtout. Ton jardin figure sur trois de mes plans, tu savais ?
+blank
+text: — Sam, le voisin du moulin
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 11 night true
+title: Lettre 12/101
+text: Wouf ! C'est moi qui dors dans la niche. Je n'ai rien vu cette nuit, je dormais. Enfin, presque. J'ai entendu des petits pas, très légers, puis un rire.
+blank
+text: P.-S. : je t'ai vu lire.
+blank
+text: — Biscuit, le chien
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 12 night true
+title: Lettre 13/101 (glissée sous la porte)
+text: Tu as bien dormi ? Moi, je dors peu. Je regarde les fenêtres du village. La tienne reste allumée plus tard que les autres.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 13 night true
+title: Lettre 14/101
+text: Trente ans que je fais la tournée à vélo ! Ta boîte aux lettres est ma préférée : elle grince joliment. Quand son drapeau rouge est levé, c'est qu'une lettre t'attend.
+blank
+text: P.-S. : va dormir. Moi, je reste.
+blank
+text: — Gaston, le facteur
+blank
+text: Question : Veux-tu que je sonne quand je passe ?
+text: [1] Oui, sonne !   [2] Non, en silence
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 14 night true
+title: Lettre 15/101
+text: Ces traces sont petites. Elles appartiennent à quelqu'un qui aime grimper aux arbres et sauter dans les flaques. Il en sait plus qu'il ne le dit.
+blank
+text: P.-S. (d'une autre écriture, au crayon) : tu as oublié d'éteindre en bas.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 15 night true
+title: Lettre 16/101
+text: Bonjour ! Nous sommes Nadia et Claire. On vient d'emménager dans la maison derrière le verger, avec nos quatre ruches. Si tu vois des abeilles dans ton jardin, ce sont les nôtres : elles adorent ton arbre.
+blank
+text: — Nadia et Claire, les apicultrices
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 16 night true
+title: Lettre 17/101
+text: Hou hou. Je veille dans le grand arbre la nuit. Je vois tout : les chauves-souris, les étoiles filantes, et parfois une petite lumière bleue qui n'est pas une étoile.
+blank
+text: P.-S. : ne lis pas cette lettre près de la fenêtre.
+blank
+text: — Hulotte, le hibou
+blank
+text: Question : La nuit, je hulule ou je me tais ?
+text: [1] Hulule !   [2] Tais-toi, je dors
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 17 night true
+title: Lettre 18/101
+text: Bonsoir. Marcel, garde champêtre. Je fais ma ronde chaque nuit, de la mairie jusqu'au bout de ton chemin. Si tu vois une lanterne passer derrière ta haie vers minuit, c'est moi. En général, rien à signaler.
+blank
+text: — Marcel, le garde champêtre
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 18 night true
+title: Lettre 19/101
+text: Grâce aux voisins, le vieux puits de ton jardin est réparé ! Autrefois, on y faisait des vœux. Fais-en un, ça ne coûte rien.
+blank
+text: Son toit est en tuiles rouges, comme tu l'as voulu.
+blank
+text: P.-S. : le chien a aboyé à 3 h 13. Tu l'as entendu ?
+blank
+text: — Odile, la maire
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 19 night true
+title: Lettre 20/101 (glissée sous la porte)
+text: J'ai marché dans ton jardin cette nuit. J'espère que ça ne te dérange pas. Les traces vont du puits à ta porte : c'est le chemin le plus court.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 20 night true
+title: Lettre 21/101
+text: Le puits, oui. Il y a longtemps, quelqu'un y a jeté une pièce en faisant un vœu : que cette maison reste heureuse. Ce vœu, c'est moi qui l'ai fait.
+blank
+text: P.-S. : quelqu'un a lu cette lettre avant toi.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 21 night true
+title: Lettre 22/101
+text: Rose m'a vendu un croissant brûlé, je l'ai mangé quand même. Le soir, je trace des routes sur de vieilles cartes, vers des villes que je n'ai jamais vues.
+blank
+text: — Sam, le voisin du moulin
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 22 night true
+title: La Gazette 23/101, lundi 14 septembre
+text: Ta semaine : les relevés ne sont pas encore arrivés.
+blank
+text: Les échos : Gaston aurait été vu en train de parler à sa sacoche. Il dément.
+blank
+text: Petite annonce : Donne cartes anciennes. Certaines mènent quelque part.
+blank
+text: L'énigme de la semaine : Je tombe sans me faire mal, je cours sans jambes, et le canard m'adore. Qui suis-je ?
+text: Bravo, énigme résolue !
+blank
+text: Réponse de la semaine dernière : secret
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 23 night true
+title: Lettre 24/101
+text: J'ai trouvé un os énorme en creusant près de ma niche ! Je l'ai laissé dehors pour que tout le monde l'admire. Personne n'y touche. Wouf.
+blank
+text: P.-S. : il y a de la boue sur ton paillasson. Elle n'est pas à toi.
+blank
+text: — Biscuit, le chien
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 24 night true
+title: Lettre 25/101
+text: Bonjour, c'est Léo, celui qui saute dans les flaques chez toi. Pardon pour les traces de boue. Mamie dit que ta maison était la sienne, avant. Je peux continuer à venir jouer ?
+blank
+pre: Mon dessin de ta maison :
+pre:     /\      ~~
+pre:    /  \
+pre:   /____\
+pre:   | [] |    o
+pre:   |_[]_|   /|\
+pre:            / \
+blank
+text: P.-S. : treize.
+blank
+text: — Léo, le petit voisin
+blank
+text: Question : Je peux sauter dans les flaques chez toi ?
+text: [1] Oui, dans toutes !   [2] Non, pense à tes bottes
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 25 night true
+title: Lettre 26/101
+text: Sous ta boîte aux lettres, j'ai laissé une petite clé. Garde-la bien. Elle n'ouvre aucune porte de la maison.
+blank
+text: P.-S. : ferme bien la porte du jardin, cette nuit.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 26 night true
+title: Lettre 27/101 (glissée sous la porte)
+text: Gaston ne passe jamais chez moi. Alors je dépose mes lettres moi-même, sous ta porte. Je fais très attention à ne pas réveiller le chien.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 27 night true
+title: Lettre 28/101
+text: Coin ! La mare au bout de ton jardin est la plus belle de la région quand il pleut. Je la partage avec la grenouille, mais elle chante faux.
+blank
+text: P.-S. : tu entends le puits ?
+blank
+text: — Coin-Coin, le canard
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 28 night true
+title: Lettre 29/101
+text: Rose nous apprend quelques mots en langue des signes. Claire a retenu « miel » et « merci ». Nadia confond encore les deux, ce qui donne des conversations très polies.
+blank
+text: — Nadia et Claire, les apicultrices
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 29 night true
+title: Lettre 30/101
+text: Léo m'a commandé un gâteau « pour fêter la cabane », en langue des signes, rien que ça ! Il apprend vite. Une cabane ? Dans l'arbre ? Je crois qu'un projet se prépare en cachette.
+blank
+text: P.-S. : je t'ai vu lire.
+blank
+text: — Rose, la boulangère
+blank
+text: Question : Pour la cabane de Léo, quelle couleur ?
+text: [1] Rouge   [2] Bleue
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 30 night true
+title: Lettre 31/101
+text: La clé et le grand arbre vont ensemble. Mais il faut encore attendre. Les bonnes choses arrivent lentement, comme les escargots.
+blank
+text: P.-S. : va dormir. Moi, je reste.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 31 night true
+title: Lettre 32/101
+text: J'ai retrouvé une carte du monde de mon grand-père, couverte de petites croix. Chaque croix est une ville qu'il rêvait de voir. Il n'en a vu aucune.
+blank
+text: — Sam, le voisin du moulin
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 32 night true
+title: Lettre 33/101
+text: Je suis parti de la mare il y a trois jours. J'arriverai à la boîte aux lettres… un jour. Ne m'attends pas pour le dîner.
+blank
+text: P.-S. (d'une autre écriture, au crayon) : tu as oublié d'éteindre en bas.
+blank
+text: — Gustave, l'escargot
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 33 night true
+title: Lettre 34/101
+text: On m'a dit que tu posais des questions sur une maison numéro 13. Je fais cette ronde depuis vingt-deux ans. Le village a toujours eu douze maisons. Toujours.
+blank
+text: — Marcel, le garde champêtre
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 34 night true
+title: La Gazette 35/101, lundi 21 septembre
+text: Ta semaine : les relevés ne sont pas encore arrivés.
+blank
+text: Les échos : Le canard de la mare a été élu « canard le plus bavard » du canton.
+blank
+text: Petite annonce : Cherche fanfare pour la fête. Une trompette suffira.
+blank
+text: L'énigme de la semaine : Je suis plein de trous et pourtant je retiens l'eau. Qui suis-je ?
+blank
+text: Réponse de la semaine dernière : pluie
+footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
+== entry 35 night true
+title: Lettre 36/101 (glissée sous la porte)
+text: Ce soir, je suis passé te voir. Tu étais dans l'autre pièce. Je n'ai pas voulu déranger, je suis resté à la fenêtre un moment.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 36 night true
+title: Lettre 37/101
+text: Avec Léo, on a construit une cabane dans le grand arbre. Il y a une échelle, un toit et une fenêtre pour surveiller la rivière. Interdite aux adultes, paraît-il.
+blank
+text: P.-S. : ne lis pas cette lettre près de la fenêtre.
+blank
+text: — Paulo, le pêcheur
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 37 night true
+title: Lettre 38/101
+text: Autrefois, dans ta maison, quelqu'un posait une lanterne bleue à la fenêtre pour guider un pêcheur qui rentrait tard.
+blank
+text: P.-S. : le chien a aboyé à 3 h 13. Tu l'as entendu ?
+blank
+text: — L'encre bleue
+blank
+text: Question : Garderas-tu mon secret ?
+text: [1] Oui, promis   [2] Je vais tout dire à Paulo
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 38 night true
+title: Lettre 39/101
+text: Mon cousin le grand-duc est venu me rendre visite. Il trouve ton arbre très confortable et compte rester. Nous serons deux à veiller. Hou hou.
+blank
+text: P.-S. : quelqu'un a lu cette lettre avant toi.
+blank
+text: — Hulotte, le hibou
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 39 night true
+title: Lettre 40/101
+text: Il pleuvait si fort ce matin que mon vélo flottait presque. Le canard m'a doublé. Bizarre : ta boîte aux lettres était déjà ouverte, et toute humide à l'intérieur.
+blank
+text: P.-S. : il y a de la boue sur ton paillasson. Elle n'est pas à toi.
+blank
+text: — Gaston, le facteur
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 40 night true
+title: Lettre 41/101
+text: Premier pot de miel ! On en a déposé un sur ta boîte aux lettres. Rose en a pris dix pour ses gâteaux. Marcel n'en veut pas : il dit que nos abeilles évitent le n°13 et que ce n'est pas bon signe.
+blank
+text: — Nadia et Claire, les apicultrices
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 41 night true
+title: Lettre 42/101 (glissée sous la porte)
+text: Tu as demandé à Marcel où se trouve le numéro 13 ? Il t'a dit qu'il n'existe pas. Il dit ça à tout le monde. Il a raison de le dire.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 42 night true
+title: Lettre 43/101
+text: Ce soir, regarde la petite fenêtre en haut à gauche. La lanterne bleue est revenue. Quelqu'un pense encore au pêcheur.
+blank
+text: P.-S. : treize.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 43 night true
+title: Lettre 44/101
+text: Paulo dit que les rêves se fanent comme les fleurs qu'on oublie d'arroser. Il a raison, pour une fois. J'ai acheté une valise. Elle est encore vide.
+blank
+text: — Sam, le voisin du moulin
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 44 night true
+title: Lettre 45/101
+text: Tchic tchic ! J'ai caché 147 noisettes dans ton arbre. Je ne me souviens plus où. Si tu en trouves une, elle est à moi.
+blank
+text: P.-S. : ferme bien la porte du jardin, cette nuit.
+blank
+text: — Noisette, l'écureuil
+blank
+text: Question : Je peux cacher des noisettes près de ta boîte aux lettres ?
+text: [1] Oui, vas-y   [2] Non, c'est pour le courrier
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 45 night true
+title: Lettre 46/101
+text: La fête approche. Chaque maison doit apporter une décoration. La tienne aura des guirlandes, j'ai déjà prévenu Rose.
+blank
+text: P.-S. : tu entends le puits ?
+blank
+text: — Odile, la maire
+blank
+text: Question : Pour décorer ta maison : fanions ou lampions ?
+text: [1] Des fanions   [2] Des lampions
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 46 night true
+title: Archives de la mairie 47/101 : Registre communal, 1887
+text: Mot d'Odile : puisque tu poses tant de questions, je t'ouvre les archives. Lis-les dans l'ordre, et pas trop tard le soir. — « Le conseil décide de creuser un puits dans le jardin de la maison au bout du chemin. Les ouvriers disent entendre comme des voix au fond. Le travail est achevé en onze jours. »
+blank
+text: — Copie transmise par Odile
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 47 night true
+title: La Gazette 48/101, lundi 28 septembre
+text: Ta semaine : pluie.
+blank
+text: Les échos : Quelqu'un a repeint la boîte aux lettres de la mairie en rose. Enquête en cours.
+blank
+text: Petite annonce : Perdu : noisettes, quantité inconnue. Contacter Noisette, grand arbre.
+blank
+text: L'énigme de la semaine : Plus on m'enlève, plus je deviens grand. Qui suis-je ?
+blank
+text: Réponse de la semaine dernière : eponge
+footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
+== entry 48 night true
+title: Lettre 49/101
+text: Le pêcheur s'appelle Paulo. Il ne sait pas que c'est moi qui écris. Garde le secret encore un peu.
+blank
+text: P.-S. : je t'ai vu lire.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 49 night true
+title: Lettre 50/101 (glissée sous la porte)
+text: Ton chat me connaît. Il me regarde quand je passe. Le chien aussi, mais lui fait semblant de dormir.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 50 night true
+title: Lettre 51/101
+text: Je ne chante pas faux, c'est le canard qui n'a pas d'oreille. Quand il pleut, je saute dans la mare : plouf ! C'est mon meilleur numéro.
+blank
+text: P.-S. : va dormir. Moi, je reste.
+blank
+text: — Rainette, la grenouille
+blank
+text: Question : Qui chante le mieux, moi ou le canard ?
+text: [1] Toi, Rainette   [2] Le canard
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 51 night true
+title: Lettre 52/101
+text: Ronde de cette nuit : de la boue près du puits, encore. Des pas qui vont vers ta maison, aucun qui en revient. Ce sont sûrement les miens. J'ai dû mal compter.
+blank
+text: — Marcel, le garde champêtre
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 52 night true
+title: Lettre 53/101
+text: Avec Léo, on a accroché une guirlande lumineuse sous ton porche. Elle s'allume le soir. Tout le village la voit depuis la route !
+blank
+text: P.-S. (d'une autre écriture, au crayon) : tu as oublié d'éteindre en bas.
+blank
+text: — Rose, la boulangère
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 53 night true
+title: Recette du mois 54/101 : Soupe de potiron
+text: Un potiron, une pomme de terre, un oignon, un litre de bouillon, un peu de crème. Cuis 30 min, mixe. Garde l'écorce pour la lanterne d'Halloween.
+blank
+text: — Rose, la boulangère
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 54 night true
+title: Lettre 55/101
+text: J'ai habité ta maison pendant cinquante ans. J'y ai été très heureuse. J'ai laissé quelque chose pour la personne qui vivrait là après moi.
+blank
+text: P.-S. : ne lis pas cette lettre près de la fenêtre.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 55 night true
+title: Lettre 56/101
+text: Grande nouvelle : j'ai eu deux chatons ! Ils sont nés une nuit de pleine lune, ce qui fait d'eux des chatons très sages. L'un a une tache en forme d'étoile. Biscuit fait semblant de ne pas les aimer.
+blank
+text: P.-S. : le chien a aboyé à 3 h 13. Tu l'as entendu ?
+blank
+text: — Minouche, la chatte du toit
+blank
+text: Question : Mes chatons sont-ils noirs ou blancs, à ton avis ? Mon pendule refuse de répondre.
+text: [1] Noirs   [2] Blancs
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 56 night true
+title: Lettre 57/101
+text: Je pars demain. Je vais suivre les croix de mon grand-père, une par une. Je t'enverrai une carte postale chaque semaine, avec le temps qu'il fait là-bas. Garde un œil sur mon moulin.
+blank
+text: — Sam, le voisin du moulin
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 57 night true
+title: Lettre 58/101 (glissée sous la porte)
+text: Le puits n'est pas aussi profond qu'on le croit. Penche-toi, un soir. On entend quelqu'un répondre.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 58 night true
+title: Lettre 59/101
+text: Mamie s'appelle Jeanne. Elle habite la maison de retraite au bord de la rivière. Elle me demande toujours des nouvelles de ta maison, du grand arbre et du puits.
+blank
+pre: Minouche et ses chatons :
+pre:   /\_/\    /\_/\   /\_/\
+pre:  ( o.o )  ( -.- ) ( o.o )
+pre:   > ^ <    > ^ <   > ^ <
+blank
+text: P.-S. : quelqu'un a lu cette lettre avant toi.
+blank
+text: — Léo, le petit voisin
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 59 night true
+title: Archives de la mairie 60/101 : Plan du village, 1902
+text: Sur ce plan, le village compte treize maisons. La treizième, derrière la maison au bout du chemin, a été grattée au couteau. Dans la marge, une main a écrit : « ne pas reporter ».
+blank
+text: — Copie transmise par Odile
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 60 night true
+title: Lettre 61/101
+text: Au pied du grand arbre, j'ai tracé une croix. Ne creuse pas encore. Attends ma dernière lettre.
+blank
+text: P.-S. : il y a de la boue sur ton paillasson. Elle n'est pas à toi.
+blank
+text: — L'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 61 night true
+title: La Gazette 62/101, lundi 5 octobre
+text: Ta semaine : les relevés ne sont pas encore arrivés.
+blank
+text: Les échos : Paulo a pêché une botte. Il la garde « pour la paire ».
+blank
+text: Petite annonce : Vends parapluie jamais servi. Léo préfère les flaques.
+blank
+text: L'énigme de la semaine : J'ai des aiguilles mais je ne couds pas. Qui suis-je ?
+blank
+text: Réponse de la semaine dernière : trou
+footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
+== entry 62 night true
+title: Lettre 63/101
+text: Il y a une croix rouge par terre près de l'arbre. Je voulais creuser, mais Minouche m'a regardé très sévèrement. Je n'ai pas creusé. Presque pas.
+blank
+text: P.-S. : treize.
+blank
+text: — Biscuit, le chien
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 63 night true
+title: Lettre 64/101
+text: Ce soir, cela fait dix ans que nous sommes mariées. C'est Odile qui nous a mariées, à la mairie, sous une pluie battante. Claire dit que ça porte bonheur. Nadia dit surtout que ça mouille. On fête ça avec une tarte au miel.
+blank
+text: — Nadia et Claire, les apicultrices
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 64 night true
+title: Lettre 65/101
+text: Les lettres à l'encre bleue arrivent avec un timbre de la maison de retraite. Les autres, celles sans timbre, je ne sais pas qui les dépose. Je ne distribue rien au numéro 13. Il n'y a pas de numéro 13.
+blank
+text: P.-S. : ferme bien la porte du jardin, cette nuit.
+blank
+text: — Gaston, le facteur
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 65 night true
+title: Lettre 66/101 (glissée sous la porte)
+text: J'ai retrouvé une photo très ancienne de ta maison. Il y a quelqu'un à la fenêtre du haut. Je crois que c'est moi. Je ne me souviens pas d'avoir été photographié.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 66 night true
+title: Lettre 67/101
+text: Tu as sûrement deviné. Je m'appelle Jeanne, je suis la mamie de Léo. Paulo et moi, nous nous sommes aimés quand nous étions jeunes, puis la vie nous a séparés.
+blank
+text: P.-S. : tu entends le puits ?
+blank
+text: — Jeanne, l'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 67 night true
+title: Lettre 68/101
+text: Cette nuit, j'ai vu Paulo regarder longtemps la lanterne bleue depuis la rivière. Les humains sont compliqués. Hou.
+blank
+text: P.-S. : je t'ai vu lire.
+blank
+text: — Hulotte, le hibou
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 68 night true
+title: Lettre 69/101
+text: Pour la fête, le village a loué une montgolfière ! Elle passera au-dessus de ta maison les jours de beau temps. Lève les yeux et fais-lui signe : le pilote adore ça.
+blank
+text: P.-S. : va dormir. Moi, je reste.
+blank
+text: — Odile, la maire
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 69 night true
+title: Archives de la mairie 70/101 : Rapport du garde-champêtre, 1911
+text: « La rivière dépose parfois sur la berge des bouteilles fermées, avec des messages dedans. Certaines sont datées de l'année suivante. Je recommande de ne pas les ouvrir. Personne ne m'écoute. »
+blank
+text: — Copie transmise par Odile
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 70 night true
+title: Carte postale 71/101 : Lisbonne, Portugal
+text: Les tramways jaunes grimpent les collines comme des chèvres têtues.
+text: Il fait beau à Lisbonne.
+blank
+text: — Sam
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 71 night true
+title: Lettre 72/101
+text: Dans le coffre sous l'arbre, il y a nos lettres d'amour, des photos du village et une recette de Rose quand elle avait dix ans.
+blank
+text: P.-S. (d'une autre écriture, au crayon) : tu as oublié d'éteindre en bas.
+blank
+text: — Jeanne, l'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 72 night true
+title: Lettre 73/101 (glissée sous la porte)
+text: Les canetons ne s'approchent jamais du puits. Les animaux savent des choses. Tu devrais les observer plus souvent.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 73 night true
+title: Lettre 74/101
+text: Coin coin ! Des canetons sont nés au bord de la mare. Ils me suivent partout, même sous la pluie. Surtout sous la pluie.
+blank
+text: P.-S. : ne lis pas cette lettre près de la fenêtre.
+blank
+text: — Coin-Coin, le canard
+blank
+text: Question : Un dernier œuf n'a pas encore éclos. On l'attend ?
+text: [1] Oui, attendons   [2] Deux canetons, c'est bien
+footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
+== entry 74 night true
+title: La Gazette 75/101, lundi 12 octobre
+text: Ta semaine : les relevés ne sont pas encore arrivés.
+blank
+text: Les échos : Les chats du village tiendraient des réunions secrètes sur le toit de l'église.
+blank
+text: Petite annonce : Donne bocaux de confiture de mûres, récolte miraculeuse.
+blank
+text: L'énigme de la semaine : Je monte et je descends sans jamais bouger. Qui suis-je ?
+blank
+text: Réponse de la semaine dernière : horloge
+footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
+== entry 75 night true
+title: Lettre 76/101
+text: Une dame m'a écrit à l'encre bleue. Son écriture me rappelle quelqu'un. Il y a très longtemps, je rentrais tard de la pêche, et une lanterne bleue m'attendait…
+blank
+text: P.-S. : le chien a aboyé à 3 h 13. Tu l'as entendu ?
+blank
+text: — Paulo, le pêcheur
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 76 night true
+title: Lettre 77/101
+text: Paulo a reçu ma lettre. Il m'a répondu, avec des fautes d'orthographe, comme avant. J'ai pleuré de joie. Merci d'avoir gardé la lanterne.
+blank
+text: P.-S. : quelqu'un a lu cette lettre avant toi.
+blank
+text: — Jeanne, l'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 77 night true
+title: Lettre 78/101
+text: Je compte les maisons à chaque ronde. Douze. Cette nuit, j'ai compté treize fenêtres allumées. J'ai recommencé : douze. Je n'ai rien noté dans le registre. Il vaut mieux ne rien noter.
+blank
+text: — Marcel, le garde champêtre
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 78 night true
+title: Lettre 79/101
+text: J'ai retrouvé une noisette ! Ah non, c'est un bouton. Ça compte quand même. Tchic.
+blank
+text: P.-S. : il y a de la boue sur ton paillasson. Elle n'est pas à toi.
+blank
+text: — Noisette, l'écureuil
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 79 night true
+title: Lettre 80/101 (glissée sous la porte)
+text: Parfois, ils s'arrêtent tous en même temps et regardent dans la même direction. Quand ça arrive, ne te retourne pas. Regarde-les, eux.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 80 night true
+title: Lettre 81/101
+text: Gros secret : Paulo m'a commandé un gâteau en forme de cœur. Sur mon carnet, j'ai écrit « Pour qui ? ». Il a rougi et il est reparti sans répondre.
+blank
+text: P.-S. : treize.
+blank
+text: — Rose, la boulangère
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 81 night true
+title: Archives de la mairie 82/101 : Lettre d'une habitante, 1934
+text: « Chez nous, on pose une lanterne bleue à la fenêtre quand quelqu'un n'est pas rentré. La jaune attire ceux qu'on attend. La bleue éloigne ceux qu'on n'attend pas. »
+blank
+text: — Copie transmise par Odile
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 82 night true
+title: Lettre 83/101
+text: Bientôt, je viendrai au village pour la fête. Ce sera la première fois depuis des années que je reverrai ma maison. Ta maison.
+blank
+text: P.-S. : ferme bien la porte du jardin, cette nuit.
+blank
+text: — Jeanne, l'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 83 night true
+title: Lettre 84/101
+text: Une ruche a essaimé ce matin : tout un nuage d'abeilles s'est posé dans ton arbre. Claire est montée les chercher avec un carton, Nadia tenait l'échelle et donnait des conseils. Si une abeille se perd chez toi, ne t'inquiète pas, elle sait rentrer.
+blank
+text: — Nadia et Claire, les apicultrices
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 84 night true
+title: Carte postale 85/101 : Reykjavik, Islande
+text: Le vent ici a du caractère. Il a essayé de me voler cette carte.
+text: La météo s'est perdue en route.
+blank
+text: — Sam
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 85 night true
+title: Lettre 86/101
+text: Je suis arrivé à la boîte aux lettres ! Il m'a fallu des semaines. Maintenant, je repars vers la mare. À dans un mois.
+blank
+text: P.-S. : tu entends le puits ?
+blank
+text: — Gustave, l'escargot
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 86 night true
+title: Lettre 87/101
+text: J'ai installé une girouette sur ton toit, cadeau des anciens du village. Elle indique le vent. Sauf la nuit : la nuit, elle tourne vers le puits, même quand il n'y a pas un souffle.
+blank
+text: P.-S. : je t'ai vu lire.
+blank
+text: — Gaston, le facteur
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 87 night true
+title: La Gazette 88/101, lundi 19 octobre
+text: Ta semaine : les relevés ne sont pas encore arrivés.
+blank
+text: Les échos : Odile cherche un nom pour le chemin qui mène au puits. Les propositions sont ouvertes.
+blank
+text: Petite annonce : Cours de hululement le jeudi soir. Débutants acceptés.
+blank
+text: L'énigme de la semaine : J'ai un chapeau mais pas de tête, un pied mais pas de jambe. Qui suis-je ?
+blank
+text: Réponse de la semaine dernière : escalier
+footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
+== entry 88 night true
+title: Lettre 89/101 (glissée sous la porte)
+text: Treize maisons, treize fenêtres, treize marches jusqu'à ta porte. J'ai compté. Tu devrais compter aussi.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 89 night true
+title: Lettre 90/101
+text: La clé sous la boîte aux lettres ouvre le coffre. Le jour de la fête, nous l'ouvrirons ensemble, avec Paulo et Léo.
+blank
+text: P.-S. : va dormir. Moi, je reste.
+blank
+text: — Jeanne, l'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 90 night true
+title: Lettre 91/101
+text: Les canetons veulent apprendre à sauter comme moi. Ils tombent tous dans la mare. C'est normal, c'est une mare.
+blank
+text: P.-S. (d'une autre écriture, au crayon) : tu as oublié d'éteindre en bas.
+blank
+text: — Rainette, la grenouille
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 91 night true
+title: Lettre 92/101
+text: On a préparé les décorations pour la fête. Mamie arrive bientôt !
+blank
+pre: La fête dans ton jardin :
+pre:   v v v v v v v v v
+pre:     o    o     o
+pre:    /|\  /|\   /|\   ~ musique ~
+pre:    / \  / \   / \
+blank
+text: P.-S. : ne lis pas cette lettre près de la fenêtre.
+blank
+text: — Léo, le petit voisin
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 92 night true
+title: Archives de la mairie 93/101 : La Gazette, 3 novembre 1956
+text: « Un promeneur affirme avoir vu de la lumière dans une maison, derrière celle du bout du chemin. Il n'y a là qu'un terrain vague. Le promeneur est reparti le lendemain, sans laisser d'adresse. »
+blank
+text: — Copie transmise par Odile
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 93 night true
+title: Lettre 94/101
+text: Il y a une dernière chose dans le coffre : une lettre écrite il y a quarante ans pour la personne qui habiterait ma maison. Pour toi.
+blank
+text: P.-S. : le chien a aboyé à 3 h 13. Tu l'as entendu ?
+blank
+text: — Jeanne, l'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 94 night true
+title: Lettre 95/101 (glissée sous la porte)
+text: Jeanne connaissait mon nom, autrefois. Elle ne le prononce plus. Demande-lui pourquoi la lanterne était bleue, et pas jaune.
+blank
+text: — Le voisin du n°13
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 95 night true
+title: Lettre 96/101
+text: Mes chatons ont appris à grimper sur la cheminée. Ils disent que, de là-haut, on entend mieux les étoiles. Je fais semblant de ne pas les connaître.
+blank
+text: P.-S. : quelqu'un a lu cette lettre avant toi.
+blank
+text: — Minouche, la chatte du toit
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 96 night true
+title: Carte postale 97/101 : Marrakech, Maroc
+text: J'ai acheté une théière. Je n'ai pas de cuisine. Je l'adore.
+text: La météo s'est perdue en route.
+blank
+text: — Sam
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 97 night true
+title: Lettre 98/101
+text: Tout le village est prêt. La fête aura lieu dans ton jardin, sous le grand arbre. Rose apporte les gâteaux, Paulo s'occupe de la musique. Il ne manque plus que toi.
+blank
+text: P.-S. : il y a de la boue sur ton paillasson. Elle n'est pas à toi.
+blank
+text: — Odile, la maire
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 98 night true
+title: Lettre 99/101
+text: Demain, je viens. J'ai sorti ma plus belle robe bleue. Paulo dit qu'il apportera des fleurs de la rivière.
+blank
+text: P.-S. : treize.
+blank
+text: — Jeanne, l'encre bleue
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 99 night true
+title: Lettre 100/101
+text: La fête approche, alors un conseil. Le soir, si on frappe trois coups à ta porte, ne réponds pas. Nous avons tous appris à ne pas répondre. Moi aussi, j'ai appris.
+blank
+text: — Marcel, le garde champêtre
+footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
+== entry 100 night true
+title: La Gazette 101/101, lundi 26 octobre
+text: Ta semaine : les relevés ne sont pas encore arrivés.
+blank
+text: Les échos : Léo affirme avoir vu un écureuil faire ses comptes.
+blank
+text: Petite annonce : Perdu clé ancienne. Elle ouvre quelque chose d'important. On ne sait pas quoi.
+blank
+text: L'énigme de la semaine : Je suis à toi, mais les autres m'utilisent plus que toi. Qui suis-je ?
+blank
+text: Réponse de la semaine dernière : champignon
+footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]

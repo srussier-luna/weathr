@@ -2,23 +2,25 @@ use crate::animation::lore::Unlocks;
 use crate::animation_manager::AnimationManager;
 use crate::app_state::AppState;
 use crate::badges;
-use crate::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::config::Config;
 use crate::demo::{Demo, SCENE_DURATION};
 use crate::error::WeatherError;
 use crate::holiday::Holiday;
-use crate::letters::{self, Entry, Letter};
 use crate::overlay;
 use crate::progress::Progress;
 use crate::rain_alert::{self, RainAlert};
 use crate::remote_weather::{self, Reply, Request};
 use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
-use crate::views::{self, MailContext};
+use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
+use crate::story::content::letters::{self, Letter};
+use crate::story::content::{self, ReadContext};
+use crate::story::{Entry, StoryClock, Timeline, sources};
+use crate::views;
 use crate::weather::{
     OpenMeteoProvider, WeatherClient, WeatherCondition, WeatherData, WeatherLocation,
 };
-use chrono::{Local, NaiveDate, Timelike};
+use chrono::{Local, Timelike};
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use std::collections::{BTreeSet, VecDeque};
 use std::io;
@@ -36,23 +38,16 @@ const REMOTE_CHECK_FRAMES: u32 = 300;
 const MAX_ANSWER_LENGTH: usize = 30;
 const REMOTE_CHANNEL_SIZE: usize = 16;
 const INDEX_MARGIN_ROWS: u16 = 12;
-const NIGHT_READING_HOURS: [std::ops::Range<u32>; 2] = [22..24, 0..6];
 
-fn is_night_hour() -> bool {
-    let hour = Local::now().hour();
-    NIGHT_READING_HOURS
-        .iter()
-        .any(|hours| hours.contains(&hour))
-}
-
-fn count_read(timeline: &[(usize, Entry)], progress: &Progress, kind: fn(&Entry) -> bool) -> usize {
-    timeline[..progress.letters_read.min(timeline.len())]
-        .iter()
+fn count_read(timeline: &Timeline, progress: &Progress, kind: fn(&Entry) -> bool) -> usize {
+    timeline
+        .mail()
+        .take(progress.letters_read)
         .filter(|(_, entry)| kind(entry))
         .count()
 }
 
-fn unlocks_for(timeline: &[(usize, Entry)], progress: &Progress) -> Unlocks {
+fn unlocks_for(timeline: &Timeline, progress: &Progress) -> Unlocks {
     Unlocks::after_reading(
         count_read(timeline, progress, |entry| matches!(entry, Entry::Main(_))),
         count_read(timeline, progress, |entry| {
@@ -65,13 +60,12 @@ fn unlocks_for(timeline: &[(usize, Entry)], progress: &Progress) -> Unlocks {
     )
 }
 
-fn mail_date(mail_hour: u32) -> NaiveDate {
-    (Local::now() - chrono::Duration::hours(i64::from(mail_hour))).date_naive()
+fn story_today(clock: &StoryClock) -> usize {
+    clock.day_on(Local::now().naive_local())
 }
 
-fn build_timeline(main_count: usize, progress: &Progress, today: NaiveDate) -> Vec<(usize, Entry)> {
-    let start = progress.start_date().unwrap_or(today);
-    letters::timeline(main_count, start, today)
+fn build_timeline(village_count: usize, clock: &StoryClock, today: usize) -> Timeline {
+    Timeline::new(&sources::registered(village_count), clock, today)
 }
 
 fn generate_offline_weather(rng: &mut impl rand::Rng) -> WeatherData {
@@ -183,7 +177,8 @@ pub struct App {
     demo: Option<Demo>,
     progress: Progress,
     letters: Vec<Letter>,
-    timeline: Vec<(usize, Entry)>,
+    clock: StoryClock,
+    timeline: Timeline,
     overlay: Option<Overlay>,
     is_simulated: bool,
     toasts: VecDeque<String>,
@@ -199,7 +194,6 @@ pub struct App {
     pending_requests: BTreeSet<Request>,
     frame_count: u32,
     timeline_day: usize,
-    mail_hour: u32,
 }
 
 impl App {
@@ -272,9 +266,12 @@ impl App {
         let rain_receiver =
             (!is_simulated).then(|| rain_alert::spawn(location.latitude, location.longitude));
         let letters = letters::load();
-        let mail_hour = config.mail.hour;
-        let timeline = build_timeline(letters.len(), &progress, mail_date(mail_hour));
-        let timeline_day = progress.day_on(mail_date(mail_hour));
+        let start = progress
+            .start_date()
+            .unwrap_or_else(|| Local::now().date_naive());
+        let clock = StoryClock::new(start, config.mail.hour);
+        let timeline_day = story_today(&clock);
+        let timeline = build_timeline(letters.len(), &clock, timeline_day);
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
         animations.set_unlocks(unlocks_for(&timeline, &progress));
 
@@ -288,6 +285,7 @@ impl App {
             demo,
             progress,
             letters,
+            clock,
             timeline,
             overlay: None,
             is_simulated: is_simulated || simulation.night,
@@ -304,7 +302,6 @@ impl App {
             pending_requests: BTreeSet::new(),
             frame_count: 0,
             timeline_day,
-            mail_hour,
         }
     }
 
@@ -433,15 +430,11 @@ impl App {
     }
 
     fn available_letters(&self) -> usize {
-        let today = self.progress.day_on(mail_date(self.mail_hour));
-        self.timeline
-            .iter()
-            .take_while(|(day, _)| *day <= today)
-            .count()
+        self.timeline.delivered_by(story_today(&self.clock))
     }
 
     fn village_letter_number(&self, index: usize) -> Option<usize> {
-        match self.timeline.get(index)? {
+        match self.timeline.mail_at(index)? {
             (_, Entry::Main(main)) => Some(main + 1),
             _ => None,
         }
@@ -510,7 +503,7 @@ impl App {
 
     fn open_letter(&mut self, index: usize) {
         self.overlay = Some(Overlay::Letter(index));
-        if is_night_hour() {
+        if content::is_night_hour(Local::now().hour()) {
             self.award(vec!["night_reading"]);
         }
         if index + 1 > self.progress.letters_read {
@@ -541,12 +534,18 @@ impl App {
         }
 
         let view = match self.overlay {
-            Some(Overlay::Letter(index)) => views::entry_view(
-                self.timeline[index].1,
-                index + 1,
-                self.available_letters(),
-                &self.mail_context(),
-            ),
+            Some(Overlay::Letter(index)) => {
+                let Some((day, entry)) = self.timeline.mail_at(index) else {
+                    return Ok(());
+                };
+                content::entry_view(
+                    day,
+                    entry,
+                    index + 1,
+                    self.available_letters(),
+                    &self.read_context(),
+                )
+            }
             Some(Overlay::Album(page)) => {
                 let mut pages = self.album_pages();
                 let page = page.min(pages.len().saturating_sub(1));
@@ -554,10 +553,10 @@ impl App {
             }
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
             Some(Overlay::Index(selected)) => views::index_view(
-                self.read_entries(),
+                &self.read_entries(),
                 selected,
                 renderer.get_size().1.saturating_sub(INDEX_MARGIN_ROWS) as usize,
-                &self.mail_context(),
+                &self.read_context(),
             ),
             Some(Overlay::Help) => views::help_view(
                 &unlocks_for(&self.timeline, &self.progress),
@@ -577,39 +576,35 @@ impl App {
         overlay::render_view(renderer, &view)
     }
 
-    fn mail_context(&self) -> MailContext<'_> {
-        MailContext {
+    fn read_context(&self) -> ReadContext<'_> {
+        ReadContext {
             letters: &self.letters,
             progress: &self.progress,
-            start: self.start_date(),
-            is_night: is_night_hour(),
+            clock: &self.clock,
+            reading_hour: Local::now().hour(),
             riddle_input: self.riddle_input.as_deref(),
         }
     }
 
-    fn start_date(&self) -> NaiveDate {
-        self.progress
-            .start_date()
-            .unwrap_or_else(|| Local::now().date_naive())
-    }
-
-    fn read_entries(&self) -> &[(usize, Entry)] {
-        &self.timeline[..self.progress.letters_read.min(self.available_letters())]
+    fn read_entries(&self) -> Vec<(usize, Entry)> {
+        self.timeline
+            .mail()
+            .take(self.progress.letters_read.min(self.available_letters()))
+            .collect()
     }
 
     fn album_pages(&self) -> Vec<overlay::View> {
         views::album_pages(
-            self.read_entries(),
+            &self.read_entries(),
             &self.progress,
             &unlocks_for(&self.timeline, &self.progress),
         )
     }
 
     fn refresh_timeline(&mut self) {
-        let date = mail_date(self.mail_hour);
-        let today = self.progress.day_on(date);
+        let today = story_today(&self.clock);
         if today != self.timeline_day {
-            self.timeline = build_timeline(self.letters.len(), &self.progress, date);
+            self.timeline = build_timeline(self.letters.len(), &self.clock, today);
             self.timeline_day = today;
             self.refresh_unlocks();
         }
@@ -623,14 +618,14 @@ impl App {
 
         let available = self.available_letters();
         let mut requests = Vec::new();
-        for (_, entry) in &self.timeline[..available] {
+        for (_, entry) in self.timeline.mail().take(available) {
             let request = match entry {
-                Entry::Postcard(index) if !self.progress.postcard_weather.contains_key(index) => {
+                Entry::Postcard(index) if !self.progress.postcard_weather.contains_key(&index) => {
                     let city = &CITIES[index % CITIES.len()];
-                    (Request::Postcard(*index), city.latitude, city.longitude)
+                    (Request::Postcard(index), city.latitude, city.longitude)
                 }
-                Entry::Gazette(week) if !self.progress.gazette_weather.contains_key(week) => (
-                    Request::WeekRecap(*week),
+                Entry::Gazette(week) if !self.progress.gazette_weather.contains_key(&week) => (
+                    Request::WeekRecap(week),
                     self.state.location.latitude,
                     self.state.location.longitude,
                 ),
@@ -684,7 +679,7 @@ impl App {
 
     fn gazette_week(&self) -> Option<usize> {
         match self.overlay {
-            Some(Overlay::Letter(index)) => match self.timeline.get(index)?.1 {
+            Some(Overlay::Letter(index)) => match self.timeline.mail_at(index)?.1 {
                 Entry::Gazette(week) => Some(week),
                 _ => None,
             },
