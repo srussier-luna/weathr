@@ -20,7 +20,7 @@ created: 2026-10-23
   - day 4: the current tree at 1/3 of its fitted height;
   - day 8: at 2/3;
   - day 12 and after: full size, same as today.
-- Day = the same day count as the Lettres (`Progress::day_on` with the mail date), so the Arbre changes at `courrier.heure`, without restart.
+- Day = the Jour de jeu from `StoryClock` (#12), so the Arbre changes at `courrier.heure`, without restart.
 - Full size on day 12 on purpose: Hulotte, who lives in the Arbre, arrives with Lettre 12 (#4). Later tree props (treehouse Lettre 22, Noisette Lettre 27, chest Lettre 59) always find a full-size Arbre.
 - Reduced stages reuse the current drawing scaled down (`Tree::fit` with a smaller height cap), so seasons keep working at every stage: spring blossoms, autumn leaves, fir in winter and December.
 - Forced modes (`--demo`, `--simulate`, `--christmas`, `--fireworks`, `--night`) always show the full Arbre, like the Habitants in #4.
