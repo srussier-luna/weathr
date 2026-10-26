@@ -1,6 +1,6 @@
 ---
 issue: 24
-status: to-close
+status: to-test
 wiki: [[updater]], [[render]], [[mail]]
 note: "ajouter un encadrer avec une petite release note pour prevenir l'utilisateur de ce qui change dans la mise a jour qu'il vien d'installer"
 created: 2026-10-26
@@ -67,3 +67,8 @@ Round validation — LENSES: style ✓ · elegance ✓ · structure ✓ · corre
 manual validation — not run by agent
 
 ## Feedback
+
+Round 1 — asked: « le texte ne doit pas spoiler, dire qu'on a ajouté des pluies d'étoiles filantes saisonnières » · « Chaque fenêtre a maintenant son cadre… c'est pas très joli, il faut une phrase plus chouette et moins fonctionnalité » · « pour le Badge, enlève au milieu de l'écran » · « la dernière ligne est bien ».
+- Triage: adjustment (copy only, inline micro-fix in NOUVEAUTES.md).
+- Changed: Perséides + Géminides lines → one line without dates or Badge; frames line rewritten; « au milieu de l'écran » removed. Variant « complice » picked by the user.
+- Code untouched → review still valid for code; tests green.
