@@ -14,6 +14,7 @@ mod letters;
 mod overlay;
 mod progress;
 mod rain_alert;
+mod release_notes;
 mod remote_weather;
 mod render;
 mod scene;
@@ -179,7 +180,10 @@ async fn main() -> io::Result<()> {
     }
 
     if cli.update {
-        return updater::update_now();
+        if !updater::update_now() {
+            std::process::exit(1);
+        }
+        return Ok(());
     }
     if !cli.silent {
         updater::offer_update().await;
