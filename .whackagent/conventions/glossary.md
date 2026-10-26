@@ -32,6 +32,7 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Perséides | | | | étoiles filantes plus fréquentes la nuit, du 9 au 15 août ; Badge dédié |
 | Géminides | | | | étoiles filantes plus fréquentes la nuit, du 10 au 16 décembre ; Badge dédié |
 | Boîte pleine | | | | 7 Lettres du village non lues ; l'histoire se met en pause |
+| Ruche | | | | cadeau de Nadia et Claire, entre le sapin et la mare |
 <!-- | Inbox | mailbox | Messages | `Inbox` | received mail, not archived, all accounts | -->
 <!-- | Message | mail | Email | `Message` | one mail. States: Draft, Sent, Pending | -->
 
@@ -45,6 +46,7 @@ One precise screen. Team names, in the discussion language. UI projects only.
 | Lettre | | `entry_view` | une Lettre ouverte, numéro / total |
 | Album | | `album_pages` | Badges et souvenirs collectés |
 | Aide | help | `help_view` | touches disponibles selon déblocages |
+| Potager | | | scène du potager, touche p ; pousse par Jour de jeu, suit les saisons |
 <!-- | Login screen | login page | `LoginView` | email + password, forgot-password link | -->
 
 ## Parts
