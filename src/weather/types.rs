@@ -93,6 +93,10 @@ impl WeatherCondition {
         matches!(self, Self::PartlyCloudy | Self::Cloudy | Self::Overcast)
     }
 
+    pub fn is_overcast(&self) -> bool {
+        matches!(self, Self::Cloudy | Self::Overcast)
+    }
+
     pub fn is_foggy(&self) -> bool {
         matches!(self, Self::Fog)
     }
@@ -212,8 +216,19 @@ pub struct WeatherConditions {
     pub is_snowing: bool,
     pub is_thunderstorm: bool,
     pub is_cloudy: bool,
+    pub is_overcast: bool,
     pub is_foggy: bool,
     pub is_day: bool,
+}
+
+impl WeatherConditions {
+    pub fn is_clear_sky(&self) -> bool {
+        !self.is_overcast
+            && !self.is_raining
+            && !self.is_thunderstorm
+            && !self.is_snowing
+            && !self.is_foggy
+    }
 }
 
 impl Default for WeatherConditions {
@@ -223,8 +238,57 @@ impl Default for WeatherConditions {
             is_snowing: false,
             is_thunderstorm: false,
             is_cloudy: false,
+            is_overcast: false,
             is_foggy: false,
             is_day: true,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_clear_sky_has_no_overcast_rain_snow_or_fog() {
+        let clear = WeatherConditions::default();
+        let sky = |condition: WeatherCondition| WeatherConditions {
+            is_cloudy: condition.is_cloudy(),
+            is_overcast: condition.is_overcast(),
+            ..clear
+        };
+        assert!(clear.is_clear_sky());
+        assert!(
+            WeatherConditions {
+                is_day: false,
+                ..clear
+            }
+            .is_clear_sky()
+        );
+        assert!(sky(WeatherCondition::PartlyCloudy).is_clear_sky());
+
+        let covered = [
+            sky(WeatherCondition::Cloudy),
+            sky(WeatherCondition::Overcast),
+            WeatherConditions {
+                is_raining: true,
+                ..clear
+            },
+            WeatherConditions {
+                is_thunderstorm: true,
+                ..clear
+            },
+            WeatherConditions {
+                is_snowing: true,
+                ..clear
+            },
+            WeatherConditions {
+                is_foggy: true,
+                ..clear
+            },
+        ];
+        for conditions in covered {
+            assert!(!conditions.is_clear_sky(), "{conditions:?}");
         }
     }
 }
