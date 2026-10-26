@@ -33,6 +33,7 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Géminides | | | | étoiles filantes plus fréquentes la nuit, du 10 au 16 décembre ; Badge dédié |
 | Boîte pleine | | | | 7 Lettres du village non lues ; l'histoire se met en pause |
 | Ruche | | | | cadeau de Nadia et Claire, entre le sapin et la mare |
+| Poulailler | | | | abri des poules la nuit et sous la pluie, au jardin et au Potager |
 <!-- | Inbox | mailbox | Messages | `Inbox` | received mail, not archived, all accounts | -->
 <!-- | Message | mail | Email | `Message` | one mail. States: Draft, Sent, Pending | -->
 
