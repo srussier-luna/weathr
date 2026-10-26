@@ -4,7 +4,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::PathBuf;
 
-const DATE_FORMAT: &str = "%Y-%m-%d";
+pub const DATE_FORMAT: &str = "%Y-%m-%d";
+
+fn parse_date(date: &str) -> Option<NaiveDate> {
+    NaiveDate::parse_from_str(date, DATE_FORMAT).ok()
+}
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct Progress {
@@ -66,10 +70,7 @@ impl Progress {
 
     pub fn record_visit(&mut self) -> bool {
         let today = Local::now().date_naive();
-        let last_seen = self
-            .last_seen_on
-            .as_deref()
-            .and_then(|date| NaiveDate::parse_from_str(date, DATE_FORMAT).ok());
+        let last_seen = self.last_seen_on.as_deref().and_then(parse_date);
         if last_seen == Some(today) {
             return false;
         }
@@ -90,15 +91,11 @@ impl Progress {
     }
 
     pub fn start_date(&self) -> Option<NaiveDate> {
-        self.started_on
-            .as_deref()
-            .and_then(|date| NaiveDate::parse_from_str(date, DATE_FORMAT).ok())
+        self.started_on.as_deref().and_then(parse_date)
     }
 
     pub fn notes_seen_date(&self) -> Option<NaiveDate> {
-        self.notes_seen_on
-            .as_deref()
-            .and_then(|date| NaiveDate::parse_from_str(date, DATE_FORMAT).ok())
+        self.notes_seen_on.as_deref().and_then(parse_date)
     }
 
     pub fn mark_notes_seen(&mut self, date: NaiveDate) {

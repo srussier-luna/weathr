@@ -1,8 +1,8 @@
+use crate::progress::DATE_FORMAT;
 use chrono::NaiveDate;
 use std::cmp::Reverse;
 
 const NOTES: &str = include_str!("../NOUVEAUTES.md");
-const DATE_FORMAT: &str = "%Y-%m-%d";
 const HEADING: &str = "## ";
 const BULLET: &str = "- ";
 
@@ -56,7 +56,7 @@ pub fn parse(content: &str) -> Vec<Section> {
     sections
 }
 
-pub fn unseen(sections: &[Section], seen: Option<NaiveDate>) -> &[Section] {
+pub fn unseen(mut sections: Vec<Section>, seen: Option<NaiveDate>) -> Vec<Section> {
     let count = match seen {
         None => sections.len().min(1),
         Some(seen) => sections
@@ -64,7 +64,8 @@ pub fn unseen(sections: &[Section], seen: Option<NaiveDate>) -> &[Section] {
             .take_while(|section| section.date > seen)
             .count(),
     };
-    &sections[..count]
+    sections.truncate(count);
+    sections
 }
 
 #[cfg(test)]
@@ -111,22 +112,21 @@ mod tests {
 
     #[test]
     fn test_old_save_without_seen_date_shows_newest_section_only() {
-        let sections = parse(TWO_RELEASES);
-        assert_eq!(dates(unseen(&sections, None)), [date("2026-10-26")]);
+        assert_eq!(
+            dates(&unseen(parse(TWO_RELEASES), None)),
+            [date("2026-10-26")]
+        );
     }
 
     #[test]
     fn test_every_section_after_the_seen_date_is_unseen() {
-        let sections = parse(TWO_RELEASES);
+        let unseen_after = |seen| dates(&unseen(parse(TWO_RELEASES), Some(date(seen))));
         assert_eq!(
-            dates(unseen(&sections, Some(date("2026-10-01")))),
+            unseen_after("2026-10-01"),
             [date("2026-10-26"), date("2026-10-12")]
         );
-        assert_eq!(
-            dates(unseen(&sections, Some(date("2026-10-12")))),
-            [date("2026-10-26")]
-        );
-        assert!(unseen(&sections, Some(date("2026-10-26"))).is_empty());
+        assert_eq!(unseen_after("2026-10-12"), [date("2026-10-26")]);
+        assert!(unseen_after("2026-10-26").is_empty());
     }
 
     #[test]

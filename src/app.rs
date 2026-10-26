@@ -92,22 +92,36 @@ fn requeue_replaced_badge(
     }
 }
 
+#[derive(Clone, Copy)]
+enum Launch {
+    Fresh,
+    Suppressed,
+    Normal,
+}
+
 fn notes_on_launch(
     progress: &mut Progress,
     sections: Vec<Section>,
-    is_fresh_install: bool,
+    launch: Launch,
 ) -> Vec<Section> {
-    if is_fresh_install {
-        if let Some(newest) = sections.first() {
-            progress.mark_notes_seen(newest.date);
+    match launch {
+        Launch::Fresh => {
+            if let Some(newest) = sections.first() {
+                progress.mark_notes_seen(newest.date);
+            }
+            Vec::new()
         }
-        return Vec::new();
+        Launch::Suppressed => Vec::new(),
+        Launch::Normal => release_notes::unseen(sections, progress.notes_seen_date()),
     }
-    release_notes::unseen(&sections, progress.notes_seen_date()).to_vec()
 }
 
 fn overlay_rows(height: u16) -> usize {
     height.saturating_sub(OVERLAY_MARGIN_ROWS) as usize
+}
+
+fn notes_width(renderer: &TerminalRenderer) -> usize {
+    overlay::text_width(renderer, views::NOTES_FRAME)
 }
 
 fn mail_date(mail_hour: u32) -> NaiveDate {
@@ -338,14 +352,16 @@ impl App {
             });
         }
 
-        let is_fresh_install = !Progress::exists();
-        let mut progress = Progress::load();
-        let release_notes = if is_simulated || simulation.night || config.silent {
-            Vec::new()
+        let launch = if !Progress::exists() {
+            Launch::Fresh
+        } else if is_simulated || simulation.night || config.silent {
+            Launch::Suppressed
         } else {
-            notes_on_launch(&mut progress, release_notes::load(), is_fresh_install)
+            Launch::Normal
         };
-        if progress.record_visit() || is_fresh_install {
+        let mut progress = Progress::load();
+        let release_notes = notes_on_launch(&mut progress, release_notes::load(), launch);
+        if progress.record_visit() {
             progress.save();
         }
         let rain_receiver =
@@ -631,6 +647,7 @@ impl App {
                 &self.release_notes,
                 first,
                 overlay_rows(renderer.get_size().1),
+                notes_width(renderer),
             ),
             Some(Overlay::Index(selected)) => views::index_view(
                 self.read_entries(),
@@ -824,10 +841,10 @@ impl App {
         }
     }
 
-    fn scroll(&mut self, step: isize, rows: usize) {
+    fn scroll(&mut self, step: isize, rows: usize, width: usize) {
         match self.overlay {
             Some(Overlay::Notes(first)) => {
-                let last = views::notes_scroll_limit(&self.release_notes, rows);
+                let last = views::notes_scroll_limit(&self.release_notes, rows, width);
                 self.overlay = Some(Overlay::Notes(first.saturating_add_signed(step).min(last)));
             }
             _ => self.select_in_index(step),
@@ -1020,6 +1037,7 @@ impl App {
                     Event::Key(key_event) => {
                         let previous = self.overlay;
                         let rows = overlay_rows(renderer.get_size().1);
+                        let width = notes_width(renderer);
                         match key_event.code {
                             KeyCode::Char('q') | KeyCode::Char('Q') => break,
                             KeyCode::Char('c')
@@ -1039,8 +1057,8 @@ impl App {
                             KeyCode::Char('a') | KeyCode::Char('A') => self.toggle_album(),
                             KeyCode::Char('h') | KeyCode::Char('H') => self.toggle_help(),
                             KeyCode::Char('l') | KeyCode::Char('L') => self.toggle_index(),
-                            KeyCode::Up => self.scroll(-1, rows),
-                            KeyCode::Down => self.scroll(1, rows),
+                            KeyCode::Up => self.scroll(-1, rows, width),
+                            KeyCode::Down => self.scroll(1, rows, width),
                             KeyCode::Enter => self.press_enter(),
                             KeyCode::Char('r') | KeyCode::Char('R') => self.pick_up(),
                             KeyCode::Char('e') | KeyCode::Char('E') => self.start_riddle(),
@@ -1100,15 +1118,30 @@ mod tests {
     #[test]
     fn test_fresh_install_shows_no_notes_and_marks_newest_seen() {
         let mut progress = Progress::default();
-        assert!(notes_on_launch(&mut progress, notes(), true).is_empty());
+        assert!(notes_on_launch(&mut progress, notes(), Launch::Fresh).is_empty());
         assert_eq!(progress.notes_seen_on.as_deref(), Some("2026-10-26"));
-        assert!(notes_on_launch(&mut progress, notes(), false).is_empty());
+        assert!(notes_on_launch(&mut progress, notes(), Launch::Normal).is_empty());
+    }
+
+    #[test]
+    fn test_suppressed_launch_marks_seen_only_on_fresh_install() {
+        let mut fresh = Progress::default();
+        assert!(notes_on_launch(&mut fresh, notes(), Launch::Fresh).is_empty());
+        assert_eq!(fresh.notes_seen_on.as_deref(), Some("2026-10-26"));
+
+        let mut existing = Progress::default();
+        assert!(notes_on_launch(&mut existing, notes(), Launch::Suppressed).is_empty());
+        assert_eq!(existing.notes_seen_on, None);
+        assert_eq!(
+            notes_on_launch(&mut existing, notes(), Launch::Normal),
+            notes()[..1]
+        );
     }
 
     #[test]
     fn test_old_save_without_seen_date_shows_newest_notes_only() {
         let mut progress = Progress::default();
-        let shown = notes_on_launch(&mut progress, notes(), false);
+        let shown = notes_on_launch(&mut progress, notes(), Launch::Normal);
         assert_eq!(shown, notes()[..1]);
         assert_eq!(progress.notes_seen_on, None);
     }
@@ -1119,10 +1152,13 @@ mod tests {
             notes_seen_on: Some("2026-10-01".to_string()),
             ..Progress::default()
         };
-        assert_eq!(notes_on_launch(&mut progress, notes(), false), notes());
+        assert_eq!(
+            notes_on_launch(&mut progress, notes(), Launch::Normal),
+            notes()
+        );
 
         progress.mark_notes_seen(notes()[0].date);
-        assert!(notes_on_launch(&mut progress, notes(), false).is_empty());
+        assert!(notes_on_launch(&mut progress, notes(), Launch::Normal).is_empty());
     }
 
     #[test]

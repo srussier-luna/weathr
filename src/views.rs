@@ -6,7 +6,7 @@ use crate::chronicles::{
     SAM_LETTERS, SAM_SENDER,
 };
 use crate::letters::{self, CHOICES, Entry, Letter};
-use crate::overlay::{Frame, Line, View};
+use crate::overlay::{self, Frame, Line, View};
 use crate::progress::Progress;
 use crate::release_notes::Section;
 use chrono::{Datelike, NaiveDate};
@@ -23,6 +23,9 @@ const HELP_FOOTER: &str = "[h] ou [Echap] fermer";
 const NOTES_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const NOTES_SCROLL_FOOTER: &str = "[↑] [↓] défiler  [Entrée] ou [Echap] fermer";
 const HELP_KEY_WIDTH: usize = 10;
+const NOTES_BULLET: &str = "- ";
+const NOTES_INDENT: &str = "  ";
+pub const NOTES_FRAME: Frame = Frame::Plain;
 const MONTHS: [&str; 12] = [
     "janvier",
     "février",
@@ -377,42 +380,62 @@ pub fn help_view(unlocks: &Unlocks, has_gazette: bool) -> View {
     }
 }
 
-fn notes_lines(sections: &[Section]) -> Vec<Line> {
+fn notes_lines(sections: &[Section], width: usize) -> Vec<String> {
     let mut lines = Vec::new();
     for section in sections {
         if !lines.is_empty() {
-            lines.push(Line::Blank);
+            lines.push(String::new());
         }
-        lines.push(text(format!(
-            "{} {} {}",
-            section.date.day(),
-            MONTHS[section.date.month0() as usize],
-            section.date.year()
-        )));
-        lines.extend(section.items.iter().map(|item| text(format!("- {item}"))));
+        lines.extend(overlay::wrap(
+            &format!(
+                "{} {} {}",
+                section.date.day(),
+                MONTHS[section.date.month0() as usize],
+                section.date.year()
+            ),
+            width,
+        ));
+        for item in &section.items {
+            let wrapped = overlay::wrap(item, width.saturating_sub(NOTES_BULLET.len()));
+            lines.extend(wrapped.into_iter().enumerate().map(|(index, line)| {
+                let prefix = if index == 0 {
+                    NOTES_BULLET
+                } else {
+                    NOTES_INDENT
+                };
+                format!("{prefix}{line}")
+            }));
+        }
     }
     lines
 }
 
-pub fn notes_scroll_limit(sections: &[Section], rows: usize) -> usize {
-    notes_lines(sections).len().saturating_sub(rows.max(1))
+pub fn notes_scroll_limit(sections: &[Section], rows: usize, width: usize) -> usize {
+    notes_lines(sections, width)
+        .len()
+        .saturating_sub(rows.max(1))
 }
 
-pub fn notes_view(sections: &[Section], first: usize, rows: usize) -> View {
+pub fn notes_view(sections: &[Section], first: usize, rows: usize, width: usize) -> View {
     let rows = rows.max(1);
-    let lines = notes_lines(sections);
+    let lines = notes_lines(sections, width);
     let is_scrollable = lines.len() > rows;
     let first = first.min(lines.len().saturating_sub(rows));
     View {
         title: "Nouveautés".to_string(),
-        lines: lines.into_iter().skip(first).take(rows).collect(),
+        lines: lines
+            .into_iter()
+            .skip(first)
+            .take(rows)
+            .map(Line::Preformatted)
+            .collect(),
         footer: if is_scrollable {
             NOTES_SCROLL_FOOTER
         } else {
             NOTES_FOOTER
         }
         .to_string(),
-        frame: Frame::Plain,
+        frame: NOTES_FRAME,
     }
 }
 
@@ -605,11 +628,11 @@ mod tests {
         );
     }
 
-    fn texts(view: &View) -> Vec<&str> {
+    fn rows(view: &View) -> Vec<&str> {
         view.lines
             .iter()
             .filter_map(|line| match line {
-                Line::Text(text) => Some(text.as_str()),
+                Line::Preformatted(text) => Some(text.as_str()),
                 _ => None,
             })
             .collect()
@@ -623,14 +646,15 @@ mod tests {
 
     #[test]
     fn test_notes_list_each_section_under_its_date_newest_first() {
-        let view = notes_view(&sections(), 0, 20);
+        let view = notes_view(&sections(), 0, 20, 60);
         assert_eq!(view.title, "Nouveautés");
         assert_eq!(
-            texts(&view),
+            rows(&view),
             [
                 "26 octobre 2026",
                 "- Première",
                 "- Deuxième",
+                "",
                 "12 octobre 2026",
                 "- Ancienne"
             ]
@@ -639,18 +663,28 @@ mod tests {
     }
 
     #[test]
-    fn test_notes_taller_than_the_box_scroll_to_the_last_line() {
-        let sections = sections();
-        let rows = 3;
-        let last = notes_scroll_limit(&sections, rows);
-        assert_eq!(last, 3);
+    fn test_long_notes_wrap_in_the_box_and_scroll_to_the_last_line() {
+        let sections = crate::release_notes::parse(
+            "## 2026-10-26\n- Les Perséides font pleuvoir les étoiles filantes la nuit\n",
+        );
+        let (height, width) = (3, 20);
 
-        let top = notes_view(&sections, 0, rows);
-        assert_eq!(texts(&top), ["26 octobre 2026", "- Première", "- Deuxième"]);
+        assert_eq!(notes_view(&sections, 0, 20, width).footer, NOTES_FOOTER);
+        let top = notes_view(&sections, 0, height, width);
+        assert_eq!(
+            rows(&top),
+            ["26 octobre 2026", "- Les Perséides font", "  pleuvoir les"]
+        );
         assert_eq!(top.footer, NOTES_SCROLL_FOOTER);
 
-        let bottom = notes_view(&sections, last + 5, rows);
-        assert_eq!(texts(&bottom), ["12 octobre 2026", "- Ancienne"]);
+        let last = notes_scroll_limit(&sections, height, width);
+        assert_eq!(last, 2);
+        let bottom = notes_view(&sections, last + 5, height, width);
+        assert_eq!(
+            rows(&bottom),
+            ["  pleuvoir les", "  étoiles filantes", "  la nuit"]
+        );
+        assert!(rows(&bottom).iter().all(|row| row.chars().count() <= width));
     }
 
     #[test]
