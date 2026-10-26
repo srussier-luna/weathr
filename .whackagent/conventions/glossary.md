@@ -26,6 +26,14 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret |
 | Fête | jour férié | | `Holiday` | jour spécial qui décore la scène |
 | Facteur | postier | | `Postman` | livre les Lettres à la boîte aux lettres |
+| Habitant | animal | | | animal du jardin (Minouche, Biscuit…), arrive à sa 1re Lettre |
+| Voisin | | | | personne d'une autre maison du village (Sam, Nadia et Claire…) |
+| Arbre | | | `Tree` | grand arbre à gauche de la maison, pousse du jour 1 au jour 12 |
+| Perséides | | | | étoiles filantes plus fréquentes la nuit, du 9 au 15 août ; Badge dédié |
+| Géminides | | | | étoiles filantes plus fréquentes la nuit, du 10 au 16 décembre ; Badge dédié |
+| Boîte pleine | | | | 7 Lettres du village non lues ; l'histoire se met en pause |
+| Ruche | | | | cadeau de Nadia et Claire, entre le sapin et la mare |
+| Poulailler | | | | abri des poules la nuit et sous la pluie, au jardin et au Potager |
 <!-- | Inbox | mailbox | Messages | `Inbox` | received mail, not archived, all accounts | -->
 <!-- | Message | mail | Email | `Message` | one mail. States: Draft, Sent, Pending | -->
 
@@ -39,6 +47,9 @@ One precise screen. Team names, in the discussion language. UI projects only.
 | Lettre | | `entry_view` | une Lettre ouverte, numéro / total |
 | Album | | `album_pages` | Badges et souvenirs collectés |
 | Aide | help | `help_view` | touches disponibles selon déblocages |
+| Potager | | | scène du potager vue de dessus en biais, sans ciel ; pousse par Jour de jeu, suit les saisons |
+| Fête du miel | scène de fête | | maison de Nadia et Claire, Jours de jeu 119–120 seulement |
+| Lieux | menu des lieux | | menu touche m : Jardin, Potager, Fête du miel disponibles |
 <!-- | Login screen | login page | `LoginView` | email + password, forgot-password link | -->
 
 ## Parts
