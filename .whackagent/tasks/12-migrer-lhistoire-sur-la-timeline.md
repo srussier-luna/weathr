@@ -10,12 +10,12 @@ created: 2026-10-26
 
 > j'aimerais bien qu'on mette en place un vrai système de timeline et de gestion du temps. Deux choses : (1) météo réelle + temps réel → uniquement le décor (couleur, ciel…) ; (2) temps in game → l'histoire (lettres, apparition de personnages/objets/maison). Petit lore. Brancher les Lettres existantes dessus. Plus tard : journal du jour. Archi hyper clean, composable. Tests obligatoires (je ne code pas en Rust).
 
-First task of sprint **Timeline histoire**. Pure refactor: the player sees no difference. Follow-ups: #13 (Apparitions by Jour de jeu), #14 (`--day` flag). #5 builds on the clock, #4 on #13.
+First task of sprint **Timeline histoire**. Pure refactor: the player sees no difference. Follow-ups: #13 (Apparitions by Jour de jeu), #14 (`--day` flag), #19 (story pauses when 7 Lettres wait). #5 builds on the clock, #4 on #13.
 
 ### Two clocks
 
 - **Real time + real weather** → scenery only (sky, colours, seasons, Fêtes). Stays in `AppState` / `AnimationManager`, untouched here.
-- **Jour de jeu** → story only. 1 Jour de jeu = 1 real day since `Progress` start, rolling over at `courrier.heure` (today's `mail_date` + `Progress::day_on`). Missed days catch up on return, as today.
+- **Jour de jeu** → story only. 1 Jour de jeu = 1 real day since `Progress` start, rolling over at `courrier.heure` (today's `mail_date` + `Progress::day_on`). Missed days catch up on return, as today (#19 later caps this).
 - Every story event is scheduled by Jour de jeu (Stardew-like: the world changes on its own, the Lettre explains). Reading a Lettre never triggers an event. Only exception: answers `1`/`2` still pick variants (`Choices`).
 
 ### Module `src/story/` (group by feature)
