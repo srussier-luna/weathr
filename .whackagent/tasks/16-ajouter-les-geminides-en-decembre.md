@@ -33,17 +33,15 @@ created: 2026-10-26
 
 ## Implementation
 
-stacked on: wa/15-ajouter-les-perseides-en-aout @ da863c5
-
 - `src/holiday.rs`: `MeteorShower { Perseids, Geminids }` with `MeteorShower::on(month, day)` (9–15 Aug, 10–16 Dec); `Holiday.meteor_shower: Option<MeteorShower>` replaces `is_perseids`; `Holiday::geminids()` (December setup: fir, winter river).
-- `src/animation/stars.rs`: shared `set_meteor_shower(bool)` + `METEOR_SHOWER_SHOOTING_STAR_CHANCE` (0.05); new `set_sky_clear(bool)` — covered sky → no shooting star, the one in flight dropped.
+- `src/animation/stars.rs`: #15's shower reused as is (a rain: up to 16 stars at once, `set_meteor_shower`); new `set_sky_clear(bool)` — covered sky → no shooting star at all, every star in flight dropped.
 - `src/animation_manager.rs`: night block sets the shower flag and `set_sky_clear(!raining && !thunderstorm && !snowing && !foggy && !cloudy)`.
 - `src/app.rs`: `StarWatch::observe(is_visible, Option<MeteorShower>)`; any shower stops the `Chasseur d'étoiles` count; picks `perseids` / `geminids` / `shooting_star`.
 - `src/badges.rs`: `Géminides` Badge (Fêtes, 39), medal `"* *  "` `" \ \ "` `"  \ \"`.
 - `src/demo.rs`: `Géminides` scene right after `Perséides`.
 - Proof: build ✅ · fmt ✅ · clippy only the known provider.rs warning ✅ · `cargo test` 173 passed ✅.
 - Behavior change for every shooting star (from the "hidden by rain, snow, fog, clouds" decision): none on rainy, snowy, foggy or cloudy nights, Éclaircies included. Twinkling stars unchanged.
-- Merge note: #15 is being reworked (many stars at once, flag rename); merging it here will conflict in `stars.rs` (`set_sky_clear` must clear every star) and `holiday.rs`.
+- #15 landed (squash) → `develop` merged in, PR retargeted to `develop`; conflicts were only from the squash. `cargo test` 179 passed.
 
 ## Review
 
@@ -51,12 +49,12 @@ stacked on: wa/15-ajouter-les-perseides-en-aout @ da863c5
 
 Agent drove the release binary in a pty (libfaketime, real Paris weather replayed, 225 s per run):
 
-- ✅ 13 Dec 23:00 clear: 96 shooting stars vs 33 on 20 Dec (×2.9 count, ×3.0 visible time).
+- ✅ 13 Dec 23:00 clear: a rain, median 9 shooting stars at once (max 14), more than 5 in 93 % of samples (after #15's rework).
 - ✅ 17 Dec 23:00: normal rate; awards `Étoile filante` then `Chasseur d'étoiles`, not `Géminides`.
 - ✅ 13 Dec daytime: 0 shooting stars.
 - ✅ 13 Dec 23:00 snowing: 0 shooting stars (37 before the guard), no star Badge.
 - ✅ 13 Dec night: `Géminides` awarded with its medal card, never `Étoile filante` / `Chasseur d'étoiles`.
 - ✅ Badges window: `Badges 2/39`, `Fêtes (1/7)`, `[x] Géminides`.
-- ✅ `weathr --demo`: `Perséides` then `Géminides` scenes, frequent shooting stars, no Badge.
+- ✅ `weathr --demo`: `Géminides` scene right after `Perséides`, a rain (median 12 at once); no Badge.
 
 ## Feedback
