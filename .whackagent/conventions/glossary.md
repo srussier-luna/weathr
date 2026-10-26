@@ -42,6 +42,7 @@ One precise screen. Team names, in the discussion language. UI projects only.
 | Courrier | boîte aux lettres, index | `index_view` | liste des Lettres reçues |
 | Lettre | | `entry_view` | une Lettre ouverte, numéro / total |
 | Album | | `album_pages` | Badges et souvenirs collectés |
+| Inventaire | sac | `inventory_view` | objets qui s'utilisent (graines, outils…), touche `i`, `↑`/`↓` + Entrée |
 | Aide | help | `help_view` | touches disponibles selon déblocages |
 <!-- | Login screen | login page | `LoginView` | email + password, forgot-password link | -->
 
