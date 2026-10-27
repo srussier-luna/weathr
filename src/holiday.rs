@@ -45,6 +45,7 @@ pub struct Holiday {
     pub is_christmas: bool,
     pub is_national_day: bool,
     pub is_halloween: bool,
+    pub is_april_fools: bool,
     pub new_year: Option<i32>,
     pub is_spring: bool,
     pub is_easter: bool,
@@ -66,6 +67,7 @@ impl Holiday {
             is_christmas: month == 12 && matches!(day, 24 | 25),
             is_national_day: month == 7 && matches!(day, 13 | 14),
             is_halloween: month == 10,
+            is_april_fools: month == 4 && day == 1,
             new_year: Self::new_year_around(date),
             is_spring: (3, 20) <= (month, day) && (month, day) <= (6, 20),
             is_easter: easter_sunday(date.year())
@@ -242,6 +244,14 @@ mod tests {
         assert!(Season::on(6, 21) == Season::Summer);
         assert!(Season::on(9, 22) == Season::Autumn);
         assert!(Season::on(12, 21) == Season::Winter);
+    }
+
+    #[test]
+    fn test_april_fools_is_only_the_first_of_april() {
+        assert!(!Holiday::on(date(2026, 3, 31)).is_april_fools);
+        assert!(Holiday::on(date(2026, 4, 1)).is_april_fools);
+        assert!(!Holiday::on(date(2026, 4, 2)).is_april_fools);
+        assert!(Holiday::on(date(2027, 4, 1)).is_april_fools);
     }
 
     #[test]
