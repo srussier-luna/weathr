@@ -136,16 +136,15 @@ fn opening_overlay(shows_welcome: bool, has_notes: bool) -> Option<Overlay> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum WelcomeOutcome {
     Next(Step),
-    Finish,
-    Skip,
+    Done,
 }
 
 fn welcome_after_key(step: Step, code: KeyCode, last: usize) -> WelcomeOutcome {
     match code {
         KeyCode::Enter => step
             .advance()
-            .map_or(WelcomeOutcome::Finish, WelcomeOutcome::Next),
-        KeyCode::Esc => WelcomeOutcome::Skip,
+            .map_or(WelcomeOutcome::Done, WelcomeOutcome::Next),
+        KeyCode::Esc => WelcomeOutcome::Done,
         KeyCode::Up => WelcomeOutcome::Next(step.scroll(-1, last)),
         KeyCode::Down => WelcomeOutcome::Next(step.scroll(1, last)),
         _ => WelcomeOutcome::Next(step),
@@ -567,14 +566,7 @@ impl App {
         if let Some(Overlay::Welcome(step)) = self.overlay {
             match welcome_after_key(step, code, welcome::scroll_limit(rows, width)) {
                 WelcomeOutcome::Next(step) => self.overlay = Some(Overlay::Welcome(step)),
-                WelcomeOutcome::Finish => {
-                    self.animations.postman_leave();
-                    self.end_welcome();
-                }
-                WelcomeOutcome::Skip => {
-                    self.animations.postman_dismiss();
-                    self.end_welcome();
-                }
+                WelcomeOutcome::Done => self.end_welcome(),
             }
         }
     }
@@ -582,6 +574,7 @@ impl App {
     fn end_welcome(&mut self) {
         self.progress.welcome_seen = true;
         self.progress.save();
+        self.animations.postman_leave();
         self.overlay = notes_overlay(!self.release_notes.is_empty());
     }
 
@@ -1344,7 +1337,7 @@ mod tests {
         for step in steps {
             assert_eq!(
                 welcome_after_key(step, KeyCode::Esc, 5),
-                WelcomeOutcome::Skip
+                WelcomeOutcome::Done
             );
             for code in ignored.clone() {
                 assert_eq!(welcome_after_key(step, code, 5), WelcomeOutcome::Next(step));
@@ -1356,7 +1349,7 @@ mod tests {
         );
         assert_eq!(
             welcome_after_key(Step::Farewell, KeyCode::Enter, 5),
-            WelcomeOutcome::Finish
+            WelcomeOutcome::Done
         );
         assert_eq!(
             welcome_after_key(Step::Reading(1), KeyCode::Down, 5),

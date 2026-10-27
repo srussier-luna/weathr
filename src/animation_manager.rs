@@ -218,10 +218,6 @@ impl AnimationManager {
         self.postman.leave();
     }
 
-    pub fn postman_dismiss(&mut self) {
-        self.postman.dismiss();
-    }
-
     pub fn is_postman_arriving(&self, term_width: u16, term_height: u16) -> bool {
         self.postman
             .is_arriving(&GardenLayout::new(term_width, term_height))

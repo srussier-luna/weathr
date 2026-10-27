@@ -81,12 +81,6 @@ impl Postman {
         }
     }
 
-    pub fn dismiss(&mut self) {
-        if matches!(self.trip, Trip::Arriving | Trip::Staying) {
-            self.trip = Trip::Waiting;
-        }
-    }
-
     pub fn is_arriving(&self, layout: &GardenLayout) -> bool {
         layout.plan.mailbox_x.is_some() && matches!(self.trip, Trip::Arriving)
     }
@@ -258,26 +252,6 @@ mod tests {
         postman.leave();
         assert!(matches!(postman.trip, Trip::Leaving));
         assert_eq!(postman.head(&layout), None);
-    }
-
-    #[test]
-    fn test_dismissed_visit_vanishes_at_once() {
-        let layout = GardenLayout::new(120, 40);
-        let mut postman = Postman::new();
-        postman.visit();
-        for _ in 0..ARRIVAL_FRAMES as usize + 1 {
-            postman.update(&layout);
-        }
-        assert!(postman.head(&layout).is_some());
-
-        postman.dismiss();
-        assert!(matches!(postman.trip, Trip::Waiting));
-        assert_eq!(postman.head(&layout), None);
-
-        postman.visit();
-        postman.update(&layout);
-        postman.dismiss();
-        assert!(matches!(postman.trip, Trip::Waiting));
     }
 
     #[test]
