@@ -72,6 +72,12 @@ Autopilot 2026-10-26, one implementer, 4 bricks.
 - Fixtures `src/story/testdata/timeline_golden.txt`, `save_37_golden.txt` captured from pre-refactor code.
 - Edges: rollover on local wall-clock (differs only inside DST hour); out-of-range Lettre index draws nothing instead of panicking.
 - Proof: `cargo fmt -- --check` ✅ · `cargo clippy -- -D warnings` ✅ · `cargo test` ✅ 165 passed · `grep -rn "Local::now\|Utc::now" src/story` empty.
+- Round 1 hunks (feedback, develop merged via `sprint/timeline-histoire` @ 06086bf, merge base 1a898e3): review the merge with `git diff origin/develop..HEAD`.
+  - `src/app.rs` — conflicts resolved: develop's Accueil, Nouveautés, Badge cards, overlay sizing kept; #12's `StoryClock` / `Timeline` / `ReadContext` kept; `mail_date`, `NIGHT_READING_HOURS`, `MailContext` dropped.
+  - `src/views.rs` — develop's notes, badge card, `scrolled_view`, frames kept; moved mail rendering removed; `MONTHS` from `story::content`.
+  - `src/story/content/` — develop's frames ported (`Written.frame`, village Parchment, Postcard, Folder, Recipe, Newspaper); Gazette title « LA GAZETTE · lundi … », `Line::Rule` before the riddle, counter dropped; `MONTHS` pub, re-exported.
+  - `src/story/testdata/save_37_golden.txt` — recaptured from origin/develop's own code (Gazette title, rule, `frame:` lines); `timeline_golden.txt` unchanged. Golden `render` prints `Centered`, `Rule`, `frame`.
+  - `.whackagent/conventions/glossary.md` — both sides kept.
 
 ## Review
 
@@ -81,4 +87,17 @@ Autopilot 2026-10-26, one implementer, 4 bricks.
 - Baseline binary (pre-refactor) vs new, same save (`letters_read: 37`), keys `l`, Esc, `c`, 50× →: same overlay titles and text (Courrier, Lettre 38/101, Gazettes with Monday dates, Cartes postales, Archives).
 - Manual validation of the real terminal look — yours.
 
+round 1: manual validation — not run by agent · run: yours
+
 ## Feedback
+
+### Round 1 — 2026-10-27
+
+- Asked: « Mettre à jour avec develop : avancer sprint/timeline-histoire jusqu'à develop, recaler #12 dessus, résoudre les conflits (app.rs, views.rs, glossary.md) »
+- Triage: defect (maintenance) → criteria unchanged. Merge of develop, no rebase, no force-push (user choice).
+- Changes: `sprint/timeline-histoire` fast-forwarded to develop 06086bf · `glossary.md` inline (both sides kept) · implementer — `src/app.rs`, `src/views.rs`, `src/story/content/{mod,gazette,village,postcard,written}.rs`, golden `save_37_golden.txt` recaptured from develop.
+- Build: `cargo build` ✅ · fmt ✅ · clippy ✅ with `-A clippy::double_must_use` (pre-existing on develop, `src/weather/provider.rs:23`) · `cargo test` ✅ 249 passed.
+- Review: deferred → /wa-validate.
+- Verify: manual validation — not run by agent.
+- Rule captured: none.
+- Inline hunks: `.whackagent/conventions/glossary.md` (conflict markers removed).
