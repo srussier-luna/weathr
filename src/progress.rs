@@ -85,13 +85,6 @@ impl Progress {
         true
     }
 
-    pub fn day_on(&self, today: NaiveDate) -> usize {
-        let days = self
-            .start_date()
-            .map_or(0, |start| (today - start).num_days().max(0) as usize);
-        days + 1
-    }
-
     pub fn start_date(&self) -> Option<NaiveDate> {
         self.started_on.as_deref().and_then(parse_date)
     }

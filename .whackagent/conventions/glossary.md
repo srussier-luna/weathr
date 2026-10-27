@@ -26,6 +26,9 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret |
 | Fête | jour férié | | `Holiday` | jour spécial qui décore la scène |
 | Facteur | postier | | `Postman` | livre les Lettres à la boîte aux lettres |
+| Jour de jeu | jour | | `StoryClock` | jour de l'histoire depuis le début, change à `courrier.heure` → [[mail]] |
+| Timeline | | | `Timeline` | événements de l'histoire classés par Jour de jeu |
+| Apparition | déblocage | | `Arrival` | objet ou Habitant qui arrive au jardin un Jour de jeu |
 | Habitant | animal | | | animal du jardin (Minouche, Biscuit…), arrive à sa 1re Lettre |
 | Voisin | | | | personne d'une autre maison du village (Sam, Nadia et Claire…) |
 | Arbre | | | `Tree` | grand arbre à gauche de la maison, pousse du jour 1 au jour 12 |

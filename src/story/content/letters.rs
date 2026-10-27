@@ -1,8 +1,3 @@
-use crate::chronicles::{
-    ARCHIVE_FIRST_DAY, ARCHIVE_INTERVAL_DAYS, ARCHIVES, MARCEL_DAYS, NEIGHBOURS_DAYS,
-    POSTCARD_FIRST_DAY, POSTCARD_INTERVAL_DAYS, SAM_DAYS,
-};
-use chrono::{Datelike, Duration, NaiveDate};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -256,13 +251,9 @@ const DEFAULT_LETTERS: [(&str, &str); 60] = [
 ];
 
 pub const CREEPY_SENDER: &str = "Le voisin du n°13";
-const CREEPY_FIRST_DAY: usize = 5;
-const CREEPY_INTERVAL_DAYS: usize = 4;
-const CREEPY_EPILOGUE_DAY: usize = 61;
-
 pub const CREEPY_LETTER_COUNT: usize = 15;
 
-const CREEPY_LETTERS: [&str; CREEPY_LETTER_COUNT] = [
+pub const CREEPY_LETTERS: [&str; CREEPY_LETTER_COUNT] = [
     "Bonjour. J'habite au numéro 13, juste derrière chez toi. Tu ne vois pas ma maison d'ici, c'est normal. Je voulais simplement te dire que la lumière de ta cuisine est très jolie, le soir.",
     "Tu as bien dormi ? Moi, je dors peu. Je regarde les fenêtres du village. La tienne reste allumée plus tard que les autres.",
     "J'ai marché dans ton jardin cette nuit. J'espère que ça ne te dérange pas. Les traces vont du puits à ta porte : c'est le chemin le plus court.",
@@ -292,126 +283,6 @@ pub const NIGHT_POSTSCRIPTS: [&str; 10] = [
     "P.-S. : je t'ai vu lire.",
     "P.-S. : va dormir. Moi, je reste.",
 ];
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Entry {
-    Main(usize),
-    Sam(usize),
-    Neighbours(usize),
-    Marcel(usize),
-    Archive(usize),
-    Gazette(usize),
-    Recipe(usize),
-    Postcard(usize),
-    Creepy(usize),
-}
-
-impl Entry {
-    fn order(&self) -> u8 {
-        match self {
-            Self::Main(_) => 0,
-            Self::Sam(_) => 1,
-            Self::Neighbours(_) => 2,
-            Self::Marcel(_) => 3,
-            Self::Archive(_) => 4,
-            Self::Gazette(_) => 5,
-            Self::Recipe(_) => 6,
-            Self::Postcard(_) => 7,
-            Self::Creepy(_) => 8,
-        }
-    }
-}
-
-fn creepy_day(index: usize) -> usize {
-    if index + 1 == CREEPY_LETTERS.len() {
-        CREEPY_EPILOGUE_DAY
-    } else {
-        CREEPY_FIRST_DAY + index * CREEPY_INTERVAL_DAYS
-    }
-}
-
-pub fn timeline(main_count: usize, start: NaiveDate, today: NaiveDate) -> Vec<(usize, Entry)> {
-    let today_index = (today - start).num_days().max(0) as usize + 1;
-    let day_of = |date: NaiveDate| (date - start).num_days() as usize + 1;
-
-    let mut entries: Vec<(usize, Entry)> = (0..main_count)
-        .map(|index| (index + 1, Entry::Main(index)))
-        .chain((0..CREEPY_LETTERS.len()).map(|index| (creepy_day(index), Entry::Creepy(index))))
-        .chain(
-            SAM_DAYS
-                .iter()
-                .enumerate()
-                .map(|(index, day)| (*day, Entry::Sam(index))),
-        )
-        .chain(
-            NEIGHBOURS_DAYS
-                .iter()
-                .enumerate()
-                .map(|(index, day)| (*day, Entry::Neighbours(index))),
-        )
-        .chain(
-            MARCEL_DAYS
-                .iter()
-                .enumerate()
-                .map(|(index, day)| (*day, Entry::Marcel(index))),
-        )
-        .chain((0..ARCHIVES.len()).map(|index| {
-            (
-                ARCHIVE_FIRST_DAY + index * ARCHIVE_INTERVAL_DAYS,
-                Entry::Archive(index),
-            )
-        }))
-        .chain(
-            (0..)
-                .map(|index| {
-                    (
-                        POSTCARD_FIRST_DAY + index * POSTCARD_INTERVAL_DAYS,
-                        Entry::Postcard(index),
-                    )
-                })
-                .take_while(|(day, _)| *day <= today_index),
-        )
-        .collect();
-
-    entries.extend(
-        (0..)
-            .map(|week| (day_of(gazette_date(start, week)), Entry::Gazette(week)))
-            .take_while(|(day, _)| *day <= today_index),
-    );
-
-    let mut month = start;
-    while let Some(next) = next_first_of_month(month) {
-        if day_of(next) > today_index {
-            break;
-        }
-        entries.push((day_of(next), Entry::Recipe(next.month0() as usize)));
-        month = next;
-    }
-
-    entries.sort_by_key(|(day, entry)| (*day, entry.order()));
-    entries
-}
-
-pub fn gazette_date(start: NaiveDate, week: usize) -> NaiveDate {
-    let days_to_monday = (7 - start.weekday().num_days_from_monday()) % 7;
-    start + Duration::days(i64::from(days_to_monday)) + Duration::weeks(week as i64)
-}
-
-fn next_first_of_month(date: NaiveDate) -> Option<NaiveDate> {
-    let (year, month) = if date.month() == 12 {
-        (date.year() + 1, 1)
-    } else {
-        (date.year(), date.month() + 1)
-    };
-    NaiveDate::from_ymd_opt(year, month, 1)
-}
-
-pub fn creepy_letter(index: usize) -> Letter {
-    Letter {
-        sender: CREEPY_SENDER.to_string(),
-        body: CREEPY_LETTERS[index].to_string(),
-    }
-}
 
 pub struct Choice {
     pub id: &'static str,
@@ -598,14 +469,18 @@ pub struct Letter {
     pub body: String,
 }
 
-pub fn load() -> Vec<Letter> {
-    let mut letters: Vec<Letter> = DEFAULT_LETTERS
+pub fn defaults() -> Vec<Letter> {
+    DEFAULT_LETTERS
         .iter()
         .map(|(sender, body)| Letter {
             sender: sender.to_string(),
             body: body.to_string(),
         })
-        .collect();
+        .collect()
+}
+
+pub fn load() -> Vec<Letter> {
+    let mut letters = defaults();
 
     let Some(path) = letters_path() else {
         return letters;
@@ -690,31 +565,6 @@ fn finish((number, sender, body): (usize, String, Vec<&str>)) -> (usize, Letter)
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn date(year: i32, month: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(year, month, day).unwrap()
-    }
-
-    #[test]
-    fn test_timeline_orders_each_day() {
-        let start = date(2026, 10, 22);
-        let entries = timeline(60, start, start + Duration::days(60));
-        let day_5: Vec<Entry> = entries
-            .iter()
-            .filter(|(day, _)| *day == 5)
-            .map(|(_, entry)| *entry)
-            .collect();
-        assert_eq!(day_5, [Entry::Main(4), Entry::Gazette(0), Entry::Creepy(0)]);
-        assert!(entries.contains(&(11, Entry::Recipe(10))));
-        assert!(entries.contains(&(40, Entry::Postcard(0))));
-        assert!(entries.contains(&(11, Entry::Neighbours(0))));
-        assert!(entries.contains(&(12, Entry::Marcel(0))));
-        assert!(
-            !entries
-                .iter()
-                .any(|(_, entry)| *entry == Entry::Postcard(4))
-        );
-    }
 
     #[test]
     fn test_choices_echo_later_letters() {
