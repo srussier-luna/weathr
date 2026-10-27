@@ -2,22 +2,32 @@
 
 Village story: one Lettre/day, delivered by Facteur, plus Cartes postales, Gazette with Énigme, Bouteilles on river, found objects, Badges. Reading drives what appears in garden (see [[animation]]).
 
-## Timeline — `src/letters.rs`
+## Timeline — `src/story/`
 
-- `Entry` (`src/letters.rs:297`) = every mail kind: `Main` (village Lettre),
-  `Sam`, `Neighbours`, `Marcel` (recurring correspondents), `Archive`, `Gazette`,
-  `Recipe`, `Postcard`, `Creepy` (n°13 neighbour).
-- `timeline(main_count, start, today)` (`:333`) lays out `(day, Entry)` from player start date: one `Main`/day, others on fixed day schedules (`chronicles.rs` constants), Gazette every Monday, recipe each 1st of month, Carte postale every 7 days from day 40. Sorted by `(day, kind order)`.
-- **Mail day** = local time minus `courrier.heure` hours (`mail_date`, `src/app.rs:68`). New day's mail appears at that hour, synced with Facteur arrival.
-- `Progress::letters_read` = **prefix length** into timeline. Works because past-day entries never move as days advance. No inserting entries on past days.
-- Village Lettre texts from `DEFAULT_LETTERS`, overridable by `<config>/weathr/lettres.txt` (`load`, `:601`): `=== N | Sender` blocks replace letter N or append N+1.
-- `CHOICES` (`:443`): some Lettres ask question (keys `1`/`2`); later Lettre echoes answer (`echo_for`). Answers also feed `Choices` in lore.
-- Village Lettre opened at night (22h–6h) gets creepy `NIGHT_POSTSCRIPTS` line before signature, awards secret "Lecture nocturne" Badge.
+Two clocks: real time + real weather drive scenery only ([[animation]]); **Jour de jeu** drives the story. Nothing under `src/story/` reads `Local::now()` or the weather client.
 
-## Content — `src/chronicles.rs`
+- `StoryClock` (`src/story/clock.rs:4`) = `Progress` start date + `courrier.heure`. `day_on(now)` → Jour de jeu (1 = start day, rolls over at mail hour, never below 1); `date_of(day)` → calendar date. New day's mail appears at that hour, synced with Facteur arrival.
+- `Entry` (`src/story/event.rs:2`) = every mail kind: `Main` (village Lettre), `Sam`, `Neighbours`, `Marcel` (recurring correspondents), `Archive`, `Gazette`, `Recipe`, `Postcard`, `Creepy` (n°13 neighbour). `Beat { day, event }`, `StoryEvent::Mail(Entry)` only for now.
+- Sources (`src/story/sources/`): one file per mail kind, each `impl StorySource { fn beats(clock, today) }`. `sources::registered` (`mod.rs:16`) lists them. **New mail kind = one source file + one registration line** (+ content). Gazette every Monday, recipe each 1st of month — via `clock.date_of`. Carte postale every 7 days from day 40.
+- `Timeline::new(sources, clock, today)` (`src/story/timeline.rs:10`) concatenates beats, sorts by `(day, kind order)`, keeps `mail: Vec<(usize, Entry)>`. `first_mail(n)` borrows the read prefix; `delivered_by(day)`, `mail_at(index)`.
+- `Progress::letters_read` = **prefix length** into the Timeline. Works because past-day beats never move as days advance. No inserting beats on past days.
+- `App` builds `StoryClock` + `Timeline` (`build_timeline`, `src/app.rs:165`), rebuilt on day rollover. `unlocks_for` still counts Lettres read (#13 switches it to Jour de jeu).
+
+### When vs what — `src/story/content/`
+
+- Timeline says **when**; `trait MailContent { fn compose(&ReadContext) -> View }` says **what** (`content/mod.rs:52`). `entry_view` picks the content per `Entry`; `label` gives the Courrier line.
+- `ReadContext` (`content/mod.rs:44`) = everything content may read: Lettres, `Progress`, clock, reading hour, riddle input. Content never fetches.
+- Static: `Written` (correspondents, archives, creepy, recipes), `VillageLetter`. Dynamic: `Gazette`, `Postcard` read weather **frozen at delivery** from `progress.json` (`gazette_weather`, `postcard_weather`): an old Gazette keeps its own week.
+- Village Lettre texts in `letters.rs` (`DEFAULT_LETTERS`), overridable by `<config>/weathr/lettres.txt` (`load`, `:482`): `=== N | Sender` blocks replace letter N or append N+1.
+- `CHOICES` (`letters.rs:314`): some Lettres ask question (keys `1`/`2`); later Lettre echoes answer (`echo_for`). Answers also feed `Choices` in lore.
+- `NightPostscript` (`night_postscript.rs`) wraps `VillageLetter`: opened at night (22h–6h) → creepy `NIGHT_POSTSCRIPTS` line before signature, computed at read time. "Lecture nocturne" Badge unchanged.
+- `MONTHS` (`content/mod.rs`) = French month names, shared with Nouveautés.
+- Tests: golden fixtures in `src/story/testdata/` captured from pre-refactor code (`timeline_golden.txt`, `save_37_golden.txt`). Changing story order or texts → recapture them on purpose.
+
+## Content — `src/story/content/chronicles.rs`
 
 Static French content: correspondents' letters + days, `CITIES` (40 Cartes postales with coordinates), `ARCHIVES`, `RUMORS`, `ADS`, `RIDDLES` (30), `RECIPES`, `DRAWINGS`, `BOTTLE_MESSAGES` (20), `OBJECTS` (25), `CHEST_SOUVENIRS`.
-`is_right_answer` (`:740`) folds case, accents, punctuation, leading article.
+`is_right_answer` (`:731`) folds case, accents, punctuation, leading article.
 
 - **Carte postale**: from Sam travelling; `remote_weather` adds today's weather there.
 - **Gazette**: weekly recap — home weather, rumour, ad, week's Énigme, last week's answer. Key `e` opens text input; solved weeks go in `riddles_solved`.
