@@ -46,6 +46,7 @@ Autopilot 2026-10-26, one implementer.
 Open points (spec wording, not blocking):
 - HUD: label sits in the `--demo` slot, i.e. `… Aide [h] | Jour 8 | Weather: …`, not at the very start. Spec said both "starts with" and "same slot as --demo"; the slot won. Moving it first = one-line change, would move the `--demo` label too.
 - Courrier (`l`) lists only Lettres already read, as before: fresh `--day` game shows `Lettres reçues (0)`. Days 1–N are read with `c` (`Lettre 1/12` on day 8).
+- Rebased 2026-10-27 onto `sprint/timeline-histoire` (#12 merged, PR #26). Conflicts in `app.rs`, `progress.rs`: develop's release notes / Accueil / badge cards kept; `--day` → `Launch::Suppressed` (no notes, no Accueil, no Facteur visit, real save never loaded or written). #14 doc comments dropped. fmt ✅ · clippy ✅ · test ✅.
 
 ## Review
 
