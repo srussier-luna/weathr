@@ -46,6 +46,7 @@ Autopilot 2026-10-26, one implementer.
 - `app.rs`: `unlocks_on(&Timeline, day, &answers)` replaces `unlocks_for`; refreshed on Jour de jeu rollover (existing `refresh_timeline`), no longer on reading.
 - Side effect by design: Album gifts page and unlock-gated animal behaviours follow the Jour de jeu too.
 - Proof: fmt ✅ · clippy ✅ · `cargo test` ✅ 177 passed. #12 golden fixtures unchanged.
+- Rebased 2026-10-27 onto rebased #14 (after #12 merged, PR #26). Conflicts in `app.rs`, `event.rs`, `creepy.rs`, `timeline.rs`: `Timeline` keeps `mail: Vec<(usize, Entry)>` + `first_mail` from #12's review and stores `arrivals: Vec<(usize, Thing)>` beside it, both built once in `new()`; `arrived_by` reads `arrivals`. develop's badge / StarWatch tests kept next to #13's. #13 doc comments dropped. fmt ✅ · clippy ✅ · test ✅.
 
 ## Review
 
