@@ -486,6 +486,7 @@ impl AnimationManager {
         self.squirrel.update(&layout, conditions, &mut rng);
         self.squirrel.render(renderer)?;
 
+        self.postman.set_april_fools(holiday.is_april_fools);
         self.postman.update(&layout);
         self.postman.render(renderer, &layout)?;
 
