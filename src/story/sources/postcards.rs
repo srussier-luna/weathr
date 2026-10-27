@@ -5,7 +5,6 @@ use crate::story::event::{Beat, Entry};
 const POSTCARD_FIRST_DAY: usize = 40;
 const POSTCARD_INTERVAL_DAYS: usize = 7;
 
-/// Sam's Cartes postales once he has left, one a week with no end.
 pub struct Postcards;
 
 impl StorySource for Postcards {

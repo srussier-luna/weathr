@@ -5,7 +5,6 @@ use crate::overlay::{Frame, Line, View};
 
 const QUESTION_FOOTER: &str = "[1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer";
 
-/// A village Lettre (from `lettres.txt`), with Léo's drawings, echoes of past answers and its question.
 pub struct VillageLetter {
     main: usize,
     counter: String,
@@ -20,7 +19,6 @@ impl VillageLetter {
         self.main
     }
 
-    /// Composes the Lettre with `postscript`, if any, just above the signature.
     pub fn compose_with(&self, ctx: &ReadContext, postscript: Option<&str>) -> View {
         let letter = &ctx.letters[self.main];
         let number = self.main + 1;

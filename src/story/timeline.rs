@@ -2,39 +2,44 @@ use super::clock::StoryClock;
 use super::event::{Beat, Entry, StoryEvent};
 use super::sources::StorySource;
 
-/// Every story event, sorted by Jour de jeu then by kind.
 pub struct Timeline {
-    beats: Vec<Beat>,
+    mail: Vec<(usize, Entry)>,
 }
 
 impl Timeline {
-    /// Gathers the beats of every source, up to Jour de jeu `today` for open-ended ones.
     pub fn new(sources: &[Box<dyn StorySource>], clock: &StoryClock, today: usize) -> Self {
         let mut beats: Vec<Beat> = sources
             .iter()
             .flat_map(|source| source.beats(clock, today))
             .collect();
         beats.sort_by_key(|beat| (beat.day, beat.event.order()));
-        Self { beats }
+        let mail = beats
+            .into_iter()
+            .map(|beat| match beat.event {
+                StoryEvent::Mail(entry) => (beat.day, entry),
+            })
+            .collect();
+        Self { mail }
     }
 
-    /// Lettres in delivery order with their Jour de jeu; `Progress::letters_read` is a prefix length into it.
+    /// `Progress::letters_read` is a prefix length into this sequence.
     pub fn mail(&self) -> impl Iterator<Item = (usize, Entry)> + '_ {
-        self.beats.iter().map(|beat| match beat.event {
-            StoryEvent::Mail(entry) => (beat.day, entry),
-        })
+        self.mail.iter().copied()
     }
 
-    /// Number of Lettres delivered by the end of Jour de jeu `day`.
+    pub fn first_mail(&self, count: usize) -> &[(usize, Entry)] {
+        &self.mail[..count.min(self.mail.len())]
+    }
+
     pub fn delivered_by(&self, day: usize) -> usize {
-        self.mail()
+        self.mail
+            .iter()
             .take_while(|(delivery, _)| *delivery <= day)
             .count()
     }
 
-    /// The `index`-th Lettre with its Jour de jeu.
     pub fn mail_at(&self, index: usize) -> Option<(usize, Entry)> {
-        self.mail().nth(index)
+        self.mail.get(index).copied()
     }
 }
 
@@ -96,6 +101,11 @@ mod tests {
         assert_eq!(timeline.delivered_by(1), 1);
         assert_eq!(timeline.delivered_by(5), 7);
         assert_eq!(timeline.mail_at(6), Some((5, Entry::Creepy(0))));
+        assert_eq!(timeline.first_mail(7).last(), Some(&(5, Entry::Creepy(0))));
+        assert_eq!(
+            timeline.first_mail(usize::MAX).len(),
+            timeline.mail().count()
+        );
     }
 
     struct Dummy;

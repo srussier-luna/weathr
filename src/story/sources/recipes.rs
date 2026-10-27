@@ -3,7 +3,6 @@ use crate::story::clock::StoryClock;
 use crate::story::event::{Beat, Entry};
 use chrono::Datelike;
 
-/// Rose's recipe of the month, on every 1st after the start.
 pub struct Recipes;
 
 impl StorySource for Recipes {

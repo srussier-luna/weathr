@@ -1,6 +1,6 @@
 ---
 issue: 12
-status: to-test
+status: to-close
 wiki: [[mail]], [[animation]], [[architecture]]
 note: "Idée d'origine : séparer temps réel (décor) et temps du jeu (histoire), brancher les Lettres sur une timeline, journal du jour plus tard. Archi composable, tests obligatoires."
 created: 2026-10-26
@@ -80,6 +80,18 @@ Autopilot 2026-10-26, one implementer, 4 bricks.
   - `.whackagent/conventions/glossary.md` — both sides kept.
 
 ## Review
+
+Round validation (2026-10-27), one verifier, autofix 1 round.
+
+- LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓
+- Fixed by autofix:
+  - 🟡 [structure] save-37 golden test moved from `views.rs` to `story::content` (`save_golden` test module); `views.rs` keeps the Courrier `index_view` check. Fixture unchanged.
+  - 🟡 [structure] `MONTHS` moved from `gazette.rs` to `story/content/mod.rs`, re-export dropped.
+  - 🟡 [elegance] `Timeline` stores `mail: Vec<(usize, Entry)>`, `first_mail(count) -> &[…]`; `App::read_entries()` borrows again, no Vec per frame.
+  - 🟡 [style] restating doc comments under `src/story/` removed; 3 why-notes kept (`clock.rs`, `timeline.rs`, `ReadContext`).
+- Open: none.
+- Proof: `cargo fmt --check` ✅ · `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use` ✅ (pre-existing lint at `src/weather/provider.rs:23`) · `cargo test` ✅ 250 passed.
+- Code changed after the user's test: test placement, `Timeline` storage, comments. Player-visible behaviour unchanged (golden tests).
 
 ## Verification
 

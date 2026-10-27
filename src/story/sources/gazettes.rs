@@ -3,7 +3,6 @@ use crate::story::clock::StoryClock;
 use crate::story::event::{Beat, Entry};
 use chrono::{Datelike, Weekday};
 
-/// The Gazette, every Monday.
 pub struct Gazettes;
 
 impl StorySource for Gazettes {

@@ -6,14 +6,12 @@ use std::ops::Range;
 
 const NIGHT_READING_HOURS: [Range<u32>; 2] = [22..24, 0..6];
 
-/// Whether a Lettre read at `hour` counts as read at night.
 pub fn is_night_hour(hour: u32) -> bool {
     NIGHT_READING_HOURS
         .iter()
         .any(|hours| hours.contains(&hour))
 }
 
-/// Adds a strange P.-S. to a village Lettre when it is read at night.
 pub struct NightPostscript {
     letter: VillageLetter,
 }

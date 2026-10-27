@@ -7,7 +7,6 @@ const CREEPY_FIRST_DAY: usize = 5;
 const CREEPY_INTERVAL_DAYS: usize = 4;
 const CREEPY_EPILOGUE_DAY: usize = 61;
 
-/// Lettres slipped under the door by the neighbour at n°13; the last one waits for the end of the story.
 pub struct Creepy;
 
 fn creepy_day(index: usize) -> usize {

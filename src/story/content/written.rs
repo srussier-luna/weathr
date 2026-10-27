@@ -1,7 +1,6 @@
 use super::{LETTER_FOOTER, MailContent, ReadContext, text};
 use crate::overlay::{Frame, Line, View};
 
-/// A static Lettre: one paragraph and a signature.
 pub struct Written {
     title: String,
     body: &'static str,

@@ -1,6 +1,5 @@
 use chrono::{Duration, NaiveDate, NaiveDateTime};
 
-/// Counts Jours de jeu: day 1 is the start date, each next day begins at the mail hour.
 #[derive(Clone, Copy, Debug)]
 pub struct StoryClock {
     start: NaiveDate,
@@ -12,13 +11,12 @@ impl StoryClock {
         Self { start, mail_hour }
     }
 
-    /// Jour de jeu at `now`; never below 1, so a clock set in the future stays on day 1.
+    /// Never below 1, so a clock set in the future stays on day 1.
     pub fn day_on(&self, now: NaiveDateTime) -> usize {
         let date = (now - Duration::hours(i64::from(self.mail_hour))).date();
         (date - self.start).num_days().max(0) as usize + 1
     }
 
-    /// Calendar date of a Jour de jeu.
     pub fn date_of(&self, day: usize) -> NaiveDate {
         self.start + Duration::days(day as i64 - 1)
     }

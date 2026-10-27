@@ -1,4 +1,3 @@
-/// A Lettre, identified by its kind and its index within that kind.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Entry {
     Main(usize),
@@ -28,14 +27,12 @@ impl Entry {
     }
 }
 
-/// Something that happens in the story.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum StoryEvent {
     Mail(Entry),
 }
 
 impl StoryEvent {
-    /// Rank among events of the same Jour de jeu.
     pub fn order(&self) -> u8 {
         match self {
             Self::Mail(entry) => entry.order(),
@@ -43,7 +40,6 @@ impl StoryEvent {
     }
 }
 
-/// A story event scheduled on a Jour de jeu.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Beat {
     pub day: usize,

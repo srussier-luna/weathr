@@ -11,7 +11,6 @@ pub const SAM: Correspondent = Correspondent::new(&SAM_DAYS, Entry::Sam);
 pub const NEIGHBOURS: Correspondent = Correspondent::new(&NEIGHBOURS_DAYS, Entry::Neighbours);
 pub const MARCEL: Correspondent = Correspondent::new(&MARCEL_DAYS, Entry::Marcel);
 
-/// A villager writing on fixed Jours de jeu, one Lettre per day listed.
 pub struct Correspondent {
     days: &'static [usize],
     entry: fn(usize) -> Entry,

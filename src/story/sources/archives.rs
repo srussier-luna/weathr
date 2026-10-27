@@ -6,7 +6,6 @@ use crate::story::event::{Beat, Entry};
 const ARCHIVE_FIRST_DAY: usize = 28;
 const ARCHIVE_INTERVAL_DAYS: usize = 6;
 
-/// Town hall archives, sent by Odile at a steady pace.
 pub struct Archives;
 
 impl StorySource for Archives {

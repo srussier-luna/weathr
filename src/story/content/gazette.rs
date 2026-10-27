@@ -1,26 +1,11 @@
 use super::chronicles::{ADS, RIDDLES, RUMORS};
-use super::{LETTER_FOOTER, MailContent, ReadContext, text};
+use super::{LETTER_FOOTER, MONTHS, MailContent, ReadContext, text};
 use crate::overlay::{Frame, Line, View};
 use chrono::Datelike;
 
 const RIDDLE_FOOTER: &str = "[e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]";
 const INPUT_FOOTER: &str = "Tape ta réponse puis [Entrée]  [Echap] annuler";
-pub const MONTHS: [&str; 12] = [
-    "janvier",
-    "février",
-    "mars",
-    "avril",
-    "mai",
-    "juin",
-    "juillet",
-    "août",
-    "septembre",
-    "octobre",
-    "novembre",
-    "décembre",
-];
 
-/// The Gazette of `week`, delivered on Jour de jeu `day`, with that week's frozen weather.
 pub struct Gazette {
     week: usize,
     day: usize,

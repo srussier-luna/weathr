@@ -376,77 +376,19 @@ pub fn album_pages(
 mod tests {
     use super::*;
     use crate::badges;
-    use crate::story::content::{entry_view, letters};
-    use crate::story::{StoryClock, Timeline, sources};
-    use chrono::NaiveDate;
-
-    const SAVE: &str = r#"{
-  "started_on": "2026-09-01",
-  "letters_read": 37,
-  "answers": { "bow": 2, "well": 1 },
-  "riddles_solved": [1],
-  "postcard_weather": { "0": "Il fait beau à Lisbonne." },
-  "gazette_weather": { "0": "Ta semaine : soleil et 21 °C.", "3": "Ta semaine : pluie." }
-}"#;
-
-    fn render(view: &View) -> String {
-        let mut out = format!("title: {}\n", view.title);
-        for line in &view.lines {
-            match line {
-                Line::Text(text) => out.push_str(&format!("text: {text}\n")),
-                Line::Preformatted(text) => out.push_str(&format!("pre: {text}\n")),
-                Line::Centered(text) => out.push_str(&format!("centered: {text}\n")),
-                Line::Rule => out.push_str("rule\n"),
-                Line::Blank => out.push_str("blank\n"),
-            }
-        }
-        out.push_str(&format!("footer: {}\n", view.footer));
-        out.push_str(&format!("frame: {:?}\n", view.frame));
-        out
-    }
+    use crate::story::content::save_golden::{SavedGame, courrier_fixture, render};
 
     #[test]
-    fn test_save_opens_and_lists_as_before_refactor() {
-        let letters = letters::defaults();
-        let progress: Progress = serde_json::from_str(SAVE).unwrap();
-        let clock = StoryClock::new(progress.start_date().unwrap(), 0);
-        let today = clock.day_on(
-            NaiveDate::from_ymd_opt(2026, 10, 26)
-                .unwrap()
-                .and_hms_opt(12, 0, 0)
-                .unwrap(),
-        );
-        let timeline = Timeline::new(&sources::registered(letters.len()), &clock, today);
-        let available = timeline.delivered_by(today);
-        let read: Vec<(usize, Entry)> = timeline
-            .mail()
-            .take(progress.letters_read.min(available))
-            .collect();
+    fn test_save_lists_in_courrier_as_before_refactor() {
+        let save = SavedGame::load();
+        let opened = save.progress.letters_read.min(save.available - 1);
+        let read = save
+            .timeline
+            .first_mail(save.progress.letters_read.min(save.available));
 
-        let mut out = format!("opens: {}\n", progress.letters_read.min(available - 1));
-        for (is_night, reading_hour) in [(false, 12), (true, 23)] {
-            let context = ReadContext {
-                letters: &letters,
-                progress: &progress,
-                clock: &clock,
-                reading_hour,
-                riddle_input: None,
-            };
-            if !is_night {
-                out.push_str(&render(&index_view(&read, 0, 200, &context)));
-            }
-            for (index, (day, entry)) in timeline.mail().take(available).enumerate() {
-                out.push_str(&format!("== entry {index} night {is_night}\n"));
-                out.push_str(&render(&entry_view(
-                    day,
-                    entry,
-                    index + 1,
-                    available,
-                    &context,
-                )));
-            }
-        }
-        assert_eq!(out, include_str!("story/testdata/save_37_golden.txt"));
+        let mut out = format!("opens: {opened}\n");
+        out.push_str(&render(&index_view(read, 0, 200, &save.context(12))));
+        assert_eq!(out, courrier_fixture());
     }
 
     fn centered(view: &View) -> Vec<&str> {

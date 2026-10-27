@@ -469,7 +469,6 @@ pub struct Letter {
     pub body: String,
 }
 
-/// Built-in village Lettres, before any `lettres.txt` override.
 pub fn defaults() -> Vec<Letter> {
     DEFAULT_LETTERS
         .iter()
@@ -480,7 +479,6 @@ pub fn defaults() -> Vec<Letter> {
         .collect()
 }
 
-/// Village Lettres, with `lettres.txt` overrides applied (written with defaults when missing).
 pub fn load() -> Vec<Letter> {
     let mut letters = defaults();
 

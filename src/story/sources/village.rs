@@ -2,7 +2,6 @@ use super::StorySource;
 use crate::story::clock::StoryClock;
 use crate::story::event::{Beat, Entry};
 
-/// One village Lettre a day, from day 1.
 pub struct Village {
     count: usize,
 }

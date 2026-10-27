@@ -721,7 +721,7 @@ impl App {
                 notes_width(renderer),
             ),
             Some(Overlay::Index(selected)) => views::index_view(
-                &self.read_entries(),
+                self.read_entries(),
                 selected,
                 overlay_rows(renderer.get_size().1),
                 &self.read_context(),
@@ -777,16 +777,14 @@ impl App {
         }
     }
 
-    fn read_entries(&self) -> Vec<(usize, Entry)> {
+    fn read_entries(&self) -> &[(usize, Entry)] {
         self.timeline
-            .mail()
-            .take(self.progress.letters_read.min(self.available_letters()))
-            .collect()
+            .first_mail(self.progress.letters_read.min(self.available_letters()))
     }
 
     fn album_pages(&self) -> Vec<overlay::View> {
         views::album_pages(
-            &self.read_entries(),
+            self.read_entries(),
             &self.progress,
             &unlocks_for(&self.timeline, &self.progress),
         )
