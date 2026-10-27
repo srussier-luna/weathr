@@ -11,6 +11,7 @@ use crate::animation::{
     creepy::Creepy,
     dog::Dog,
     duck::Duck,
+    epiphany,
     finds::Finds,
     fireflies::FireflySystem,
     fireworks::Fireworks,
@@ -440,6 +441,10 @@ impl AnimationManager {
         self.lore.update(&layout, conditions, &mut rng);
         self.lore.render_balloon(renderer)?;
         self.lore.render_scenery(renderer, &layout, conditions)?;
+
+        if holiday.is_epiphany {
+            epiphany::render_crown(renderer, &layout)?;
+        }
 
         self.creepy.update(conditions, &unlocks, &mut rng);
         self.creepy

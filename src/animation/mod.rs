@@ -8,6 +8,7 @@ pub mod constellation;
 pub mod creepy;
 pub mod dog;
 pub mod duck;
+pub mod epiphany;
 pub mod finds;
 pub mod fireflies;
 pub mod fireworks;
