@@ -121,21 +121,34 @@ fn welcome_on_launch(progress: &Progress, launch: Launch) -> bool {
     !progress.welcome_seen && !matches!(launch, Launch::Suppressed)
 }
 
+fn notes_overlay(has_notes: bool) -> Option<Overlay> {
+    has_notes.then_some(Overlay::Notes(0))
+}
+
 fn opening_overlay(shows_welcome: bool, has_notes: bool) -> Option<Overlay> {
     if shows_welcome {
         Some(Overlay::Welcome(Step::Arriving))
     } else {
-        has_notes.then_some(Overlay::Notes(0))
+        notes_overlay(has_notes)
     }
 }
 
-fn welcome_after_key(step: Step, code: KeyCode, last: usize) -> Option<Step> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum WelcomeOutcome {
+    Next(Step),
+    Finish,
+    Skip,
+}
+
+fn welcome_after_key(step: Step, code: KeyCode, last: usize) -> WelcomeOutcome {
     match code {
-        KeyCode::Enter => step.advance(),
-        KeyCode::Esc => None,
-        KeyCode::Up => Some(step.scroll(-1, last)),
-        KeyCode::Down => Some(step.scroll(1, last)),
-        _ => Some(step),
+        KeyCode::Enter => step
+            .advance()
+            .map_or(WelcomeOutcome::Finish, WelcomeOutcome::Next),
+        KeyCode::Esc => WelcomeOutcome::Skip,
+        KeyCode::Up => WelcomeOutcome::Next(step.scroll(-1, last)),
+        KeyCode::Down => WelcomeOutcome::Next(step.scroll(1, last)),
+        _ => WelcomeOutcome::Next(step),
     }
 }
 
@@ -553,8 +566,15 @@ impl App {
     fn press_welcome_key(&mut self, code: KeyCode, rows: usize, width: usize) {
         if let Some(Overlay::Welcome(step)) = self.overlay {
             match welcome_after_key(step, code, welcome::scroll_limit(rows, width)) {
-                Some(step) => self.overlay = Some(Overlay::Welcome(step)),
-                None => self.end_welcome(),
+                WelcomeOutcome::Next(step) => self.overlay = Some(Overlay::Welcome(step)),
+                WelcomeOutcome::Finish => {
+                    self.animations.postman_leave();
+                    self.end_welcome();
+                }
+                WelcomeOutcome::Skip => {
+                    self.animations.postman_dismiss();
+                    self.end_welcome();
+                }
             }
         }
     }
@@ -562,8 +582,7 @@ impl App {
     fn end_welcome(&mut self) {
         self.progress.welcome_seen = true;
         self.progress.save();
-        self.animations.postman_leave();
-        self.overlay = opening_overlay(false, !self.release_notes.is_empty());
+        self.overlay = notes_overlay(!self.release_notes.is_empty());
     }
 
     fn has_read_all_letters(&self) -> bool {
@@ -1323,23 +1342,29 @@ mod tests {
             .map(KeyCode::Char)
             .chain([KeyCode::Left, KeyCode::Right]);
         for step in steps {
-            assert_eq!(welcome_after_key(step, KeyCode::Esc, 5), None);
+            assert_eq!(
+                welcome_after_key(step, KeyCode::Esc, 5),
+                WelcomeOutcome::Skip
+            );
             for code in ignored.clone() {
-                assert_eq!(welcome_after_key(step, code, 5), Some(step));
+                assert_eq!(welcome_after_key(step, code, 5), WelcomeOutcome::Next(step));
             }
         }
         assert_eq!(
             welcome_after_key(Step::Greeting, KeyCode::Enter, 5),
-            Some(Step::Unfolding(0))
+            WelcomeOutcome::Next(Step::Unfolding(0))
         );
-        assert_eq!(welcome_after_key(Step::Farewell, KeyCode::Enter, 5), None);
+        assert_eq!(
+            welcome_after_key(Step::Farewell, KeyCode::Enter, 5),
+            WelcomeOutcome::Finish
+        );
         assert_eq!(
             welcome_after_key(Step::Reading(1), KeyCode::Down, 5),
-            Some(Step::Reading(2))
+            WelcomeOutcome::Next(Step::Reading(2))
         );
         assert_eq!(
             welcome_after_key(Step::Reading(1), KeyCode::Up, 5),
-            Some(Step::Reading(0))
+            WelcomeOutcome::Next(Step::Reading(0))
         );
     }
 

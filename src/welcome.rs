@@ -38,10 +38,10 @@ impl Step {
         }
     }
 
-    pub fn scroll(self, step: isize, last: usize) -> Self {
+    pub fn scroll(self, delta: isize, last: usize) -> Self {
         match self {
-            Self::Reading(first) => Self::Reading(first.saturating_add_signed(step).min(last)),
-            step => step,
+            Self::Reading(first) => Self::Reading(first.saturating_add_signed(delta).min(last)),
+            other => other,
         }
     }
 

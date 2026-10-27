@@ -1,6 +1,6 @@
 ---
 issue: 53
-status: to-test
+status: to-close
 wiki: [[animation]], [[render]], [[mail]], [[updater]]
 note: "on va ajouter un text d'on-boarding pour les personne qui ne conaisse pas le jeu pour leur expliquer comment ouvrir son courier etc. propose plusieur texte avec plusieur maniere, comique, curieu etc"
 created: 2026-10-27
@@ -83,10 +83,25 @@ created: 2026-10-27
 - First launch with no save + `--demo` / `--simulate` / `--silent` → counts as Fresh, Accueil shown (only an existing save in those modes skips it).
 - Build: `cargo build` ✅ · fmt ✅ · `cargo test` ✅ · clippy ❌ only on pre-existing `clippy::double_must_use` in `src/weather/provider.rs:23` (untouched, `#[async_trait]` expansion); clean with that lint allowed.
 
+- Validation autofix: `Échap` → `Postman::dismiss` (Facteur vanishes at once), last `Entrée` → `leave` (rides off) · `WelcomeOutcome { Next, Finish, Skip }` decides the exit in one place · `notes_overlay(has_notes)` shared by `opening_overlay` / `end_welcome` · `Step::scroll(self, delta, last)`.
+
 ## Review
+
+### Round validation — 2026-10-27
+
+LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓
+
+- 🟡 [correctness] `Échap` made the Facteur ride off, not vanish (`app.rs`) → fixed (autofix 1)
+- 🟡 [elegance] `opening_overlay(false, …)` literal flag → fixed, `notes_overlay` (autofix 1)
+- 🟡 [style] `step` param shadowed in `Step::scroll` → fixed, `delta` (autofix 1)
+- 🟡 [elegance] finish vs skip decided in two places (from autofix 1) → fixed, `WelcomeOutcome` (autofix 2)
+
+VERDICT: clean · 2 autofix rounds · proof: build ✅ fmt ✅ test ✅ (226) · clippy ✅ except pre-existing `double_must_use` (`src/weather/provider.rs:23`)
 
 ## Verification
 
 manual validation — not run by agent
+
+validation: manual validation — not run by agent · run: yours
 
 ## Feedback

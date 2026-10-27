@@ -18,7 +18,7 @@ Order matters (`src/main.rs:146`):
 
 - `App` (`src/app.rs:176`) owns everything: `AppState`, `AnimationManager`, `WorldScene`, `Progress` save, Lettre timeline, open overlay, toasts, async channels.
 - `AppState` (`src/app_state.rs:11`) = *weather + HUD* state: current `WeatherData`, derived `WeatherConditions` flags, `Holiday`, rainbow timer, cached status line.
-- `Overlay` (`src/app.rs:167`) = one modal at a time: Lettre, Badges, Album, Bouteille, Aide, Courrier (index), Nouveautés (release notes, see [[updater]]). Drawing in [[render]], content in [[mail]].
+- `Overlay` (`src/app.rs:167`) = one modal at a time: Lettre, Badges, Album, Bouteille, Aide, Courrier (index), Nouveautés (release notes, see [[updater]]), Accueil (`Welcome`, see [[mail]]). Drawing in [[render]], content in [[mail]].
 
 ## Main loop — `App::run` (`src/app.rs:781`)
 

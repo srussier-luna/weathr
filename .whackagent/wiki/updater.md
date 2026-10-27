@@ -49,9 +49,9 @@ alerts off (see [[mail]], [[weather]]).
 
 ## Release notes — `src/release_notes.rs`
 
-- `NOUVEAUTES.md` at repo root, French, `tu`, one `## YYYY-MM-DD` section per release, newest first. Embedded with `include_str!` (binary always built from checkout). Written by hand at each release; avoid `: ; ! ?` (wrap splits on U+202F).
+- `NOUVEAUTES.md` at repo root, French, `tu`, one `## YYYY-MM-DD` section per release, newest first. Embedded with `include_str!` (binary always built from checkout). Written by hand at each release; U+202F before `: ; ! ?` (wrap keeps it glued).
 - `notes_seen_on` in `progress.json` = last section shown. First launch after update → `Nouveautés` box (`Overlay::Notes`) with every newer section; `Esc`/`Enter` closes and marks seen. Shown once, no key to reopen.
-- `Launch` (`src/app.rs`): `Fresh` (no `progress.json` before load) → newest marked seen, nothing shown, whatever mode · `Suppressed` (`--silent`, `--demo`, forced modes) → nothing shown or marked · `Normal`. Old save without the field → newest section only.
+- `Launch` (`src/app.rs`): `Fresh` (no `progress.json` before load) → newest marked seen, nothing shown, whatever mode · `Suppressed` (`--silent`, `--demo`, forced modes) → nothing shown or marked · `Normal`. Old save without the field → newest section only. Accueil pending (see [[mail]]) → Nouveautés box waits until it ends.
 - Lines wrapped at box width (`overlay::text_width`) before scroll limit; `↑`/`↓` scroll when taller than the box.
 
 ## Gotchas

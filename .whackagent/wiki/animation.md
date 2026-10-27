@@ -43,6 +43,8 @@ Demo has `Perséides` and `Géminides` scenes. `StarGazing` (constellations) use
 
 Rides in to **arrive at mailbox exactly at `courrier.heure`**: departure time back-computed from distance + speed (`due_round`). Shows mailbox flag when Lettre unread. Rings bell if player chose.
 
+Accueil visit (see [[mail]]): `visit` → `Arriving` (2.5 s ride) → `Staying` at mailbox, no labels, daily round can't start. `leave` rides off (last `Entrée`), `dismiss` hides him at once (`Échap`). `head` = bubble anchor. No mailbox (narrow terminal) → never visible.
+
 ## Demo — `src/demo.rs`
 
 `--demo` cycles every weather condition by day and night, then Fête scenes, 1 s each, label in HUD.
