@@ -52,6 +52,7 @@ One precise screen. Team names, in the discussion language. UI projects only.
 | Potager | | | scène du potager vue de dessus en biais, sans ciel ; pousse par Jour de jeu, suit les saisons |
 | Fête du miel | scène de fête | | maison de Nadia et Claire, Jours de jeu 119–120 seulement |
 | Lieux | menu des lieux | | menu touche m : Jardin, Potager, Fête du miel disponibles |
+| Accueil | onboarding | `welcome` | Facteur arrive, bulle, note dépliée, bulle de départ ; une fois par joueur |
 <!-- | Login screen | login page | `LoginView` | email + password, forgot-password link | -->
 
 ## Parts

@@ -39,6 +39,8 @@ Tickets de saison (sprints « Saison N ») : titre et résumé sans spoiler de l
 **Validated examples** — strings the user rewrote, `before → after · situation`. Max 12, 2 per situation. Read them before `wording/tones.md`: this project's voice beats the generic tone.
 
 <!-- - "Your trip has been saved!" → (removed, checkmark) · success -->
+- « Ta première lettre est arrivée. » → « Je viens de te déposer ton courrier. » · onboarding
+- « Lis tout. Certains détails comptent plus qu'ils n'en ont l'air. » → « Lis bien tout. Certains détails comptent plus qu'ils n'en ont l'air ;) » · onboarding
 
 ## The ladder — every string
 
