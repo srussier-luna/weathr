@@ -36,6 +36,7 @@ Demo has `Perséides` and `Géminides` scenes. `StarGazing` (constellations) use
 
 - `Season::on` (`src/holiday.rs:16`) uses astronomical boundaries (20–22 of month).
 - `Holiday` (`src/holiday.rs:27`) = bag of flags computed daily by `Holiday::today`: Christmas (24–25 Dec), 14 juillet (13–14 Jul), Halloween (all October), New Year (±7 days), Easter (±7 days, computed), spring, winter.
+- 6 January (`Holiday::is_epiphany`): golden paper crown at the roof peak (`src/animation/epiphany.rs`), drawn in the garden layer after snow cover; sits on the weather vane's mast.
 - CLI flags + demo inject fixed `Holiday` values (`christmas()`, `national_day()`…).
 - Consumers: fireworks (national day, New Year, night only), pumpkins/spirits, spring flowers + lilies, Easter eggs, autumn falling leaves, seasonal constellations, gust leaf colours, fir tree. Fêtes also award Badges (see [[mail]]).
 
