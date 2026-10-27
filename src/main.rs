@@ -21,6 +21,7 @@ mod scene;
 mod updater;
 mod views;
 mod weather;
+mod welcome;
 
 use clap::{CommandFactory, Parser};
 use clap_complete::{Shell, generate};

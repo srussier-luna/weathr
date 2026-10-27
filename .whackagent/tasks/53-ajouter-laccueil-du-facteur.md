@@ -1,6 +1,6 @@
 ---
 issue: 53
-status: todo
+status: to-test
 wiki: [[animation]], [[render]], [[mail]], [[updater]]
 note: "on va ajouter un text d'on-boarding pour les personne qui ne conaisse pas le jeu pour leur expliquer comment ouvrir son courier etc. propose plusieur texte avec plusieur maniere, comique, curieu etc"
 created: 2026-10-27
@@ -18,7 +18,7 @@ created: 2026-10-27
 - **Saved** in `progress.json`, new field `#[serde(default)]` (old saves load, default = not seen). Marked when the Accueil ends or is skipped. `q` mid-way → not marked, replays from the start next launch.
 - **Sequence**:
   1. Facteur rides to the mailbox (existing postman look and path), stops.
-  2. Big speech bubble above him: arrival text. Footer `[Entrée] suite · [Échap] passer`.
+  2. Big speech bubble above him: arrival text. Footer `[Entrée] suite  [Echap] passer` (existing footer style).
   3. `Entrée` → the note **unfolds** (box grows progressively, under 1 s), then shows the full note text.
   4. `Entrée` → departure bubble. **At that moment the red mailbox flag rises** and the top bar shows `Lettre ! [c]` (if a Lettre is unread).
   5. `Entrée` → bubble closes, Facteur leaves. Then the Nouveautés box opens if release notes are pending (**Accueil first, Nouveautés after**).
@@ -47,7 +47,7 @@ created: 2026-10-27
 
     Prends ton temps. Le village n'est pas pressé. Lis bien tout. Certains détails comptent plus qu'ils n'en ont l'air ;)
     ```
-  - Signature: « — Le Facteur ». Footer: `[Entrée] suite · [Échap] passer`.
+  - Signature: « — Le Facteur ». Footer: `[Entrée] suite  [Echap] passer` (existing footer style).
   - Departure bubble: « Je viens de te déposer ton courrier. Moi, je file, à demain ! »
   - `;)` and `!` are the user's choice for the Facteur (wording.md validated examples).
 - Wording gotcha: French `: ; ! ?` take U+202F before them; wrapping must not split a word from its punctuation (see Nouveautés gotcha in [[updater]]).
@@ -72,8 +72,21 @@ created: 2026-10-27
 
 ## Implementation
 
+- `src/welcome.rs` (new): `Step` machine (Arriving → Greeting → Unfolding → Reading → Farewell), texts (U+202F before `: ? ! ;)`), `note_view`, `unfolding_view`, `scroll_limit`, tests.
+- `src/progress.rs`: `welcome_seen: bool`, `#[serde(default)]` → fresh and old saves see the Accueil once; saved at last Entrée or Échap only.
+- `src/animation/postman.rs`: trips `Arriving` (2.5 s ride) and `Staying` (holds at the mailbox, no labels); `visit`, `leave`, `is_arriving`, `head`; daily round can't start during a visit. `src/animation_manager.rs`: pass-throughs.
+- `src/overlay.rs`: `Frame::Bubble` + `render_bubble` (≤ 40 cols, tail toward the Facteur's head, clamped to edges); layout split into `lay_out` / `draw_rows`; `wrap` splits on ASCII whitespace only, U+202F stays glued (test).
+- `src/views.rs`: Nouveautés scroll logic shared as `scrolled_view` / `scroll_limit`, same output.
+- `src/app.rs`: `Overlay::Welcome(Step)`, launch rule, Nouveautés deferred until the Accueil ends (then Badge cards), flag + HUD hidden before the departure bubble, Accueil keys, rendering, tests. `src/main.rs`: `mod welcome;`.
+- Narrow terminal (< ~71 cols, no mailbox): no ride, bubbles centred near the bottom without tail; note wraps and scrolls.
+- Entrée ignored while he rides in; Entrée during the unfold shows the full note. Scrolling note → footer `[↑] [↓] défiler  [Entrée] suite  [Echap] passer`.
+- First launch with no save + `--demo` / `--simulate` / `--silent` → counts as Fresh, Accueil shown (only an existing save in those modes skips it).
+- Build: `cargo build` ✅ · fmt ✅ · `cargo test` ✅ · clippy ❌ only on pre-existing `clippy::double_must_use` in `src/weather/provider.rs:23` (untouched, `#[async_trait]` expansion); clean with that lint allowed.
+
 ## Review
 
 ## Verification
+
+manual validation — not run by agent
 
 ## Feedback
