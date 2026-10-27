@@ -1,6 +1,6 @@
 ---
 issue: 36
-status: to-test
+status: to-close
 wiki: [[animation]], [[scene]]
 note: "6 janvier : couronne sur le toit ou sur le chat"
 created: 2026-10-27
@@ -35,6 +35,9 @@ created: 2026-10-27
 - Build ✅ · fmt ✅ · clippy ✅ (pre-existing double_must_use allowed) · tests ✅.
 
 ## Review
+
+Round validation — LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓ — clean.
+- Crown over the weather vane's mast: judged acceptable (arrow stays visible).
 
 ## Verification
 
