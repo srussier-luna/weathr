@@ -1,11 +1,11 @@
 use super::chronicles::{ADS, RIDDLES, RUMORS};
 use super::{LETTER_FOOTER, MailContent, ReadContext, text};
-use crate::overlay::{Line, View};
+use crate::overlay::{Frame, Line, View};
 use chrono::Datelike;
 
 const RIDDLE_FOOTER: &str = "[e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]";
 const INPUT_FOOTER: &str = "Tape ta réponse puis [Entrée]  [Echap] annuler";
-const MONTHS: [&str; 12] = [
+pub const MONTHS: [&str; 12] = [
     "janvier",
     "février",
     "mars",
@@ -24,12 +24,11 @@ const MONTHS: [&str; 12] = [
 pub struct Gazette {
     week: usize,
     day: usize,
-    counter: String,
 }
 
 impl Gazette {
-    pub fn new(week: usize, day: usize, counter: String) -> Self {
-        Self { week, day, counter }
+    pub fn new(week: usize, day: usize) -> Self {
+        Self { week, day }
     }
 }
 
@@ -53,7 +52,7 @@ impl MailContent for Gazette {
                 "Petite annonce : {}",
                 ADS[(week * 7 + 3) % ADS.len()]
             )),
-            Line::Blank,
+            Line::Rule,
             text(format!("L'énigme de la semaine : {}", riddle.question)),
         ];
 
@@ -80,13 +79,13 @@ impl MailContent for Gazette {
 
         View {
             title: format!(
-                "La Gazette {}, lundi {} {}",
-                self.counter,
+                "LA GAZETTE · lundi {} {}",
                 date.day(),
                 MONTHS[date.month0() as usize]
             ),
             lines,
             footer: footer.to_string(),
+            frame: Frame::Newspaper,
         }
     }
 }
@@ -105,7 +104,7 @@ mod tests {
             .gazette_weather
             .insert(0, "Ta semaine : soleil, 21 °C.".to_string());
         let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 10, 22).unwrap(), 9);
-        let gazette = Gazette::new(0, 5, "7/20".to_string());
+        let gazette = Gazette::new(0, 5);
         let compose = |progress: &Progress| {
             gazette.compose(&ReadContext {
                 letters: &[],
@@ -129,7 +128,7 @@ mod tests {
             .gazette_weather
             .insert(1, "Ta semaine : orages, 9 °C.".to_string());
         let view = compose(&progress);
-        assert_eq!(view.title, "La Gazette 7/20, lundi 26 octobre");
+        assert_eq!(view.title, "LA GAZETTE · lundi 26 octobre");
         assert_eq!(first_weather(view), "Ta semaine : soleil, 21 °C.");
     }
 }

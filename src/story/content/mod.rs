@@ -8,7 +8,7 @@ mod written;
 
 use super::clock::StoryClock;
 use super::event::Entry;
-use crate::overlay::{Line, View};
+use crate::overlay::{Frame, Line, View};
 use crate::progress::Progress;
 use chronicles::{
     ARCHIVES, CITIES, MARCEL_LETTERS, MARCEL_SENDER, NEIGHBOURS_LETTERS, NEIGHBOURS_SENDER,
@@ -21,6 +21,7 @@ use postcard::Postcard;
 use village::VillageLetter;
 use written::Written;
 
+pub use gazette::MONTHS;
 pub use night_postscript::is_night_hour;
 pub use postcard::{postcard_lines, postcard_title};
 
@@ -66,21 +67,25 @@ fn content_for(day: usize, entry: Entry, counter: String) -> Box<dyn MailContent
             format!("Lettre {counter} (glissée sous la porte)"),
             CREEPY_LETTERS[index],
             CREEPY_SENDER,
+            Frame::Parchment,
         )),
         Entry::Sam(index) => Box::new(Written::new(
             format!("Lettre {counter}"),
             SAM_LETTERS[index],
             SAM_SENDER,
+            Frame::Parchment,
         )),
         Entry::Neighbours(index) => Box::new(Written::new(
             format!("Lettre {counter}"),
             NEIGHBOURS_LETTERS[index],
             NEIGHBOURS_SENDER,
+            Frame::Parchment,
         )),
         Entry::Marcel(index) => Box::new(Written::new(
             format!("Lettre {counter}"),
             MARCEL_LETTERS[index],
             MARCEL_SENDER,
+            Frame::Parchment,
         )),
         Entry::Postcard(index) => Box::new(Postcard::new(index, counter)),
         Entry::Archive(index) => {
@@ -89,15 +94,17 @@ fn content_for(day: usize, entry: Entry, counter: String) -> Box<dyn MailContent
                 format!("Archives de la mairie {counter} : {source}"),
                 body,
                 "Copie transmise par Odile",
+                Frame::Folder,
             ))
         }
-        Entry::Gazette(week) => Box::new(Gazette::new(week, day, counter)),
+        Entry::Gazette(week) => Box::new(Gazette::new(week, day)),
         Entry::Recipe(month) => {
             let (name, body) = RECIPES[month];
             Box::new(Written::new(
                 format!("Recette du mois {counter} : {name}"),
                 body,
                 "Rose, la boulangère",
+                Frame::Recipe,
             ))
         }
     }

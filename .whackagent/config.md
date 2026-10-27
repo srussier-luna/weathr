@@ -108,7 +108,7 @@ branch:
   per_task: true              # /wa-code work on own branch per task, not current
                                # github backend: always true — task file live on task branch
   prefix: "wa/"                # branch name: <prefix><key> → wa/add-apple-login (github: wa/42-add-apple-login)
-  base: current                # fork point: current | main | <branch name>
+  base: develop                # fork point: current | main | <branch name>
   sprint_prefix: "sprint/"     # task with `sprint:` branch off SPRINT branch, not base:
                                #   sprint/login-refacto   ← kebab of sprint "Login refacto",
                                #                            created from base: on first task
@@ -136,7 +136,7 @@ close:                         # WHERE work land when /wa-close finish task. Spr
                                # merge  — merge branch into target: locally, no push.
                                # github backend: ignored — task already have draft PR;
                                #   /wa-close rebase, push, mark ready. YOU merge.
-  target: main                 # where pr/merge land. Ignored by `nothing`.
+  target: develop              # where pr/merge land. Ignored by `nothing`.
   delete_branch: auto          # auto   — delete only once code live elsewhere (merged into sprint
                                #   branch or target). `pr` and `nothing` keep it:
                                #   PR need branch, so do you.

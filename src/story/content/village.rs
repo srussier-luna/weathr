@@ -1,7 +1,7 @@
 use super::chronicles::DRAWINGS;
 use super::letters::{choice_for, echo_for};
 use super::{LETTER_FOOTER, ReadContext, text};
-use crate::overlay::{Line, View};
+use crate::overlay::{Frame, Line, View};
 
 const QUESTION_FOOTER: &str = "[1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer";
 
@@ -75,6 +75,7 @@ impl VillageLetter {
             title: format!("Lettre {}", self.counter),
             lines,
             footer: footer.to_string(),
+            frame: Frame::Parchment,
         }
     }
 }

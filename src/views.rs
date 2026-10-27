@@ -1,18 +1,27 @@
 use crate::animation::lore::Unlocks;
-use crate::overlay::{Line, View};
+use crate::badges::Badge;
+use crate::overlay::{self, Frame, Line, View};
 use crate::progress::Progress;
+use crate::release_notes::Section;
 use crate::story::Entry;
 use crate::story::content::chronicles::{
     BOTTLE_MESSAGES, CHEST_SOUVENIRS, DRAWINGS, OBJECTS, RECIPES,
 };
 use crate::story::content::letters::CHOICES;
-use crate::story::content::{self, ReadContext, postcard_lines, postcard_title, text};
+use crate::story::content::{self, MONTHS, ReadContext, postcard_lines, postcard_title, text};
+use chrono::Datelike;
 
 const INDEX_FOOTER: &str = "[↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer";
 const ALBUM_FOOTER: &str = "[<] [>] pages  [a] ou [Echap] fermer";
 const BOTTLE_FOOTER: &str = "[Echap] fermer";
+const BADGE_CARD_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const HELP_FOOTER: &str = "[h] ou [Echap] fermer";
+const NOTES_FOOTER: &str = "[Entrée] ou [Echap] fermer";
+const SCROLL_HINT: &str = "[↑] [↓] défiler";
 const HELP_KEY_WIDTH: usize = 10;
+const NOTES_BULLET: &str = "- ";
+const NOTES_INDENT: &str = "  ";
+pub const NOTES_FRAME: Frame = Frame::Plain;
 
 pub fn index_view(
     read_entries: &[(usize, Entry)],
@@ -46,6 +55,7 @@ pub fn index_view(
         title: format!("Lettres reçues ({})", read_entries.len()),
         lines,
         footer: INDEX_FOOTER.to_string(),
+        frame: Frame::Plain,
     }
 }
 
@@ -54,6 +64,34 @@ pub fn bottle_view(index: usize) -> View {
         title: "Message dans une bouteille".to_string(),
         lines: vec![text(BOTTLE_MESSAGES[index])],
         footer: BOTTLE_FOOTER.to_string(),
+        frame: Frame::Waves,
+    }
+}
+
+fn medal([top, middle, bottom]: [&str; 3]) -> [String; 5] {
+    [
+        " .-\"\"\"-. ".to_string(),
+        format!("/ {top} \\"),
+        format!("| {middle} |"),
+        format!("\\ {bottom} /"),
+        " '-...-' ".to_string(),
+    ]
+}
+
+pub fn badge_card_view(badge: &Badge) -> View {
+    let mut lines = vec![Line::Blank];
+    lines.extend(medal(badge.icon).into_iter().map(Line::Centered));
+    lines.extend([
+        Line::Blank,
+        Line::Centered("Nouveau badge\u{202F}!".to_string()),
+        Line::Centered(badge.name.to_string()),
+    ]);
+    lines.extend(badge.hint.map(|hint| Line::Centered(hint.to_string())));
+    View {
+        title: String::new(),
+        lines,
+        footer: BADGE_CARD_FOOTER.to_string(),
+        frame: Frame::Stars,
     }
 }
 
@@ -93,7 +131,85 @@ pub fn help_view(unlocks: &Unlocks, has_gazette: bool) -> View {
         title: "Commandes".to_string(),
         lines,
         footer: HELP_FOOTER.to_string(),
+        frame: Frame::Plain,
     }
+}
+
+fn notes_lines(sections: &[Section], width: usize) -> Vec<String> {
+    let mut lines = Vec::new();
+    for section in sections {
+        if !lines.is_empty() {
+            lines.push(String::new());
+        }
+        lines.extend(overlay::wrap(
+            &format!(
+                "{} {} {}",
+                section.date.day(),
+                MONTHS[section.date.month0() as usize],
+                section.date.year()
+            ),
+            width,
+        ));
+        for item in &section.items {
+            let wrapped = overlay::wrap(item, width.saturating_sub(NOTES_BULLET.len()));
+            lines.extend(wrapped.into_iter().enumerate().map(|(index, line)| {
+                let prefix = if index == 0 {
+                    NOTES_BULLET
+                } else {
+                    NOTES_INDENT
+                };
+                format!("{prefix}{line}")
+            }));
+        }
+    }
+    lines
+}
+
+pub fn scroll_limit(lines: &[String], rows: usize) -> usize {
+    lines.len().saturating_sub(rows.max(1))
+}
+
+pub fn scrolled_view(
+    title: &str,
+    lines: Vec<String>,
+    first: usize,
+    rows: usize,
+    footer: &str,
+    frame: Frame,
+) -> View {
+    let rows = rows.max(1);
+    let is_scrollable = lines.len() > rows;
+    let first = first.min(scroll_limit(&lines, rows));
+    View {
+        title: title.to_string(),
+        lines: lines
+            .into_iter()
+            .skip(first)
+            .take(rows)
+            .map(Line::Preformatted)
+            .collect(),
+        footer: if is_scrollable {
+            format!("{SCROLL_HINT}  {footer}")
+        } else {
+            footer.to_string()
+        },
+        frame,
+    }
+}
+
+pub fn notes_scroll_limit(sections: &[Section], rows: usize, width: usize) -> usize {
+    scroll_limit(&notes_lines(sections, width), rows)
+}
+
+pub fn notes_view(sections: &[Section], first: usize, rows: usize, width: usize) -> View {
+    scrolled_view(
+        "Nouveautés",
+        notes_lines(sections, width),
+        first,
+        rows,
+        NOTES_FOOTER,
+        NOTES_FRAME,
+    )
 }
 
 fn gifts(unlocks: &Unlocks) -> Vec<&'static str> {
@@ -132,6 +248,7 @@ fn list_page(title: &str, items: Vec<String>) -> View {
         title: title.to_string(),
         lines,
         footer: ALBUM_FOOTER.to_string(),
+        frame: Frame::Photo,
     }
 }
 
@@ -218,12 +335,14 @@ pub fn album_pages(
                 title: format!("Album : bouteille n°{}", rank + 1),
                 lines: vec![text(BOTTLE_MESSAGES[*index])],
                 footer: ALBUM_FOOTER.to_string(),
+                frame: Frame::Photo,
             }),
     );
     pages.extend(postcards.iter().map(|index| View {
         title: format!("Album : carte de {}", postcard_title(*index)),
         lines: postcard_lines(*index, progress),
         footer: ALBUM_FOOTER.to_string(),
+        frame: Frame::Photo,
     }));
     pages.extend(recipes.iter().map(|month| {
         let (name, body) = RECIPES[*month];
@@ -231,6 +350,7 @@ pub fn album_pages(
             title: format!("Album : recette, {name}"),
             lines: vec![text(body)],
             footer: ALBUM_FOOTER.to_string(),
+            frame: Frame::Photo,
         }
     }));
     pages.extend(drawings.iter().map(|drawing| {
@@ -241,6 +361,7 @@ pub fn album_pages(
                 .map(|row| Line::Preformatted(row.to_string()))
                 .collect(),
             footer: ALBUM_FOOTER.to_string(),
+            frame: Frame::Photo,
         }
     }));
 
@@ -254,6 +375,7 @@ pub fn album_pages(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::badges;
     use crate::story::content::{entry_view, letters};
     use crate::story::{StoryClock, Timeline, sources};
     use chrono::NaiveDate;
@@ -273,10 +395,13 @@ mod tests {
             match line {
                 Line::Text(text) => out.push_str(&format!("text: {text}\n")),
                 Line::Preformatted(text) => out.push_str(&format!("pre: {text}\n")),
+                Line::Centered(text) => out.push_str(&format!("centered: {text}\n")),
+                Line::Rule => out.push_str("rule\n"),
                 Line::Blank => out.push_str("blank\n"),
             }
         }
         out.push_str(&format!("footer: {}\n", view.footer));
+        out.push_str(&format!("frame: {:?}\n", view.frame));
         out
     }
 
@@ -322,5 +447,106 @@ mod tests {
             }
         }
         assert_eq!(out, include_str!("story/testdata/save_37_golden.txt"));
+    }
+
+    fn centered(view: &View) -> Vec<&str> {
+        view.lines
+            .iter()
+            .filter_map(|line| match line {
+                Line::Centered(text) => Some(text.as_str()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_medal_frames_the_badge_icon() {
+        assert_eq!(
+            medal(badges::find("rain").unwrap().icon),
+            [
+                " .-\"\"\"-. ",
+                "/ (___) \\",
+                "|  / /  |",
+                "\\ / / / /",
+                " '-...-' ",
+            ]
+        );
+    }
+
+    fn rows(view: &View) -> Vec<&str> {
+        view.lines
+            .iter()
+            .filter_map(|line| match line {
+                Line::Preformatted(text) => Some(text.as_str()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    fn sections() -> Vec<Section> {
+        crate::release_notes::parse(
+            "## 2026-10-12\n- Ancienne\n## 2026-10-26\n- Première\n- Deuxième\n",
+        )
+    }
+
+    #[test]
+    fn test_notes_list_each_section_under_its_date_newest_first() {
+        let view = notes_view(&sections(), 0, 20, 60);
+        assert_eq!(view.title, "Nouveautés");
+        assert_eq!(
+            rows(&view),
+            [
+                "26 octobre 2026",
+                "- Première",
+                "- Deuxième",
+                "",
+                "12 octobre 2026",
+                "- Ancienne"
+            ]
+        );
+        assert_eq!(view.footer, NOTES_FOOTER);
+    }
+
+    #[test]
+    fn test_long_notes_wrap_in_the_box_and_scroll_to_the_last_line() {
+        let sections = crate::release_notes::parse(
+            "## 2026-10-26\n- Les Perséides font pleuvoir les étoiles filantes la nuit\n",
+        );
+        let (height, width) = (3, 20);
+
+        assert_eq!(notes_view(&sections, 0, 20, width).footer, NOTES_FOOTER);
+        let top = notes_view(&sections, 0, height, width);
+        assert_eq!(
+            rows(&top),
+            ["26 octobre 2026", "- Les Perséides font", "  pleuvoir les"]
+        );
+        assert_eq!(top.footer, "[↑] [↓] défiler  [Entrée] ou [Echap] fermer");
+
+        let last = notes_scroll_limit(&sections, height, width);
+        assert_eq!(last, 2);
+        let bottom = notes_view(&sections, last + 5, height, width);
+        assert_eq!(
+            rows(&bottom),
+            ["  pleuvoir les", "  étoiles filantes", "  la nuit"]
+        );
+        assert!(rows(&bottom).iter().all(|row| row.chars().count() <= width));
+    }
+
+    #[test]
+    fn test_badge_card_names_the_badge_and_its_secret_condition() {
+        let rain = badge_card_view(badges::find("rain").unwrap());
+        assert_eq!(rain.frame, Frame::Stars);
+        assert_eq!(centered(&rain)[1], "/ (___) \\");
+        assert_eq!(centered(&rain)[5..], ["Nouveau badge\u{202F}!", "Pluie"]);
+
+        let patience = badge_card_view(badges::find("patience").unwrap());
+        assert_eq!(
+            centered(&patience)[5..],
+            [
+                "Nouveau badge\u{202F}!",
+                "Patience",
+                "weathr ouvert 1 h d'affilée"
+            ]
+        );
     }
 }

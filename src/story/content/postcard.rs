@@ -1,6 +1,6 @@
 use super::chronicles::CITIES;
 use super::{LETTER_FOOTER, MailContent, ReadContext, text};
-use crate::overlay::{Line, View};
+use crate::overlay::{Frame, Line, View};
 use crate::progress::Progress;
 
 /// A Carte postale from Sam, with the weather frozen when it arrived.
@@ -25,6 +25,7 @@ impl MailContent for Postcard {
             ),
             lines: postcard_lines(self.index, ctx.progress),
             footer: LETTER_FOOTER.to_string(),
+            frame: Frame::Postcard,
         }
     }
 }

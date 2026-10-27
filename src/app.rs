@@ -1,14 +1,15 @@
 use crate::animation::lore::Unlocks;
 use crate::animation_manager::AnimationManager;
 use crate::app_state::AppState;
-use crate::badges;
+use crate::badges::{self, Badge};
 use crate::config::Config;
 use crate::demo::{Demo, SCENE_DURATION};
 use crate::error::WeatherError;
-use crate::holiday::Holiday;
+use crate::holiday::{Holiday, MeteorShower};
 use crate::overlay;
 use crate::progress::Progress;
 use crate::rain_alert::{self, RainAlert};
+use crate::release_notes::{self, Section};
 use crate::remote_weather::{self, Reply, Request};
 use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
@@ -20,6 +21,7 @@ use crate::views;
 use crate::weather::{
     OpenMeteoProvider, WeatherClient, WeatherCondition, WeatherData, WeatherLocation,
 };
+use crate::welcome::{self, Step};
 use chrono::{Local, Timelike};
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use std::collections::{BTreeSet, VecDeque};
@@ -37,7 +39,7 @@ const STARS_FOR_HUNTER: u32 = 3;
 const REMOTE_CHECK_FRAMES: u32 = 300;
 const MAX_ANSWER_LENGTH: usize = 30;
 const REMOTE_CHANNEL_SIZE: usize = 16;
-const INDEX_MARGIN_ROWS: u16 = 12;
+const OVERLAY_MARGIN_ROWS: u16 = 12;
 
 fn count_read(timeline: &Timeline, progress: &Progress, kind: fn(&Entry) -> bool) -> usize {
     timeline
@@ -58,6 +60,102 @@ fn unlocks_for(timeline: &Timeline, progress: &Progress) -> Unlocks {
         }),
         &progress.answers,
     )
+}
+
+fn earn(earned: &mut BTreeSet<String>, ids: Vec<&'static str>) -> Vec<&'static Badge> {
+    ids.into_iter()
+        .filter(|id| earned.insert(id.to_string()))
+        .filter_map(badges::find)
+        .collect()
+}
+
+fn next_overlay(
+    overlay: Option<Overlay>,
+    pending_badges: &mut VecDeque<&'static Badge>,
+) -> Option<Overlay> {
+    overlay.or_else(|| pending_badges.pop_front().map(Overlay::NewBadge))
+}
+
+fn requeue_replaced_badge(
+    previous: Option<Overlay>,
+    current: Option<Overlay>,
+    pending_badges: &mut VecDeque<&'static Badge>,
+) {
+    if let (Some(Overlay::NewBadge(badge)), Some(current)) = (previous, current)
+        && !matches!(current, Overlay::NewBadge(_))
+    {
+        pending_badges.push_front(badge);
+    }
+}
+
+#[derive(Clone, Copy)]
+enum Launch {
+    Fresh,
+    Suppressed,
+    Normal,
+}
+
+fn notes_on_launch(
+    progress: &mut Progress,
+    sections: Vec<Section>,
+    launch: Launch,
+) -> Vec<Section> {
+    match launch {
+        Launch::Fresh => {
+            if let Some(newest) = sections.first() {
+                progress.mark_notes_seen(newest.date);
+            }
+            Vec::new()
+        }
+        Launch::Suppressed => Vec::new(),
+        Launch::Normal => release_notes::unseen(sections, progress.notes_seen_date()),
+    }
+}
+
+fn welcome_on_launch(progress: &Progress, launch: Launch) -> bool {
+    !progress.welcome_seen && !matches!(launch, Launch::Suppressed)
+}
+
+fn notes_overlay(has_notes: bool) -> Option<Overlay> {
+    has_notes.then_some(Overlay::Notes(0))
+}
+
+fn opening_overlay(shows_welcome: bool, has_notes: bool) -> Option<Overlay> {
+    if shows_welcome {
+        Some(Overlay::Welcome(Step::Arriving))
+    } else {
+        notes_overlay(has_notes)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum WelcomeOutcome {
+    Next(Step),
+    Done,
+}
+
+fn welcome_after_key(step: Step, code: KeyCode, last: usize) -> WelcomeOutcome {
+    match code {
+        KeyCode::Enter => step
+            .advance()
+            .map_or(WelcomeOutcome::Done, WelcomeOutcome::Next),
+        KeyCode::Esc => WelcomeOutcome::Done,
+        KeyCode::Up => WelcomeOutcome::Next(step.scroll(-1, last)),
+        KeyCode::Down => WelcomeOutcome::Next(step.scroll(1, last)),
+        _ => WelcomeOutcome::Next(step),
+    }
+}
+
+fn overlay_rows(height: u16) -> usize {
+    height.saturating_sub(OVERLAY_MARGIN_ROWS) as usize
+}
+
+fn notes_width(renderer: &TerminalRenderer) -> usize {
+    overlay::text_width(renderer, views::NOTES_FRAME)
+}
+
+fn welcome_width(renderer: &TerminalRenderer) -> usize {
+    overlay::text_width(renderer, welcome::NOTE_FRAME)
 }
 
 fn story_today(clock: &StoryClock) -> usize {
@@ -165,6 +263,34 @@ enum Overlay {
     Bottle(usize),
     Help,
     Index(usize),
+    NewBadge(&'static Badge),
+    Notes(usize),
+    Welcome(Step),
+}
+
+#[derive(Default)]
+struct StarWatch {
+    seen: u32,
+    was_visible: bool,
+}
+
+impl StarWatch {
+    fn observe(
+        &mut self,
+        is_visible: bool,
+        meteor_shower: Option<MeteorShower>,
+    ) -> Option<&'static str> {
+        if is_visible && !self.was_visible && meteor_shower.is_none() {
+            self.seen += 1;
+        }
+        self.was_visible = is_visible;
+
+        is_visible.then_some(match meteor_shower {
+            Some(MeteorShower::Perseids) => "perseids",
+            Some(MeteorShower::Geminids) => "geminids",
+            None => "shooting_star",
+        })
+    }
 }
 
 pub struct App {
@@ -179,13 +305,14 @@ pub struct App {
     letters: Vec<Letter>,
     clock: StoryClock,
     timeline: Timeline,
+    release_notes: Vec<Section>,
     overlay: Option<Overlay>,
     is_simulated: bool,
     toasts: VecDeque<String>,
     toast_until: Option<Instant>,
+    pending_badges: VecDeque<&'static Badge>,
     session_start: Instant,
-    stars_seen: u32,
-    was_star_visible: bool,
+    star_watch: StarWatch,
     rain_receiver: Option<mpsc::Receiver<Option<RainAlert>>>,
     rain_alert: Option<RainAlert>,
     riddle_input: Option<String>,
@@ -259,7 +386,19 @@ impl App {
             });
         }
 
+        let launch = if !Progress::exists() {
+            Launch::Fresh
+        } else if is_simulated || simulation.night || config.silent {
+            Launch::Suppressed
+        } else {
+            Launch::Normal
+        };
         let mut progress = Progress::load();
+        let release_notes = notes_on_launch(&mut progress, release_notes::load(), launch);
+        let shows_welcome = welcome_on_launch(&progress, launch);
+        if shows_welcome {
+            animations.postman_visit();
+        }
         if progress.record_visit() {
             progress.save();
         }
@@ -287,13 +426,14 @@ impl App {
             letters,
             clock,
             timeline,
-            overlay: None,
+            overlay: opening_overlay(shows_welcome, !release_notes.is_empty()),
+            release_notes,
             is_simulated: is_simulated || simulation.night,
             toasts: VecDeque::new(),
             toast_until: None,
+            pending_badges: VecDeque::new(),
             session_start: Instant::now(),
-            stars_seen: 0,
-            was_star_visible: false,
+            star_watch: StarWatch::default(),
             rain_receiver,
             rain_alert: None,
             riddle_input: None,
@@ -326,13 +466,14 @@ impl App {
         let unread = self
             .available_letters()
             .saturating_sub(self.progress.letters_read);
-        self.animations.set_mail_waiting(unread > 0);
+        let is_mail_waiting = unread > 0 && !self.hides_mail();
+        self.animations.set_mail_waiting(is_mail_waiting);
         let earned = badges::BADGES
             .iter()
             .filter(|badge| self.progress.badges.contains(badge.id))
             .count();
         self.state
-            .set_progress_summary(unread > 0, earned, badges::BADGES.len());
+            .set_progress_summary(is_mail_waiting, earned, badges::BADGES.len());
     }
 
     fn collect_badges(&mut self) {
@@ -370,10 +511,10 @@ impl App {
 
             let holiday = self.state.holiday;
             let sightings = self.animations.sightings(&self.state.weather_conditions);
-            if sightings.shooting_star && !self.was_star_visible {
-                self.stars_seen += 1;
-            }
-            self.was_star_visible = sightings.shooting_star;
+            found.extend(
+                self.star_watch
+                    .observe(sightings.shooting_star, holiday.meteor_shower),
+            );
 
             let has_all_weathers =
                 badges::weather_badges().all(|badge| self.progress.badges.contains(badge.id));
@@ -384,10 +525,9 @@ impl App {
                 (holiday.new_year.is_some(), "new_year"),
                 (holiday.is_easter, "easter"),
                 (self.state.shows_rainbow(), "rainbow"),
-                (sightings.shooting_star, "shooting_star"),
                 (sightings.postman, "postman"),
                 (sightings.snowman, "snowman"),
-                (self.stars_seen >= STARS_FOR_HUNTER, "star_hunter"),
+                (self.star_watch.seen >= STARS_FOR_HUNTER, "star_hunter"),
                 (has_all_weathers, "full_weather"),
             ];
             found.extend(events.iter().filter(|(seen, _)| *seen).map(|(_, id)| *id));
@@ -397,21 +537,42 @@ impl App {
     }
 
     fn award(&mut self, ids: Vec<&'static str>) {
-        let new_badges: Vec<&str> = ids
-            .into_iter()
-            .filter(|id| self.progress.badges.insert(id.to_string()))
-            .map(badges::name)
-            .collect();
+        let new_badges = earn(&mut self.progress.badges, ids);
         if !new_badges.is_empty() {
-            let label = if new_badges.len() > 1 {
-                "Nouveaux badges"
-            } else {
-                "Nouveau badge"
-            };
-            let message = format!("* {} : {} ! *", label, new_badges.join(", "));
-            self.toasts.push_back(message);
+            self.pending_badges.extend(new_badges);
             self.progress.save();
         }
+    }
+
+    fn open_pending_badge(&mut self) {
+        self.overlay = next_overlay(self.overlay, &mut self.pending_badges);
+    }
+
+    fn hides_mail(&self) -> bool {
+        matches!(self.overlay, Some(Overlay::Welcome(step)) if step.hides_mail())
+    }
+
+    fn update_welcome(&mut self, term_width: u16, term_height: u16) {
+        if let Some(Overlay::Welcome(step)) = self.overlay {
+            let has_arrived = !self.animations.is_postman_arriving(term_width, term_height);
+            self.overlay = Some(Overlay::Welcome(step.tick(has_arrived)));
+        }
+    }
+
+    fn press_welcome_key(&mut self, code: KeyCode, rows: usize, width: usize) {
+        if let Some(Overlay::Welcome(step)) = self.overlay {
+            match welcome_after_key(step, code, welcome::scroll_limit(rows, width)) {
+                WelcomeOutcome::Next(step) => self.overlay = Some(Overlay::Welcome(step)),
+                WelcomeOutcome::Done => self.end_welcome(),
+            }
+        }
+    }
+
+    fn end_welcome(&mut self) {
+        self.progress.welcome_seen = true;
+        self.progress.save();
+        self.animations.postman_leave();
+        self.overlay = notes_overlay(!self.release_notes.is_empty());
     }
 
     fn has_read_all_letters(&self) -> bool {
@@ -552,10 +713,17 @@ impl App {
                 pages.swap_remove(page)
             }
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
+            Some(Overlay::NewBadge(badge)) => views::badge_card_view(badge),
+            Some(Overlay::Notes(first)) => views::notes_view(
+                &self.release_notes,
+                first,
+                overlay_rows(renderer.get_size().1),
+                notes_width(renderer),
+            ),
             Some(Overlay::Index(selected)) => views::index_view(
                 &self.read_entries(),
                 selected,
-                renderer.get_size().1.saturating_sub(INDEX_MARGIN_ROWS) as usize,
+                overlay_rows(renderer.get_size().1),
                 &self.read_context(),
             ),
             Some(Overlay::Help) => views::help_view(
@@ -571,9 +739,32 @@ impl App {
                     self.progress.streak,
                 );
             }
+            Some(Overlay::Welcome(step)) => return self.render_welcome(renderer, step),
             None => return Ok(()),
         };
         overlay::render_view(renderer, &view)
+    }
+
+    fn render_welcome(&self, renderer: &mut TerminalRenderer, step: Step) -> io::Result<()> {
+        let (width, height) = renderer.get_size();
+        let speaker = self.animations.postman_head(width, height);
+        let rows = overlay_rows(height);
+        let text_width = welcome_width(renderer);
+        match step {
+            Step::Arriving => Ok(()),
+            Step::Greeting => {
+                overlay::render_bubble(renderer, welcome::ARRIVAL, welcome::FOOTER, speaker)
+            }
+            Step::Unfolding(frame) => {
+                overlay::render_view(renderer, &welcome::unfolding_view(frame, rows, text_width))
+            }
+            Step::Reading(first) => {
+                overlay::render_view(renderer, &welcome::note_view(first, rows, text_width))
+            }
+            Step::Farewell => {
+                overlay::render_bubble(renderer, welcome::DEPARTURE, welcome::FOOTER, speaker)
+            }
+        }
     }
 
     fn read_context(&self) -> ReadContext<'_> {
@@ -740,11 +931,38 @@ impl App {
         }
     }
 
+    fn scroll(&mut self, step: isize, rows: usize, width: usize) {
+        match self.overlay {
+            Some(Overlay::Notes(first)) => {
+                let last = views::notes_scroll_limit(&self.release_notes, rows, width);
+                self.overlay = Some(Overlay::Notes(first.saturating_add_signed(step).min(last)));
+            }
+            _ => self.select_in_index(step),
+        }
+    }
+
+    fn mark_notes_seen_when_left(&mut self, previous: Option<Overlay>) {
+        if matches!(previous, Some(Overlay::Notes(_)))
+            && !matches!(self.overlay, Some(Overlay::Notes(_)))
+            && let Some(newest) = self.release_notes.first()
+        {
+            self.progress.mark_notes_seen(newest.date);
+            self.progress.save();
+        }
+    }
+
     fn reread_selected(&mut self) {
         if let Some(Overlay::Index(selected)) = self.overlay
             && selected < self.read_entries().len()
         {
             self.open_letter(selected);
+        }
+    }
+
+    fn press_enter(&mut self) {
+        match self.overlay {
+            Some(Overlay::NewBadge(_) | Overlay::Notes(_)) => self.overlay = None,
+            _ => self.reread_selected(),
         }
     }
 
@@ -877,6 +1095,8 @@ impl App {
             )?;
 
             self.collect_badges();
+            self.open_pending_badge();
+            self.update_welcome(term_width, term_height);
             self.update_toasts();
             self.refresh_rain_alert();
             self.state.update_loading_animation();
@@ -905,35 +1125,49 @@ impl App {
                     {
                         self.handle_riddle_key(key_event.code);
                     }
-                    Event::Key(key_event) => match key_event.code {
-                        KeyCode::Char('q') | KeyCode::Char('Q') => break,
-                        KeyCode::Char('c')
-                            if key_event.modifiers.contains(KeyModifiers::CONTROL) =>
-                        {
-                            break;
+                    Event::Key(key_event) => {
+                        let previous = self.overlay;
+                        let rows = overlay_rows(renderer.get_size().1);
+                        let width = notes_width(renderer);
+                        match key_event.code {
+                            KeyCode::Char('q') | KeyCode::Char('Q') => break,
+                            KeyCode::Char('c')
+                                if key_event.modifiers.contains(KeyModifiers::CONTROL) =>
+                            {
+                                break;
+                            }
+                            _ if matches!(self.overlay, Some(Overlay::Welcome(_))) => {
+                                self.press_welcome_key(
+                                    key_event.code,
+                                    rows,
+                                    welcome_width(renderer),
+                                );
+                            }
+                            KeyCode::Char('c') | KeyCode::Char('C') => self.press_mail(),
+                            KeyCode::Char('b') | KeyCode::Char('B') => {
+                                self.overlay = match self.overlay {
+                                    Some(Overlay::Badges) => None,
+                                    _ => Some(Overlay::Badges),
+                                };
+                            }
+                            KeyCode::Char('1') => self.answer_letter(1),
+                            KeyCode::Char('2') => self.answer_letter(2),
+                            KeyCode::Char('a') | KeyCode::Char('A') => self.toggle_album(),
+                            KeyCode::Char('h') | KeyCode::Char('H') => self.toggle_help(),
+                            KeyCode::Char('l') | KeyCode::Char('L') => self.toggle_index(),
+                            KeyCode::Up => self.scroll(-1, rows, width),
+                            KeyCode::Down => self.scroll(1, rows, width),
+                            KeyCode::Enter => self.press_enter(),
+                            KeyCode::Char('r') | KeyCode::Char('R') => self.pick_up(),
+                            KeyCode::Char('e') | KeyCode::Char('E') => self.start_riddle(),
+                            KeyCode::Esc => self.overlay = None,
+                            KeyCode::Left => self.browse(-1),
+                            KeyCode::Right => self.browse(1),
+                            _ => {}
                         }
-                        KeyCode::Char('c') | KeyCode::Char('C') => self.press_mail(),
-                        KeyCode::Char('b') | KeyCode::Char('B') => {
-                            self.overlay = match self.overlay {
-                                Some(Overlay::Badges) => None,
-                                _ => Some(Overlay::Badges),
-                            };
-                        }
-                        KeyCode::Char('1') => self.answer_letter(1),
-                        KeyCode::Char('2') => self.answer_letter(2),
-                        KeyCode::Char('a') | KeyCode::Char('A') => self.toggle_album(),
-                        KeyCode::Char('h') | KeyCode::Char('H') => self.toggle_help(),
-                        KeyCode::Char('l') | KeyCode::Char('L') => self.toggle_index(),
-                        KeyCode::Up => self.select_in_index(-1),
-                        KeyCode::Down => self.select_in_index(1),
-                        KeyCode::Enter => self.reread_selected(),
-                        KeyCode::Char('r') | KeyCode::Char('R') => self.pick_up(),
-                        KeyCode::Char('e') | KeyCode::Char('E') => self.start_riddle(),
-                        KeyCode::Esc => self.overlay = None,
-                        KeyCode::Left => self.browse(-1),
-                        KeyCode::Right => self.browse(1),
-                        _ => {}
-                    },
+                        requeue_replaced_badge(previous, self.overlay, &mut self.pending_badges);
+                        self.mark_notes_seen_when_left(previous);
+                    }
                     _ => {}
                 }
             }
@@ -946,5 +1180,234 @@ impl App {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn card_id(overlay: Option<Overlay>) -> Option<&'static str> {
+        match overlay {
+            Some(Overlay::NewBadge(badge)) => Some(badge.id),
+            _ => None,
+        }
+    }
+
+    #[test]
+    fn test_new_badges_open_one_card_each_in_award_order() {
+        let mut earned = BTreeSet::from(["clear".to_string()]);
+        let mut pending: VecDeque<_> =
+            earn(&mut earned, vec!["rain", "clear", "patience", "rain"]).into();
+        assert_eq!(pending.len(), 2);
+
+        let overlay = next_overlay(None, &mut pending);
+        assert_eq!(card_id(overlay), Some("rain"));
+        let overlay = next_overlay(overlay, &mut pending);
+        assert_eq!(card_id(overlay), Some("rain"));
+        assert_eq!(card_id(next_overlay(None, &mut pending)), Some("patience"));
+        assert!(next_overlay(None, &mut pending).is_none());
+    }
+
+    fn notes() -> Vec<Section> {
+        release_notes::parse("## 2026-10-26\n- Neuve\n## 2026-10-12\n- Ancienne\n")
+    }
+
+    #[test]
+    fn test_fresh_install_shows_no_notes_and_marks_newest_seen() {
+        let mut progress = Progress::default();
+        assert!(notes_on_launch(&mut progress, notes(), Launch::Fresh).is_empty());
+        assert_eq!(progress.notes_seen_on.as_deref(), Some("2026-10-26"));
+        assert!(notes_on_launch(&mut progress, notes(), Launch::Normal).is_empty());
+    }
+
+    #[test]
+    fn test_suppressed_launch_marks_seen_only_on_fresh_install() {
+        let mut fresh = Progress::default();
+        assert!(notes_on_launch(&mut fresh, notes(), Launch::Fresh).is_empty());
+        assert_eq!(fresh.notes_seen_on.as_deref(), Some("2026-10-26"));
+
+        let mut existing = Progress::default();
+        assert!(notes_on_launch(&mut existing, notes(), Launch::Suppressed).is_empty());
+        assert_eq!(existing.notes_seen_on, None);
+        assert_eq!(
+            notes_on_launch(&mut existing, notes(), Launch::Normal),
+            notes()[..1]
+        );
+    }
+
+    #[test]
+    fn test_old_save_without_seen_date_shows_newest_notes_only() {
+        let mut progress = Progress::default();
+        let shown = notes_on_launch(&mut progress, notes(), Launch::Normal);
+        assert_eq!(shown, notes()[..1]);
+        assert_eq!(progress.notes_seen_on, None);
+    }
+
+    #[test]
+    fn test_notes_after_seen_date_show_newest_first() {
+        let mut progress = Progress {
+            notes_seen_on: Some("2026-10-01".to_string()),
+            ..Progress::default()
+        };
+        assert_eq!(
+            notes_on_launch(&mut progress, notes(), Launch::Normal),
+            notes()
+        );
+
+        progress.mark_notes_seen(notes()[0].date);
+        assert!(notes_on_launch(&mut progress, notes(), Launch::Normal).is_empty());
+    }
+
+    #[test]
+    fn test_badge_card_waits_for_the_open_window_to_close() {
+        let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["night_reading"]).into();
+
+        let overlay = next_overlay(Some(Overlay::Letter(3)), &mut pending);
+        assert!(matches!(overlay, Some(Overlay::Letter(3))));
+        assert_eq!(pending.len(), 1);
+        assert_eq!(
+            card_id(next_overlay(None, &mut pending)),
+            Some("night_reading")
+        );
+    }
+
+    #[test]
+    fn test_badge_card_replaced_by_another_window_comes_back_first() {
+        let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["rain", "patience"]).into();
+        let card = next_overlay(None, &mut pending);
+
+        requeue_replaced_badge(card, Some(Overlay::Help), &mut pending);
+        assert_eq!(pending.len(), 2);
+        assert_eq!(card_id(next_overlay(None, &mut pending)), Some("rain"));
+
+        requeue_replaced_badge(card, card, &mut pending);
+        requeue_replaced_badge(card, None, &mut pending);
+        assert_eq!(pending.len(), 1);
+    }
+
+    #[test]
+    fn test_welcome_shows_until_seen_except_on_suppressed_launch() {
+        let mut progress = Progress::default();
+        assert!(welcome_on_launch(&progress, Launch::Fresh));
+        assert!(welcome_on_launch(&progress, Launch::Normal));
+        assert!(!welcome_on_launch(&progress, Launch::Suppressed));
+
+        progress.welcome_seen = true;
+        assert!(!welcome_on_launch(&progress, Launch::Fresh));
+        assert!(!welcome_on_launch(&progress, Launch::Normal));
+    }
+
+    #[test]
+    fn test_notes_wait_for_the_welcome_and_badge_cards_too() {
+        assert!(matches!(
+            opening_overlay(true, true),
+            Some(Overlay::Welcome(Step::Arriving))
+        ));
+        assert!(matches!(
+            opening_overlay(false, true),
+            Some(Overlay::Notes(0))
+        ));
+        assert!(opening_overlay(false, false).is_none());
+
+        let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["rain"]).into();
+        let overlay = next_overlay(opening_overlay(true, false), &mut pending);
+        assert!(matches!(overlay, Some(Overlay::Welcome(_))));
+        assert_eq!(pending.len(), 1);
+    }
+
+    #[test]
+    fn test_welcome_keys_advance_skip_or_do_nothing() {
+        let steps = [
+            Step::Arriving,
+            Step::Greeting,
+            Step::Unfolding(4),
+            Step::Reading(1),
+            Step::Farewell,
+        ];
+        let ignored = "clabher12"
+            .chars()
+            .map(KeyCode::Char)
+            .chain([KeyCode::Left, KeyCode::Right]);
+        for step in steps {
+            assert_eq!(
+                welcome_after_key(step, KeyCode::Esc, 5),
+                WelcomeOutcome::Done
+            );
+            for code in ignored.clone() {
+                assert_eq!(welcome_after_key(step, code, 5), WelcomeOutcome::Next(step));
+            }
+        }
+        assert_eq!(
+            welcome_after_key(Step::Greeting, KeyCode::Enter, 5),
+            WelcomeOutcome::Next(Step::Unfolding(0))
+        );
+        assert_eq!(
+            welcome_after_key(Step::Farewell, KeyCode::Enter, 5),
+            WelcomeOutcome::Done
+        );
+        assert_eq!(
+            welcome_after_key(Step::Reading(1), KeyCode::Down, 5),
+            WelcomeOutcome::Next(Step::Reading(2))
+        );
+        assert_eq!(
+            welcome_after_key(Step::Reading(1), KeyCode::Up, 5),
+            WelcomeOutcome::Next(Step::Reading(0))
+        );
+    }
+
+    const METEOR_SHOWER_BADGES: [(MeteorShower, &str); 2] = [
+        (MeteorShower::Perseids, "perseids"),
+        (MeteorShower::Geminids, "geminids"),
+    ];
+
+    fn watch(
+        star_watch: &mut StarWatch,
+        frames: &[bool],
+        meteor_shower: Option<MeteorShower>,
+    ) -> Vec<&'static str> {
+        frames
+            .iter()
+            .filter_map(|&is_visible| star_watch.observe(is_visible, meteor_shower))
+            .collect()
+    }
+
+    #[test]
+    fn test_shooting_star_counts_once_per_star() {
+        let mut star_watch = StarWatch::default();
+        let badges = watch(&mut star_watch, &[true, true, false, true, false], None);
+
+        assert_eq!(badges, ["shooting_star"; 3]);
+        assert_eq!(star_watch.seen, 2);
+    }
+
+    #[test]
+    fn test_meteor_shower_awards_only_its_badge() {
+        for (meteor_shower, badge) in METEOR_SHOWER_BADGES {
+            let mut star_watch = StarWatch::default();
+            let badges = watch(
+                &mut star_watch,
+                &[true, false, true, false, true],
+                Some(meteor_shower),
+            );
+
+            assert_eq!(badges, [badge; 3]);
+            assert_eq!(star_watch.seen, 0);
+        }
+    }
+
+    #[test]
+    fn test_meteor_shower_keeps_star_hunter_count() {
+        for (meteor_shower, _) in METEOR_SHOWER_BADGES {
+            let mut star_watch = StarWatch::default();
+            watch(&mut star_watch, &[true, false, true, false], None);
+            watch(
+                &mut star_watch,
+                &[true, false, true, false, true],
+                Some(meteor_shower),
+            );
+
+            assert_eq!(star_watch.seen, 2);
+        }
     }
 }
