@@ -210,6 +210,24 @@ impl AnimationManager {
         self.postman.set_mail_waiting(is_waiting);
     }
 
+    pub fn postman_visit(&mut self) {
+        self.postman.visit();
+    }
+
+    pub fn postman_leave(&mut self) {
+        self.postman.leave();
+    }
+
+    pub fn is_postman_arriving(&self, term_width: u16, term_height: u16) -> bool {
+        self.postman
+            .is_arriving(&GardenLayout::new(term_width, term_height))
+    }
+
+    pub fn postman_head(&self, term_width: u16, term_height: u16) -> Option<(u16, u16)> {
+        self.postman
+            .head(&GardenLayout::new(term_width, term_height))
+    }
+
     pub fn sightings(&self, conditions: &WeatherConditions) -> Sightings {
         Sightings {
             shooting_star: !conditions.is_day && self.star_system.has_shooting_star(),

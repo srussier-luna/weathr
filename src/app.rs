@@ -19,6 +19,7 @@ use crate::views::{self, MailContext};
 use crate::weather::{
     OpenMeteoProvider, WeatherClient, WeatherCondition, WeatherData, WeatherLocation,
 };
+use crate::welcome::{self, Step};
 use chrono::{Local, NaiveDate, Timelike};
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use std::collections::{BTreeSet, VecDeque};
@@ -116,12 +117,50 @@ fn notes_on_launch(
     }
 }
 
+fn welcome_on_launch(progress: &Progress, launch: Launch) -> bool {
+    !progress.welcome_seen && !matches!(launch, Launch::Suppressed)
+}
+
+fn notes_overlay(has_notes: bool) -> Option<Overlay> {
+    has_notes.then_some(Overlay::Notes(0))
+}
+
+fn opening_overlay(shows_welcome: bool, has_notes: bool) -> Option<Overlay> {
+    if shows_welcome {
+        Some(Overlay::Welcome(Step::Arriving))
+    } else {
+        notes_overlay(has_notes)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum WelcomeOutcome {
+    Next(Step),
+    Done,
+}
+
+fn welcome_after_key(step: Step, code: KeyCode, last: usize) -> WelcomeOutcome {
+    match code {
+        KeyCode::Enter => step
+            .advance()
+            .map_or(WelcomeOutcome::Done, WelcomeOutcome::Next),
+        KeyCode::Esc => WelcomeOutcome::Done,
+        KeyCode::Up => WelcomeOutcome::Next(step.scroll(-1, last)),
+        KeyCode::Down => WelcomeOutcome::Next(step.scroll(1, last)),
+        _ => WelcomeOutcome::Next(step),
+    }
+}
+
 fn overlay_rows(height: u16) -> usize {
     height.saturating_sub(OVERLAY_MARGIN_ROWS) as usize
 }
 
 fn notes_width(renderer: &TerminalRenderer) -> usize {
     overlay::text_width(renderer, views::NOTES_FRAME)
+}
+
+fn welcome_width(renderer: &TerminalRenderer) -> usize {
+    overlay::text_width(renderer, welcome::NOTE_FRAME)
 }
 
 fn mail_date(mail_hour: u32) -> NaiveDate {
@@ -232,6 +271,7 @@ enum Overlay {
     Index(usize),
     NewBadge(&'static Badge),
     Notes(usize),
+    Welcome(Step),
 }
 
 #[derive(Default)]
@@ -361,6 +401,10 @@ impl App {
         };
         let mut progress = Progress::load();
         let release_notes = notes_on_launch(&mut progress, release_notes::load(), launch);
+        let shows_welcome = welcome_on_launch(&progress, launch);
+        if shows_welcome {
+            animations.postman_visit();
+        }
         if progress.record_visit() {
             progress.save();
         }
@@ -384,7 +428,7 @@ impl App {
             progress,
             letters,
             timeline,
-            overlay: (!release_notes.is_empty()).then_some(Overlay::Notes(0)),
+            overlay: opening_overlay(shows_welcome, !release_notes.is_empty()),
             release_notes,
             is_simulated: is_simulated || simulation.night,
             toasts: VecDeque::new(),
@@ -425,13 +469,14 @@ impl App {
         let unread = self
             .available_letters()
             .saturating_sub(self.progress.letters_read);
-        self.animations.set_mail_waiting(unread > 0);
+        let is_mail_waiting = unread > 0 && !self.hides_mail();
+        self.animations.set_mail_waiting(is_mail_waiting);
         let earned = badges::BADGES
             .iter()
             .filter(|badge| self.progress.badges.contains(badge.id))
             .count();
         self.state
-            .set_progress_summary(unread > 0, earned, badges::BADGES.len());
+            .set_progress_summary(is_mail_waiting, earned, badges::BADGES.len());
     }
 
     fn collect_badges(&mut self) {
@@ -504,6 +549,33 @@ impl App {
 
     fn open_pending_badge(&mut self) {
         self.overlay = next_overlay(self.overlay, &mut self.pending_badges);
+    }
+
+    fn hides_mail(&self) -> bool {
+        matches!(self.overlay, Some(Overlay::Welcome(step)) if step.hides_mail())
+    }
+
+    fn update_welcome(&mut self, term_width: u16, term_height: u16) {
+        if let Some(Overlay::Welcome(step)) = self.overlay {
+            let has_arrived = !self.animations.is_postman_arriving(term_width, term_height);
+            self.overlay = Some(Overlay::Welcome(step.tick(has_arrived)));
+        }
+    }
+
+    fn press_welcome_key(&mut self, code: KeyCode, rows: usize, width: usize) {
+        if let Some(Overlay::Welcome(step)) = self.overlay {
+            match welcome_after_key(step, code, welcome::scroll_limit(rows, width)) {
+                WelcomeOutcome::Next(step) => self.overlay = Some(Overlay::Welcome(step)),
+                WelcomeOutcome::Done => self.end_welcome(),
+            }
+        }
+    }
+
+    fn end_welcome(&mut self) {
+        self.progress.welcome_seen = true;
+        self.progress.save();
+        self.animations.postman_leave();
+        self.overlay = notes_overlay(!self.release_notes.is_empty());
     }
 
     fn has_read_all_letters(&self) -> bool {
@@ -668,9 +740,32 @@ impl App {
                     self.progress.streak,
                 );
             }
+            Some(Overlay::Welcome(step)) => return self.render_welcome(renderer, step),
             None => return Ok(()),
         };
         overlay::render_view(renderer, &view)
+    }
+
+    fn render_welcome(&self, renderer: &mut TerminalRenderer, step: Step) -> io::Result<()> {
+        let (width, height) = renderer.get_size();
+        let speaker = self.animations.postman_head(width, height);
+        let rows = overlay_rows(height);
+        let text_width = welcome_width(renderer);
+        match step {
+            Step::Arriving => Ok(()),
+            Step::Greeting => {
+                overlay::render_bubble(renderer, welcome::ARRIVAL, welcome::FOOTER, speaker)
+            }
+            Step::Unfolding(frame) => {
+                overlay::render_view(renderer, &welcome::unfolding_view(frame, rows, text_width))
+            }
+            Step::Reading(first) => {
+                overlay::render_view(renderer, &welcome::note_view(first, rows, text_width))
+            }
+            Step::Farewell => {
+                overlay::render_bubble(renderer, welcome::DEPARTURE, welcome::FOOTER, speaker)
+            }
+        }
     }
 
     fn mail_context(&self) -> MailContext<'_> {
@@ -1006,6 +1101,7 @@ impl App {
 
             self.collect_badges();
             self.open_pending_badge();
+            self.update_welcome(term_width, term_height);
             self.update_toasts();
             self.refresh_rain_alert();
             self.state.update_loading_animation();
@@ -1044,6 +1140,13 @@ impl App {
                                 if key_event.modifiers.contains(KeyModifiers::CONTROL) =>
                             {
                                 break;
+                            }
+                            _ if matches!(self.overlay, Some(Overlay::Welcome(_))) => {
+                                self.press_welcome_key(
+                                    key_event.code,
+                                    rows,
+                                    welcome_width(renderer),
+                                );
                             }
                             KeyCode::Char('c') | KeyCode::Char('C') => self.press_mail(),
                             KeyCode::Char('b') | KeyCode::Char('B') => {
@@ -1186,6 +1289,76 @@ mod tests {
         requeue_replaced_badge(card, card, &mut pending);
         requeue_replaced_badge(card, None, &mut pending);
         assert_eq!(pending.len(), 1);
+    }
+
+    #[test]
+    fn test_welcome_shows_until_seen_except_on_suppressed_launch() {
+        let mut progress = Progress::default();
+        assert!(welcome_on_launch(&progress, Launch::Fresh));
+        assert!(welcome_on_launch(&progress, Launch::Normal));
+        assert!(!welcome_on_launch(&progress, Launch::Suppressed));
+
+        progress.welcome_seen = true;
+        assert!(!welcome_on_launch(&progress, Launch::Fresh));
+        assert!(!welcome_on_launch(&progress, Launch::Normal));
+    }
+
+    #[test]
+    fn test_notes_wait_for_the_welcome_and_badge_cards_too() {
+        assert!(matches!(
+            opening_overlay(true, true),
+            Some(Overlay::Welcome(Step::Arriving))
+        ));
+        assert!(matches!(
+            opening_overlay(false, true),
+            Some(Overlay::Notes(0))
+        ));
+        assert!(opening_overlay(false, false).is_none());
+
+        let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["rain"]).into();
+        let overlay = next_overlay(opening_overlay(true, false), &mut pending);
+        assert!(matches!(overlay, Some(Overlay::Welcome(_))));
+        assert_eq!(pending.len(), 1);
+    }
+
+    #[test]
+    fn test_welcome_keys_advance_skip_or_do_nothing() {
+        let steps = [
+            Step::Arriving,
+            Step::Greeting,
+            Step::Unfolding(4),
+            Step::Reading(1),
+            Step::Farewell,
+        ];
+        let ignored = "clabher12"
+            .chars()
+            .map(KeyCode::Char)
+            .chain([KeyCode::Left, KeyCode::Right]);
+        for step in steps {
+            assert_eq!(
+                welcome_after_key(step, KeyCode::Esc, 5),
+                WelcomeOutcome::Done
+            );
+            for code in ignored.clone() {
+                assert_eq!(welcome_after_key(step, code, 5), WelcomeOutcome::Next(step));
+            }
+        }
+        assert_eq!(
+            welcome_after_key(Step::Greeting, KeyCode::Enter, 5),
+            WelcomeOutcome::Next(Step::Unfolding(0))
+        );
+        assert_eq!(
+            welcome_after_key(Step::Farewell, KeyCode::Enter, 5),
+            WelcomeOutcome::Done
+        );
+        assert_eq!(
+            welcome_after_key(Step::Reading(1), KeyCode::Down, 5),
+            WelcomeOutcome::Next(Step::Reading(2))
+        );
+        assert_eq!(
+            welcome_after_key(Step::Reading(1), KeyCode::Up, 5),
+            WelcomeOutcome::Next(Step::Reading(0))
+        );
     }
 
     const METEOR_SHOWER_BADGES: [(MeteorShower, &str); 2] = [

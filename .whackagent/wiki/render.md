@@ -26,6 +26,8 @@ How cells reach terminal, how modal screens (Courrier, Lettre, Album, Aide, Badg
 - `render_badges` = only special layout (columns grouped by `BadgeKind`, secret badges show `???`).
 - New Badge → centred card (`Overlay::NewBadge`): medal with the Badge's own 3×5 drawing (`Badge.icon`), name, condition for secrets. Queue `pending_badges`, one card per Badge, opens only when no window is open; a card replaced by another window comes back first.
 - Toasts (found object, riddle result) drawn by `App::render_overlays` on row 0, one at a time, 4 s.
+- Speech bubble (`Frame::Bubble`, `render_bubble`): Facteur's Accueil lines, ≤ 40 cols, tail toward his `head`, clamped to screen edges; no mailbox → centred near the bottom, no tail. Layout shared with `render_view` via `lay_out` / `draw_rows`.
+- `wrap` splits on ASCII whitespace only: U+202F before `: ; ! ?` stays glued, French punctuation never starts a line.
 
 ## Views — `src/views.rs`
 

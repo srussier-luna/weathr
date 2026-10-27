@@ -36,6 +36,8 @@ pub struct Progress {
     pub gazette_weather: BTreeMap<usize, String>,
     #[serde(default)]
     pub notes_seen_on: Option<String>,
+    #[serde(default)]
+    pub welcome_seen: bool,
 }
 
 impl Progress {
@@ -117,6 +119,13 @@ mod tests {
             serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":4}"#).unwrap();
         assert_eq!(progress.letters_read, 4);
         assert_eq!(progress.notes_seen_date(), None);
+    }
+
+    #[test]
+    fn test_save_without_welcome_field_has_not_seen_the_welcome() {
+        let progress: Progress =
+            serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":40}"#).unwrap();
+        assert!(!progress.welcome_seen);
     }
 
     #[test]

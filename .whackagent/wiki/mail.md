@@ -31,6 +31,16 @@ Static French content: correspondents' letters + days, `CITIES` (40 Cartes posta
 
 `Progress` (`src/progress.rs:10`) = whole save, JSON in `<config>/weathr/progress.json`: start date, `letters_read`, badges, answers, streak, riddles, found objects, bottles, cached postcard/gazette weather, `notes_seen_on` (release notes, see [[updater]]). All fields `#[serde(default)]` so old saves keep loading — keep so when adding fields. Saved eagerly after each change; write errors ignored.
 
+## Accueil — `src/welcome.rs`
+
+Once per player, fresh **and** existing saves: `welcome_seen` in `progress.json` (`#[serde(default)]`, false for old saves).
+
+- Shown on `Launch::Fresh` / `Normal` when not seen; `Suppressed` (`--silent`, `--demo`, forced modes on an existing save) → nothing, not marked. Fresh launch in those modes still shows it.
+- `Overlay::Welcome(Step)`: `Arriving` (Facteur rides in, see [[animation]]) → `Greeting` (arrival bubble) → `Unfolding` (note grows) → `Reading` (« Bienvenue au village », keys, scroll `↑`/`↓`) → `Farewell` (departure bubble). `Entrée` next, `Échap` ends at once.
+- Before `Farewell`: mailbox flag and HUD « Lettre ! [c] » hidden, story keys ignored, Badge cards wait. `q` quits, not marked → replays next launch.
+- Marked + saved at the last `Entrée` or `Échap`; then Nouveautés box if pending, then Badge cards.
+- Not a timeline entry, not in the Courrier, no replay key.
+
 ## Screens and keys
 
 `c` next Lettre (Lettre) · `←/→` browse · `l` Courrier · `a` Album · `b` Badges ·

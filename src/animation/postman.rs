@@ -6,6 +6,8 @@ use std::io;
 
 const SPEED: f32 = 0.3;
 const STOP_FRAMES: u16 = 90;
+const ARRIVAL_FRAMES: f32 = 75.0;
+const HEAD_COLUMN: u16 = 5;
 const FRAME_MILLIS: f32 = 1000.0 / 30.0;
 const DEFAULT_ROUND_HOUR: u32 = 9;
 const ROUND_WINDOW_MINUTES: i64 = 1;
@@ -23,6 +25,8 @@ enum Trip {
     Riding,
     Delivering(u16),
     Leaving,
+    Arriving,
+    Staying,
 }
 
 pub struct Postman {
@@ -60,6 +64,31 @@ impl Postman {
 
     pub fn is_delivering(&self) -> bool {
         matches!(self.trip, Trip::Delivering(_))
+    }
+
+    pub fn visit(&mut self) {
+        self.x = -SPRITE_WIDTH;
+        self.trip = Trip::Arriving;
+    }
+
+    pub fn leave(&mut self) {
+        if matches!(self.trip, Trip::Arriving | Trip::Staying) {
+            self.trip = if self.x < 0.0 {
+                Trip::Waiting
+            } else {
+                Trip::Leaving
+            };
+        }
+    }
+
+    pub fn is_arriving(&self, layout: &GardenLayout) -> bool {
+        layout.plan.mailbox_x.is_some() && matches!(self.trip, Trip::Arriving)
+    }
+
+    pub fn head(&self, layout: &GardenLayout) -> Option<(u16, u16)> {
+        let mailbox_x = layout.plan.mailbox_x?;
+        matches!(self.trip, Trip::Staying)
+            .then_some((mailbox_x + HEAD_COLUMN, layout.horizon_y.saturating_sub(2)))
     }
 
     fn due_round(&self, stop_x: f32, now: NaiveDateTime) -> Option<NaiveDate> {
@@ -111,6 +140,19 @@ impl Postman {
                 } else {
                     Trip::Leaving
                 }
+            }
+            Trip::Arriving => {
+                self.x += ((stop_x + SPRITE_WIDTH) / ARRIVAL_FRAMES).max(SPEED);
+                if self.x >= stop_x {
+                    self.x = stop_x;
+                    Trip::Staying
+                } else {
+                    Trip::Arriving
+                }
+            }
+            Trip::Staying => {
+                self.x = stop_x;
+                Trip::Staying
             }
         };
     }
@@ -182,6 +224,34 @@ mod tests {
         assert_eq!(postman.due_round(40.0, at(22, 8, 2, 0)), None);
         postman.last_round = today;
         assert_eq!(postman.due_round(40.0, at(22, 7, 59, 58)), None);
+    }
+
+    #[test]
+    fn test_visit_stays_at_the_mailbox_until_told_to_leave() {
+        let layout = GardenLayout::new(120, 40);
+        let mailbox_x = layout.plan.mailbox_x.unwrap();
+        let mut postman = Postman::new();
+        postman.visit();
+        assert!(postman.is_arriving(&layout));
+        assert_eq!(postman.head(&layout), None);
+
+        for _ in 0..ARRIVAL_FRAMES as usize + 1 {
+            postman.update(&layout);
+        }
+        assert!(!postman.is_arriving(&layout));
+        assert_eq!(
+            postman.head(&layout),
+            Some((mailbox_x + HEAD_COLUMN, layout.horizon_y - 2))
+        );
+        for _ in 0..STOP_FRAMES * 2 {
+            postman.update(&layout);
+        }
+        assert!(matches!(postman.trip, Trip::Staying));
+        assert!(!postman.is_delivering());
+
+        postman.leave();
+        assert!(matches!(postman.trip, Trip::Leaving));
+        assert_eq!(postman.head(&layout), None);
     }
 
     #[test]

@@ -21,7 +21,7 @@ const BOTTLE_FOOTER: &str = "[Echap] fermer";
 const BADGE_CARD_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const HELP_FOOTER: &str = "[h] ou [Echap] fermer";
 const NOTES_FOOTER: &str = "[Entrée] ou [Echap] fermer";
-const NOTES_SCROLL_FOOTER: &str = "[↑] [↓] défiler  [Entrée] ou [Echap] fermer";
+const SCROLL_HINT: &str = "[↑] [↓] défiler";
 const HELP_KEY_WIDTH: usize = 10;
 const NOTES_BULLET: &str = "- ";
 const NOTES_INDENT: &str = "  ";
@@ -410,19 +410,23 @@ fn notes_lines(sections: &[Section], width: usize) -> Vec<String> {
     lines
 }
 
-pub fn notes_scroll_limit(sections: &[Section], rows: usize, width: usize) -> usize {
-    notes_lines(sections, width)
-        .len()
-        .saturating_sub(rows.max(1))
+pub fn scroll_limit(lines: &[String], rows: usize) -> usize {
+    lines.len().saturating_sub(rows.max(1))
 }
 
-pub fn notes_view(sections: &[Section], first: usize, rows: usize, width: usize) -> View {
+pub fn scrolled_view(
+    title: &str,
+    lines: Vec<String>,
+    first: usize,
+    rows: usize,
+    footer: &str,
+    frame: Frame,
+) -> View {
     let rows = rows.max(1);
-    let lines = notes_lines(sections, width);
     let is_scrollable = lines.len() > rows;
-    let first = first.min(lines.len().saturating_sub(rows));
+    let first = first.min(scroll_limit(&lines, rows));
     View {
-        title: "Nouveautés".to_string(),
+        title: title.to_string(),
         lines: lines
             .into_iter()
             .skip(first)
@@ -430,13 +434,27 @@ pub fn notes_view(sections: &[Section], first: usize, rows: usize, width: usize)
             .map(Line::Preformatted)
             .collect(),
         footer: if is_scrollable {
-            NOTES_SCROLL_FOOTER
+            format!("{SCROLL_HINT}  {footer}")
         } else {
-            NOTES_FOOTER
-        }
-        .to_string(),
-        frame: NOTES_FRAME,
+            footer.to_string()
+        },
+        frame,
     }
+}
+
+pub fn notes_scroll_limit(sections: &[Section], rows: usize, width: usize) -> usize {
+    scroll_limit(&notes_lines(sections, width), rows)
+}
+
+pub fn notes_view(sections: &[Section], first: usize, rows: usize, width: usize) -> View {
+    scrolled_view(
+        "Nouveautés",
+        notes_lines(sections, width),
+        first,
+        rows,
+        NOTES_FOOTER,
+        NOTES_FRAME,
+    )
 }
 
 fn gifts(unlocks: &Unlocks) -> Vec<&'static str> {
@@ -675,7 +693,7 @@ mod tests {
             rows(&top),
             ["26 octobre 2026", "- Les Perséides font", "  pleuvoir les"]
         );
-        assert_eq!(top.footer, NOTES_SCROLL_FOOTER);
+        assert_eq!(top.footer, "[↑] [↓] défiler  [Entrée] ou [Echap] fermer");
 
         let last = notes_scroll_limit(&sections, height, width);
         assert_eq!(last, 2);
