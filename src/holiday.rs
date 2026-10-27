@@ -48,6 +48,7 @@ pub struct Holiday {
     pub new_year: Option<i32>,
     pub is_spring: bool,
     pub is_easter: bool,
+    pub is_epiphany: bool,
     pub meteor_shower: Option<MeteorShower>,
     pub is_winter: bool,
     pub season: Season,
@@ -70,6 +71,7 @@ impl Holiday {
             is_spring: (3, 20) <= (month, day) && (month, day) <= (6, 20),
             is_easter: easter_sunday(date.year())
                 .is_some_and(|easter| (date - easter).num_days().abs() <= EASTER_WINDOW_DAYS),
+            is_epiphany: month == 1 && day == 6,
             meteor_shower: MeteorShower::on(month, day),
             is_winter: matches!(month, 12 | 1 | 2),
             season: Season::on(month, day),
@@ -251,5 +253,13 @@ mod tests {
         assert!(Holiday::on(date(2026, 3, 20)).is_spring);
         assert!(Holiday::on(date(2026, 6, 20)).is_spring);
         assert!(!Holiday::on(date(2026, 6, 21)).is_spring);
+    }
+
+    #[test]
+    fn test_epiphany_day() {
+        assert!(!Holiday::on(date(2027, 1, 5)).is_epiphany);
+        assert!(Holiday::on(date(2027, 1, 6)).is_epiphany);
+        assert!(!Holiday::on(date(2027, 1, 7)).is_epiphany);
+        assert!(!Holiday::on(date(2027, 6, 6)).is_epiphany);
     }
 }

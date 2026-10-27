@@ -1,6 +1,6 @@
 ---
 issue: 36
-status: todo
+status: to-test
 wiki: [[animation]], [[scene]]
 note: "6 janvier : couronne sur le toit ou sur le chat"
 created: 2026-10-27
@@ -28,8 +28,16 @@ created: 2026-10-27
 
 ## Implementation
 
+- `src/holiday.rs`: `is_epiphany` (6 January) + test (5/6/7 Jan, 6 June).
+- `src/animation/epiphany.rs` (new): `crown_offset(&House)` (small (15,2), large (24,0)), `render_crown`; tests for both house sizes. Registered in `src/animation/mod.rs`.
+- `src/animation_manager.rs`: crown drawn in `render_garden` after `lore.render_scenery` (so after snow cover), golden `Rgb(255,200,40)`, day and night.
+- ⚠️ Crown sits on the weather vane's mast cell (lore, unlocked by Lettre 49); the vane's arrow stays visible above.
+- Build ✅ · fmt ✅ · clippy ✅ (pre-existing double_must_use allowed) · tests ✅.
+
 ## Review
 
 ## Verification
+
+autopilot: terminal app, not launched by the agent — build + tests only. Manual check yours.
 
 ## Feedback
