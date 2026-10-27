@@ -170,4 +170,6 @@ Inside autopilot: never ask (nobody watching) — freeze task, log open question
 ## Project notes
 
 - Rust (edition 2024) TUI binary: `generic` module, no Rust-specific one. Proof = CI gate (`cargo fmt --check`, `cargo clippy -D warnings`, `cargo test`).
-- Fork of Veirt/weathr, customized with French village story. UI strings French, `tu`.
+- Fork of Veirt/weathr, customized with French village story. UI strings French, `tu`.- Versions: a release = merge `develop` → `main` (players install `main`), tagged `vX.Y.Z`. Sprints stay grouped by theme; the target version is a label `vX` (`v2`…) on the issue.
+- `/wa-task` grill: always ask which version the task targets, then put the `vX` label on the issue (create the label if missing). No answer → no label, ships with the next release.
+- Never merge a PR labelled `vX` into `develop` before `vX` is being released.
