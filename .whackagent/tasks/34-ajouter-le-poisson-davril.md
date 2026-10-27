@@ -1,6 +1,6 @@
 ---
 issue: 34
-status: to-test
+status: to-close
 wiki: [[animation]], [[scene]]
 note: "1er avril : poisson en papier accroché dans le dos du facteur"
 created: 2026-10-27
@@ -26,16 +26,24 @@ created: 2026-10-27
 - [ ] 1 April: paper fish on the mailbox all day.
 - [ ] 1 April, Facteur's trip: fish on his back while he rides.
 - [ ] 2 April: no fish anywhere.
-- [ ] Narrow terminal without mailbox: no crash, Facteur's fish still drawn.
+- [ ] Narrow terminal without mailbox: no crash, no mailbox fish (the Facteur doesn't ride without a mailbox).
 
 ## Implementation
 
 - `src/holiday.rs`: `is_april_fools` (1 April) + test.
-- `src/animation/postman.rs`: `set_april_fools`, pink `><>` (`PAPER_FISH`, `PAPER_PINK`) on the Facteur's back (left, he rides left→right) on every trip phase but Waiting; on the mailbox front at `mailbox_x + 2`, flag at +6 stays visible. Helpers `back_fish`, `mailbox_fish` tested; no mailbox → no fish there.
+- `src/animation/postman.rs` (after review: fish drawn in `render`, `back_fish` removed): `set_april_fools`, pink `><>` (`PAPER_FISH`, `PAPER_PINK`) on the Facteur's back (left, he rides left→right) on every trip phase but Waiting; on the mailbox front at `mailbox_x + 2`, flag at +6 stays visible. Helpers `back_fish`, `mailbox_fish` tested; no mailbox → no fish there.
 - `src/animation_manager.rs`: `render_garden` passes `holiday.is_april_fools` to the Facteur.
 - Build ✅ · fmt ✅ · clippy ✅ (pre-existing double_must_use allowed) · tests ✅ (3 new).
 
 ## Review
+
+Round validation — LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓ — clean after 3 rounds.
+- 🟡 [correctness] narrow-terminal test claimed a visible back fish (Facteur never rides without mailbox) → test renamed, criterion reworded — fixed
+- 🟡 [correctness] Facteur covers the mailbox fish while stopped → accepted (he stands in front of it)
+- 🟡 [elegance] `back_fish` duplicated render's position math → removed, drawn in render — fixed
+- 🟡 [elegance] `filter(|_| …)` on ignored value → `mailbox_x?` + `then_some` — fixed
+- 🟡 [style] dead `visit()` in a test → removed — fixed
+- Note: Facteur's fish has no test, manual check on 1 April.
 
 ## Verification
 

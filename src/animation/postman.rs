@@ -192,7 +192,7 @@ impl Postman {
         garden::draw_clipped(renderer, x, y, &RIDER, POSTAL_YELLOW)?;
         garden::draw_clipped(renderer, x, y + 2, &[WHEELS], Color::DarkGrey)?;
 
-        if let Some((x, y)) = self.back_fish(layout) {
+        if self.is_april_fools {
             garden::draw_clipped(renderer, x, y, &[PAPER_FISH], PAPER_PINK)?;
         }
 
@@ -219,18 +219,11 @@ impl Postman {
     }
 
     fn mailbox_fish(&self, layout: &GardenLayout) -> Option<(u16, u16)> {
-        let mailbox_x = layout.plan.mailbox_x.filter(|_| self.is_april_fools)?;
-        Some((
+        let mailbox_x = layout.plan.mailbox_x?;
+        self.is_april_fools.then_some((
             mailbox_x + MAILBOX_FISH_COLUMN,
             layout.horizon_y.saturating_sub(2),
         ))
-    }
-
-    fn back_fish(&self, layout: &GardenLayout) -> Option<(i32, u16)> {
-        if !self.is_april_fools || matches!(self.trip, Trip::Waiting) {
-            return None;
-        }
-        Some((self.x.round() as i32, layout.horizon_y.saturating_sub(2)))
     }
 }
 
@@ -295,35 +288,28 @@ mod tests {
         let layout = GardenLayout::new(120, 40);
         let mailbox_x = layout.plan.mailbox_x.unwrap();
         let mut postman = Postman::new();
-        postman.visit();
         assert_eq!(postman.mailbox_fish(&layout), None);
-        assert_eq!(postman.back_fish(&layout), None);
 
         postman.set_april_fools(true);
         assert_eq!(
             postman.mailbox_fish(&layout),
             Some((mailbox_x + MAILBOX_FISH_COLUMN, layout.horizon_y - 2))
         );
-        assert_eq!(
-            postman.back_fish(&layout),
-            Some((-SPRITE_WIDTH as i32, layout.horizon_y - 2))
-        );
     }
 
     #[test]
-    fn test_paper_fish_leaves_the_flag_and_rides_only_with_the_postman() {
+    fn test_mailbox_fish_leaves_the_flag_and_skips_a_missing_mailbox() {
         let mut layout = GardenLayout::new(120, 40);
         let mut postman = Postman::new();
         postman.set_april_fools(true);
         let (fish_x, _) = postman.mailbox_fish(&layout).unwrap();
         let mailbox_x = layout.plan.mailbox_x.unwrap();
         assert!(fish_x + PAPER_FISH.len() as u16 <= mailbox_x + 6);
-        assert_eq!(postman.back_fish(&layout), None);
 
         layout.plan.mailbox_x = None;
         postman.visit();
+        postman.update(&layout);
         assert_eq!(postman.mailbox_fish(&layout), None);
-        assert!(postman.back_fish(&layout).is_some());
     }
 
     #[test]
