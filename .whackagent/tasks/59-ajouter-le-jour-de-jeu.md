@@ -1,6 +1,6 @@
 ---
 issue: 59
-status: to-test
+status: to-close
 wiki: [[render]], [[mail]]
 note: "ajouter le numero du jours dans l'histoire dans la barre du haut v1.6"
 created: 2026-10-29
@@ -41,8 +41,17 @@ Autopilot 2026-10-29, one implementer, one brick.
 - Tests (5): bar and loading line start with `<clock> | Jour 8 | `, day change redraws, rollover 2026-10-29 08:59 → `Jour 7` / 09:00 → `Jour 8` (start 2026-10-22, hour 9), fresh progress → day 1.
 - Notes: `Jour N | ` adds 9 columns, `Location: …` falls off sooner on narrow terminals (bar redesign = #37). `--day` (#14) not in code yet: the bar reads `timeline_day`, so an override there shows with no extra work.
 - Proof: `cargo build` ✅ · fmt ✅ · clippy ✅ with `--all-targets -A clippy::double_must_use` (pre-existing `src/weather/provider.rs:23`) · `cargo test` ✅ 255 passed.
+- Validation autofix: fresh-save test builds `Progress` with `started_on` = today (`DATE_FORMAT`).
 
 ## Review
+
+### Round validation — 2026-10-29
+
+LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓
+
+- 🟡 [correctness] `test_fresh_progress_starts_on_day_one` ran the `started_on: None` fallback, never taken in production (`Progress::load` sets today) → fixed, test builds a save started today (autofix 1)
+
+VERDICT: clean · 1 autofix round · proof: fmt ✅ clippy ✅ (`-A clippy::double_must_use`, pre-existing) test ✅ (255)
 
 ## Verification
 

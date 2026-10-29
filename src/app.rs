@@ -1190,6 +1190,7 @@ impl App {
 mod tests {
     use super::*;
     use crate::config::LocationDisplay;
+    use crate::progress::DATE_FORMAT;
     use crate::weather::WeatherUnits;
     use chrono::NaiveDate;
 
@@ -1447,11 +1448,12 @@ mod tests {
 
     #[test]
     fn test_fresh_progress_starts_on_day_one() {
+        let progress = Progress {
+            started_on: Some(Local::now().format(DATE_FORMAT).to_string()),
+            ..Progress::default()
+        };
         for mail_hour in [0, 23] {
-            assert_eq!(
-                story_today(&story_clock(&Progress::default(), mail_hour)),
-                1
-            );
+            assert_eq!(story_today(&story_clock(&progress, mail_hour)), 1);
         }
     }
 }

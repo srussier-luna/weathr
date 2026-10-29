@@ -47,6 +47,8 @@ Pure functions: story data → `View`. No I/O, no state.
 
 Status line built in `AppState::update_cached_info` (`src/app_state.rs:166`), rebuilt only when setter flags `weather_info_needs_update` or minute changes. Mixes French hints (`Lettre ! [c]`, `Badges x/y [b]`, `Aide [h]`) with English weather labels from upstream.
 
+- Starts `HH:MM | Jour N | …`, loading line too. N = Jour de jeu (`AppState::set_story_day`), fed every frame by `refresh_progress` from `timeline_day` ([[mail]]): rolls over at `courrier.heure` without restart. `--hide-hud` hides the whole line.
+
 ## Gotchas
 
 - One `char` = one cell. Wide glyphs (emoji, CJK) misalign diff + boxes.
