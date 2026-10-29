@@ -30,8 +30,7 @@ pub struct Squirrel {
     y: f32,
     is_facing_right: bool,
     frame: u32,
-    is_placed: bool,
-    placed_on: (u16, u16),
+    placed_on: Option<(u16, u16)>,
 }
 
 impl Squirrel {
@@ -42,8 +41,7 @@ impl Squirrel {
             y: 0.0,
             is_facing_right: true,
             frame: 0,
-            is_placed: false,
-            placed_on: (0, 0),
+            placed_on: None,
         }
     }
 
@@ -66,7 +64,7 @@ impl Squirrel {
         rng: &mut impl Rng,
     ) {
         let Some(tree) = layout.plan.tree.filter(|_| Self::is_visible(conditions)) else {
-            self.is_placed = false;
+            self.placed_on = None;
             return;
         };
 
@@ -74,12 +72,11 @@ impl Squirrel {
         let ground_y = Self::ground_y(layout);
         let climb_x = Self::climb_x(&tree);
         let size = (layout.width, layout.horizon_y);
-        if !self.is_placed || self.placed_on != size {
-            self.placed_on = size;
+        if self.placed_on != Some(size) {
+            self.placed_on = Some(size);
             self.x = climb_x;
             self.y = ground_y;
             self.phase = Phase::Resting(60);
-            self.is_placed = true;
         }
 
         self.phase = match self.phase {
@@ -131,7 +128,7 @@ impl Squirrel {
     }
 
     pub fn render(&self, renderer: &mut TerminalRenderer) -> io::Result<()> {
-        if !self.is_placed || matches!(self.phase, Phase::Hiding(_)) {
+        if self.placed_on.is_none() || matches!(self.phase, Phase::Hiding(_)) {
             return Ok(());
         }
 

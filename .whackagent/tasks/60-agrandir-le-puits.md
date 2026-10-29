@@ -1,6 +1,6 @@
 ---
 issue: 60
-status: to-test
+status: to-close
 wiki: [[scene]], [[animation]]
 note: "on ne vois pas le puit met le a gauche de l'arbre en plus plus large"
 created: 2026-10-29
@@ -44,6 +44,13 @@ created: 2026-10-29
 - Build ✅ · fmt ✅ · tests ✅ · clippy ❌ pre-existing on develop (`src/weather/provider.rs:23`, `double_must_use` from the newer toolchain, file not in this diff).
 
 ## Review
+
+Round validation — LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓ — 3 + 1 minor, all fixed by autofix:
+- 🟡 [correctness] wet footprints ran under the Puits → end at its right edge (`well_x + WELL_WIDTH`).
+- 🟡 [elegance] squirrel `is_placed` + `(0, 0)` sentinel → `placed_on: Option<(u16, u16)>`.
+- 🟡 [structure] `WELL_WIDTH` untied to the drawing → compile-time assert next to `WELL`.
+- 🟡 [style] `pub(crate)` alone in src → `pub const WELL_WIDTH`.
+Final: clean. Build ✅ · fmt ✅ · clippy ✅ (except pre-existing provider.rs:23) · tests ✅.
 
 ## Verification
 

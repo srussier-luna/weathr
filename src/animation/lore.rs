@@ -9,6 +9,7 @@ use std::io;
 
 const BENCH: [&str; 2] = ["_____", "|   |"];
 const WELL: [&str; 4] = [" _/^^^\\_", "/_______\\", " |  o  |", "(_______)"];
+const _: () = assert!(WELL[1].len() == garden::WELL_WIDTH as usize);
 const ZOOM_HINT: &str = "‹ dézoom";
 const ZOOM_HINT_LIFT: u16 = 4;
 const TREEHOUSE: [&str; 2] = [" /\\ ", "|[]|"];

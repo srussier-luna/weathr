@@ -5,7 +5,7 @@ use crate::scene::house::House;
 use crossterm::style::Color;
 use std::io;
 
-const WELL_WIDTH: u16 = 9;
+pub const WELL_WIDTH: u16 = 9;
 const SLOT_GAP: u16 = 1;
 
 #[derive(Clone, Copy)]

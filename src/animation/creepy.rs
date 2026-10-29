@@ -1,4 +1,4 @@
-use crate::animation::garden::{self, GardenLayout};
+use crate::animation::garden::{self, GardenLayout, WELL_WIDTH};
 use crate::animation::lore::Unlocks;
 use crate::render::TerminalRenderer;
 use crate::weather::WeatherConditions;
@@ -111,7 +111,7 @@ impl Creepy {
 
         if unlocks.wet_footprints && !conditions.is_day {
             let door_x = layout.house_x + house.door_x() + 2;
-            let end_x = well_x.unwrap_or(0);
+            let end_x = well_x.map_or(0, |x| x + WELL_WIDTH);
             for x in (end_x..door_x).rev().step_by(3) {
                 renderer.render_char(x, layout.horizon_y, '.', WET)?;
             }
