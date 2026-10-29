@@ -5,12 +5,8 @@ use crate::scene::house::House;
 use crossterm::style::Color;
 use std::io;
 
-<<<<<<< HEAD
 pub const WELL_WIDTH: u16 = 9;
-=======
-const WELL_WIDTH: u16 = 9;
-const CHEST_WIDTH: u16 = 9;
->>>>>>> c4daa9a (feat: le Coffre)
+pub const CHEST_WIDTH: u16 = 9;
 const SLOT_GAP: u16 = 1;
 const CHEST_GAP: u16 = 5;
 
@@ -219,11 +215,10 @@ mod tests {
 
     #[test]
     fn test_well_fits_without_chest() {
-        let layout = (120..400)
-            .map(|width| GardenLayout::new(width, 40))
-            .find(|layout| layout.well_x().is_some() && layout.chest_x().is_none())
-            .unwrap();
-        assert!(layout.well_x().is_some());
-        assert_eq!(layout.chest_x(), None);
+        assert!(
+            (120..400)
+                .map(|width| GardenLayout::new(width, 40))
+                .any(|layout| layout.well_x().is_some() && layout.chest_x().is_none())
+        );
     }
 }

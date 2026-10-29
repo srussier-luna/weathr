@@ -14,6 +14,7 @@ const ZOOM_HINT: &str = "‹ dézoom";
 const ZOOM_HINT_LIFT: u16 = 4;
 const TREEHOUSE: [&str; 2] = [" /\\ ", "|[]|"];
 const CHEST: [&str; 3] = [" _______", "/_______\\", "[___$___]"];
+const _: () = assert!(CHEST[1].len() == garden::CHEST_WIDTH as usize);
 const BALLOON: [&str; 4] = [" ,-. ", "(   )", " \\ / ", "  #  "];
 const BALLOON_SPEED: f32 = 0.06;
 const LANTERN_WINDOW: (u16, u16) = (8, 8);
