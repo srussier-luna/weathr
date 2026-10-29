@@ -1,6 +1,6 @@
 ---
 issue: 61
-status: todo
+status: to-test
 wiki: [[scene]], [[animation]]
 note: "la cabane dans les arbre est trop petite elargie la"
 created: 2026-10-29
@@ -34,8 +34,17 @@ created: 2026-10-29
 
 ## Implementation
 
+stacked on: wa/62-agrandir-le-coffre @ 58cb3c5
+
+- `src/animation/lore.rs`: `TREEHOUSE` 16 × 4, `TREEHOUSE_WIDTH = 16`, `TREEHOUSE_MIN_CANOPY_WIDTH = 18`, `treehouse_spot(&Tree) -> Option<(u16, u16)>`: None under 18 columns; x = `tree.x + (width - 16) / 2`; y = highest row where all 4 rows sit inside the round foliage outline (`Tree::canopy_span`). Replaces `canopy_height >= 6`. Paint choice and ladder unchanged.
+- Tests: width 17 → None, width 24 centred and inside, every foliage height 8–15 gets a spot, drawing rows all 16 wide.
+- ⚠️ Winter fir (triangular): the Cabane overlaps its narrow top rows — not in spec, left as is.
+- Build ✅ · fmt ✅ · tests ✅ · clippy ❌ pre-existing on develop only (`src/weather/provider.rs:23`).
+
 ## Review
 
 ## Verification
+
+manual validation — not run by agent (interactive TUI, no headless driver). Proof = build + tests.
 
 ## Feedback
