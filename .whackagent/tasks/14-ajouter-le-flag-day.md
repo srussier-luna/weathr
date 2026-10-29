@@ -32,8 +32,6 @@ created: 2026-10-26
 
 ## Implementation
 
-stacked on: wa/12-migrer-lhistoire-sur-la-timeline @ 14c7322
-
 Autopilot 2026-10-26, one implementer.
 
 - `main.rs`: `--day <N>` (`NonZeroUsize`, help "Preview the story on day N in a fresh game, without touching your save") → `SimulationOptions.day`. 3 clap tests.
@@ -47,6 +45,10 @@ Open points (spec wording, not blocking):
 - HUD: label sits in the `--demo` slot, i.e. `… Aide [h] | Jour 8 | Weather: …`, not at the very start. Spec said both "starts with" and "same slot as --demo"; the slot won. Moving it first = one-line change, would move the `--demo` label too.
 - Courrier (`l`) lists only Lettres already read, as before: fresh `--day` game shows `Lettres reçues (0)`. Days 1–N are read with `c` (`Lettre 1/12` on day 8).
 - Rebased 2026-10-27 onto `sprint/timeline-histoire` (#12 merged, PR #26). Conflicts in `app.rs`, `progress.rs`: develop's release notes / Accueil / badge cards kept; `--day` → `Launch::Suppressed` (no notes, no Accueil, no Facteur visit, real save never loaded or written). #14 doc comments dropped. fmt ✅ · clippy ✅ · test ✅.
+
+- Round 1 hunks (feedback, sprint merged @ 2a7d997 with #59 « Jour de jeu »): review with `git diff origin/sprint/timeline-histoire..HEAD`.
+  - `src/app.rs` — conflict resolved: `story_clock(&progress, …)` (from #59) used in the non-`--day` branch; `--day` label `Jour N` in the demo slot removed, the Barre du haut already shows the frozen day right after the clock (`HH:MM | Jour 8 | …`), so no duplicate. Open point « HUD label in the demo slot » resolved.
+  - `src/app.rs` tests — #59's fresh-save test sets `started_on` on a `Progress::default()` (struct literal no longer compiles: private `in_memory`).
 
 ## Review
 
@@ -63,6 +65,15 @@ Round validation (2026-10-29), one verifier, autofix 2 rounds.
 - Proof: fmt ✅ · clippy `--all-targets -D warnings -A clippy::double_must_use` ✅ · test ✅ 261 passed.
 - Code changed after the user's test: `main.rs`, `app.rs`, `story/clock.rs`, `animation/postman.rs`, `animation_manager.rs`.
 
+### Round validation — 2026-10-29 (after feedback round 1)
+
+LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓
+
+- 🟡 [style] `test_label_shows_in_hud` left over from the removed `--day` label (sample « Jour 12 » in the demo slot) → fixed, test dropped, `src/app_state.rs` back to base (autofix 1)
+- Inline hunks of feedback round 1 (conflict, label removal, #59 test) checked harder: no finding.
+
+VERDICT: clean · 1 autofix round · proof: fmt ✅ clippy ✅ (`-A clippy::double_must_use`, pre-existing) test ✅ (265)
+
 ## Verification
 
 Pty harness, `HOME` = temp dir seeded with a save on day 30 (real save shasum unchanged after all runs):
@@ -74,3 +85,14 @@ Pty harness, `HOME` = temp dir seeded with a save on day 30 (real save shasum un
 - ✅ Frozen past `courrier.heure`: clock + timeline unit tests.
 
 ## Feedback
+
+### Round 1 — 2026-10-29
+
+- Asked: « Recaler sur le sprint et résoudre le conflit avec #59 (src/app.rs) »
+- Triage: defect (maintenance) → criteria unchanged; `Jour 12` now literally starts the bar after the clock.
+- Changes: inline — `src/app.rs` (conflict, `--day` demo label removed, #59 test adapted). Merge, no rebase, no force-push.
+- Build: `cargo build` ✅ · fmt ✅ · clippy `--all-targets -A clippy::double_must_use` ✅ · `cargo test` ✅ 266 passed.
+- Review: deferred → /wa-validate (previous validation stale).
+- Verify: pty, temp `HOME` — `--day 8 --simulate clear` → `09:56 | Jour 8 | Lettre ! [c] | …` (once) · `--day 3 --demo` → `09:56 | Jour 3 | … | DEMO 1/36 | …`. Rest: manual validation — yours.
+- Rule captured: none.
+- Inline hunks: `src/app.rs` (all of round 1).
