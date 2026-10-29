@@ -29,8 +29,8 @@ impl StorySource for Creepy {
         let mail = (0..CREEPY_LETTER_COUNT)
             .map(|index| Beat::mail(creepy_day(index), Entry::Creepy(index)));
         let arrivals = ARRIVALS
-            .iter()
-            .map(|(number, thing)| Beat::arrival(creepy_day(number - 1), *thing));
+            .into_iter()
+            .map(|(number, thing)| Beat::arrival(creepy_day(number - 1), thing));
         mail.chain(arrivals).collect()
     }
 }

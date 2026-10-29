@@ -120,6 +120,27 @@ mod tests {
     }
 
     #[test]
+    fn test_arrived_by() {
+        let timeline = timeline(date(2026, 10, 1), 61);
+        assert_eq!(timeline.arrived_by(0).count(), 0);
+        assert!(!timeline.arrived_by(3).any(|thing| thing == Thing::Bench));
+        assert!(timeline.arrived_by(4).any(|thing| thing == Thing::Bench));
+        assert!(!timeline.arrived_by(5).any(|thing| thing == Thing::CatBow));
+        assert!(timeline.arrived_by(6).any(|thing| thing == Thing::CatBow));
+    }
+
+    #[test]
+    fn test_arrivals_stay_out_of_mail() {
+        let timeline = timeline(date(2026, 10, 1), 61);
+        let village = timeline
+            .mail()
+            .filter(|(_, entry)| matches!(entry, Entry::Main(_)))
+            .count();
+        assert_eq!(village, VILLAGE_COUNT);
+        assert_eq!(timeline.delivered_by(4), 4);
+    }
+
+    #[test]
     fn test_frozen_clock_delivers_every_mail_up_to_its_day() {
         let today = date(2026, 10, 26);
         let frozen = StoryClock::frozen(today, 9, NonZeroU16::new(12).unwrap());

@@ -1226,7 +1226,7 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::NaiveDate;
+    use chrono::{NaiveDate, NaiveDateTime};
 
     fn card_id(overlay: Option<Overlay>) -> Option<&'static str> {
         match overlay {
@@ -1508,7 +1508,7 @@ mod tests {
         NaiveDate::from_ymd_opt(year, month, day).unwrap()
     }
 
-    fn unlocks_at(clock: &StoryClock, now: chrono::NaiveDateTime) -> Unlocks {
+    fn unlocks_at(clock: &StoryClock, now: NaiveDateTime) -> Unlocks {
         let today = clock.day_on(now);
         let timeline = build_timeline(letters::defaults().len(), clock, today);
         unlocks_on(&timeline, today, &BTreeMap::new())
@@ -1563,17 +1563,5 @@ mod tests {
 
         let answers = BTreeMap::from([("bow".to_string(), 2)]);
         assert!(unlocks_on(&timeline, 60, &answers).choices.bow_blue);
-    }
-
-    #[test]
-    fn test_arrivals_stay_out_of_mail() {
-        let clock = StoryClock::new(date(2026, 10, 1), 9);
-        let timeline = build_timeline(letters::defaults().len(), &clock, 60);
-        let village = timeline
-            .mail()
-            .filter(|(_, entry)| matches!(entry, Entry::Main(_)))
-            .count();
-        assert_eq!(village, letters::defaults().len());
-        assert_eq!(timeline.delivered_by(4), 4);
     }
 }

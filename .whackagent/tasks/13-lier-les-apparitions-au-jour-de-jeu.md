@@ -1,6 +1,6 @@
 ---
 issue: 13
-status: to-test
+status: to-close
 wiki: [[animation]], [[mail]]
 note: "Split de #12 (sprint Timeline histoire)."
 created: 2026-10-26
@@ -49,6 +49,17 @@ Autopilot 2026-10-26, one implementer.
 - Rebased 2026-10-27 onto rebased #14 (after #12 merged, PR #26). Conflicts in `app.rs`, `event.rs`, `creepy.rs`, `timeline.rs`: `Timeline` keeps `mail: Vec<(usize, Entry)>` + `first_mail` from #12's review and stores `arrivals: Vec<(usize, Thing)>` beside it, both built once in `new()`; `arrived_by` reads `arrivals`. develop's badge / StarWatch tests kept next to #13's. #13 doc comments dropped. fmt ✅ · clippy ✅ · test ✅.
 
 ## Review
+
+Round validation (2026-10-29), one verifier, autofix 1 round. Scope: diff from #14 (stack point).
+
+- LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓
+- Fixed by autofix:
+  - 🟡 [structure] `test_arrivals_stay_out_of_mail` moved from `app.rs` to `story/timeline.rs`; new direct `test_arrived_by`.
+  - 🟡 [elegance] `ARRIVALS.into_iter()` without deref in `sources/village.rs`, `sources/creepy.rs`.
+  - 🟡 [style] `use chrono::{NaiveDate, NaiveDateTime}` in `app.rs` tests.
+- Open: none.
+- Proof: fmt ✅ · clippy ✅ · test ✅ 263 passed.
+- Code changed after the user's test: tests and two iterator calls only; behaviour unchanged.
 
 ## Verification
 

@@ -41,9 +41,9 @@ impl StorySource for Village {
     fn beats(&self, _clock: &StoryClock, _today: usize) -> Vec<Beat> {
         let mail = (0..self.count).map(|index| Beat::mail(village_day(index), Entry::Main(index)));
         let arrivals = ARRIVALS
-            .iter()
+            .into_iter()
             .filter(|(number, _)| *number <= self.count)
-            .map(|(number, thing)| Beat::arrival(village_day(number - 1), *thing));
+            .map(|(number, thing)| Beat::arrival(village_day(number - 1), thing));
         mail.chain(arrivals).collect()
     }
 }
