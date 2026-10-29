@@ -8,9 +8,8 @@ use std::collections::BTreeMap;
 use std::io;
 
 const BENCH: [&str; 2] = ["_____", "|   |"];
-const WELL_ROOF: &str = " /^\\ ";
-const WELL_POSTS: &str = " | | ";
-const WELL_RIM: &str = "(___)";
+const WELL: [&str; 4] = [" _/^^^\\_", "/_______\\", " |  o  |", "(_______)"];
+const ZOOM_HINT: &str = "‹ dézoom";
 const TREEHOUSE: [&str; 2] = [" /\\ ", "|[]|"];
 const CHEST: [&str; 2] = [" ___ ", "[_$_]"];
 const BALLOON: [&str; 4] = [" ,-. ", "(   )", " \\ / ", "  #  "];
@@ -212,15 +211,19 @@ impl Lore {
         }
 
         if unlocks.well {
-            let x = layout.house_x + house.porch_x() + 28;
-            let roof = if unlocks.choices.well_green {
-                Color::DarkGreen
-            } else {
-                Color::DarkRed
-            };
-            garden::draw_solid(renderer, x, ground_y - 3, &[WELL_ROOF], roof)?;
-            garden::draw(renderer, x, ground_y - 2, &[WELL_POSTS], WOOD)?;
-            garden::draw_solid(renderer, x, ground_y - 1, &[WELL_RIM], Color::Grey)?;
+            match layout.well_x() {
+                Some(x) => {
+                    let roof = if unlocks.choices.well_green {
+                        Color::DarkGreen
+                    } else {
+                        Color::DarkRed
+                    };
+                    garden::draw_solid(renderer, x, ground_y - 4, &WELL[..2], roof)?;
+                    garden::draw(renderer, x, ground_y - 2, &WELL[2..3], WOOD)?;
+                    garden::draw_solid(renderer, x, ground_y - 1, &WELL[3..], Color::Grey)?;
+                }
+                None => garden::draw(renderer, 0, ground_y - 1, &[ZOOM_HINT], Color::Grey)?,
+            }
         }
 
         if unlocks.footprints {

@@ -5,6 +5,10 @@ use crate::scene::house::House;
 use crossterm::style::Color;
 use std::io;
 
+const WELL_WIDTH: u16 = 9;
+const CHEST_WIDTH: u16 = 9;
+const SLOT_GAP: u16 = 1;
+
 #[derive(Clone, Copy)]
 pub struct GardenLayout {
     pub width: u16,
@@ -30,6 +34,12 @@ impl GardenLayout {
             house_y,
             plan: GardenPlan::new(house_x, horizon_y),
         }
+    }
+
+    pub fn well_x(&self) -> Option<u16> {
+        let tree = self.plan.tree?;
+        tree.x
+            .checked_sub(SLOT_GAP + CHEST_WIDTH + SLOT_GAP + WELL_WIDTH)
     }
 }
 
@@ -164,5 +174,24 @@ impl Default for Bubble {
 impl Default for Blink {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_well_fits_left_of_tree_on_wide_terminal() {
+        let layout = GardenLayout::new(200, 40);
+        let tree = layout.plan.tree.unwrap();
+        let well_x = layout.well_x().unwrap();
+        assert!(well_x + WELL_WIDTH + SLOT_GAP + CHEST_WIDTH + SLOT_GAP <= tree.x);
+    }
+
+    #[test]
+    fn test_well_hidden_on_narrow_terminal() {
+        let layout = GardenLayout::new(120, 30);
+        assert_eq!(layout.well_x(), None);
     }
 }

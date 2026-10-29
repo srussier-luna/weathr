@@ -1,6 +1,6 @@
 ---
 issue: 60
-status: todo
+status: to-test
 wiki: [[scene]], [[animation]]
 note: "on ne vois pas le puit met le a gauche de l'arbre en plus plus large"
 created: 2026-10-29
@@ -37,8 +37,16 @@ created: 2026-10-29
 
 ## Implementation
 
+- `src/animation/garden.rs`: `GardenLayout::well_x() -> Option<u16>` — `tree.x - (1 + 9 + 1 + 9)` (gap · Coffre slot · gap · Puits), `None` without Arbre or room. Tests: 200 × 40 fits, 120 × 30 hidden.
+- `src/animation/lore.rs`: `WELL: [&str; 4]` (9 × 4, shared indent dropped: `" _/^^^\_"`, `"/_______\"`, `" |  o  |"`, `"(_______)"`), roof in `well_green` colour, posts `WOOD`, rim grey. Hidden → grey `‹ dézoom` at column 0, row ground_y-1. `+ 28` removed.
+- `src/animation/creepy.rs`: `WELL_OFFSET` removed, reads `well_x()`. Wet footprints door → Puits (leftwards), to column 0 when hidden. No whisper when hidden.
+- Coffre slot left empty for #62. House and Arbre layout untouched.
+- Build ✅ · fmt ✅ · tests ✅ · clippy ❌ pre-existing on develop (`src/weather/provider.rs:23`, `double_must_use` from the newer toolchain, file not in this diff).
+
 ## Review
 
 ## Verification
+
+manual validation — not run by agent (interactive TUI, no headless driver). Proof = build + tests.
 
 ## Feedback
