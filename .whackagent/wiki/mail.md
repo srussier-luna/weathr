@@ -8,11 +8,11 @@ Two clocks: real time + real weather drive scenery only ([[animation]]); **Jour 
 
 - `StoryClock` (`src/story/clock.rs:4`) = `Progress` start date + `courrier.heure`. `day_on(now)` → Jour de jeu (1 = start day, rolls over at mail hour, never below 1); `date_of(day)` → calendar date. New day's mail appears at that hour, synced with Facteur arrival.
 - `--day N` (`StoryClock::frozen`, `src/story/clock.rs:20`): start = today − (N−1), `day_on` always N. Game on `Progress::in_memory` (`save()` no-op, real save never loaded), `letters::read()` (never writes `lettres.txt`), `Launch::Suppressed`, Badges never awarded, Facteur never rides. Barre du haut shows `Jour N` like any day.
-- `Entry` (`src/story/event.rs:2`) = every mail kind: `Main` (village Lettre), `Sam`, `Neighbours`, `Marcel` (recurring correspondents), `Archive`, `Gazette`, `Recipe`, `Postcard`, `Creepy` (n°13 neighbour). `Beat { day, event }`, `StoryEvent::Mail(Entry)` only for now.
-- Sources (`src/story/sources/`): one file per mail kind, each `impl StorySource { fn beats(clock, today) }`. `sources::registered` (`mod.rs:16`) lists them. **New mail kind = one source file + one registration line** (+ content). Gazette every Monday, recipe each 1st of month — via `clock.date_of`. Carte postale every 7 days from day 40.
-- `Timeline::new(sources, clock, today)` (`src/story/timeline.rs:10`) concatenates beats, sorts by `(day, kind order)`, keeps `mail: Vec<(usize, Entry)>`. `first_mail(n)` borrows the read prefix; `delivered_by(day)`, `mail_at(index)`.
+- `Entry` (`src/story/event.rs:2`) = every mail kind: `Main` (village Lettre), `Sam`, `Neighbours`, `Marcel` (recurring correspondents), `Archive`, `Gazette`, `Recipe`, `Postcard`, `Creepy` (n°13 neighbour). `Beat { day, event }`, `StoryEvent::Mail(Entry)` or `StoryEvent::Arrival(Thing)` (Apparition, sorts after mail on the same day).
+- Sources (`src/story/sources/`): one file per mail kind, each `impl StorySource { fn beats(clock, today) }`. `sources::registered` (`mod.rs:16`) lists them. **New mail kind = one source file + one registration line** (+ content). Sources declare Apparitions next to the Lettre that explains them (`village.rs` `ARRIVALS`, creepy, archives Bouteilles). Gazette every Monday, recipe each 1st of month — via `clock.date_of`. Carte postale every 7 days from day 40.
+- `Timeline::new(sources, clock, today)` (`src/story/timeline.rs:10`) concatenates beats, sorts by `(day, kind order)`, keeps `mail: Vec<(usize, Entry)>` and `arrivals: Vec<(usize, Thing)>`. `first_mail(n)` borrows the read prefix; `delivered_by(day)`, `mail_at(index)`, `arrived_by(day)`.
 - `Progress::letters_read` = **prefix length** into the Timeline. Works because past-day beats never move as days advance. No inserting beats on past days.
-- `App` builds `StoryClock` + `Timeline` (`build_timeline`, `src/app.rs:165`), rebuilt on day rollover. `unlocks_for` still counts Lettres read (#13 switches it to Jour de jeu).
+- `App` builds `StoryClock` + `Timeline` (`build_timeline`, `src/app.rs:191`), rebuilt on day rollover. Unlocks follow the Jour de jeu: `unlocks_on` reads `Timeline::arrived_by(day)` ([[animation]]).
 
 ### When vs what — `src/story/content/`
 
@@ -61,4 +61,4 @@ Rendering: [[render]]. Overlay state: `Overlay` enum in `src/app.rs:167`.
 ## Gotchas
 
 - Indices like `CITIES[i % len]` and `RIDDLES[week % len]` wrap: content repeats when exhausted, no panic.
-- `Unlocks` thresholds count read **village** Lettres, not all entries.
+- Apparitions arrive on their **Jour de jeu**, read or not: a Lettre explains what is already in the garden. `--day N` shows the garden of day N.

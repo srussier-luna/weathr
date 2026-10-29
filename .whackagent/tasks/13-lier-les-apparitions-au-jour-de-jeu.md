@@ -1,6 +1,6 @@
 ---
 issue: 13
-status: to-test
+status: to-close
 wiki: [[animation]], [[mail]]
 note: "Split de #12 (sprint Timeline histoire)."
 created: 2026-10-26
@@ -61,6 +61,19 @@ Round validation (2026-10-29), one verifier, autofix 1 round. Scope: diff from #
 - Open: none.
 - Proof: fmt ✅ · clippy ✅ · test ✅ 263 passed.
 - Code changed after the user's test: tests and two iterator calls only; behaviour unchanged.
+
+### Round validation — 2026-10-29 (after feedback round 1)
+
+LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓
+
+- 🟡 [style] `test_arrivals_ignore_reading` built an unused `Progress` → fixed, passes `&BTreeMap::new()` (autofix 1)
+- 🟡 [style] test clock + timeline setup repeated → fixed, `clock()` / `timeline_on(day)` helpers (autofix 1)
+- 🟡 [style] #59 bar test on inline `NaiveDate::from_ymd_opt` → fixed, `date(…)` (autofix 1)
+- 🟡 [style] wiki still described read-count unlocks (`after_reading`) → fixed, animation.md + mail.md rewritten (inline)
+- 🟡 [style] wiki `build_timeline` ref `src/app.rs:165` → fixed, `:191` (inline, round 2)
+- Inline hunks of feedback round 1 (tests conflict) checked harder: no finding.
+
+VERDICT: clean · 2 autofix rounds · proof: fmt ✅ clippy ✅ (`-A clippy::double_must_use`, pre-existing) test ✅ (271)
 
 ## Verification
 

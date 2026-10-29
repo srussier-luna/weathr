@@ -1512,21 +1512,26 @@ mod tests {
         NaiveDate::from_ymd_opt(year, month, day).unwrap()
     }
 
-    fn unlocks_at(clock: &StoryClock, now: NaiveDateTime) -> Unlocks {
-        let today = clock.day_on(now);
-        let timeline = build_timeline(letters::defaults().len(), clock, today);
-        unlocks_on(&timeline, today, &BTreeMap::new())
+    fn clock() -> StoryClock {
+        StoryClock::new(date(2026, 10, 1), 9)
+    }
+
+    fn timeline_on(day: usize) -> Timeline {
+        build_timeline(letters::defaults().len(), &clock(), day)
+    }
+
+    fn unlocks_at(now: NaiveDateTime) -> Unlocks {
+        let today = clock().day_on(now);
+        unlocks_on(&timeline_on(today), today, &BTreeMap::new())
     }
 
     fn unlocks_on_day(day: usize) -> Unlocks {
-        let clock = StoryClock::new(date(2026, 10, 1), 9);
-        unlocks_at(&clock, clock.date_of(day).and_hms_opt(12, 0, 0).unwrap())
+        unlocks_at(clock().date_of(day).and_hms_opt(12, 0, 0).unwrap())
     }
 
     #[test]
     fn test_every_thing_arrives_on_its_day() {
-        let clock = StoryClock::new(date(2026, 10, 1), 9);
-        let timeline = build_timeline(letters::defaults().len(), &clock, 120);
+        let timeline = timeline_on(120);
         assert_eq!(timeline.arrived_by(120).count(), ARRIVAL_DAYS.len());
 
         for (thing, day) in ARRIVAL_DAYS {
@@ -1541,27 +1546,20 @@ mod tests {
 
     #[test]
     fn test_arrivals_ignore_reading() {
-        let clock = StoryClock::new(date(2026, 10, 1), 9);
-        let timeline = build_timeline(letters::defaults().len(), &clock, 30);
-        let mut progress = Progress::in_memory(clock.date_of(1));
-        progress.letters_read = 2;
-
-        let unlocks = unlocks_on(&timeline, 30, &progress.answers);
+        let unlocks = unlocks_on(&timeline_on(30), 30, &BTreeMap::new());
         assert!(unlocks.bench && unlocks.well && unlocks.treehouse);
     }
 
     #[test]
     fn test_bench_arrives_at_mail_hour_rollover() {
-        let clock = StoryClock::new(date(2026, 10, 1), 9);
         let morning = date(2026, 10, 4);
-        assert!(!unlocks_at(&clock, morning.and_hms_opt(8, 59, 0).unwrap()).bench);
-        assert!(unlocks_at(&clock, morning.and_hms_opt(9, 0, 0).unwrap()).bench);
+        assert!(!unlocks_at(morning.and_hms_opt(8, 59, 0).unwrap()).bench);
+        assert!(unlocks_at(morning.and_hms_opt(9, 0, 0).unwrap()).bench);
     }
 
     #[test]
     fn test_choices_keep_default_until_answered() {
-        let clock = StoryClock::new(date(2026, 10, 1), 9);
-        let timeline = build_timeline(letters::defaults().len(), &clock, 60);
+        let timeline = timeline_on(60);
         let unanswered = unlocks_on(&timeline, 60, &BTreeMap::new());
         assert!(unanswered.cat_bow && !unanswered.choices.bow_blue);
 
@@ -1571,8 +1569,8 @@ mod tests {
 
     #[test]
     fn test_bar_story_day_rolls_over_at_mail_hour() {
-        let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 10, 22).unwrap(), 9);
-        let morning = NaiveDate::from_ymd_opt(2026, 10, 29).unwrap();
+        let clock = StoryClock::new(date(2026, 10, 22), 9);
+        let morning = date(2026, 10, 29);
         let location = WeatherLocation {
             latitude: 0.0,
             longitude: 0.0,
