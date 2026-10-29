@@ -64,3 +64,5 @@ manual validation — not run by agent (interactive TUI, no headless driver). Pr
 - Asked: « on voit un bout de montagne dans le puits » → « tout doit passer en plein sauf exception, sinon on voit la montagne »
 - Triage: defect.
 - Changed: Puits posts row and `‹ dézoom` drawn with `draw_solid` (inner spaces painted); every Puits row now opaque.
+- Asked: « quand je dézoome et que l'écureuil est dans l'arbre il se retrouve à des positions bizarres, genre dans le vide au-dessus de l'arbre » → fix here (user's call, pre-existing on develop).
+- Changed: `src/animation/squirrel.rs` remembers the layout size it was placed on; size changes → back at the foot of the Arbre. Test: resize 120 × 30 → 240 × 50.
