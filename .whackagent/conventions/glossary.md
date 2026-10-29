@@ -20,7 +20,8 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 |---|---|---|---|---|
 | Lettre | courrier | Message | `Entry` | courrier daté d'un habitant, livré par le Facteur |
 | Carte postale | carte | | `City` | de Sam en voyage, une ville par carte |
-| Gazette | journal | | | chaque lundi : rumeurs, annonces, Énigme |
+| Gazette | journal | | | chaque lundi : prévisions de la semaine, rumeurs, annonces, Énigme |
+| Alerte météo | vigilance | | | ligne ⚠ de la Gazette : canicule, grand froid, vent fort, orage ; calculée sur les prévisions |
 | Énigme | devinette | | `Riddle` | question de la Gazette, réponse touche `e` |
 | Bouteille | message à la mer | | `bottle` | message dérivant sur la rivière |
 | Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret |
