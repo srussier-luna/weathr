@@ -1,6 +1,6 @@
 ---
 issue: 14
-status: to-test
+status: to-close
 wiki: [[mail]], [[architecture]], [[updater]]
 note: "Split de #12 (sprint Timeline histoire). Sert à vérifier #13, #4, #5 à l'écran."
 created: 2026-10-26
@@ -49,6 +49,19 @@ Open points (spec wording, not blocking):
 - Rebased 2026-10-27 onto `sprint/timeline-histoire` (#12 merged, PR #26). Conflicts in `app.rs`, `progress.rs`: develop's release notes / Accueil / badge cards kept; `--day` → `Launch::Suppressed` (no notes, no Accueil, no Facteur visit, real save never loaded or written). #14 doc comments dropped. fmt ✅ · clippy ✅ · test ✅.
 
 ## Review
+
+Round validation (2026-10-29), one verifier, autofix 2 rounds.
+
+- LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓
+- Fixed by autofix:
+  - 🟡 [correctness] huge `--day` panicked (NaiveDate overflow): flag is `NonZeroU16`, clap refuses 0 and > 65535; `i64::from`; tests for refusal and `NonZeroU16::MAX`.
+  - 🟡 [elegance] non-zero type carried from CLI to `StoryClock::frozen`, `max(1)` clamp dropped.
+  - 🟡 [elegance] redundant `record_visit` guard dropped; `in_memory` save is a no-op.
+  - 🟡 [correctness] Facteur no longer rides at real `courrier.heure` in `--day` mode: `Postman::set_story_frozen`, `due_round` → None; test.
+  - 🟡 [style] test imports `NonZeroU16` instead of full path.
+- Open: none.
+- Proof: fmt ✅ · clippy `--all-targets -D warnings -A clippy::double_must_use` ✅ · test ✅ 261 passed.
+- Code changed after the user's test: `main.rs`, `app.rs`, `story/clock.rs`, `animation/postman.rs`, `animation_manager.rs`.
 
 ## Verification
 

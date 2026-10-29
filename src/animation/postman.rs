@@ -42,6 +42,7 @@ pub struct Postman {
     is_mail_waiting: bool,
     rings_bell: bool,
     is_april_fools: bool,
+    is_story_frozen: bool,
     round_hour: u32,
     last_round: Option<NaiveDate>,
 }
@@ -54,6 +55,7 @@ impl Postman {
             is_mail_waiting: false,
             rings_bell: false,
             is_april_fools: false,
+            is_story_frozen: false,
             round_hour: DEFAULT_ROUND_HOUR,
             last_round: None,
         }
@@ -61,6 +63,10 @@ impl Postman {
 
     pub fn set_round_hour(&mut self, hour: u32) {
         self.round_hour = hour;
+    }
+
+    pub fn set_story_frozen(&mut self, is_frozen: bool) {
+        self.is_story_frozen = is_frozen;
     }
 
     pub fn set_mail_waiting(&mut self, is_waiting: bool) {
@@ -105,6 +111,9 @@ impl Postman {
     }
 
     fn due_round(&self, stop_x: f32, now: NaiveDateTime) -> Option<NaiveDate> {
+        if self.is_story_frozen {
+            return None;
+        }
         let ride = Duration::milliseconds(((stop_x + SPRITE_WIDTH) / SPEED * FRAME_MILLIS) as i64);
         let today = now.date();
         [Some(today), today.succ_opt()]
@@ -253,6 +262,14 @@ mod tests {
         assert_eq!(postman.due_round(40.0, at(22, 8, 2, 0)), None);
         postman.last_round = today;
         assert_eq!(postman.due_round(40.0, at(22, 7, 59, 58)), None);
+    }
+
+    #[test]
+    fn test_frozen_story_skips_rounds() {
+        let mut postman = Postman::new();
+        postman.set_round_hour(8);
+        postman.set_story_frozen(true);
+        assert_eq!(postman.due_round(40.0, at(22, 7, 59, 56)), None);
     }
 
     #[test]

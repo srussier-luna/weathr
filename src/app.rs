@@ -26,6 +26,7 @@ use chrono::{Local, Timelike};
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use std::collections::{BTreeSet, VecDeque};
 use std::io;
+use std::num::NonZeroU16;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
@@ -253,7 +254,7 @@ pub struct SimulationOptions {
     pub night: bool,
     pub holiday: Option<Holiday>,
     pub demo: bool,
-    pub day: Option<usize>,
+    pub day: Option<NonZeroU16>,
 }
 
 #[derive(Clone, Copy)]
@@ -350,6 +351,7 @@ impl App {
         );
         let mut animations = AnimationManager::new(term_width, term_height, show_leaves);
         animations.set_mail_hour(config.mail.hour);
+        animations.set_story_frozen(simulation.day.is_some());
         let scene = WorldScene::new(term_width, term_height);
 
         let (tx, rx) = mpsc::channel(1);
@@ -424,7 +426,7 @@ impl App {
         if shows_welcome {
             animations.postman_visit();
         }
-        if simulation.day.is_none() && progress.record_visit() {
+        if progress.record_visit() {
             progress.save();
         }
         let rain_receiver =
