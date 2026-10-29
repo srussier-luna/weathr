@@ -1,6 +1,6 @@
 ---
 issue: 19
-status: todo
+status: to-test
 wiki: [[mail]], [[animation]]
 note: "bloquer la boite au lettre a 7 lettre maximum, si on pars en vacances trop longtemps on a pas 21 lettres a lire au retour, c'est trop"
 created: 2026-10-26
@@ -46,8 +46,21 @@ created: 2026-10-26
 
 ## Implementation
 
+- Branch brought up to date with `sprint/timeline-histoire` (merge) before coding: #12, #13, #14 landed there.
+- Facteur note decision (asked during /wa-code): shown while the box is full (≥ 7 unread village Lettres), gone as soon as one is read; the Jour de jeu still moves only at the next `courrier.heure`.
+- `src/story/pause.rs` (new): `FULL_BOX = 7`, `is_box_full`, `hold_full_box` — pure walk judging each new real day once; box full on the eve → `clock.pause(day)`.
+- `src/story/clock.rs`: `StoryClock` gains `pauses: BTreeMap<usize, u32>`; `date_of(day)` = start + (day-1) + pauses before `day` (past beats never move); `day_of(date)`, `mail_date(now)`, `with_pauses`, `is_frozen`.
+- `src/story/timeline.rs`: `unread_village(day, letters_read)` counts `Entry::Main` only.
+- `src/progress.rs`: `paused_days` + `pause_checked_on` (`#[serde(default)]`). Old or fresh save → checked from today, no retroactive pause.
+- `src/app.rs`: walk runs at launch and each refresh, persists pauses; Facteur gate = frozen clock || box full; Courrier shows `full_box_index_view` when full.
+- `src/views.rs`: `full_box_index_view` (note on top of the Courrier), `POSTMAN_SIGNATURE` shared with `src/welcome.rs`.
+- Forced modes `--demo` / `--simulate` / `--night` also run the walk (same real save and clock); only `--day` skips it.
+- Proof: `cargo fmt -- --check && cargo clippy -- -D warnings -A clippy::double_must_use && cargo test` green (287 tests). Golden fixture tests unchanged and green.
+
 ## Review
 
 ## Verification
+
+manual validation — not run by agent
 
 ## Feedback

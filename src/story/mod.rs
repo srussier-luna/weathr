@@ -1,6 +1,7 @@
 pub mod clock;
 pub mod content;
 pub mod event;
+pub mod pause;
 pub mod sources;
 pub mod timeline;
 

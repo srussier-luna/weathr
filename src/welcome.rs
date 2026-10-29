@@ -6,7 +6,7 @@ pub const DEPARTURE: &str = "Je viens de te déposer ton courrier. Moi, je file,
 pub const FOOTER: &str = "[Entrée] suite  [Echap] passer";
 pub const NOTE_FRAME: Frame = Frame::Parchment;
 const TITLE: &str = "Bienvenue au village";
-const SIGNATURE: &str = "— Le Facteur";
+const SIGNATURE: &str = views::POSTMAN_SIGNATURE;
 const UNFOLD_FRAMES: u16 = 20;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

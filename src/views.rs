@@ -22,6 +22,12 @@ const HELP_KEY_WIDTH: usize = 10;
 const NOTES_BULLET: &str = "- ";
 const NOTES_INDENT: &str = "  ";
 pub const NOTES_FRAME: Frame = Frame::Plain;
+pub const POSTMAN_SIGNATURE: &str = "— Le Facteur";
+const FULL_BOX_NOTE: [&str; 3] = [
+    "Ta boîte est pleine.",
+    "Je garde le reste à la poste",
+    "et je te l'apporte dès qu'il y a de la place.",
+];
 
 pub fn index_view(
     read_entries: &[(usize, Entry)],
@@ -57,6 +63,25 @@ pub fn index_view(
         footer: INDEX_FOOTER.to_string(),
         frame: Frame::Plain,
     }
+}
+
+pub fn full_box_index_view(
+    read_entries: &[(usize, Entry)],
+    selected: usize,
+    rows: usize,
+    context: &ReadContext,
+) -> View {
+    let mut note: Vec<Line> = FULL_BOX_NOTE.into_iter().map(text).collect();
+    note.extend([Line::Blank, text(POSTMAN_SIGNATURE), Line::Rule]);
+    let mut view = index_view(
+        read_entries,
+        selected,
+        rows.saturating_sub(note.len()),
+        context,
+    );
+    note.append(&mut view.lines);
+    view.lines = note;
+    view
 }
 
 pub fn bottle_view(index: usize) -> View {
@@ -389,6 +414,28 @@ mod tests {
         let mut out = format!("opens: {opened}\n");
         out.push_str(&render(&index_view(read, 0, 200, &save.context(12))));
         assert_eq!(out, courrier_fixture());
+    }
+
+    #[test]
+    fn test_full_box_note_sits_on_top_of_the_courrier() {
+        let save = SavedGame::load();
+        let read = save.timeline.first_mail(10);
+        let context = save.context(12);
+        let plain = render(&index_view(read, 0, 20, &context));
+        let full = render(&full_box_index_view(read, 0, 20, &context));
+
+        assert!(!plain.contains("Ta boîte est pleine."));
+        assert!(full.contains(
+            "text: Ta boîte est pleine.\n\
+             text: Je garde le reste à la poste\n\
+             text: et je te l'apporte dès qu'il y a de la place.\n\
+             blank\n\
+             text: — Le Facteur\n\
+             rule\n"
+        ));
+        assert!(
+            full.contains(&plain[plain.find("pre: >").unwrap()..plain.find("footer").unwrap()])
+        );
     }
 
     fn centered(view: &View) -> Vec<&str> {

@@ -16,7 +16,7 @@ use crate::scene::WorldScene;
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
-use crate::story::{Entry, StoryClock, Thing, Timeline, sources};
+use crate::story::{Entry, StoryClock, Thing, Timeline, pause, sources};
 use crate::views;
 use crate::weather::{
     OpenMeteoProvider, WeatherClient, WeatherCondition, WeatherData, WeatherLocation,
@@ -181,7 +181,7 @@ fn story_clock(progress: &Progress, mail_hour: u32) -> StoryClock {
     let start = progress
         .start_date()
         .unwrap_or_else(|| Local::now().date_naive());
-    StoryClock::new(start, mail_hour)
+    StoryClock::new(start, mail_hour).with_pauses(progress.paused_days.clone())
 }
 
 fn story_today(clock: &StoryClock) -> usize {
@@ -190,6 +190,10 @@ fn story_today(clock: &StoryClock) -> usize {
 
 fn build_timeline(village_count: usize, clock: &StoryClock, today: usize) -> Timeline {
     Timeline::new(&sources::registered(village_count), clock, today)
+}
+
+fn is_box_full(clock: &StoryClock, timeline: &Timeline, day: usize, letters_read: usize) -> bool {
+    !clock.is_frozen() && pause::is_box_full(timeline, day, letters_read)
 }
 
 fn generate_offline_weather(rng: &mut impl rand::Rng) -> WeatherData {
@@ -454,7 +458,7 @@ impl App {
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
         animations.set_unlocks(unlocks_on(&timeline, timeline_day, &progress.answers));
 
-        Self {
+        let mut app = Self {
             state,
             animations,
             scene,
@@ -483,7 +487,9 @@ impl App {
             pending_requests: BTreeSet::new(),
             frame_count: 0,
             timeline_day,
-        }
+        };
+        app.refresh_timeline();
+        app
     }
 
     fn refresh_progress(&mut self) {
@@ -510,6 +516,8 @@ impl App {
             .saturating_sub(self.progress.letters_read);
         let is_mail_waiting = unread > 0 && !self.hides_mail();
         self.animations.set_mail_waiting(is_mail_waiting);
+        self.animations
+            .set_story_frozen(self.clock.is_frozen() || self.is_box_full());
         let earned = badges::BADGES
             .iter()
             .filter(|badge| self.progress.badges.contains(badge.id))
@@ -636,6 +644,15 @@ impl App {
 
     fn refresh_unlocks(&mut self) {
         self.animations.set_unlocks(self.unlocks());
+    }
+
+    fn is_box_full(&self) -> bool {
+        is_box_full(
+            &self.clock,
+            &self.timeline,
+            self.timeline_day,
+            self.progress.letters_read,
+        )
     }
 
     fn available_letters(&self) -> usize {
@@ -767,12 +784,19 @@ impl App {
                 overlay_rows(renderer.get_size().1),
                 notes_width(renderer),
             ),
-            Some(Overlay::Index(selected)) => views::index_view(
-                self.read_entries(),
-                selected,
-                overlay_rows(renderer.get_size().1),
-                &self.read_context(),
-            ),
+            Some(Overlay::Index(selected)) => {
+                let index_view = if self.is_box_full() {
+                    views::full_box_index_view
+                } else {
+                    views::index_view
+                };
+                index_view(
+                    self.read_entries(),
+                    selected,
+                    overlay_rows(renderer.get_size().1),
+                    &self.read_context(),
+                )
+            }
             Some(Overlay::Help) => views::help_view(
                 &self.unlocks(),
                 count_read(&self.timeline, &self.progress, |entry| {
@@ -833,7 +857,31 @@ impl App {
         views::album_pages(self.read_entries(), &self.progress, &self.unlocks())
     }
 
+    fn hold_full_box(&mut self) {
+        if self.clock.is_frozen() {
+            return;
+        }
+        let today = self.clock.mail_date(Local::now().naive_local());
+        let checked = self.progress.pause_checked_date();
+        if checked.is_some_and(|checked| checked >= today) {
+            return;
+        }
+        if let Some(checked) = checked {
+            pause::hold_full_box(
+                &mut self.clock,
+                &self.timeline,
+                self.progress.letters_read,
+                checked,
+                today,
+            );
+            self.progress.paused_days = self.clock.pauses().clone();
+        }
+        self.progress.mark_pause_checked(today);
+        self.progress.save();
+    }
+
     fn refresh_timeline(&mut self) {
+        self.hold_full_box();
         let today = story_today(&self.clock);
         if today != self.timeline_day {
             self.timeline = build_timeline(self.letters.len(), &self.clock, today);
@@ -1598,6 +1646,39 @@ mod tests {
                     .starts_with(&format!("{} | Jour {day} | ", state.displayed_clock))
             );
         }
+    }
+
+    #[test]
+    fn test_save_without_pause_fields_keeps_its_story_day() {
+        let progress: Progress =
+            serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":37}"#).unwrap();
+        let clock = story_clock(&progress, 0);
+        let now = date(2026, 10, 26).and_hms_opt(12, 0, 0).unwrap();
+        let today = clock.day_on(now);
+        let timeline = build_timeline(letters::defaults().len(), &clock, today);
+        let before = StoryClock::new(date(2026, 9, 1), 0);
+        let expected = build_timeline(letters::defaults().len(), &before, today);
+
+        assert_eq!(today, before.day_on(now));
+        assert_eq!(
+            timeline.mail_at(progress.letters_read),
+            expected.mail_at(progress.letters_read)
+        );
+    }
+
+    #[test]
+    fn test_box_full_holds_the_postman_until_a_letter_is_read() {
+        let timeline = timeline_on(7);
+        assert!(is_box_full(&clock(), &timeline, 7, 0));
+        assert!(!is_box_full(&clock(), &timeline, 7, 1));
+        assert!(!is_box_full(&clock(), &timeline, 6, 0));
+    }
+
+    #[test]
+    fn test_frozen_clock_never_fills_the_box() {
+        let frozen = StoryClock::frozen(date(2026, 10, 26), 9, NonZeroU16::new(7).unwrap());
+        let timeline = build_timeline(letters::defaults().len(), &frozen, 7);
+        assert!(!is_box_full(&frozen, &timeline, 7, 0));
     }
 
     #[test]

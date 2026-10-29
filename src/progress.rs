@@ -38,6 +38,10 @@ pub struct Progress {
     pub notes_seen_on: Option<String>,
     #[serde(default)]
     pub welcome_seen: bool,
+    #[serde(default)]
+    pub paused_days: BTreeMap<usize, u32>,
+    #[serde(default)]
+    pub pause_checked_on: Option<String>,
     #[serde(skip)]
     in_memory: bool,
 }
@@ -109,6 +113,14 @@ impl Progress {
     pub fn mark_notes_seen(&mut self, date: NaiveDate) {
         self.notes_seen_on = Some(date.format(DATE_FORMAT).to_string());
     }
+
+    pub fn pause_checked_date(&self) -> Option<NaiveDate> {
+        self.pause_checked_on.as_deref().and_then(parse_date)
+    }
+
+    pub fn mark_pause_checked(&mut self, date: NaiveDate) {
+        self.pause_checked_on = Some(date.format(DATE_FORMAT).to_string());
+    }
 }
 
 fn progress_path() -> Option<PathBuf> {
@@ -132,6 +144,26 @@ mod tests {
         let progress: Progress =
             serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":40}"#).unwrap();
         assert!(!progress.welcome_seen);
+    }
+
+    #[test]
+    fn test_save_without_pause_fields_loads_with_no_pause() {
+        let progress: Progress =
+            serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":37}"#).unwrap();
+        assert!(progress.paused_days.is_empty());
+        assert_eq!(progress.pause_checked_date(), None);
+    }
+
+    #[test]
+    fn test_pauses_round_trip() {
+        let mut progress = Progress::default();
+        let date = NaiveDate::from_ymd_opt(2026, 10, 22).unwrap();
+        progress.paused_days.insert(7, 15);
+        progress.mark_pause_checked(date);
+        let saved = serde_json::to_string(&progress).unwrap();
+        let loaded: Progress = serde_json::from_str(&saved).unwrap();
+        assert_eq!(loaded.paused_days, BTreeMap::from([(7, 15)]));
+        assert_eq!(loaded.pause_checked_date(), Some(date));
     }
 
     #[test]
