@@ -372,8 +372,8 @@ fn treehouse_spot(tree: &Tree) -> Option<(u16, u16)> {
     let x = tree.x + (tree.width - TREEHOUSE_WIDTH) / 2;
     let rows = TREEHOUSE.len() as u16;
     (0..=tree.canopy_height.checked_sub(rows)?)
-        .find(|top| {
-            (*top..top + rows).all(|row| {
+        .find(|&top| {
+            (top..top + rows).all(|row| {
                 let (start, end) = tree.canopy_span(row);
                 start <= x && x + TREEHOUSE_WIDTH <= end
             })
@@ -406,15 +406,26 @@ mod tests {
         let (x, y) = treehouse_spot(&tree).unwrap();
         assert_eq!(x, tree.x + 4);
         assert!(x + TREEHOUSE_WIDTH <= tree.x + tree.width);
-        assert!(y >= tree.top_y);
         assert!(y + TREEHOUSE.len() as u16 <= tree.canopy_bottom_y());
+        for row in y - tree.top_y..y - tree.top_y + TREEHOUSE.len() as u16 {
+            let (start, end) = tree.canopy_span(row);
+            assert!(start <= x && x + TREEHOUSE_WIDTH <= end, "row {row}");
+        }
     }
 
     #[test]
     fn test_treehouse_fits_every_wide_canopy() {
-        for canopy_height in 8..=15 {
-            let tree = tree((canopy_height * 3 / 2 + 6).min(24), canopy_height);
-            assert!(treehouse_spot(&tree).is_some(), "canopy {canopy_height}");
+        let wide_trees: Vec<Tree> = (0..=40)
+            .filter_map(|horizon_y| Tree::fit(100, horizon_y))
+            .filter(|tree| tree.width >= TREEHOUSE_MIN_CANOPY_WIDTH)
+            .collect();
+        assert!(!wide_trees.is_empty());
+        for tree in wide_trees {
+            assert!(
+                treehouse_spot(&tree).is_some(),
+                "canopy {}",
+                tree.canopy_height
+            );
         }
     }
 
