@@ -31,7 +31,7 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Voisin | | | | personne d'une autre maison du village (Sam, Nadia et Claire…) |
 | Arbre | | | `Tree` | grand arbre à gauche de la maison, pousse du jour 1 au jour 12 |
 | Puits | | | `well` | vieux puits réparé, à gauche du grand Arbre |
-| Coffre | | | `chest` | coffre de Jeanne, entre le Puits et l'Arbre |
+| Coffre | | | `chest` | coffre de Jeanne, à gauche du Puits |
 | Cabane | | | `treehouse` | cabane de Léo, dans le feuillage de l'Arbre |
 | Perséides | | | | étoiles filantes plus fréquentes la nuit, du 9 au 15 août ; Badge dédié |
 | Géminides | | | | étoiles filantes plus fréquentes la nuit, du 10 au 16 décembre ; Badge dédié |
