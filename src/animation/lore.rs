@@ -13,7 +13,7 @@ const _: () = assert!(WELL[1].len() == garden::WELL_WIDTH as usize);
 const ZOOM_HINT: &str = "‹ dézoom";
 const ZOOM_HINT_LIFT: u16 = 4;
 const TREEHOUSE: [&str; 2] = [" /\\ ", "|[]|"];
-const CHEST: [&str; 2] = [" ___ ", "[_$_]"];
+const CHEST: [&str; 3] = [" _______", "/_______\\", "[___$___]"];
 const BALLOON: [&str; 4] = [" ,-. ", "(   )", " \\ / ", "  #  "];
 const BALLOON_SPEED: f32 = 0.06;
 const LANTERN_WINDOW: (u16, u16) = (8, 8);
@@ -212,25 +212,35 @@ impl Lore {
             garden::draw(renderer, x, ground_y - 1, &BENCH[1..], WOOD)?;
         }
 
-        if unlocks.well {
-            match layout.well_x() {
-                Some(x) => {
-                    let roof = if unlocks.choices.well_green {
-                        Color::DarkGreen
-                    } else {
-                        Color::DarkRed
-                    };
-                    garden::draw_solid(renderer, x, ground_y - 4, &WELL[..2], roof)?;
-                    garden::draw_solid(renderer, x, ground_y - 2, &WELL[2..3], WOOD)?;
-                    garden::draw_solid(renderer, x, ground_y - 1, &WELL[3..], Color::Grey)?;
-                }
-                None => {
-                    let y = layout.plan.tree.map_or(ground_y / 2, |tree| {
-                        tree.top_y.saturating_sub(ZOOM_HINT_LIFT)
-                    });
-                    garden::draw_solid(renderer, 0, y, &[ZOOM_HINT], Color::DarkGrey)?;
-                }
+        if unlocks.well
+            && let Some(x) = layout.well_x()
+        {
+            let roof = if unlocks.choices.well_green {
+                Color::DarkGreen
+            } else {
+                Color::DarkRed
+            };
+            garden::draw_solid(renderer, x, ground_y - 4, &WELL[..2], roof)?;
+            garden::draw_solid(renderer, x, ground_y - 2, &WELL[2..3], WOOD)?;
+            garden::draw_solid(renderer, x, ground_y - 1, &WELL[3..], Color::Grey)?;
+        }
+
+        match layout.chest_x() {
+            Some(x) if unlocks.chest => {
+                garden::draw_solid(renderer, x, ground_y - 3, &CHEST, WOOD)?;
+                renderer.render_char(x + 4, ground_y - 1, '$', Color::Yellow)?;
             }
+            Some(x) if unlocks.x_mark => renderer.render_char(x + 4, ground_y, 'X', Color::Red)?,
+            _ => {}
+        }
+
+        let well_hidden = unlocks.well && layout.well_x().is_none();
+        let chest_hidden = unlocks.chest && layout.chest_x().is_none();
+        if well_hidden || chest_hidden {
+            let y = layout.plan.tree.map_or(ground_y / 2, |tree| {
+                tree.top_y.saturating_sub(ZOOM_HINT_LIFT)
+            });
+            garden::draw_solid(renderer, 0, y, &[ZOOM_HINT], Color::DarkGrey)?;
         }
 
         if unlocks.footprints {
@@ -257,14 +267,6 @@ impl Lore {
         }
 
         if let Some(tree) = layout.plan.tree {
-            let spot_x = tree.trunk_x() + tree.trunk_width() + 2;
-            if unlocks.chest {
-                garden::draw_solid(renderer, spot_x - 1, ground_y - 1, &CHEST, WOOD)?;
-                renderer.render_char(spot_x + 1, ground_y, '$', Color::Yellow)?;
-            } else if unlocks.x_mark {
-                renderer.render_char(spot_x, ground_y, 'X', Color::Red)?;
-            }
-
             if unlocks.treehouse && tree.canopy_height >= 6 {
                 let x = tree.center_x() + 3;
                 let y = tree.top_y + tree.canopy_height / 4;
