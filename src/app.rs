@@ -158,6 +158,13 @@ fn welcome_width(renderer: &TerminalRenderer) -> usize {
     overlay::text_width(renderer, welcome::NOTE_FRAME)
 }
 
+fn story_clock(progress: &Progress, mail_hour: u32) -> StoryClock {
+    let start = progress
+        .start_date()
+        .unwrap_or_else(|| Local::now().date_naive());
+    StoryClock::new(start, mail_hour)
+}
+
 fn story_today(clock: &StoryClock) -> usize {
     clock.day_on(Local::now().naive_local())
 }
@@ -405,10 +412,7 @@ impl App {
         let rain_receiver =
             (!is_simulated).then(|| rain_alert::spawn(location.latitude, location.longitude));
         let letters = letters::load();
-        let start = progress
-            .start_date()
-            .unwrap_or_else(|| Local::now().date_naive());
-        let clock = StoryClock::new(start, config.mail.hour);
+        let clock = story_clock(&progress, config.mail.hour);
         let timeline_day = story_today(&clock);
         let timeline = build_timeline(letters.len(), &clock, timeline_day);
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
@@ -450,6 +454,7 @@ impl App {
             self.progress.save();
         }
         self.refresh_timeline();
+        self.state.set_story_day(self.timeline_day);
         self.request_remote_weather();
         self.receive_remote_weather();
         self.animations.set_finds_remaining(
@@ -1184,6 +1189,10 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::LocationDisplay;
+    use crate::progress::DATE_FORMAT;
+    use crate::weather::WeatherUnits;
+    use chrono::NaiveDate;
 
     fn card_id(overlay: Option<Overlay>) -> Option<&'static str> {
         match overlay {
@@ -1406,6 +1415,45 @@ mod tests {
             );
 
             assert_eq!(star_watch.seen, 2);
+        }
+    }
+
+    #[test]
+    fn test_bar_story_day_rolls_over_at_mail_hour() {
+        let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 10, 22).unwrap(), 9);
+        let morning = NaiveDate::from_ymd_opt(2026, 10, 29).unwrap();
+        let location = WeatherLocation {
+            latitude: 0.0,
+            longitude: 0.0,
+            elevation: None,
+        };
+        let mut state = AppState::new(
+            location,
+            None,
+            LocationDisplay::default(),
+            true,
+            WeatherUnits::default(),
+        );
+
+        for (hour, minute, day) in [(8, 59, 7), (9, 0, 8)] {
+            state.set_story_day(clock.day_on(morning.and_hms_opt(hour, minute, 0).unwrap()));
+            state.update_cached_info();
+            assert!(
+                state
+                    .cached_weather_info
+                    .starts_with(&format!("{} | Jour {day} | ", state.displayed_clock))
+            );
+        }
+    }
+
+    #[test]
+    fn test_fresh_progress_starts_on_day_one() {
+        let progress = Progress {
+            started_on: Some(Local::now().format(DATE_FORMAT).to_string()),
+            ..Progress::default()
+        };
+        for mail_hour in [0, 23] {
+            assert_eq!(story_today(&story_clock(&progress, mail_hour)), 1);
         }
     }
 }
