@@ -220,14 +220,14 @@ impl Lore {
                         Color::DarkRed
                     };
                     garden::draw_solid(renderer, x, ground_y - 4, &WELL[..2], roof)?;
-                    garden::draw(renderer, x, ground_y - 2, &WELL[2..3], WOOD)?;
+                    garden::draw_solid(renderer, x, ground_y - 2, &WELL[2..3], WOOD)?;
                     garden::draw_solid(renderer, x, ground_y - 1, &WELL[3..], Color::Grey)?;
                 }
                 None => {
                     let y = layout.plan.tree.map_or(ground_y / 2, |tree| {
                         tree.top_y.saturating_sub(ZOOM_HINT_LIFT)
                     });
-                    garden::draw(renderer, 0, y, &[ZOOM_HINT], Color::DarkGrey)?;
+                    garden::draw_solid(renderer, 0, y, &[ZOOM_HINT], Color::DarkGrey)?;
                 }
             }
         }

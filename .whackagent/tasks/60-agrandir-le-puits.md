@@ -58,3 +58,9 @@ manual validation — not run by agent (interactive TUI, no headless driver). Pr
 - Asked: « met le dézoom au milieu de l'écran, pas au niveau de l'herbe, entre 3 et 5 lignes au-dessus de l'arbre, en gris pour qu'il soit plus discret »
 - Changed: hint 4 rows above the Arbre's top, `Color::DarkGrey`, still column 0.
 - Changed: Puits right against the Arbre (`tree.x - (1 + 9)`), no reserved Coffre slot; the 5-column gap and the Coffre are #62's.
+
+### Round 2 — 2026-10-29
+
+- Asked: « on voit un bout de montagne dans le puits » → « tout doit passer en plein sauf exception, sinon on voit la montagne »
+- Triage: defect.
+- Changed: Puits posts row and `‹ dézoom` drawn with `draw_solid` (inner spaces painted); every Puits row now opaque.
