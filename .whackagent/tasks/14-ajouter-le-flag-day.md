@@ -1,6 +1,6 @@
 ---
 issue: 14
-status: to-test
+status: to-close
 wiki: [[mail]], [[architecture]], [[updater]]
 note: "Split de #12 (sprint Timeline histoire). Sert à vérifier #13, #4, #5 à l'écran."
 created: 2026-10-26
@@ -31,8 +31,6 @@ created: 2026-10-26
 - [ ] No Badge toast appears in `--day` mode.
 
 ## Implementation
-
-stacked on: wa/12-migrer-lhistoire-sur-la-timeline @ 14c7322
 
 Autopilot 2026-10-26, one implementer.
 
@@ -66,6 +64,15 @@ Round validation (2026-10-29), one verifier, autofix 2 rounds.
 - Open: none.
 - Proof: fmt ✅ · clippy `--all-targets -D warnings -A clippy::double_must_use` ✅ · test ✅ 261 passed.
 - Code changed after the user's test: `main.rs`, `app.rs`, `story/clock.rs`, `animation/postman.rs`, `animation_manager.rs`.
+
+### Round validation — 2026-10-29 (after feedback round 1)
+
+LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓
+
+- 🟡 [style] `test_label_shows_in_hud` left over from the removed `--day` label (sample « Jour 12 » in the demo slot) → fixed, test dropped, `src/app_state.rs` back to base (autofix 1)
+- Inline hunks of feedback round 1 (conflict, label removal, #59 test) checked harder: no finding.
+
+VERDICT: clean · 1 autofix round · proof: fmt ✅ clippy ✅ (`-A clippy::double_must_use`, pre-existing) test ✅ (265)
 
 ## Verification
 

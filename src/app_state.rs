@@ -387,15 +387,6 @@ mod tests {
     }
 
     #[test]
-    fn test_label_shows_in_hud() {
-        let mut app = create_app_state(0.0, 0.0);
-        app.set_demo_label(Some("Jour 12".to_string()));
-        app.update_cached_info();
-
-        assert!(app.cached_weather_info.contains("Jour 12 | Weather: "));
-    }
-
-    #[test]
     fn test_new_york_coordinates() {
         // New York: 40.7128°N, 74.0060°W (positive lat, negative lon)
         let mut app = create_app_state(40.7128, -74.0060);
