@@ -1,6 +1,6 @@
 ---
 issue: 59
-status: todo
+status: to-test
 wiki: [[render]], [[mail]]
 note: "ajouter le numero du jours dans l'histoire dans la barre du haut v1.6"
 created: 2026-10-29
@@ -34,8 +34,23 @@ created: 2026-10-29
 
 ## Implementation
 
+Autopilot 2026-10-29, one implementer, one brick.
+
+- `src/app_state.rs`: `story_day` field (starts at 1), `set_story_day(day)` (store, compare, `weather_info_needs_update`), both bar lines print `{clock} | Jour {story_day} | …`.
+- `src/app.rs`: `refresh_progress` calls `set_story_day(self.timeline_day)` right after `refresh_timeline()` (every frame, so the day switches without restart, demo included). Clock setup moved from `App::new` into `fn story_clock(progress, mail_hour)` (same 4 lines) so the fresh-save test runs the real path.
+- Tests (5): bar and loading line start with `<clock> | Jour 8 | `, day change redraws, rollover 2026-10-29 08:59 → `Jour 7` / 09:00 → `Jour 8` (start 2026-10-22, hour 9), fresh progress → day 1.
+- Notes: `Jour N | ` adds 9 columns, `Location: …` falls off sooner on narrow terminals (bar redesign = #37). `--day` (#14) not in code yet: the bar reads `timeline_day`, so an override there shows with no extra work.
+- Proof: `cargo build` ✅ · fmt ✅ · clippy ✅ with `--all-targets -A clippy::double_must_use` (pre-existing `src/weather/provider.rs:23`) · `cargo test` ✅ 255 passed.
+
 ## Review
 
 ## Verification
+
+Runtime, pty 120x40, `HOME` = temp dir (real save untouched), debug binary, quit with `q`:
+- ✅ No save, `--simulate clear` → `09:31 | Jour 1 | Badges 0/39 [b] | Aide [h] | Weather: Clear | …`
+- ✅ Save started 2026-10-22, `courrier.heure` 9, run 2026-10-29 09:31 → `09:31 | Jour 8 | Lettre ! [c] | …`
+- ✅ Open across `courrier.heure` (`faketime` 08:59:50) → `08:59 | Jour 7 | …` then `09:00 | Jour 8 | …`, same process
+- ✅ `--hide-hud` → no bar
+- ✅ `--demo` → `09:32 | Jour 8 | Lettre ! [c] | … | DEMO 4/36 | …`
 
 ## Feedback
