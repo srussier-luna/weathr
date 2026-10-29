@@ -1,6 +1,6 @@
 ---
 issue: 43
-status: todo
+status: to-test
 wiki: [[mail]], [[weather]]
 note: "Prévisions dans la Gazette au lieu de la météo passée"
 created: 2026-10-29
@@ -47,8 +47,27 @@ created: 2026-10-29
 
 ## Implementation
 
+Autopilot 2026-10-29, one implementer, one brick.
+
+- `src/remote_weather.rs`: `Request::WeekRecap(usize)` → `Request::WeekForecast { week, monday }` (Copy + Ord). `week_forecast` + pure `week_forecast_url` (`start_date={monday}&end_date={monday+6}`, daily max/min temperature, precipitation, snowfall, weather code, gusts). `Daily` + `snowfall_sum`, `weather_code`, `wind_gusts_10m_max`. `describe_week` builds the multi-line text ('\n'-joined, empty lines skipped); helpers `at`, `days_where`, `worst`, `days_line`, `degrees`. Constants `HEAT_WAVE_CELSIUS` 35, `SEVERE_COLD_CELSIUS` −10, `STRONG_GUSTS_KMH` 70. Snow / thunderstorm via `WeatherNormalizer::wmo_code_to_condition` (thunderstorm = 95/96/99).
+- `src/app.rs`: request loop passes `monday: self.clock.date_of(day)`; receive matches `WeekForecast { week, .. }`.
+- `src/story/content/gazette.rs`: stored text split with `.lines()`, fallback « Les prévisions ne sont pas encore arrivées. ».
+- `src/story/content/mod.rs`: `pub const WEEKDAYS` (lundi … dimanche) next to `MONTHS`.
+- `src/story/testdata/save_37_golden.txt`: 12 old fallback lines → new fallback; old « Ta semaine : … » entries unchanged.
+- Tests (9): calm week, snow, thunderstorm, heat wave / severe cold / strong wind incl. thresholds at and just below, best-day rules, forecast URL for 2026-11-02, Gazette compose before/after fetch.
+- Notes: alerts compare raw values while the text shows rounded ones (−9.7 shows « −10 °C au moins » with no grand froid alert; 34.6 shows « 35 °C » with no canicule). Temperatures use U+2212, `f64::round`, −0 → « 0 °C ». A day missing values is never best day nor alert. Failed fetch (e.g. Monday out of API range) stores nothing, fallback stays, no retry in the same session.
+- Proof: `cargo build` ✅ · fmt ✅ · clippy ✅ with `--all-targets -A clippy::double_must_use` (pre-existing `src/weather/provider.rs:23`) · `cargo test` ✅ 279 passed.
+
 ## Review
 
 ## Verification
+
+Runtime, pty 120x40, temp `HOME`, debug binary, save `started_on` 2026-10-19 (week 0 = old text), `c` then `<`, Esc, `q`:
+- ✅ Gazette of lundi 26 octobre, fetched live (Utqiagvik): max/min line, « Plus beau jour : lundi. », Pluie, Neige, « ⚠ Alerte vent fort : jeudi (rafales 80 km/h). »
+- ✅ Every day on alert (Yakutsk): no « Plus beau jour », long « ⚠ Alerte grand froid : lundi, …, dimanche (−24 °C). » wraps.
+- ✅ Newspaper frame borders aligned in all runs, ⚠ lines included (pyte emulator, 1 column per ⚠ / −; real Terminal.app not checked).
+- ✅ Old save: lundi 19 octobre still shows « Ta semaine : 2 jours de pluie, maximum 18 °C, minimum 2 °C. »
+- ✅ Offline (dead proxy): « Les prévisions ne sont pas encore arrivées. », nothing stored.
+- ✅ Stored text: U+202F before every colon.
 
 ## Feedback

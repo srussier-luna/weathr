@@ -215,7 +215,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 22 night false
 title: LA GAZETTE · lundi 14 septembre
-text: Ta semaine : les relevés ne sont pas encore arrivés.
+text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Gaston aurait été vu en train de parler à sa sacoche. Il dément.
 blank
@@ -320,7 +320,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 34 night false
 title: LA GAZETTE · lundi 21 septembre
-text: Ta semaine : les relevés ne sont pas encore arrivés.
+text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Le canard de la mare a été élu « canard le plus bavard » du canton.
 blank
@@ -541,7 +541,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 61 night false
 title: LA GAZETTE · lundi 5 octobre
-text: Ta semaine : les relevés ne sont pas encore arrivés.
+text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Paulo a pêché une botte. Il la garde « pour la paire ».
 blank
@@ -642,7 +642,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 74 night false
 title: LA GAZETTE · lundi 12 octobre
-text: Ta semaine : les relevés ne sont pas encore arrivés.
+text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Les chats du village tiendraient des réunions secrètes sur le toit de l'église.
 blank
@@ -740,7 +740,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 87 night false
 title: LA GAZETTE · lundi 19 octobre
-text: Ta semaine : les relevés ne sont pas encore arrivés.
+text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Odile cherche un nom pour le chemin qui mène au puits. Les propositions sont ouvertes.
 blank
@@ -844,7 +844,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 100 night false
 title: LA GAZETTE · lundi 26 octobre
-text: Ta semaine : les relevés ne sont pas encore arrivés.
+text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Léo affirme avoir vu un écureuil faire ses comptes.
 blank
@@ -1059,7 +1059,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 22 night true
 title: LA GAZETTE · lundi 14 septembre
-text: Ta semaine : les relevés ne sont pas encore arrivés.
+text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Gaston aurait été vu en train de parler à sa sacoche. Il dément.
 blank
@@ -1178,7 +1178,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 34 night true
 title: LA GAZETTE · lundi 21 septembre
-text: Ta semaine : les relevés ne sont pas encore arrivés.
+text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Le canard de la mare a été élu « canard le plus bavard » du canton.
 blank
@@ -1427,7 +1427,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 61 night true
 title: LA GAZETTE · lundi 5 octobre
-text: Ta semaine : les relevés ne sont pas encore arrivés.
+text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Paulo a pêché une botte. Il la garde « pour la paire ».
 blank
@@ -1542,7 +1542,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 74 night true
 title: LA GAZETTE · lundi 12 octobre
-text: Ta semaine : les relevés ne sont pas encore arrivés.
+text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Les chats du village tiendraient des réunions secrètes sur le toit de l'église.
 blank
@@ -1654,7 +1654,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 87 night true
 title: LA GAZETTE · lundi 19 octobre
-text: Ta semaine : les relevés ne sont pas encore arrivés.
+text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Odile cherche un nom pour le chemin qui mène au puits. Les propositions sont ouvertes.
 blank
@@ -1772,7 +1772,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 100 night true
 title: LA GAZETTE · lundi 26 octobre
-text: Ta semaine : les relevés ne sont pas encore arrivés.
+text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Léo affirme avoir vu un écureuil faire ses comptes.
 blank

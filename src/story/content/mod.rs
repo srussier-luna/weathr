@@ -39,6 +39,9 @@ pub const MONTHS: [&str; 12] = [
     "novembre",
     "décembre",
 ];
+pub const WEEKDAYS: [&str; 7] = [
+    "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche",
+];
 
 /// Content never fetches anything itself: everything a Lettre may read is passed in here.
 pub struct ReadContext<'a> {
