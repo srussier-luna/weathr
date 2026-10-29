@@ -19,8 +19,8 @@ created: 2026-10-29
    (_______)
   ```
 - **Placed left of the Arbre's foliage** (`x < tree.x`), standing on the ground. Layout unchanged: house and Arbre don't move.
-- Slots from right to left: canopy's left edge → 1-column gap → Coffre slot (9 wide, filled by #62) → 1-column gap → Puits. The Coffre slot stays empty in this task.
-- **No room** (narrow terminal, or no Arbre) → Puits not drawn, and a grey `‹ dézoom` hint on the screen's left edge, ground level. Hint shown only while an unlocked object is hidden. Reusable by #62.
+- Slots from right to left: canopy's left edge → 1-column gap → Puits. The Coffre (#62) goes further left: the Puits arrives first in the story.
+- **No room** (narrow terminal, or no Arbre) → Puits not drawn, and a dark grey `‹ dézoom` hint on the screen's left edge, 4 rows above the Arbre's top. Hint shown only while an unlocked object is hidden. Reusable by #62.
 - One source of truth for the Puits position: `src/animation/creepy.rs` (`WELL_OFFSET`, wet footprints door → Puits, whisper at the Puits) reads the same position; Puits hidden → no whisper, footprints stop at the screen's left edge.
 - Glossary rows Puits, Coffre, Cabane added with this task.
 - Out of scope: moving the house or the Arbre, new Lettres.
@@ -37,10 +37,10 @@ created: 2026-10-29
 
 ## Implementation
 
-- `src/animation/garden.rs`: `GardenLayout::well_x() -> Option<u16>` — `tree.x - (1 + 9 + 1 + 9)` (gap · Coffre slot · gap · Puits), `None` without Arbre or room. Tests: 200 × 40 fits, 120 × 30 hidden.
-- `src/animation/lore.rs`: `WELL: [&str; 4]` (9 × 4, shared indent dropped: `" _/^^^\_"`, `"/_______\"`, `" |  o  |"`, `"(_______)"`), roof in `well_green` colour, posts `WOOD`, rim grey. Hidden → grey `‹ dézoom` at column 0, row ground_y-1. `+ 28` removed.
+- `src/animation/garden.rs`: `GardenLayout::well_x() -> Option<u16>` — `tree.x - (1 + 9)` (gap · Puits), `None` without Arbre or room. Tests: 200 × 40 fits, 120 × 30 hidden.
+- `src/animation/lore.rs`: `WELL: [&str; 4]` (9 × 4, shared indent dropped: `" _/^^^\_"`, `"/_______\"`, `" |  o  |"`, `"(_______)"`), roof in `well_green` colour, posts `WOOD`, rim grey. Hidden → dark grey `‹ dézoom` at column 0, 4 rows above `tree.top_y` (no Arbre → `ground_y / 2`). `+ 28` removed.
 - `src/animation/creepy.rs`: `WELL_OFFSET` removed, reads `well_x()`. Wet footprints door → Puits (leftwards), to column 0 when hidden. No whisper when hidden.
-- Coffre slot left empty for #62. House and Arbre layout untouched.
+- House and Arbre layout untouched.
 - Build ✅ · fmt ✅ · tests ✅ · clippy ❌ pre-existing on develop (`src/weather/provider.rs:23`, `double_must_use` from the newer toolchain, file not in this diff).
 
 ## Review
@@ -50,3 +50,11 @@ created: 2026-10-29
 manual validation — not run by agent (interactive TUI, no headless driver). Proof = build + tests.
 
 ## Feedback
+
+### Round 1 — 2026-10-29
+
+- Asked: « met un peu plus d'espace entre le coffre et le puits genre 5 colonnes et échange-les de place, on reçoit d'abord le puits et après le coffre »
+- Triage: adjustment.
+- Asked: « met le dézoom au milieu de l'écran, pas au niveau de l'herbe, entre 3 et 5 lignes au-dessus de l'arbre, en gris pour qu'il soit plus discret »
+- Changed: hint 4 rows above the Arbre's top, `Color::DarkGrey`, still column 0.
+- Changed: Puits right against the Arbre (`tree.x - (1 + 9)`), no reserved Coffre slot; the 5-column gap and the Coffre are #62's.

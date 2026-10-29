@@ -6,7 +6,6 @@ use crossterm::style::Color;
 use std::io;
 
 const WELL_WIDTH: u16 = 9;
-const CHEST_WIDTH: u16 = 9;
 const SLOT_GAP: u16 = 1;
 
 #[derive(Clone, Copy)]
@@ -38,8 +37,7 @@ impl GardenLayout {
 
     pub fn well_x(&self) -> Option<u16> {
         let tree = self.plan.tree?;
-        tree.x
-            .checked_sub(SLOT_GAP + CHEST_WIDTH + SLOT_GAP + WELL_WIDTH)
+        tree.x.checked_sub(SLOT_GAP + WELL_WIDTH)
     }
 }
 
@@ -186,7 +184,7 @@ mod tests {
         let layout = GardenLayout::new(200, 40);
         let tree = layout.plan.tree.unwrap();
         let well_x = layout.well_x().unwrap();
-        assert!(well_x + WELL_WIDTH + SLOT_GAP + CHEST_WIDTH + SLOT_GAP <= tree.x);
+        assert!(well_x + WELL_WIDTH + SLOT_GAP <= tree.x);
     }
 
     #[test]

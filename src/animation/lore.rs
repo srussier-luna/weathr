@@ -10,6 +10,7 @@ use std::io;
 const BENCH: [&str; 2] = ["_____", "|   |"];
 const WELL: [&str; 4] = [" _/^^^\\_", "/_______\\", " |  o  |", "(_______)"];
 const ZOOM_HINT: &str = "‹ dézoom";
+const ZOOM_HINT_LIFT: u16 = 4;
 const TREEHOUSE: [&str; 2] = [" /\\ ", "|[]|"];
 const CHEST: [&str; 2] = [" ___ ", "[_$_]"];
 const BALLOON: [&str; 4] = [" ,-. ", "(   )", " \\ / ", "  #  "];
@@ -222,7 +223,12 @@ impl Lore {
                     garden::draw(renderer, x, ground_y - 2, &WELL[2..3], WOOD)?;
                     garden::draw_solid(renderer, x, ground_y - 1, &WELL[3..], Color::Grey)?;
                 }
-                None => garden::draw(renderer, 0, ground_y - 1, &[ZOOM_HINT], Color::Grey)?,
+                None => {
+                    let y = layout.plan.tree.map_or(ground_y / 2, |tree| {
+                        tree.top_y.saturating_sub(ZOOM_HINT_LIFT)
+                    });
+                    garden::draw(renderer, 0, y, &[ZOOM_HINT], Color::DarkGrey)?;
+                }
             }
         }
 
