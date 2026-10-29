@@ -480,16 +480,19 @@ pub fn defaults() -> Vec<Letter> {
 }
 
 pub fn load() -> Vec<Letter> {
-    let mut letters = defaults();
+    let letters = read();
+    if let Some(path) = letters_path()
+        && !path.exists()
+    {
+        let _ = write_defaults(&path, &letters);
+    }
+    letters
+}
 
-    let Some(path) = letters_path() else {
-        return letters;
-    };
-    match fs::read_to_string(&path) {
-        Ok(content) => apply_overrides(&mut letters, &content),
-        Err(_) => {
-            let _ = write_defaults(&path, &letters);
-        }
+pub fn read() -> Vec<Letter> {
+    let mut letters = defaults();
+    if let Some(content) = letters_path().and_then(|path| fs::read_to_string(path).ok()) {
+        apply_overrides(&mut letters, &content);
     }
     letters
 }

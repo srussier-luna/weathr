@@ -31,7 +31,7 @@ use crossterm::{
     terminal::{LeaveAlternateScreen, disable_raw_mode},
 };
 use render::TerminalRenderer;
-use std::{io, panic};
+use std::{io, num::NonZeroU16, panic};
 
 const LONG_VERSION: &str = concat!(
     env!("CARGO_PKG_VERSION"),
@@ -84,6 +84,13 @@ struct Cli {
 
     #[arg(long, help = "Cycle through every weather scene, 1 second each")]
     demo: bool,
+
+    #[arg(
+        long,
+        value_name = "N",
+        help = "Preview the story on day N in a fresh game, without touching your save"
+    )]
+    day: Option<NonZeroU16>,
 
     #[arg(long, help = "Auto-detect location via IP (uses ipinfo.io)")]
     auto_location: bool,
@@ -331,6 +338,7 @@ async fn main() -> io::Result<()> {
                 None
             },
             demo: cli.demo,
+            day: cli.day,
         },
         cli.leaves,
         term_width,
@@ -352,4 +360,31 @@ async fn main() -> io::Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_day_flag_parses_positive_days() {
+        let cli = Cli::try_parse_from(["weathr", "--day", "12"]).unwrap();
+        assert_eq!(cli.day.map(NonZeroU16::get), Some(12));
+    }
+
+    #[test]
+    fn test_day_flag_refuses_zero() {
+        assert!(Cli::try_parse_from(["weathr", "--day", "0"]).is_err());
+    }
+
+    #[test]
+    fn test_day_flag_refuses_huge_days() {
+        assert!(Cli::try_parse_from(["weathr", "--day", "100000000"]).is_err());
+    }
+
+    #[test]
+    fn test_help_lists_day_flag() {
+        let help = Cli::command().render_help().to_string();
+        assert!(help.contains("--day <N>"));
+    }
 }

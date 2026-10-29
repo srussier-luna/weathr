@@ -38,6 +38,8 @@ pub struct Progress {
     pub notes_seen_on: Option<String>,
     #[serde(default)]
     pub welcome_seen: bool,
+    #[serde(skip)]
+    in_memory: bool,
 }
 
 impl Progress {
@@ -58,7 +60,18 @@ impl Progress {
         progress
     }
 
+    pub fn in_memory(start: NaiveDate) -> Self {
+        Self {
+            started_on: Some(start.format(DATE_FORMAT).to_string()),
+            in_memory: true,
+            ..Self::default()
+        }
+    }
+
     pub fn save(&self) {
+        if self.in_memory {
+            return;
+        }
         let Some(path) = progress_path() else {
             return;
         };
@@ -129,5 +142,16 @@ mod tests {
         let saved = serde_json::to_string(&progress).unwrap();
         let loaded: Progress = serde_json::from_str(&saved).unwrap();
         assert_eq!(loaded.notes_seen_date(), Some(date));
+    }
+
+    #[test]
+    fn test_in_memory_progress_starts_fresh() {
+        let start = NaiveDate::from_ymd_opt(2026, 10, 19).unwrap();
+        let progress = Progress::in_memory(start);
+        assert_eq!(progress.start_date(), Some(start));
+        assert_eq!(progress.letters_read, 0);
+        assert!(progress.answers.is_empty());
+        assert!(progress.badges.is_empty());
+        assert!(progress.in_memory);
     }
 }

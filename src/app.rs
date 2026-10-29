@@ -26,6 +26,7 @@ use chrono::{Local, Timelike};
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use std::collections::{BTreeSet, VecDeque};
 use std::io;
+use std::num::NonZeroU16;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
@@ -260,6 +261,7 @@ pub struct SimulationOptions {
     pub night: bool,
     pub holiday: Option<Holiday>,
     pub demo: bool,
+    pub day: Option<NonZeroU16>,
 }
 
 #[derive(Clone, Copy)]
@@ -315,6 +317,7 @@ pub struct App {
     release_notes: Vec<Section>,
     overlay: Option<Overlay>,
     is_simulated: bool,
+    awards_badges: bool,
     toasts: VecDeque<String>,
     toast_until: Option<Instant>,
     pending_badges: VecDeque<&'static Badge>,
@@ -355,6 +358,7 @@ impl App {
         );
         let mut animations = AnimationManager::new(term_width, term_height, show_leaves);
         animations.set_mail_hour(config.mail.hour);
+        animations.set_story_frozen(simulation.day.is_some());
         let scene = WorldScene::new(term_width, term_height);
 
         let (tx, rx) = mpsc::channel(1);
@@ -393,14 +397,30 @@ impl App {
             });
         }
 
-        let launch = if !Progress::exists() {
+        let launch = if simulation.day.is_some() {
+            Launch::Suppressed
+        } else if !Progress::exists() {
             Launch::Fresh
         } else if is_simulated || simulation.night || config.silent {
             Launch::Suppressed
         } else {
             Launch::Normal
         };
-        let mut progress = Progress::load();
+        let (mut progress, letters, clock) = match simulation.day {
+            Some(day) => {
+                let clock = StoryClock::frozen(Local::now().date_naive(), config.mail.hour, day);
+                (
+                    Progress::in_memory(clock.date_of(1)),
+                    letters::read(),
+                    clock,
+                )
+            }
+            None => {
+                let progress = Progress::load();
+                let clock = story_clock(&progress, config.mail.hour);
+                (progress, letters::load(), clock)
+            }
+        };
         let release_notes = notes_on_launch(&mut progress, release_notes::load(), launch);
         let shows_welcome = welcome_on_launch(&progress, launch);
         if shows_welcome {
@@ -411,8 +431,6 @@ impl App {
         }
         let rain_receiver =
             (!is_simulated).then(|| rain_alert::spawn(location.latitude, location.longitude));
-        let letters = letters::load();
-        let clock = story_clock(&progress, config.mail.hour);
         let timeline_day = story_today(&clock);
         let timeline = build_timeline(letters.len(), &clock, timeline_day);
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
@@ -433,6 +451,7 @@ impl App {
             overlay: opening_overlay(shows_welcome, !release_notes.is_empty()),
             release_notes,
             is_simulated: is_simulated || simulation.night,
+            awards_badges: simulation.day.is_none(),
             toasts: VecDeque::new(),
             toast_until: None,
             pending_badges: VecDeque::new(),
@@ -542,6 +561,9 @@ impl App {
     }
 
     fn award(&mut self, ids: Vec<&'static str>) {
+        if !self.awards_badges {
+            return;
+        }
         let new_badges = earn(&mut self.progress.badges, ids);
         if !new_badges.is_empty() {
             self.pending_badges.extend(new_badges);
@@ -1253,10 +1275,8 @@ mod tests {
 
     #[test]
     fn test_notes_after_seen_date_show_newest_first() {
-        let mut progress = Progress {
-            notes_seen_on: Some("2026-10-01".to_string()),
-            ..Progress::default()
-        };
+        let mut progress = Progress::default();
+        progress.notes_seen_on = Some("2026-10-01".to_string());
         assert_eq!(
             notes_on_launch(&mut progress, notes(), Launch::Normal),
             notes()
@@ -1448,10 +1468,8 @@ mod tests {
 
     #[test]
     fn test_fresh_progress_starts_on_day_one() {
-        let progress = Progress {
-            started_on: Some(Local::now().format(DATE_FORMAT).to_string()),
-            ..Progress::default()
-        };
+        let mut progress = Progress::default();
+        progress.started_on = Some(Local::now().format(DATE_FORMAT).to_string());
         for mail_hour in [0, 23] {
             assert_eq!(story_today(&story_clock(&progress, mail_hour)), 1);
         }
