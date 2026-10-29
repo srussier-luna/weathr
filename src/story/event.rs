@@ -28,14 +28,43 @@ impl Entry {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Thing {
+    Bench,
+    CatBow,
+    Footprints,
+    Well,
+    Bone,
+    Key,
+    Treehouse,
+    OwlFriend,
+    BlueLantern,
+    Garland,
+    Kittens,
+    XMark,
+    Balloon,
+    Ducklings,
+    FoundObjects,
+    WeatherVane,
+    Bunting,
+    Chest,
+    WetFootprints,
+    Silhouette,
+    WhisperingWell,
+    Staring,
+    Bottles,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum StoryEvent {
     Mail(Entry),
+    Arrival(Thing),
 }
 
 impl StoryEvent {
     pub fn order(&self) -> u8 {
         match self {
             Self::Mail(entry) => entry.order(),
+            Self::Arrival(_) => u8::MAX,
         }
     }
 }
@@ -51,6 +80,13 @@ impl Beat {
         Self {
             day,
             event: StoryEvent::Mail(entry),
+        }
+    }
+
+    pub fn arrival(day: usize, thing: Thing) -> Self {
+        Self {
+            day,
+            event: StoryEvent::Arrival(thing),
         }
     }
 }

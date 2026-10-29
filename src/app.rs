@@ -1,4 +1,4 @@
-use crate::animation::lore::Unlocks;
+use crate::animation::lore::{Choices, Unlocks};
 use crate::animation_manager::AnimationManager;
 use crate::app_state::AppState;
 use crate::badges::{self, Badge};
@@ -16,7 +16,7 @@ use crate::scene::WorldScene;
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
-use crate::story::{Entry, StoryClock, Timeline, sources};
+use crate::story::{Entry, StoryClock, Thing, Timeline, sources};
 use crate::views;
 use crate::weather::{
     OpenMeteoProvider, WeatherClient, WeatherCondition, WeatherData, WeatherLocation,
@@ -24,7 +24,7 @@ use crate::weather::{
 use crate::welcome::{self, Step};
 use chrono::{Local, Timelike};
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
-use std::collections::{BTreeSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::io;
 use std::num::NonZeroU16;
 use std::sync::Arc;
@@ -50,17 +50,35 @@ fn count_read(timeline: &Timeline, progress: &Progress, kind: fn(&Entry) -> bool
         .count()
 }
 
-fn unlocks_for(timeline: &Timeline, progress: &Progress) -> Unlocks {
-    Unlocks::after_reading(
-        count_read(timeline, progress, |entry| matches!(entry, Entry::Main(_))),
-        count_read(timeline, progress, |entry| {
-            matches!(entry, Entry::Creepy(_))
-        }),
-        count_read(timeline, progress, |entry| {
-            matches!(entry, Entry::Archive(_))
-        }),
-        &progress.answers,
-    )
+fn unlocks_on(timeline: &Timeline, day: usize, answers: &BTreeMap<String, u8>) -> Unlocks {
+    let arrived: Vec<Thing> = timeline.arrived_by(day).collect();
+    let has_arrived = |thing: Thing| arrived.contains(&thing);
+    Unlocks {
+        bench: has_arrived(Thing::Bench),
+        cat_bow: has_arrived(Thing::CatBow),
+        footprints: has_arrived(Thing::Footprints),
+        well: has_arrived(Thing::Well),
+        bone: has_arrived(Thing::Bone),
+        key: has_arrived(Thing::Key),
+        treehouse: has_arrived(Thing::Treehouse),
+        owl_friend: has_arrived(Thing::OwlFriend),
+        blue_lantern: has_arrived(Thing::BlueLantern),
+        garland: has_arrived(Thing::Garland),
+        kittens: has_arrived(Thing::Kittens),
+        x_mark: has_arrived(Thing::XMark),
+        balloon: has_arrived(Thing::Balloon),
+        ducklings: has_arrived(Thing::Ducklings),
+        weather_vane: has_arrived(Thing::WeatherVane),
+        bunting: has_arrived(Thing::Bunting),
+        chest: has_arrived(Thing::Chest),
+        wet_footprints: has_arrived(Thing::WetFootprints),
+        silhouette: has_arrived(Thing::Silhouette),
+        whispering_well: has_arrived(Thing::WhisperingWell),
+        staring: has_arrived(Thing::Staring),
+        found_objects: has_arrived(Thing::FoundObjects),
+        bottles: has_arrived(Thing::Bottles),
+        choices: Choices::from_answers(answers),
+    }
 }
 
 fn earn(earned: &mut BTreeSet<String>, ids: Vec<&'static str>) -> Vec<&'static Badge> {
@@ -434,7 +452,7 @@ impl App {
         let timeline_day = story_today(&clock);
         let timeline = build_timeline(letters.len(), &clock, timeline_day);
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
-        animations.set_unlocks(unlocks_for(&timeline, &progress));
+        animations.set_unlocks(unlocks_on(&timeline, timeline_day, &progress.answers));
 
         Self {
             state,
@@ -612,9 +630,12 @@ impl App {
         village >= self.letters.len() && strange >= letters::CREEPY_LETTER_COUNT
     }
 
+    fn unlocks(&self) -> Unlocks {
+        unlocks_on(&self.timeline, self.timeline_day, &self.progress.answers)
+    }
+
     fn refresh_unlocks(&mut self) {
-        self.animations
-            .set_unlocks(unlocks_for(&self.timeline, &self.progress));
+        self.animations.set_unlocks(self.unlocks());
     }
 
     fn available_letters(&self) -> usize {
@@ -697,7 +718,6 @@ impl App {
         if index + 1 > self.progress.letters_read {
             self.progress.letters_read = index + 1;
             self.progress.save();
-            self.refresh_unlocks();
         }
     }
 
@@ -754,7 +774,7 @@ impl App {
                 &self.read_context(),
             ),
             Some(Overlay::Help) => views::help_view(
-                &unlocks_for(&self.timeline, &self.progress),
+                &self.unlocks(),
                 count_read(&self.timeline, &self.progress, |entry| {
                     matches!(entry, Entry::Gazette(_))
                 }) > 0,
@@ -810,11 +830,7 @@ impl App {
     }
 
     fn album_pages(&self) -> Vec<overlay::View> {
-        views::album_pages(
-            self.read_entries(),
-            &self.progress,
-            &unlocks_for(&self.timeline, &self.progress),
-        )
+        views::album_pages(self.read_entries(), &self.progress, &self.unlocks())
     }
 
     fn refresh_timeline(&mut self) {
@@ -1214,7 +1230,7 @@ mod tests {
     use crate::config::LocationDisplay;
     use crate::progress::DATE_FORMAT;
     use crate::weather::WeatherUnits;
-    use chrono::NaiveDate;
+    use chrono::{NaiveDate, NaiveDateTime};
 
     fn card_id(overlay: Option<Overlay>) -> Option<&'static str> {
         match overlay {
@@ -1438,10 +1454,123 @@ mod tests {
         }
     }
 
+    const ARRIVAL_DAYS: [(Thing, usize); 23] = [
+        (Thing::Bench, 4),
+        (Thing::CatBow, 6),
+        (Thing::Footprints, 8),
+        (Thing::Well, 13),
+        (Thing::Bone, 15),
+        (Thing::Key, 17),
+        (Thing::Treehouse, 22),
+        (Thing::OwlFriend, 24),
+        (Thing::BlueLantern, 26),
+        (Thing::Garland, 31),
+        (Thing::Kittens, 33),
+        (Thing::XMark, 35),
+        (Thing::Balloon, 40),
+        (Thing::Ducklings, 42),
+        (Thing::FoundObjects, 45),
+        (Thing::WeatherVane, 49),
+        (Thing::Bunting, 58),
+        (Thing::Chest, 59),
+        (Thing::WetFootprints, 13),
+        (Thing::Silhouette, 21),
+        (Thing::WhisperingWell, 33),
+        (Thing::Staring, 45),
+        (Thing::Bottles, 40),
+    ];
+
+    fn shows(unlocks: &Unlocks, thing: Thing) -> bool {
+        match thing {
+            Thing::Bench => unlocks.bench,
+            Thing::CatBow => unlocks.cat_bow,
+            Thing::Footprints => unlocks.footprints,
+            Thing::Well => unlocks.well,
+            Thing::Bone => unlocks.bone,
+            Thing::Key => unlocks.key,
+            Thing::Treehouse => unlocks.treehouse,
+            Thing::OwlFriend => unlocks.owl_friend,
+            Thing::BlueLantern => unlocks.blue_lantern,
+            Thing::Garland => unlocks.garland,
+            Thing::Kittens => unlocks.kittens,
+            Thing::XMark => unlocks.x_mark,
+            Thing::Balloon => unlocks.balloon,
+            Thing::Ducklings => unlocks.ducklings,
+            Thing::FoundObjects => unlocks.found_objects,
+            Thing::WeatherVane => unlocks.weather_vane,
+            Thing::Bunting => unlocks.bunting,
+            Thing::Chest => unlocks.chest,
+            Thing::WetFootprints => unlocks.wet_footprints,
+            Thing::Silhouette => unlocks.silhouette,
+            Thing::WhisperingWell => unlocks.whispering_well,
+            Thing::Staring => unlocks.staring,
+            Thing::Bottles => unlocks.bottles,
+        }
+    }
+
+    fn date(year: i32, month: u32, day: u32) -> NaiveDate {
+        NaiveDate::from_ymd_opt(year, month, day).unwrap()
+    }
+
+    fn clock() -> StoryClock {
+        StoryClock::new(date(2026, 10, 1), 9)
+    }
+
+    fn timeline_on(day: usize) -> Timeline {
+        build_timeline(letters::defaults().len(), &clock(), day)
+    }
+
+    fn unlocks_at(now: NaiveDateTime) -> Unlocks {
+        let today = clock().day_on(now);
+        unlocks_on(&timeline_on(today), today, &BTreeMap::new())
+    }
+
+    fn unlocks_on_day(day: usize) -> Unlocks {
+        unlocks_at(clock().date_of(day).and_hms_opt(12, 0, 0).unwrap())
+    }
+
+    #[test]
+    fn test_every_thing_arrives_on_its_day() {
+        let timeline = timeline_on(120);
+        assert_eq!(timeline.arrived_by(120).count(), ARRIVAL_DAYS.len());
+
+        for (thing, day) in ARRIVAL_DAYS {
+            assert!(
+                !shows(&unlocks_on_day(day - 1), thing),
+                "{thing:?} on day {}",
+                day - 1
+            );
+            assert!(shows(&unlocks_on_day(day), thing), "{thing:?} on day {day}");
+        }
+    }
+
+    #[test]
+    fn test_arrivals_ignore_reading() {
+        let unlocks = unlocks_on(&timeline_on(30), 30, &BTreeMap::new());
+        assert!(unlocks.bench && unlocks.well && unlocks.treehouse);
+    }
+
+    #[test]
+    fn test_bench_arrives_at_mail_hour_rollover() {
+        let morning = date(2026, 10, 4);
+        assert!(!unlocks_at(morning.and_hms_opt(8, 59, 0).unwrap()).bench);
+        assert!(unlocks_at(morning.and_hms_opt(9, 0, 0).unwrap()).bench);
+    }
+
+    #[test]
+    fn test_choices_keep_default_until_answered() {
+        let timeline = timeline_on(60);
+        let unanswered = unlocks_on(&timeline, 60, &BTreeMap::new());
+        assert!(unanswered.cat_bow && !unanswered.choices.bow_blue);
+
+        let answers = BTreeMap::from([("bow".to_string(), 2)]);
+        assert!(unlocks_on(&timeline, 60, &answers).choices.bow_blue);
+    }
+
     #[test]
     fn test_bar_story_day_rolls_over_at_mail_hour() {
-        let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 10, 22).unwrap(), 9);
-        let morning = NaiveDate::from_ymd_opt(2026, 10, 29).unwrap();
+        let clock = StoryClock::new(date(2026, 10, 22), 9);
+        let morning = date(2026, 10, 29);
         let location = WeatherLocation {
             latitude: 0.0,
             longitude: 0.0,
