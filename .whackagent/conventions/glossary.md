@@ -61,6 +61,7 @@ A named piece of UI, reused or talked about on its own. UI projects only.
 
 | Name | Also | Code | On | Means |
 |---|---|---|---|---|
+| Barre du haut | HUD, ligne d'état | `cached_weather_info` | scène | heure, Jour de jeu, Lettre, Badges, aide, météo ; masquée par `--hide-hud` |
 <!-- | Composer | editor | `ComposerView` | Inbox, Thread | writes or replies to a message | -->
 
 ## Flows
