@@ -35,8 +35,6 @@ created: 2026-10-29
 
 ## Implementation
 
-stacked on: wa/60-agrandir-le-puits @ e5938d6
-
 - `src/animation/garden.rs`: `GardenLayout::chest_x()` = `well_x() - (5 + 9)` (`CHEST_GAP = 5`), order Coffre · Puits · Arbre. Tests: 240 × 40 Coffre 5 columns left of the Puits, 120 × 30 none, a width where only the Puits fits.
 - `src/animation/lore.rs`: `CHEST` 9 × 3 (`" _______"`, `"/_______\\"`, `"[___$___]"`), `WOOD`, on the ground (rows ground_y-3..ground_y-1), `$` re-coloured yellow; old ground `$` removed. Red `X` at the Coffre's centre on ground_y. Coffre/X moved out of the trunk block. dark grey `‹ dézoom` drawn once, 4 rows above the Arbre's top: Puits or Coffre unlocked and hidden.
 - Not covered: `x_mark` unlocked, Coffre locked, no room → no X, no hint.

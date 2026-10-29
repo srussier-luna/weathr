@@ -32,6 +32,7 @@ Demo has `Perséides` and `Géminides` scenes. `StarGazing` (constellations) use
 - `App` recomputes unlocks when reading progress or answers change (`unlocks_for`, `src/app.rs:55`). Never store unlocks; always derive.
 - `Lore` draws gifted props (bench, well, treehouse, chest, balloon, bunting…). `Creepy` handles n°13 neighbour: wet footprints, silhouette, whispering well, "staring" state freezing cat, dog, owl.
 - Puits sits left of Arbre's foliage: `GardenLayout::well_x` (`src/animation/garden.rs`) = `tree.x - (1 + WELL_WIDTH)`, `None` without room. Hidden while unlocked → dark grey `‹ dézoom` at column 0, 4 rows above Arbre top. `Creepy` footprints + whisper read same `well_x`. `WELL_WIDTH` tied to `WELL` drawing by compile-time assert. Props drawn `draw_solid` so mountains don't show through.
+- Coffre sits 5 columns left of Puits: `GardenLayout::chest_x` = `well_x - (CHEST_GAP + CHEST_WIDTH)`, so order left → right Coffre · Puits · Arbre (Puits arrives first in story). Red `X` (`x_mark`) marks Coffre spot before it's unlocked. One `‹ dézoom` for both. `CHEST_WIDTH` tied to `CHEST` by compile-time assert.
 
 ## Seasons and Fêtes — `src/holiday.rs`
 
