@@ -31,6 +31,7 @@ Demo has `Perséides` and `Géminides` scenes. `StarGazing` (constellations) use
 - `Choices` (`:38`) maps letter answers (keys `1`/`2`) to visual variants: bow colour, postman bell, owl silent, ducklings count…
 - `App` recomputes unlocks when reading progress or answers change (`unlocks_for`, `src/app.rs:55`). Never store unlocks; always derive.
 - `Lore` draws gifted props (bench, well, treehouse, chest, balloon, bunting…). `Creepy` handles n°13 neighbour: wet footprints, silhouette, whispering well, "staring" state freezing cat, dog, owl.
+- Puits sits left of Arbre's foliage: `GardenLayout::well_x` (`src/animation/garden.rs`) = `tree.x - (1 + WELL_WIDTH)`, `None` without room. Hidden while unlocked → dark grey `‹ dézoom` at column 0, 4 rows above Arbre top. `Creepy` footprints + whisper read same `well_x`. `WELL_WIDTH` tied to `WELL` drawing by compile-time assert. Props drawn `draw_solid` so mountains don't show through.
 
 ## Seasons and Fêtes — `src/holiday.rs`
 
@@ -53,5 +54,6 @@ Accueil visit (see [[mail]]): `visit` → `Arriving` (2.5 s ride) → `Staying` 
 ## Gotchas
 
 - Speeds/waits in **frames** (30 fps), e.g. `Finds` waits 18 000–54 000 frames.
+- Animals keeping absolute `x`/`y` across frames must re-place on resize: layout moves, they don't. `Squirrel` stores `placed_on: Option<(width, horizon_y)>` and resets at Arbre foot when it changes.
 - `update_wind` arg named `speed_kmh`, but live data normalized to m/s (see [[weather]]). Check units before tuning wind effects.
 - Background systems each use own `!is_raining && !is_snowing…` guards; no central "what is visible" table. New sky system → add same guards.
