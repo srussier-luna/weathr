@@ -1,6 +1,6 @@
 ---
 issue: 13
-status: to-close
+status: to-test
 wiki: [[animation]], [[mail]]
 note: "Split de #12 (sprint Timeline histoire)."
 created: 2026-10-26
@@ -35,8 +35,6 @@ created: 2026-10-26
 
 ## Implementation
 
-stacked on: wa/14-ajouter-le-flag-day @ 1f691c2
-
 Autopilot 2026-10-26, one implementer.
 
 - `story/event.rs`: `Thing` enum (23 variants, one per `Unlocks` bool except `choices`), `StoryEvent::Arrival(Thing)`, `Beat::arrival`. Arrival sorts after mail on the same day.
@@ -47,6 +45,9 @@ Autopilot 2026-10-26, one implementer.
 - Side effect by design: Album gifts page and unlock-gated animal behaviours follow the Jour de jeu too.
 - Proof: fmt ✅ · clippy ✅ · `cargo test` ✅ 177 passed. #12 golden fixtures unchanged.
 - Rebased 2026-10-27 onto rebased #14 (after #12 merged, PR #26). Conflicts in `app.rs`, `event.rs`, `creepy.rs`, `timeline.rs`: `Timeline` keeps `mail: Vec<(usize, Entry)>` + `first_mail` from #12's review and stores `arrivals: Vec<(usize, Thing)>` beside it, both built once in `new()`; `arrived_by` reads `arrivals`. develop's badge / StarWatch tests kept next to #13's. #13 doc comments dropped. fmt ✅ · clippy ✅ · test ✅.
+
+- Round 1 hunks (feedback, sprint merged after #14 landed, with #59 « Jour de jeu »): review with `git diff origin/sprint/timeline-histoire..HEAD`. Stack dropped: #14 landed, PR base → `sprint/timeline-histoire`.
+  - `src/app.rs` tests only — conflicts: imports merged (`LocationDisplay`, `DATE_FORMAT`, `WeatherUnits`, `NaiveDate`, `NaiveDateTime`); #13's Apparition tests and #59's bar tests (`test_bar_story_day_rolls_over_at_mail_hour`, `test_fresh_progress_starts_on_day_one`) both kept.
 
 ## Review
 
@@ -70,4 +71,18 @@ Pty harness + ANSI replay into a 100×30 grid, temp `HOME` (real save shasum unc
 - ✅ Aide: `--day 40` lists `[r] ramasser une bouteille`, `--day 39` doesn't.
 - ✅ Unit: every Apparition off on day−1, on on its day · day 30 with 2 Lettres read → bench, well, treehouse · rollover 08:59/09:00 · choices default until answered.
 
+round 1: manual validation — not run by agent · run: yours
+
 ## Feedback
+
+### Round 1 — 2026-10-29
+
+- Asked: « Recaler sur #14 et résoudre le conflit (src/app.rs) puis autopilote close et merge »
+- Triage: defect (maintenance) → criteria unchanged.
+- Changes: inline — `src/app.rs` tests module (3 conflict blocks, both sides kept). Merge, no rebase, no force-push.
+- Build: `cargo build` ✅ · fmt ✅ · clippy `--all-targets -A clippy::double_must_use` ✅ · `cargo test` ✅ 271 passed.
+- Review: deferred → /wa-close (previous validation stale).
+- Verify: manual validation — not run by agent (tests-only hunks).
+- Rule captured: none.
+- Inline hunks: `src/app.rs` tests module.
+
