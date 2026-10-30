@@ -1,6 +1,6 @@
 ---
 issue: 5
-status: todo
+status: to-test
 wiki: [[scene]], [[animation]]
 note: "Slack Salomé/Ben 23/10 : l'arbre qui pousse au fur et à mesure"
 created: 2026-10-23
@@ -39,8 +39,22 @@ created: 2026-10-23
 
 ## Implementation
 
+- `src/scene/tree.rs` : enum `Growth` (`Baby | Third | TwoThirds | Full`), `Growth::on_day`, `Tree::grown`, `Tree::height`, 6 tests.
+- Le stade descend par setters (comme `set_unlocks`) : `WorldScene::set_tree_growth`, `AnimationManager::set_tree_growth`, `GardenLayout::new(.., tree_growth)`, `GardenPlan::new(.., growth)`.
+- `src/app.rs` : `tree_growth()` → `Full` en mode forcé (`is_simulated`), sinon `Growth::on_day(timeline_day)` ; `refresh_tree_growth()` appelé dans `App::new` et au changement de Jour de jeu (`refresh_timeline`, chaque frame) → bascule à `courrier.heure` sans redémarrer.
+- Choix : jeune Arbre centré sur le tronc de l'Arbre adulte (sinon il passe sous la boîte aux lettres) ; la maison garde sa place (`House::x_on` sur la taille adulte).
+- Écureuil : se replace quand l'Arbre grandit (clé de placement avec `tree.x`), test.
+- Hauteurs : Baby = 5 (canopée 8/12/12/8, `_||_`), Third = 1/3, TwoThirds = 2/3, au moins 5.
+- Build : `cargo build`, `cargo fmt --check`, `cargo test` verts. Clippy : seule l'erreur connue #79.
+- À noter : Hulotte et constellations se posent sur l'Arbre présent sans attendre son arrivée (#4 s'en occupe).
+
 ## Review
 
 ## Verification
+
+Captures d'écran via pty, HOME jetable (jamais le vrai), 200×45 :
+- ✅ `--day 1` : canopée 8/12/12/8 et `_||_`.
+- ✅ `--day 4` : 6 rangs ; `--day 8` : 13 rangs ; `--day 12` et `--demo` : 20 rangs (taille adulte).
+- ⚠️ Non vu : sapin de décembre jeune (date non forçable sans mode forcé), bascule 8:59 → 9:00 (chemin `refresh_timeline` par frame).
 
 ## Feedback
