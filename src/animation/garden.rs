@@ -6,7 +6,9 @@ use crossterm::style::Color;
 use std::io;
 
 pub const WELL_WIDTH: u16 = 9;
+pub const CHEST_WIDTH: u16 = 9;
 const SLOT_GAP: u16 = 1;
+const CHEST_GAP: u16 = 5;
 
 #[derive(Clone, Copy)]
 pub struct GardenLayout {
@@ -38,6 +40,10 @@ impl GardenLayout {
     pub fn well_x(&self) -> Option<u16> {
         let tree = self.plan.tree?;
         tree.x.checked_sub(SLOT_GAP + WELL_WIDTH)
+    }
+
+    pub fn chest_x(&self) -> Option<u16> {
+        self.well_x()?.checked_sub(CHEST_GAP + CHEST_WIDTH)
     }
 }
 
@@ -191,5 +197,28 @@ mod tests {
     fn test_well_hidden_on_narrow_terminal() {
         let layout = GardenLayout::new(120, 30);
         assert_eq!(layout.well_x(), None);
+    }
+
+    #[test]
+    fn test_chest_fits_left_of_well_on_wide_terminal() {
+        let layout = GardenLayout::new(240, 40);
+        let chest_x = layout.chest_x().unwrap();
+        let well_x = layout.well_x().unwrap();
+        assert_eq!(chest_x + CHEST_WIDTH + CHEST_GAP, well_x);
+    }
+
+    #[test]
+    fn test_chest_hidden_on_narrow_terminal() {
+        let layout = GardenLayout::new(120, 30);
+        assert_eq!(layout.chest_x(), None);
+    }
+
+    #[test]
+    fn test_well_fits_without_chest() {
+        assert!(
+            (120..400)
+                .map(|width| GardenLayout::new(width, 40))
+                .any(|layout| layout.well_x().is_some() && layout.chest_x().is_none())
+        );
     }
 }
