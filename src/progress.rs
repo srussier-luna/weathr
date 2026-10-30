@@ -36,6 +36,16 @@ pub struct Progress {
     pub gazette_weather: BTreeMap<usize, String>,
     #[serde(default)]
     pub notes_seen_on: Option<String>,
+    #[serde(default)]
+    pub welcome_seen: bool,
+    #[serde(default)]
+    pub paused_days: BTreeMap<usize, u32>,
+    #[serde(default)]
+    pub pause_checked_on: Option<String>,
+    #[serde(default)]
+    pub postman_note_day: Option<usize>,
+    #[serde(skip)]
+    in_memory: bool,
 }
 
 impl Progress {
@@ -56,7 +66,18 @@ impl Progress {
         progress
     }
 
+    pub fn in_memory(start: NaiveDate) -> Self {
+        Self {
+            started_on: Some(start.format(DATE_FORMAT).to_string()),
+            in_memory: true,
+            ..Self::default()
+        }
+    }
+
     pub fn save(&self) {
+        if self.in_memory {
+            return;
+        }
         let Some(path) = progress_path() else {
             return;
         };
@@ -83,13 +104,6 @@ impl Progress {
         true
     }
 
-    pub fn day_on(&self, today: NaiveDate) -> usize {
-        let days = self
-            .start_date()
-            .map_or(0, |start| (today - start).num_days().max(0) as usize);
-        days + 1
-    }
-
     pub fn start_date(&self) -> Option<NaiveDate> {
         self.started_on.as_deref().and_then(parse_date)
     }
@@ -100,6 +114,14 @@ impl Progress {
 
     pub fn mark_notes_seen(&mut self, date: NaiveDate) {
         self.notes_seen_on = Some(date.format(DATE_FORMAT).to_string());
+    }
+
+    pub fn pause_checked_date(&self) -> Option<NaiveDate> {
+        self.pause_checked_on.as_deref().and_then(parse_date)
+    }
+
+    pub fn mark_pause_checked(&mut self, date: NaiveDate) {
+        self.pause_checked_on = Some(date.format(DATE_FORMAT).to_string());
     }
 }
 
@@ -120,6 +142,34 @@ mod tests {
     }
 
     #[test]
+    fn test_save_without_welcome_field_has_not_seen_the_welcome() {
+        let progress: Progress =
+            serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":40}"#).unwrap();
+        assert!(!progress.welcome_seen);
+    }
+
+    #[test]
+    fn test_save_without_pause_fields_loads_with_no_pause() {
+        let progress: Progress =
+            serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":37}"#).unwrap();
+        assert!(progress.paused_days.is_empty());
+        assert_eq!(progress.pause_checked_date(), None);
+        assert_eq!(progress.postman_note_day, None);
+    }
+
+    #[test]
+    fn test_pauses_round_trip() {
+        let mut progress = Progress::default();
+        let date = NaiveDate::from_ymd_opt(2026, 10, 22).unwrap();
+        progress.paused_days.insert(7, 15);
+        progress.mark_pause_checked(date);
+        let saved = serde_json::to_string(&progress).unwrap();
+        let loaded: Progress = serde_json::from_str(&saved).unwrap();
+        assert_eq!(loaded.paused_days, BTreeMap::from([(7, 15)]));
+        assert_eq!(loaded.pause_checked_date(), Some(date));
+    }
+
+    #[test]
     fn test_seen_notes_date_round_trips() {
         let mut progress = Progress::default();
         let date = NaiveDate::from_ymd_opt(2026, 10, 26).unwrap();
@@ -127,5 +177,16 @@ mod tests {
         let saved = serde_json::to_string(&progress).unwrap();
         let loaded: Progress = serde_json::from_str(&saved).unwrap();
         assert_eq!(loaded.notes_seen_date(), Some(date));
+    }
+
+    #[test]
+    fn test_in_memory_progress_starts_fresh() {
+        let start = NaiveDate::from_ymd_opt(2026, 10, 19).unwrap();
+        let progress = Progress::in_memory(start);
+        assert_eq!(progress.start_date(), Some(start));
+        assert_eq!(progress.letters_read, 0);
+        assert!(progress.answers.is_empty());
+        assert!(progress.badges.is_empty());
+        assert!(progress.in_memory);
     }
 }

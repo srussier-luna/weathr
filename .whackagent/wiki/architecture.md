@@ -16,9 +16,9 @@ Order matters (`src/main.rs:146`):
 
 ## The app — `src/app.rs`, `src/app_state.rs`
 
-- `App` (`src/app.rs:176`) owns everything: `AppState`, `AnimationManager`, `WorldScene`, `Progress` save, Lettre timeline, open overlay, toasts, async channels.
+- `App` (`src/app.rs:176`) owns everything: `AppState`, `AnimationManager`, `WorldScene`, `Progress` save, `StoryClock` + `Timeline` (`src/story/`), open overlay, toasts, async channels.
 - `AppState` (`src/app_state.rs:11`) = *weather + HUD* state: current `WeatherData`, derived `WeatherConditions` flags, `Holiday`, rainbow timer, cached status line.
-- `Overlay` (`src/app.rs:167`) = one modal at a time: Lettre, Badges, Album, Bouteille, Aide, Courrier (index), Nouveautés (release notes, see [[updater]]). Drawing in [[render]], content in [[mail]].
+- `Overlay` (`src/app.rs:167`) = one modal at a time: Lettre, Badges, Album, Bouteille, Aide, Courrier (index), Nouveautés (release notes, see [[updater]]), Accueil (`Welcome`, see [[mail]]). Drawing in [[render]], content in [[mail]].
 
 ## Main loop — `App::run` (`src/app.rs:781`)
 
@@ -52,7 +52,7 @@ tokio task (REFRESH_INTERVAL 300s) → WeatherClient → mpsc(1) → App::run
 | Moving things, lore, seasons, fêtes | `src/animation/`, `animation_manager.rs`, `holiday.rs` | [[animation]] |
 | Weather data, location, caches | `src/weather/`, `geolocation.rs`, `cache.rs`, `remote_weather.rs`, `rain_alert.rs` | [[weather]] |
 | Terminal output, modal boxes | `src/render/`, `overlay.rs`, `views.rs` | [[render]] |
-| Story content, progress | `letters.rs`, `chronicles.rs`, `badges.rs`, `progress.rs` | [[mail]] |
+| Story Timeline, content, progress | `src/story/` (clock, timeline, sources, content), `badges.rs`, `progress.rs` | [[mail]] |
 | Self-update, CLI | `updater.rs`, `main.rs` | [[updater]] |
 | Demo cycle | `demo.rs` | [[animation]] |
 

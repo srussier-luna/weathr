@@ -1,13 +1,11 @@
-use crate::animation::lore::Unlocks;
+use crate::animation::lore::{Choices, Unlocks};
 use crate::animation_manager::AnimationManager;
 use crate::app_state::AppState;
 use crate::badges::{self, Badge};
-use crate::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::config::Config;
 use crate::demo::{Demo, SCENE_DURATION};
 use crate::error::WeatherError;
 use crate::holiday::{Holiday, MeteorShower};
-use crate::letters::{self, Entry, Letter};
 use crate::overlay;
 use crate::progress::Progress;
 use crate::rain_alert::{self, RainAlert};
@@ -15,14 +13,21 @@ use crate::release_notes::{self, Section};
 use crate::remote_weather::{self, Reply, Request};
 use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
-use crate::views::{self, MailContext};
+use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
+use crate::story::content::letters::{self, Letter};
+use crate::story::content::{self, ReadContext};
+use crate::story::postman_note::{self, MailStep};
+use crate::story::{Entry, StoryClock, Thing, Timeline, pause, sources};
+use crate::views;
 use crate::weather::{
     OpenMeteoProvider, WeatherClient, WeatherCondition, WeatherData, WeatherLocation,
 };
+use crate::welcome::{self, Step};
 use chrono::{Local, NaiveDate, Timelike};
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
-use std::collections::{BTreeSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::io;
+use std::num::NonZeroU16;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
@@ -37,33 +42,44 @@ const REMOTE_CHECK_FRAMES: u32 = 300;
 const MAX_ANSWER_LENGTH: usize = 30;
 const REMOTE_CHANNEL_SIZE: usize = 16;
 const OVERLAY_MARGIN_ROWS: u16 = 12;
-const NIGHT_READING_HOURS: [std::ops::Range<u32>; 2] = [22..24, 0..6];
 
-fn is_night_hour() -> bool {
-    let hour = Local::now().hour();
-    NIGHT_READING_HOURS
-        .iter()
-        .any(|hours| hours.contains(&hour))
-}
-
-fn count_read(timeline: &[(usize, Entry)], progress: &Progress, kind: fn(&Entry) -> bool) -> usize {
-    timeline[..progress.letters_read.min(timeline.len())]
-        .iter()
+fn count_read(timeline: &Timeline, progress: &Progress, kind: fn(&Entry) -> bool) -> usize {
+    timeline
+        .mail()
+        .take(progress.letters_read)
         .filter(|(_, entry)| kind(entry))
         .count()
 }
 
-fn unlocks_for(timeline: &[(usize, Entry)], progress: &Progress) -> Unlocks {
-    Unlocks::after_reading(
-        count_read(timeline, progress, |entry| matches!(entry, Entry::Main(_))),
-        count_read(timeline, progress, |entry| {
-            matches!(entry, Entry::Creepy(_))
-        }),
-        count_read(timeline, progress, |entry| {
-            matches!(entry, Entry::Archive(_))
-        }),
-        &progress.answers,
-    )
+fn unlocks_on(timeline: &Timeline, day: usize, answers: &BTreeMap<String, u8>) -> Unlocks {
+    let arrived: Vec<Thing> = timeline.arrived_by(day).collect();
+    let has_arrived = |thing: Thing| arrived.contains(&thing);
+    Unlocks {
+        bench: has_arrived(Thing::Bench),
+        cat_bow: has_arrived(Thing::CatBow),
+        footprints: has_arrived(Thing::Footprints),
+        well: has_arrived(Thing::Well),
+        bone: has_arrived(Thing::Bone),
+        key: has_arrived(Thing::Key),
+        treehouse: has_arrived(Thing::Treehouse),
+        owl_friend: has_arrived(Thing::OwlFriend),
+        blue_lantern: has_arrived(Thing::BlueLantern),
+        garland: has_arrived(Thing::Garland),
+        kittens: has_arrived(Thing::Kittens),
+        x_mark: has_arrived(Thing::XMark),
+        balloon: has_arrived(Thing::Balloon),
+        ducklings: has_arrived(Thing::Ducklings),
+        weather_vane: has_arrived(Thing::WeatherVane),
+        bunting: has_arrived(Thing::Bunting),
+        chest: has_arrived(Thing::Chest),
+        wet_footprints: has_arrived(Thing::WetFootprints),
+        silhouette: has_arrived(Thing::Silhouette),
+        whispering_well: has_arrived(Thing::WhisperingWell),
+        staring: has_arrived(Thing::Staring),
+        found_objects: has_arrived(Thing::FoundObjects),
+        bottles: has_arrived(Thing::Bottles),
+        choices: Choices::from_answers(answers),
+    }
 }
 
 fn earn(earned: &mut BTreeSet<String>, ids: Vec<&'static str>) -> Vec<&'static Badge> {
@@ -73,11 +89,33 @@ fn earn(earned: &mut BTreeSet<String>, ids: Vec<&'static str>) -> Vec<&'static B
         .collect()
 }
 
+fn badge_card(overlay: Option<Overlay>) -> Option<&'static Badge> {
+    match overlay {
+        Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => Some(badge),
+        _ => None,
+    }
+}
+
 fn next_overlay(
     overlay: Option<Overlay>,
     pending_badges: &mut VecDeque<&'static Badge>,
 ) -> Option<Overlay> {
-    overlay.or_else(|| pending_badges.pop_front().map(Overlay::NewBadge))
+    match overlay {
+        None => pending_badges.pop_front().map(Overlay::NewBadge),
+        Some(Overlay::PostmanNote) => Some(
+            pending_badges
+                .pop_front()
+                .map_or(Overlay::PostmanNote, Overlay::NoteBadge),
+        ),
+        overlay => overlay,
+    }
+}
+
+fn closed_overlay(overlay: Option<Overlay>) -> Option<Overlay> {
+    match overlay {
+        Some(Overlay::NoteBadge(_)) => Some(Overlay::PostmanNote),
+        _ => None,
+    }
 }
 
 fn requeue_replaced_badge(
@@ -85,8 +123,12 @@ fn requeue_replaced_badge(
     current: Option<Overlay>,
     pending_badges: &mut VecDeque<&'static Badge>,
 ) {
-    if let (Some(Overlay::NewBadge(badge)), Some(current)) = (previous, current)
-        && !matches!(current, Overlay::NewBadge(_))
+    if let (Some(badge), Some(current)) = (badge_card(previous), current)
+        && badge_card(Some(current)).is_none()
+        && !matches!(
+            (previous, current),
+            (Some(Overlay::NoteBadge(_)), Overlay::PostmanNote)
+        )
     {
         pending_badges.push_front(badge);
     }
@@ -116,6 +158,40 @@ fn notes_on_launch(
     }
 }
 
+fn welcome_on_launch(progress: &Progress, launch: Launch) -> bool {
+    !progress.welcome_seen && !matches!(launch, Launch::Suppressed)
+}
+
+fn notes_overlay(has_notes: bool) -> Option<Overlay> {
+    has_notes.then_some(Overlay::Notes(0))
+}
+
+fn opening_overlay(shows_welcome: bool, has_notes: bool) -> Option<Overlay> {
+    if shows_welcome {
+        Some(Overlay::Welcome(Step::Arriving))
+    } else {
+        notes_overlay(has_notes)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum WelcomeOutcome {
+    Next(Step),
+    Done,
+}
+
+fn welcome_after_key(step: Step, code: KeyCode, last: usize) -> WelcomeOutcome {
+    match code {
+        KeyCode::Enter => step
+            .advance()
+            .map_or(WelcomeOutcome::Done, WelcomeOutcome::Next),
+        KeyCode::Esc => WelcomeOutcome::Done,
+        KeyCode::Up => WelcomeOutcome::Next(step.scroll(-1, last)),
+        KeyCode::Down => WelcomeOutcome::Next(step.scroll(1, last)),
+        _ => WelcomeOutcome::Next(step),
+    }
+}
+
 fn overlay_rows(height: u16) -> usize {
     height.saturating_sub(OVERLAY_MARGIN_ROWS) as usize
 }
@@ -124,13 +200,32 @@ fn notes_width(renderer: &TerminalRenderer) -> usize {
     overlay::text_width(renderer, views::NOTES_FRAME)
 }
 
-fn mail_date(mail_hour: u32) -> NaiveDate {
-    (Local::now() - chrono::Duration::hours(i64::from(mail_hour))).date_naive()
+fn welcome_width(renderer: &TerminalRenderer) -> usize {
+    overlay::text_width(renderer, welcome::NOTE_FRAME)
 }
 
-fn build_timeline(main_count: usize, progress: &Progress, today: NaiveDate) -> Vec<(usize, Entry)> {
-    let start = progress.start_date().unwrap_or(today);
-    letters::timeline(main_count, start, today)
+fn story_clock(progress: &Progress, mail_hour: u32) -> StoryClock {
+    let start = progress
+        .start_date()
+        .unwrap_or_else(|| Local::now().date_naive());
+    StoryClock::new(start, mail_hour).with_pauses(progress.paused_days.clone())
+}
+
+fn story_today(clock: &StoryClock) -> usize {
+    clock.day_on(Local::now().naive_local())
+}
+
+fn build_timeline(village_count: usize, clock: &StoryClock, today: usize) -> Timeline {
+    Timeline::new(&sources::registered(village_count), clock, today)
+}
+
+fn is_live_box_full(
+    clock: &StoryClock,
+    timeline: &Timeline,
+    day: usize,
+    letters_read: usize,
+) -> bool {
+    !clock.is_frozen() && pause::is_box_full(timeline, day, letters_read)
 }
 
 fn generate_offline_weather(rng: &mut impl rand::Rng) -> WeatherData {
@@ -220,6 +315,7 @@ pub struct SimulationOptions {
     pub night: bool,
     pub holiday: Option<Holiday>,
     pub demo: bool,
+    pub day: Option<NonZeroU16>,
 }
 
 #[derive(Clone, Copy)]
@@ -231,7 +327,10 @@ enum Overlay {
     Help,
     Index(usize),
     NewBadge(&'static Badge),
+    NoteBadge(&'static Badge),
     Notes(usize),
+    PostmanNote,
+    Welcome(Step),
 }
 
 #[derive(Default)]
@@ -269,10 +368,12 @@ pub struct App {
     demo: Option<Demo>,
     progress: Progress,
     letters: Vec<Letter>,
-    timeline: Vec<(usize, Entry)>,
+    clock: StoryClock,
+    timeline: Timeline,
     release_notes: Vec<Section>,
     overlay: Option<Overlay>,
     is_simulated: bool,
+    awards_badges: bool,
     toasts: VecDeque<String>,
     toast_until: Option<Instant>,
     pending_badges: VecDeque<&'static Badge>,
@@ -286,7 +387,6 @@ pub struct App {
     pending_requests: BTreeSet<Request>,
     frame_count: u32,
     timeline_day: usize,
-    mail_hour: u32,
 }
 
 impl App {
@@ -314,6 +414,7 @@ impl App {
         );
         let mut animations = AnimationManager::new(term_width, term_height, show_leaves);
         animations.set_mail_hour(config.mail.hour);
+        animations.set_story_frozen(simulation.day.is_some());
         let scene = WorldScene::new(term_width, term_height);
 
         let (tx, rx) = mpsc::channel(1);
@@ -352,28 +453,46 @@ impl App {
             });
         }
 
-        let launch = if !Progress::exists() {
+        let launch = if simulation.day.is_some() {
+            Launch::Suppressed
+        } else if !Progress::exists() {
             Launch::Fresh
         } else if is_simulated || simulation.night || config.silent {
             Launch::Suppressed
         } else {
             Launch::Normal
         };
-        let mut progress = Progress::load();
+        let (mut progress, letters, clock) = match simulation.day {
+            Some(day) => {
+                let clock = StoryClock::frozen(Local::now().date_naive(), config.mail.hour, day);
+                (
+                    Progress::in_memory(clock.date_of(1)),
+                    letters::read(),
+                    clock,
+                )
+            }
+            None => {
+                let progress = Progress::load();
+                let clock = story_clock(&progress, config.mail.hour);
+                (progress, letters::load(), clock)
+            }
+        };
         let release_notes = notes_on_launch(&mut progress, release_notes::load(), launch);
+        let shows_welcome = welcome_on_launch(&progress, launch);
+        if shows_welcome {
+            animations.postman_visit();
+        }
         if progress.record_visit() {
             progress.save();
         }
         let rain_receiver =
             (!is_simulated).then(|| rain_alert::spawn(location.latitude, location.longitude));
-        let letters = letters::load();
-        let mail_hour = config.mail.hour;
-        let timeline = build_timeline(letters.len(), &progress, mail_date(mail_hour));
-        let timeline_day = progress.day_on(mail_date(mail_hour));
+        let timeline_day = story_today(&clock);
+        let timeline = build_timeline(letters.len(), &clock, timeline_day);
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
-        animations.set_unlocks(unlocks_for(&timeline, &progress));
+        animations.set_unlocks(unlocks_on(&timeline, timeline_day, &progress.answers));
 
-        Self {
+        let mut app = Self {
             state,
             animations,
             scene,
@@ -383,10 +502,12 @@ impl App {
             demo,
             progress,
             letters,
+            clock,
             timeline,
-            overlay: (!release_notes.is_empty()).then_some(Overlay::Notes(0)),
+            overlay: opening_overlay(shows_welcome, !release_notes.is_empty()),
             release_notes,
             is_simulated: is_simulated || simulation.night,
+            awards_badges: simulation.day.is_none(),
             toasts: VecDeque::new(),
             toast_until: None,
             pending_badges: VecDeque::new(),
@@ -400,8 +521,9 @@ impl App {
             pending_requests: BTreeSet::new(),
             frame_count: 0,
             timeline_day,
-            mail_hour,
-        }
+        };
+        app.refresh_timeline();
+        app
     }
 
     fn refresh_progress(&mut self) {
@@ -409,6 +531,7 @@ impl App {
             self.progress.save();
         }
         self.refresh_timeline();
+        self.state.set_story_day(self.timeline_day);
         self.request_remote_weather();
         self.receive_remote_weather();
         self.animations.set_finds_remaining(
@@ -425,13 +548,16 @@ impl App {
         let unread = self
             .available_letters()
             .saturating_sub(self.progress.letters_read);
-        self.animations.set_mail_waiting(unread > 0);
+        let is_mail_waiting = unread > 0 && !self.hides_mail();
+        self.animations.set_mail_waiting(is_mail_waiting);
+        self.animations
+            .set_story_frozen(self.clock.is_frozen() || self.is_box_full());
         let earned = badges::BADGES
             .iter()
             .filter(|badge| self.progress.badges.contains(badge.id))
             .count();
         self.state
-            .set_progress_summary(unread > 0, earned, badges::BADGES.len());
+            .set_progress_summary(is_mail_waiting, earned, badges::BADGES.len());
     }
 
     fn collect_badges(&mut self) {
@@ -495,6 +621,9 @@ impl App {
     }
 
     fn award(&mut self, ids: Vec<&'static str>) {
+        if !self.awards_badges {
+            return;
+        }
         let new_badges = earn(&mut self.progress.badges, ids);
         if !new_badges.is_empty() {
             self.pending_badges.extend(new_badges);
@@ -504,6 +633,33 @@ impl App {
 
     fn open_pending_badge(&mut self) {
         self.overlay = next_overlay(self.overlay, &mut self.pending_badges);
+    }
+
+    fn hides_mail(&self) -> bool {
+        matches!(self.overlay, Some(Overlay::Welcome(step)) if step.hides_mail())
+    }
+
+    fn update_welcome(&mut self, term_width: u16, term_height: u16) {
+        if let Some(Overlay::Welcome(step)) = self.overlay {
+            let has_arrived = !self.animations.is_postman_arriving(term_width, term_height);
+            self.overlay = Some(Overlay::Welcome(step.tick(has_arrived)));
+        }
+    }
+
+    fn press_welcome_key(&mut self, code: KeyCode, rows: usize, width: usize) {
+        if let Some(Overlay::Welcome(step)) = self.overlay {
+            match welcome_after_key(step, code, welcome::scroll_limit(rows, width)) {
+                WelcomeOutcome::Next(step) => self.overlay = Some(Overlay::Welcome(step)),
+                WelcomeOutcome::Done => self.end_welcome(),
+            }
+        }
+    }
+
+    fn end_welcome(&mut self) {
+        self.progress.welcome_seen = true;
+        self.progress.save();
+        self.animations.postman_leave();
+        self.overlay = notes_overlay(!self.release_notes.is_empty());
     }
 
     fn has_read_all_letters(&self) -> bool {
@@ -516,21 +672,29 @@ impl App {
         village >= self.letters.len() && strange >= letters::CREEPY_LETTER_COUNT
     }
 
+    fn unlocks(&self) -> Unlocks {
+        unlocks_on(&self.timeline, self.timeline_day, &self.progress.answers)
+    }
+
     fn refresh_unlocks(&mut self) {
-        self.animations
-            .set_unlocks(unlocks_for(&self.timeline, &self.progress));
+        self.animations.set_unlocks(self.unlocks());
+    }
+
+    fn is_box_full(&self) -> bool {
+        is_live_box_full(
+            &self.clock,
+            &self.timeline,
+            self.timeline_day,
+            self.progress.letters_read,
+        )
     }
 
     fn available_letters(&self) -> usize {
-        let today = self.progress.day_on(mail_date(self.mail_hour));
-        self.timeline
-            .iter()
-            .take_while(|(day, _)| *day <= today)
-            .count()
+        self.timeline.delivered_by(story_today(&self.clock))
     }
 
     fn village_letter_number(&self, index: usize) -> Option<usize> {
-        match self.timeline.get(index)? {
+        match self.timeline.mail_at(index)? {
             (_, Entry::Main(main)) => Some(main + 1),
             _ => None,
         }
@@ -571,20 +735,33 @@ impl App {
     }
 
     fn press_mail(&mut self) {
-        let available = self.available_letters();
-        if available == 0 {
-            return;
-        }
-
-        let index = match self.overlay {
-            Some(Overlay::Letter(index)) if index + 1 < available => index + 1,
-            Some(Overlay::Letter(_)) => {
-                self.overlay = None;
-                return;
-            }
-            _ => self.progress.letters_read.min(available - 1),
+        let is_note_waiting = postman_note::is_postman_note_waiting(
+            self.is_box_full(),
+            self.progress.postman_note_day,
+            self.timeline_day,
+        );
+        let open_letter = match self.overlay {
+            Some(Overlay::Letter(index)) => Some(index),
+            _ => None,
         };
-        self.open_letter(index);
+        match postman_note::next_mail(
+            open_letter,
+            self.available_letters(),
+            self.progress.letters_read,
+            is_note_waiting,
+        ) {
+            Some(MailStep::PostmanNote) => self.open_postman_note(),
+            Some(MailStep::Letter(index)) => self.open_letter(index),
+            Some(MailStep::Close) => self.overlay = None,
+            None => {}
+        }
+    }
+
+    fn open_postman_note(&mut self) {
+        self.overlay = Some(Overlay::PostmanNote);
+        self.progress.postman_note_day = Some(self.timeline_day);
+        self.progress.save();
+        self.award(vec!["summer_holidays"]);
     }
 
     fn browse_letters(&mut self, step: isize) {
@@ -599,13 +776,12 @@ impl App {
 
     fn open_letter(&mut self, index: usize) {
         self.overlay = Some(Overlay::Letter(index));
-        if is_night_hour() {
+        if content::is_night_hour(Local::now().hour()) {
             self.award(vec!["night_reading"]);
         }
         if index + 1 > self.progress.letters_read {
             self.progress.letters_read = index + 1;
             self.progress.save();
-            self.refresh_unlocks();
         }
     }
 
@@ -630,33 +806,46 @@ impl App {
         }
 
         let view = match self.overlay {
-            Some(Overlay::Letter(index)) => views::entry_view(
-                self.timeline[index].1,
-                index + 1,
-                self.available_letters(),
-                &self.mail_context(),
-            ),
+            Some(Overlay::Letter(index)) => {
+                let delivered = self.timeline.first_mail(self.available_letters());
+                let Some(view) = content::entry_view(delivered, index, &self.read_context()) else {
+                    return Ok(());
+                };
+                view
+            }
             Some(Overlay::Album(page)) => {
                 let mut pages = self.album_pages();
                 let page = page.min(pages.len().saturating_sub(1));
                 pages.swap_remove(page)
             }
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
-            Some(Overlay::NewBadge(badge)) => views::badge_card_view(badge),
+            Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => {
+                views::badge_card_view(badge)
+            }
+            Some(Overlay::PostmanNote) => views::postman_note_view(self.back_to_school()),
             Some(Overlay::Notes(first)) => views::notes_view(
                 &self.release_notes,
                 first,
                 overlay_rows(renderer.get_size().1),
                 notes_width(renderer),
             ),
-            Some(Overlay::Index(selected)) => views::index_view(
-                self.read_entries(),
-                selected,
-                overlay_rows(renderer.get_size().1),
-                &self.mail_context(),
-            ),
+            Some(Overlay::Index(selected)) => {
+                let rows = overlay_rows(renderer.get_size().1);
+                if self.is_box_full() {
+                    views::full_box_index_view(
+                        self.read_entries(),
+                        selected,
+                        rows,
+                        overlay::text_width(renderer, views::INDEX_FRAME),
+                        &self.read_context(),
+                        self.back_to_school(),
+                    )
+                } else {
+                    views::index_view(self.read_entries(), selected, rows, &self.read_context())
+                }
+            }
             Some(Overlay::Help) => views::help_view(
-                &unlocks_for(&self.timeline, &self.progress),
+                &self.unlocks(),
                 count_read(&self.timeline, &self.progress, |entry| {
                     matches!(entry, Entry::Gazette(_))
                 }) > 0,
@@ -668,44 +857,80 @@ impl App {
                     self.progress.streak,
                 );
             }
+            Some(Overlay::Welcome(step)) => return self.render_welcome(renderer, step),
             None => return Ok(()),
         };
         overlay::render_view(renderer, &view)
     }
 
-    fn mail_context(&self) -> MailContext<'_> {
-        MailContext {
+    fn render_welcome(&self, renderer: &mut TerminalRenderer, step: Step) -> io::Result<()> {
+        let (width, height) = renderer.get_size();
+        let speaker = self.animations.postman_head(width, height);
+        let rows = overlay_rows(height);
+        let text_width = welcome_width(renderer);
+        match step {
+            Step::Arriving => Ok(()),
+            Step::Greeting => {
+                overlay::render_bubble(renderer, welcome::ARRIVAL, welcome::FOOTER, speaker)
+            }
+            Step::Unfolding(frame) => {
+                overlay::render_view(renderer, &welcome::unfolding_view(frame, rows, text_width))
+            }
+            Step::Reading(first) => {
+                overlay::render_view(renderer, &welcome::note_view(first, rows, text_width))
+            }
+            Step::Farewell => {
+                overlay::render_bubble(renderer, welcome::DEPARTURE, welcome::FOOTER, speaker)
+            }
+        }
+    }
+
+    fn read_context(&self) -> ReadContext<'_> {
+        ReadContext {
             letters: &self.letters,
             progress: &self.progress,
-            start: self.start_date(),
-            is_night: is_night_hour(),
+            clock: &self.clock,
+            reading_hour: Local::now().hour(),
             riddle_input: self.riddle_input.as_deref(),
         }
     }
 
-    fn start_date(&self) -> NaiveDate {
-        self.progress
-            .start_date()
-            .unwrap_or_else(|| Local::now().date_naive())
-    }
-
     fn read_entries(&self) -> &[(usize, Entry)] {
-        &self.timeline[..self.progress.letters_read.min(self.available_letters())]
+        self.timeline
+            .first_mail(self.progress.letters_read.min(self.available_letters()))
     }
 
     fn album_pages(&self) -> Vec<overlay::View> {
-        views::album_pages(
-            self.read_entries(),
-            &self.progress,
-            &unlocks_for(&self.timeline, &self.progress),
-        )
+        views::album_pages(self.read_entries(), &self.progress, &self.unlocks())
+    }
+
+    fn back_to_school(&self) -> NaiveDate {
+        self.clock.next_rollover(Local::now().naive_local())
+    }
+
+    fn hold_full_box(&mut self) {
+        if self.clock.is_frozen() {
+            return;
+        }
+        let today = self.clock.mail_date(Local::now().naive_local());
+        if let Some(checked_on) = pause::hold_since(
+            &mut self.clock,
+            &self.timeline,
+            self.progress.letters_read,
+            self.progress.pause_checked_date(),
+            today,
+        ) {
+            self.progress.paused_days = self.clock.pauses().clone();
+            self.progress.mark_pause_checked(checked_on);
+            self.progress.save();
+        }
     }
 
     fn refresh_timeline(&mut self) {
-        let date = mail_date(self.mail_hour);
-        let today = self.progress.day_on(date);
+        self.hold_full_box();
+        let today = story_today(&self.clock);
         if today != self.timeline_day {
-            self.timeline = build_timeline(self.letters.len(), &self.progress, date);
+            self.timeline = build_timeline(self.letters.len(), &self.clock, today);
             self.timeline_day = today;
             self.refresh_unlocks();
         }
@@ -719,14 +944,17 @@ impl App {
 
         let available = self.available_letters();
         let mut requests = Vec::new();
-        for (_, entry) in &self.timeline[..available] {
+        for (day, entry) in self.timeline.mail().take(available) {
             let request = match entry {
-                Entry::Postcard(index) if !self.progress.postcard_weather.contains_key(index) => {
+                Entry::Postcard(index) if !self.progress.postcard_weather.contains_key(&index) => {
                     let city = &CITIES[index % CITIES.len()];
-                    (Request::Postcard(*index), city.latitude, city.longitude)
+                    (Request::Postcard(index), city.latitude, city.longitude)
                 }
-                Entry::Gazette(week) if !self.progress.gazette_weather.contains_key(week) => (
-                    Request::WeekRecap(*week),
+                Entry::Gazette(week) if !self.progress.gazette_weather.contains_key(&week) => (
+                    Request::WeekForecast {
+                        week,
+                        monday: self.clock.date_of(day),
+                    },
                     self.state.location.latitude,
                     self.state.location.longitude,
                 ),
@@ -748,7 +976,9 @@ impl App {
             self.pending_requests.remove(&request);
             match request {
                 Request::Postcard(index) => self.progress.postcard_weather.insert(index, text),
-                Request::WeekRecap(week) => self.progress.gazette_weather.insert(week, text),
+                Request::WeekForecast { week, .. } => {
+                    self.progress.gazette_weather.insert(week, text)
+                }
             };
             has_changed = true;
         }
@@ -780,7 +1010,7 @@ impl App {
 
     fn gazette_week(&self) -> Option<usize> {
         match self.overlay {
-            Some(Overlay::Letter(index)) => match self.timeline.get(index)?.1 {
+            Some(Overlay::Letter(index)) => match self.timeline.mail_at(index)?.1 {
                 Entry::Gazette(week) => Some(week),
                 _ => None,
             },
@@ -871,7 +1101,12 @@ impl App {
 
     fn press_enter(&mut self) {
         match self.overlay {
-            Some(Overlay::NewBadge(_) | Overlay::Notes(_)) => self.overlay = None,
+            Some(
+                Overlay::NewBadge(_)
+                | Overlay::NoteBadge(_)
+                | Overlay::Notes(_)
+                | Overlay::PostmanNote,
+            ) => self.overlay = closed_overlay(self.overlay),
             _ => self.reread_selected(),
         }
     }
@@ -1006,6 +1241,7 @@ impl App {
 
             self.collect_badges();
             self.open_pending_badge();
+            self.update_welcome(term_width, term_height);
             self.update_toasts();
             self.refresh_rain_alert();
             self.state.update_loading_animation();
@@ -1045,6 +1281,13 @@ impl App {
                             {
                                 break;
                             }
+                            _ if matches!(self.overlay, Some(Overlay::Welcome(_))) => {
+                                self.press_welcome_key(
+                                    key_event.code,
+                                    rows,
+                                    welcome_width(renderer),
+                                );
+                            }
                             KeyCode::Char('c') | KeyCode::Char('C') => self.press_mail(),
                             KeyCode::Char('b') | KeyCode::Char('B') => {
                                 self.overlay = match self.overlay {
@@ -1062,7 +1305,7 @@ impl App {
                             KeyCode::Enter => self.press_enter(),
                             KeyCode::Char('r') | KeyCode::Char('R') => self.pick_up(),
                             KeyCode::Char('e') | KeyCode::Char('E') => self.start_riddle(),
-                            KeyCode::Esc => self.overlay = None,
+                            KeyCode::Esc => self.overlay = closed_overlay(self.overlay),
                             KeyCode::Left => self.browse(-1),
                             KeyCode::Right => self.browse(1),
                             _ => {}
@@ -1088,12 +1331,13 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::LocationDisplay;
+    use crate::progress::DATE_FORMAT;
+    use crate::weather::WeatherUnits;
+    use chrono::{NaiveDate, NaiveDateTime};
 
     fn card_id(overlay: Option<Overlay>) -> Option<&'static str> {
-        match overlay {
-            Some(Overlay::NewBadge(badge)) => Some(badge.id),
-            _ => None,
-        }
+        badge_card(overlay).map(|badge| badge.id)
     }
 
     #[test]
@@ -1148,10 +1392,8 @@ mod tests {
 
     #[test]
     fn test_notes_after_seen_date_show_newest_first() {
-        let mut progress = Progress {
-            notes_seen_on: Some("2026-10-01".to_string()),
-            ..Progress::default()
-        };
+        let mut progress = Progress::default();
+        progress.notes_seen_on = Some("2026-10-01".to_string());
         assert_eq!(
             notes_on_launch(&mut progress, notes(), Launch::Normal),
             notes()
@@ -1186,6 +1428,94 @@ mod tests {
         requeue_replaced_badge(card, card, &mut pending);
         requeue_replaced_badge(card, None, &mut pending);
         assert_eq!(pending.len(), 1);
+    }
+
+    #[test]
+    fn test_postman_note_badge_opens_over_the_note_then_returns_to_it() {
+        let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["summer_holidays"]).into();
+        let card = next_overlay(Some(Overlay::PostmanNote), &mut pending);
+        assert!(matches!(card, Some(Overlay::NoteBadge(_))));
+        assert_eq!(card_id(card), Some("summer_holidays"));
+
+        let closed = closed_overlay(card);
+        assert!(matches!(closed, Some(Overlay::PostmanNote)));
+        requeue_replaced_badge(card, closed, &mut pending);
+        assert!(pending.is_empty());
+        assert!(matches!(
+            next_overlay(closed, &mut pending),
+            Some(Overlay::PostmanNote)
+        ));
+        assert!(closed_overlay(closed).is_none());
+    }
+
+    #[test]
+    fn test_welcome_shows_until_seen_except_on_suppressed_launch() {
+        let mut progress = Progress::default();
+        assert!(welcome_on_launch(&progress, Launch::Fresh));
+        assert!(welcome_on_launch(&progress, Launch::Normal));
+        assert!(!welcome_on_launch(&progress, Launch::Suppressed));
+
+        progress.welcome_seen = true;
+        assert!(!welcome_on_launch(&progress, Launch::Fresh));
+        assert!(!welcome_on_launch(&progress, Launch::Normal));
+    }
+
+    #[test]
+    fn test_notes_wait_for_the_welcome_and_badge_cards_too() {
+        assert!(matches!(
+            opening_overlay(true, true),
+            Some(Overlay::Welcome(Step::Arriving))
+        ));
+        assert!(matches!(
+            opening_overlay(false, true),
+            Some(Overlay::Notes(0))
+        ));
+        assert!(opening_overlay(false, false).is_none());
+
+        let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["rain"]).into();
+        let overlay = next_overlay(opening_overlay(true, false), &mut pending);
+        assert!(matches!(overlay, Some(Overlay::Welcome(_))));
+        assert_eq!(pending.len(), 1);
+    }
+
+    #[test]
+    fn test_welcome_keys_advance_skip_or_do_nothing() {
+        let steps = [
+            Step::Arriving,
+            Step::Greeting,
+            Step::Unfolding(4),
+            Step::Reading(1),
+            Step::Farewell,
+        ];
+        let ignored = "clabher12"
+            .chars()
+            .map(KeyCode::Char)
+            .chain([KeyCode::Left, KeyCode::Right]);
+        for step in steps {
+            assert_eq!(
+                welcome_after_key(step, KeyCode::Esc, 5),
+                WelcomeOutcome::Done
+            );
+            for code in ignored.clone() {
+                assert_eq!(welcome_after_key(step, code, 5), WelcomeOutcome::Next(step));
+            }
+        }
+        assert_eq!(
+            welcome_after_key(Step::Greeting, KeyCode::Enter, 5),
+            WelcomeOutcome::Next(Step::Unfolding(0))
+        );
+        assert_eq!(
+            welcome_after_key(Step::Farewell, KeyCode::Enter, 5),
+            WelcomeOutcome::Done
+        );
+        assert_eq!(
+            welcome_after_key(Step::Reading(1), KeyCode::Down, 5),
+            WelcomeOutcome::Next(Step::Reading(2))
+        );
+        assert_eq!(
+            welcome_after_key(Step::Reading(1), KeyCode::Up, 5),
+            WelcomeOutcome::Next(Step::Reading(0))
+        );
     }
 
     const METEOR_SHOWER_BADGES: [(MeteorShower, &str); 2] = [
@@ -1240,6 +1570,182 @@ mod tests {
             );
 
             assert_eq!(star_watch.seen, 2);
+        }
+    }
+
+    const ARRIVAL_DAYS: [(Thing, usize); 23] = [
+        (Thing::Bench, 4),
+        (Thing::CatBow, 6),
+        (Thing::Footprints, 8),
+        (Thing::Well, 13),
+        (Thing::Bone, 15),
+        (Thing::Key, 17),
+        (Thing::Treehouse, 22),
+        (Thing::OwlFriend, 24),
+        (Thing::BlueLantern, 26),
+        (Thing::Garland, 31),
+        (Thing::Kittens, 33),
+        (Thing::XMark, 35),
+        (Thing::Balloon, 40),
+        (Thing::Ducklings, 42),
+        (Thing::FoundObjects, 45),
+        (Thing::WeatherVane, 49),
+        (Thing::Bunting, 58),
+        (Thing::Chest, 59),
+        (Thing::WetFootprints, 13),
+        (Thing::Silhouette, 21),
+        (Thing::WhisperingWell, 33),
+        (Thing::Staring, 45),
+        (Thing::Bottles, 40),
+    ];
+
+    fn shows(unlocks: &Unlocks, thing: Thing) -> bool {
+        match thing {
+            Thing::Bench => unlocks.bench,
+            Thing::CatBow => unlocks.cat_bow,
+            Thing::Footprints => unlocks.footprints,
+            Thing::Well => unlocks.well,
+            Thing::Bone => unlocks.bone,
+            Thing::Key => unlocks.key,
+            Thing::Treehouse => unlocks.treehouse,
+            Thing::OwlFriend => unlocks.owl_friend,
+            Thing::BlueLantern => unlocks.blue_lantern,
+            Thing::Garland => unlocks.garland,
+            Thing::Kittens => unlocks.kittens,
+            Thing::XMark => unlocks.x_mark,
+            Thing::Balloon => unlocks.balloon,
+            Thing::Ducklings => unlocks.ducklings,
+            Thing::FoundObjects => unlocks.found_objects,
+            Thing::WeatherVane => unlocks.weather_vane,
+            Thing::Bunting => unlocks.bunting,
+            Thing::Chest => unlocks.chest,
+            Thing::WetFootprints => unlocks.wet_footprints,
+            Thing::Silhouette => unlocks.silhouette,
+            Thing::WhisperingWell => unlocks.whispering_well,
+            Thing::Staring => unlocks.staring,
+            Thing::Bottles => unlocks.bottles,
+        }
+    }
+
+    fn date(year: i32, month: u32, day: u32) -> NaiveDate {
+        NaiveDate::from_ymd_opt(year, month, day).unwrap()
+    }
+
+    fn clock() -> StoryClock {
+        StoryClock::new(date(2026, 10, 1), 9)
+    }
+
+    fn timeline_on(day: usize) -> Timeline {
+        build_timeline(letters::defaults().len(), &clock(), day)
+    }
+
+    fn unlocks_at(now: NaiveDateTime) -> Unlocks {
+        let today = clock().day_on(now);
+        unlocks_on(&timeline_on(today), today, &BTreeMap::new())
+    }
+
+    fn unlocks_on_day(day: usize) -> Unlocks {
+        unlocks_at(clock().date_of(day).and_hms_opt(12, 0, 0).unwrap())
+    }
+
+    #[test]
+    fn test_every_thing_arrives_on_its_day() {
+        let timeline = timeline_on(120);
+        assert_eq!(timeline.arrived_by(120).count(), ARRIVAL_DAYS.len());
+
+        for (thing, day) in ARRIVAL_DAYS {
+            assert!(
+                !shows(&unlocks_on_day(day - 1), thing),
+                "{thing:?} on day {}",
+                day - 1
+            );
+            assert!(shows(&unlocks_on_day(day), thing), "{thing:?} on day {day}");
+        }
+    }
+
+    #[test]
+    fn test_arrivals_ignore_reading() {
+        let unlocks = unlocks_on(&timeline_on(30), 30, &BTreeMap::new());
+        assert!(unlocks.bench && unlocks.well && unlocks.treehouse);
+    }
+
+    #[test]
+    fn test_bench_arrives_at_mail_hour_rollover() {
+        let morning = date(2026, 10, 4);
+        assert!(!unlocks_at(morning.and_hms_opt(8, 59, 0).unwrap()).bench);
+        assert!(unlocks_at(morning.and_hms_opt(9, 0, 0).unwrap()).bench);
+    }
+
+    #[test]
+    fn test_choices_keep_default_until_answered() {
+        let timeline = timeline_on(60);
+        let unanswered = unlocks_on(&timeline, 60, &BTreeMap::new());
+        assert!(unanswered.cat_bow && !unanswered.choices.bow_blue);
+
+        let answers = BTreeMap::from([("bow".to_string(), 2)]);
+        assert!(unlocks_on(&timeline, 60, &answers).choices.bow_blue);
+    }
+
+    #[test]
+    fn test_bar_story_day_rolls_over_at_mail_hour() {
+        let clock = StoryClock::new(date(2026, 10, 22), 9);
+        let morning = date(2026, 10, 29);
+        let location = WeatherLocation {
+            latitude: 0.0,
+            longitude: 0.0,
+            elevation: None,
+        };
+        let mut state = AppState::new(
+            location,
+            None,
+            LocationDisplay::default(),
+            true,
+            WeatherUnits::default(),
+        );
+
+        for (hour, minute, day) in [(8, 59, 7), (9, 0, 8)] {
+            state.set_story_day(clock.day_on(morning.and_hms_opt(hour, minute, 0).unwrap()));
+            state.update_cached_info();
+            assert!(
+                state
+                    .cached_weather_info
+                    .starts_with(&format!("{} | Jour {day} | ", state.displayed_clock))
+            );
+        }
+    }
+
+    #[test]
+    fn test_box_full_holds_the_postman_until_a_letter_is_read() {
+        let timeline = timeline_on(7);
+        assert!(is_live_box_full(&clock(), &timeline, 7, 0));
+        assert!(!is_live_box_full(&clock(), &timeline, 7, 1));
+        assert!(!is_live_box_full(&clock(), &timeline, 6, 0));
+    }
+
+    #[test]
+    fn test_postman_note_badge_is_earned_once() {
+        let mut earned = BTreeSet::new();
+        let first = earn(&mut earned, vec!["summer_holidays"]);
+        assert_eq!(
+            first.iter().map(|badge| badge.id).collect::<Vec<_>>(),
+            ["summer_holidays"]
+        );
+        assert!(earn(&mut earned, vec!["summer_holidays"]).is_empty());
+    }
+
+    #[test]
+    fn test_frozen_clock_never_fills_the_box() {
+        let frozen = StoryClock::frozen(date(2026, 10, 26), 9, NonZeroU16::new(7).unwrap());
+        let timeline = build_timeline(letters::defaults().len(), &frozen, 7);
+        assert!(!is_live_box_full(&frozen, &timeline, 7, 0));
+    }
+
+    #[test]
+    fn test_fresh_progress_starts_on_day_one() {
+        let mut progress = Progress::default();
+        progress.started_on = Some(Local::now().format(DATE_FORMAT).to_string());
+        for mail_hour in [0, 23] {
+            assert_eq!(story_today(&story_clock(&progress, mail_hour)), 1);
         }
     }
 }

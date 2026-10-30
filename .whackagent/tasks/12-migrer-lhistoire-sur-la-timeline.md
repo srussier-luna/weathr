@@ -1,0 +1,115 @@
+---
+issue: 12
+status: to-close
+wiki: [[mail]], [[animation]], [[architecture]]
+note: "Idée d'origine : séparer temps réel (décor) et temps du jeu (histoire), brancher les Lettres sur une timeline, journal du jour plus tard. Archi composable, tests obligatoires."
+created: 2026-10-26
+---
+
+## Context / Decisions
+
+> j'aimerais bien qu'on mette en place un vrai système de timeline et de gestion du temps. Deux choses : (1) météo réelle + temps réel → uniquement le décor (couleur, ciel…) ; (2) temps in game → l'histoire (lettres, apparition de personnages/objets/maison). Petit lore. Brancher les Lettres existantes dessus. Plus tard : journal du jour. Archi hyper clean, composable. Tests obligatoires (je ne code pas en Rust).
+
+First task of sprint **Timeline histoire**. Pure refactor: the player sees no difference. Follow-ups: #13 (Apparitions by Jour de jeu), #14 (`--day` flag), #19 (story pauses when 7 Lettres wait). #5 builds on the clock, #4 on #13.
+
+### Two clocks
+
+- **Real time + real weather** → scenery only (sky, colours, seasons, Fêtes). Stays in `AppState` / `AnimationManager`, untouched here.
+- **Jour de jeu** → story only. 1 Jour de jeu = 1 real day since `Progress` start, rolling over at `courrier.heure` (today's `mail_date` + `Progress::day_on`). Missed days catch up on return, as today (#19 later caps this).
+- Every story event is scheduled by Jour de jeu (Stardew-like: the world changes on its own, the Lettre explains). Reading a Lettre never triggers an event. Only exception: answers `1`/`2` still pick variants (`Choices`).
+
+### Module `src/story/` (group by feature)
+
+```
+src/story/
+  mod.rs
+  clock.rs       StoryClock — start date + courrier.heure → Jour de jeu; date_of(day)
+  timeline.rs    Timeline — Vec<Beat>, sorted by (day, kind order); composed from sources
+  event.rs       Beat { day, event } · StoryEvent::Mail(MailId)  (#13 adds Arrival)
+  sources/       one file per source, each implements StorySource
+                 village, sam, neighbours, marcel, archives, creepy, gazette, recipes, postcards
+  content/       MailContent implementations + static texts (today letters.rs, chronicles.rs)
+```
+
+- `trait StorySource { fn beats(&self, clock: &StoryClock, today: usize) -> Vec<Beat> }`. Timeline = concatenation of registered sources. New mail kind = one source file + one content impl + one registration line.
+- **Single Timeline** for mail and Apparitions: a Lettre and the thing it explains are declared side by side, never drift apart. `StoryEvent` holds only `Mail` here (YAGNI); #13 adds `Arrival(Thing)`.
+- Calendar rhythms (Gazette every Monday, recipe each 1st of month) use `StoryClock::date_of(day)`, never `Local::now()`. Player-facing behaviour unchanged.
+- **When vs what**: the Timeline says *when*; `trait MailContent { fn compose(&self, ctx: &ReadContext) -> View }` says *what*.
+  - Static: `Written` (village Lettres incl. `lettres.txt` override, correspondents, archives, creepy, recipes).
+  - Dynamic: `Gazette`, `Postcard` — read weather snapshots from `ReadContext`.
+  - Night postscript = decorator over `Written`, computed at read time (22h–6h), as today. "Lecture nocturne" Badge unchanged.
+  - `ReadContext` = everything dynamic content may read: reading hour, weather snapshots, answers, progress. Content never calls `Local::now()` or the weather client itself.
+- Dynamic content is **frozen at delivery**: Gazette and Carte postale weather stay as saved in `progress.json` (`gazette_weather`, `postcard_weather`). Re-reading an old Gazette shows its own week.
+- Out of the Timeline on purpose (real-time, no story progress): weather + Fête Badges, night postscript, live Carte postale / Gazette weather fetch.
+- `letters.rs` and `chronicles.rs` move under `src/story/` (`content/`). `badges.rs`, `progress.rs` stay where they are.
+- Save compatibility: `Progress::letters_read` stays a prefix length into the Timeline. Past-day beats never move. No `progress.json` field renamed or removed.
+- `App` keeps orchestration only: builds `StoryClock` + `Timeline`, hands `ReadContext` to views. `unlocks_for` keeps its current read-count logic in this task (#13 switches it).
+- Tests: unit tests next to the code (`#[cfg(test)]`, as `letters.rs` does today). Before refactoring, capture the current `letters::timeline` output as a golden fixture and compare after.
+- Out of scope: daily newspaper (future source), new story content / lore, Apparitions by day (#13), `--day` (#14).
+
+## Acceptance criteria
+
+- [ ] `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test` all green.
+- [ ] Golden test: for starts 2026-01-05 (Monday), 2026-03-31, 2026-12-15 and today = start, +6, +40, +120 days, the Timeline lists exactly the same `(day, entry)` pairs, same order, as the pre-refactor `letters::timeline`.
+- [ ] Clock test: start 2026-10-01, `courrier.heure` = 9 → 2026-10-08 8:59 is Jour de jeu 7, 2026-10-08 9:00 is Jour de jeu 8.
+- [ ] Gazette beats fall on Mondays and recipe beats on the 1st of the month, computed through `StoryClock::date_of` (test).
+- [ ] A `progress.json` with `letters_read: 37` opens on the same Lettre and the Courrier shows the same list as before the refactor (test on a fixture save).
+- [ ] Night postscript: a village Lettre composed with reading hour 23 has its P.-S.; at hour 14 it doesn't (test).
+- [ ] Frozen weather: a Gazette composed after the current weather changed still shows its saved week's weather (test).
+- [ ] No file under `src/story/` calls `Local::now()`/`Utc::now()` or the weather client (`grep` clean).
+- [ ] Adding a source = one new file in `src/story/sources/` + one registration line; shown by a test-only dummy source added to a Timeline in a test.
+- [ ] Running `weathr`: Courrier, a village Lettre, a Gazette and a Carte postale look exactly as before.
+
+## Implementation
+
+Autopilot 2026-10-26, one implementer, 4 bricks.
+
+- `src/story/`: `clock.rs` (`StoryClock`), `event.rs` (`Entry`, `Beat`, `StoryEvent::Mail`), `timeline.rs` (`Timeline::new(sources, clock, today)`, `mail()`, `delivered_by`, `mail_at`).
+- `src/story/sources/`: `village`, `correspondents` (Sam, Nadia/Claire, Marcel share one `Correspondent` type), `archives`, `creepy`, `gazettes`, `recipes`, `postcards`. Schedule constants moved here. Gazette/recipe days via `clock.date_of`.
+- `src/story/content/`: `MailContent` + `ReadContext` (`letters`, `progress`, `clock`, `reading_hour`, `riddle_input`), `Written`, `VillageLetter`, `NightPostscript` (wraps `VillageLetter`, not `Written`: P.-S. sits before signature + question, `overlay::Line` not Clone), `Gazette`, `Postcard`. `letters.rs`, `chronicles.rs` moved here (`git mv`).
+- `views.rs` keeps index, help, album, bottle. `entry_view` + Courrier label moved to `story::content`.
+- `progress.rs`: `day_on` removed (now `StoryClock`); save format unchanged.
+- Fixtures `src/story/testdata/timeline_golden.txt`, `save_37_golden.txt` captured from pre-refactor code.
+- Edges: rollover on local wall-clock (differs only inside DST hour); out-of-range Lettre index draws nothing instead of panicking.
+- Proof: `cargo fmt -- --check` ✅ · `cargo clippy -- -D warnings` ✅ · `cargo test` ✅ 165 passed · `grep -rn "Local::now\|Utc::now" src/story` empty.
+- Round 1 hunks (feedback, develop merged via `sprint/timeline-histoire` @ 06086bf, merge base 1a898e3): review the merge with `git diff origin/develop..HEAD`.
+  - `src/app.rs` — conflicts resolved: develop's Accueil, Nouveautés, Badge cards, overlay sizing kept; #12's `StoryClock` / `Timeline` / `ReadContext` kept; `mail_date`, `NIGHT_READING_HOURS`, `MailContext` dropped.
+  - `src/views.rs` — develop's notes, badge card, `scrolled_view`, frames kept; moved mail rendering removed; `MONTHS` from `story::content`.
+  - `src/story/content/` — develop's frames ported (`Written.frame`, village Parchment, Postcard, Folder, Recipe, Newspaper); Gazette title « LA GAZETTE · lundi … », `Line::Rule` before the riddle, counter dropped; `MONTHS` pub, re-exported.
+  - `src/story/testdata/save_37_golden.txt` — recaptured from origin/develop's own code (Gazette title, rule, `frame:` lines); `timeline_golden.txt` unchanged. Golden `render` prints `Centered`, `Rule`, `frame`.
+  - `.whackagent/conventions/glossary.md` — both sides kept.
+
+## Review
+
+Round validation (2026-10-27), one verifier, autofix 1 round.
+
+- LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓
+- Fixed by autofix:
+  - 🟡 [structure] save-37 golden test moved from `views.rs` to `story::content` (`save_golden` test module); `views.rs` keeps the Courrier `index_view` check. Fixture unchanged.
+  - 🟡 [structure] `MONTHS` moved from `gazette.rs` to `story/content/mod.rs`, re-export dropped.
+  - 🟡 [elegance] `Timeline` stores `mail: Vec<(usize, Entry)>`, `first_mail(count) -> &[…]`; `App::read_entries()` borrows again, no Vec per frame.
+  - 🟡 [style] restating doc comments under `src/story/` removed; 3 why-notes kept (`clock.rs`, `timeline.rs`, `ReadContext`).
+- Open: none.
+- Proof: `cargo fmt --check` ✅ · `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use` ✅ (pre-existing lint at `src/weather/provider.rs:23`) · `cargo test` ✅ 250 passed.
+- Code changed after the user's test: test placement, `Timeline` storage, comments. Player-visible behaviour unchanged (golden tests).
+
+## Verification
+
+- Smoke run in a pty harness, `HOME` = temp dir (real save untouched, shasum identical): `--simulate clear` renders, `q` exits 0, no panic.
+- Baseline binary (pre-refactor) vs new, same save (`letters_read: 37`), keys `l`, Esc, `c`, 50× →: same overlay titles and text (Courrier, Lettre 38/101, Gazettes with Monday dates, Cartes postales, Archives).
+- Manual validation of the real terminal look — yours.
+
+round 1: manual validation — not run by agent · run: yours
+
+## Feedback
+
+### Round 1 — 2026-10-27
+
+- Asked: « Mettre à jour avec develop : avancer sprint/timeline-histoire jusqu'à develop, recaler #12 dessus, résoudre les conflits (app.rs, views.rs, glossary.md) »
+- Triage: defect (maintenance) → criteria unchanged. Merge of develop, no rebase, no force-push (user choice).
+- Changes: `sprint/timeline-histoire` fast-forwarded to develop 06086bf · `glossary.md` inline (both sides kept) · implementer — `src/app.rs`, `src/views.rs`, `src/story/content/{mod,gazette,village,postcard,written}.rs`, golden `save_37_golden.txt` recaptured from develop.
+- Build: `cargo build` ✅ · fmt ✅ · clippy ✅ with `-A clippy::double_must_use` (pre-existing on develop, `src/weather/provider.rs:23`) · `cargo test` ✅ 249 passed.
+- Review: deferred → /wa-validate.
+- Verify: manual validation — not run by agent.
+- Rule captured: none.
+- Inline hunks: `.whackagent/conventions/glossary.md` (conflict markers removed).

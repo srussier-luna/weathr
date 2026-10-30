@@ -12,6 +12,10 @@ const BADGES_FOOTER: &str = "[b] ou [Echap] fermer";
 const FOOTER_GAP: &str = "  ";
 const FOLDER_TAB: &str = "/  Archives  \\";
 const STAMP: &str = "[~]";
+const MAX_BUBBLE_WIDTH: u16 = 40;
+const BUBBLE_GAP: &str = ". .";
+const BUBBLE_TAIL: &str = "V";
+const TAIL_ROWS_ABOVE_SPEAKER: u16 = 2;
 
 type Piece = (u16, String, Color);
 
@@ -34,12 +38,14 @@ pub enum Frame {
     Waves,
     Photo,
     Stars,
+    Bubble,
+    Notice,
 }
 
 impl Frame {
     fn color(self) -> Option<Color> {
         let (r, g, b) = match self {
-            Self::Plain => return None,
+            Self::Plain | Self::Bubble | Self::Notice => return None,
             Self::Parchment => (222, 196, 140),
             Self::Newspaper => (205, 205, 195),
             Self::Postcard => (190, 170, 235),
@@ -52,6 +58,10 @@ impl Frame {
         Some(Color::Rgb { r, g, b })
     }
 
+    fn border(self) -> Color {
+        self.color().unwrap_or(Color::Grey)
+    }
+
     fn fit(self, width: u16) -> u16 {
         match self {
             Self::Stars if width % 2 == 0 => width.saturating_sub(1),
@@ -61,19 +71,23 @@ impl Frame {
 
     fn edges(self, row: usize) -> (u16, &'static str, &'static str) {
         match self {
-            Self::Plain | Self::Postcard | Self::Folder | Self::Photo => (0, "| ", " |"),
+            Self::Plain | Self::Postcard | Self::Folder | Self::Photo | Self::Bubble => {
+                (0, "| ", " |")
+            }
             Self::Parchment if row % 2 == 0 => (0, "(  ", "  )"),
             Self::Parchment => (1, ") ", " ("),
             Self::Newspaper => (0, "|| ", " ||"),
             Self::Recipe => (0, "o| ", " |"),
             Self::Waves => (0, "  ", "  "),
             Self::Stars => (0, "* ", " *"),
+            Self::Notice => (0, "║ ", " ║"),
         }
     }
 
     fn inner_width(self, box_width: u16) -> usize {
         let (indent, left, right) = self.edges(0);
-        usize::from(box_width).saturating_sub(usize::from(indent) + left.len() + right.len())
+        usize::from(box_width)
+            .saturating_sub(usize::from(indent) + left.chars().count() + right.chars().count())
     }
 
     fn top(self, width: usize) -> Vec<(u16, String)> {
@@ -95,6 +109,8 @@ impl Frame {
             Self::Waves => vec![(0, "~^".chars().cycle().take(width).collect())],
             Self::Photo => vec![(0, rule('/', "-", '\\', width))],
             Self::Stars => vec![(0, "*~".chars().cycle().take(width).collect())],
+            Self::Bubble => vec![(0, rule('.', "-", '.', width))],
+            Self::Notice => vec![(0, rule('╔', "═", '╗', width))],
         }
     }
 
@@ -103,6 +119,8 @@ impl Frame {
             Self::Parchment => vec![(1, rule('\'', "~", '\'', width.saturating_sub(2)))],
             Self::Folder => vec![(0, rule('|', "_", '|', width))],
             Self::Photo => vec![(0, rule('\\', "-", '/', width))],
+            Self::Bubble => vec![(0, rule('\'', "-", '\'', width))],
+            Self::Notice => vec![(0, rule('╚', "═", '╝', width))],
             _ => self.top(width),
         }
     }
@@ -134,20 +152,22 @@ pub fn text_width(renderer: &TerminalRenderer, frame: Frame) -> usize {
     frame.inner_width(frame.fit(box_width(renderer)))
 }
 
-pub fn render_view(renderer: &mut TerminalRenderer, view: &View) -> io::Result<()> {
-    let box_width = view.frame.fit(box_width(renderer));
-    let inner = view.frame.inner_width(box_width);
-    let lines: Vec<String> = view
-        .lines
+pub fn lay_out(lines: &[Line], width: usize) -> Vec<String> {
+    lines
         .iter()
         .flat_map(|line| match line {
-            Line::Text(text) => wrap(text, inner),
-            Line::Preformatted(text) => vec![text.chars().take(inner).collect()],
-            Line::Centered(text) => center(text, inner),
-            Line::Rule => vec!["-".repeat(inner)],
+            Line::Text(text) => wrap(text, width),
+            Line::Preformatted(text) => vec![text.chars().take(width).collect()],
+            Line::Centered(text) => center(text, width),
+            Line::Rule => vec!["-".repeat(width)],
             Line::Blank => vec![String::new()],
         })
-        .collect();
+        .collect()
+}
+
+pub fn render_view(renderer: &mut TerminalRenderer, view: &View) -> io::Result<()> {
+    let box_width = view.frame.fit(box_width(renderer));
+    let lines = lay_out(&view.lines, view.frame.inner_width(box_width));
     render_box(
         renderer,
         view.frame,
@@ -156,6 +176,45 @@ pub fn render_view(renderer: &mut TerminalRenderer, view: &View) -> io::Result<(
         &view.footer,
         box_width,
     )
+}
+
+pub fn render_bubble(
+    renderer: &mut TerminalRenderer,
+    text: &str,
+    footer: &str,
+    speaker: Option<(u16, u16)>,
+) -> io::Result<()> {
+    let (width, height) = renderer.get_size();
+    let box_width = MAX_BUBBLE_WIDTH.min(width.saturating_sub(4));
+    let Some((speaker_x, speaker_y)) = speaker else {
+        let rows = bubble_rows(text, footer, box_width, None);
+        let x = width.saturating_sub(box_width) / 2;
+        let y = height.saturating_sub(rows.len() as u16 + 1).max(2);
+        return draw_rows(renderer, &rows, x, y);
+    };
+    let x = speaker_x
+        .saturating_sub(box_width / 2)
+        .min(width.saturating_sub(box_width));
+    let tail = speaker_x
+        .saturating_sub(x)
+        .clamp(2, box_width.saturating_sub(3).max(2));
+    let rows = bubble_rows(text, footer, box_width, Some(tail));
+    let tail_y = speaker_y.saturating_sub(TAIL_ROWS_ABOVE_SPEAKER);
+    let y = (tail_y + 1).saturating_sub(rows.len() as u16).max(2);
+    draw_rows(renderer, &rows, x, y)
+}
+
+fn bubble_rows(text: &str, footer: &str, box_width: u16, tail: Option<u16>) -> Vec<Vec<Piece>> {
+    let frame = Frame::Bubble;
+    let lines = wrap(text, frame.inner_width(box_width));
+    let mut rows = frame_rows(frame, "", &lines, footer, box_width);
+    if let Some(tail) = tail {
+        if let Some(bottom) = rows.last_mut() {
+            bottom.push((tail - 1, BUBBLE_GAP.to_string(), frame.border()));
+        }
+        rows.push(vec![(tail, BUBBLE_TAIL.to_string(), frame.border())]);
+    }
+    rows
 }
 
 pub fn render_badges(
@@ -242,7 +301,15 @@ fn render_box(
     let rows = frame_rows(frame, title, lines, footer, box_width);
     let x = width.saturating_sub(box_width) / 2;
     let y = (height.saturating_sub(rows.len() as u16) / 2).max(2);
+    draw_rows(renderer, &rows, x, y)
+}
 
+fn draw_rows(
+    renderer: &mut TerminalRenderer,
+    rows: &[Vec<Piece>],
+    x: u16,
+    y: u16,
+) -> io::Result<()> {
     for (offset, row) in rows.iter().enumerate() {
         for (column, text, color) in row {
             renderer.render_line_colored(x + column, y + offset as u16, text, *color)?;
@@ -260,7 +327,7 @@ fn frame_rows(
 ) -> Vec<Vec<Piece>> {
     let width = usize::from(box_width);
     let inner = frame.inner_width(box_width);
-    let border = frame.color().unwrap_or(Color::Grey);
+    let border = frame.border();
     let rule_rows = |rules: Vec<(u16, String)>| {
         rules
             .into_iter()
@@ -289,7 +356,7 @@ fn frame_rows(
     rows.extend(body.into_iter().enumerate().map(|(index, (text, color))| {
         let (indent, left, right) = frame.edges(index);
         let edge = frame.color().unwrap_or(color);
-        let start = indent + left.len() as u16;
+        let start = indent + left.chars().count() as u16;
         vec![
             (indent, left.to_string(), edge),
             (start, format!("{text:<inner$}"), color),
@@ -301,7 +368,7 @@ fn frame_rows(
 }
 
 pub fn wrap(text: &str, width: usize) -> Vec<String> {
-    pack(text.split_whitespace(), " ", width)
+    pack(text.split_ascii_whitespace(), " ", width)
 }
 
 fn center(text: &str, width: usize) -> Vec<String> {
@@ -370,7 +437,21 @@ mod tests {
         );
     }
 
-    const FRAMES: [Frame; 9] = [
+    #[test]
+    fn test_wrap_keeps_french_punctuation_with_its_word() {
+        let text = "Règle n°1 du village\u{202F}: on lit son courrier. Règle n°2\u{202F}: on ne demande pas qui habite au n°13.";
+        assert_eq!(wrap(text, 22)[0], "Règle n°1 du village\u{202F}:");
+        for width in 8..40 {
+            assert!(
+                wrap(text, width)
+                    .iter()
+                    .all(|line| !line.starts_with([':', ';', '!', '?'])),
+                "{width}"
+            );
+        }
+    }
+
+    const FRAMES: [Frame; 11] = [
         Frame::Plain,
         Frame::Parchment,
         Frame::Newspaper,
@@ -380,12 +461,17 @@ mod tests {
         Frame::Waves,
         Frame::Photo,
         Frame::Stars,
+        Frame::Bubble,
+        Frame::Notice,
     ];
 
     fn draw(frame: Frame, title: &str, lines: &[&str], footer: &str, width: u16) -> Vec<String> {
         let lines: Vec<String> = lines.iter().map(|line| line.to_string()).collect();
-        frame_rows(frame, title, &lines, footer, width)
-            .iter()
+        rows_text(&frame_rows(frame, title, &lines, footer, width), width)
+    }
+
+    fn rows_text(rows: &[Vec<Piece>], width: u16) -> Vec<String> {
+        rows.iter()
             .map(|row| {
                 let mut cells = vec![' '; usize::from(width)];
                 for (column, text, _) in row {
@@ -465,6 +551,29 @@ mod tests {
         let badges = draw(Frame::Stars, "Badges", &[], "", Frame::Stars.fit(12));
         assert_eq!(badges[0], "*~*~*~*~*~*");
         assert_eq!(badges[1], "* Badges  *");
+
+        let notice = draw(Frame::Notice, "", &["Pleine."], "", 12);
+        assert_eq!(notice[0], "╔══════════╗");
+        assert_eq!(notice[1], "║ Pleine.  ║");
+        assert_eq!(notice.last().unwrap(), "╚══════════╝");
+    }
+
+    #[test]
+    fn test_bubble_points_its_tail_at_the_speaker() {
+        let rows = rows_text(&bubble_rows("Salut.", "[Entrée] suite", 20, Some(6)), 20);
+        assert_eq!(
+            rows,
+            [
+                ".------------------.",
+                "| Salut.           |",
+                "|                  |",
+                "| [Entrée] suite   |",
+                "'----. .-----------'",
+                "      V",
+            ]
+        );
+        let centered = rows_text(&bubble_rows("Salut.", "", 20, None), 20);
+        assert_eq!(centered.last().unwrap(), "'------------------'");
     }
 
     #[test]

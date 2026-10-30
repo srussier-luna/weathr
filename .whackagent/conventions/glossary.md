@@ -20,20 +20,29 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 |---|---|---|---|---|
 | Lettre | courrier | Message | `Entry` | courrier daté d'un habitant, livré par le Facteur |
 | Carte postale | carte | | `City` | de Sam en voyage, une ville par carte |
-| Gazette | journal | | | chaque lundi : rumeurs, annonces, Énigme |
+| Gazette | journal | | | chaque lundi : prévisions de la semaine, rumeurs, annonces, Énigme |
+| Alerte météo | vigilance | | | ligne ⚠ de la Gazette : canicule, grand froid, vent fort, orage ; calculée sur les prévisions |
 | Énigme | devinette | | `Riddle` | question de la Gazette, réponse touche `e` |
 | Bouteille | message à la mer | | `bottle` | message dérivant sur la rivière |
 | Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret |
 | Fête | jour férié | | `Holiday` | jour spécial qui décore la scène |
 | Facteur | postier | | `Postman` | livre les Lettres à la boîte aux lettres |
+| Jour de jeu | jour | | `StoryClock` | jour de l'histoire depuis le début, change à `courrier.heure` → [[mail]] |
+| Timeline | | | `Timeline` | événements de l'histoire classés par Jour de jeu |
+| Apparition | déblocage | | `Arrival` | objet ou Habitant qui arrive au jardin un Jour de jeu |
 | Habitant | animal | | | animal du jardin (Minouche, Biscuit…), arrive à sa 1re Lettre |
 | Voisin | | | | personne d'une autre maison du village (Sam, Nadia et Claire…) |
 | Arbre | | | `Tree` | grand arbre à gauche de la maison, pousse du jour 1 au jour 12 |
+| Puits | | | `well` | vieux puits réparé, à gauche du grand Arbre |
+| Coffre | | | `chest` | coffre de Jeanne, à gauche du Puits |
+| Cabane | | | `treehouse` | cabane de Léo, dans le feuillage de l'Arbre |
 | Perséides | | | | étoiles filantes plus fréquentes la nuit, du 9 au 15 août ; Badge dédié |
 | Géminides | | | | étoiles filantes plus fréquentes la nuit, du 10 au 16 décembre ; Badge dédié |
 | Boîte pleine | | | | 7 Lettres du village non lues ; l'histoire se met en pause |
 | Ruche | | | | cadeau de Nadia et Claire, entre le sapin et la mare |
 | Poulailler | | | | abri des poules la nuit et sous la pluie, au jardin et au Potager |
+| Carré | parcelle | case | | une des 9 planches du Potager : vide, plantée, fanée, mûre |
+| Jour de plante | | | | jour où weathr est ouvert ; fait pousser et faner les plantes du Potager |
 <!-- | Inbox | mailbox | Messages | `Inbox` | received mail, not archived, all accounts | -->
 <!-- | Message | mail | Email | `Message` | one mail. States: Draft, Sent, Pending | -->
 
@@ -50,6 +59,7 @@ One precise screen. Team names, in the discussion language. UI projects only.
 | Potager | | | scène du potager vue de dessus en biais, sans ciel ; pousse par Jour de jeu, suit les saisons |
 | Fête du miel | scène de fête | | maison de Nadia et Claire, Jours de jeu 119–120 seulement |
 | Lieux | menu des lieux | | menu touche m : Jardin, Potager, Fête du miel disponibles |
+| Accueil | onboarding | `welcome` | Facteur arrive, bulle, note dépliée, bulle de départ ; une fois par joueur |
 <!-- | Login screen | login page | `LoginView` | email + password, forgot-password link | -->
 
 ## Parts
@@ -58,6 +68,7 @@ A named piece of UI, reused or talked about on its own. UI projects only.
 
 | Name | Also | Code | On | Means |
 |---|---|---|---|---|
+| Barre du haut | HUD, ligne d'état | `cached_weather_info` | scène | heure, Jour de jeu, Lettre, Badges, aide, météo ; masquée par `--hide-hud` |
 <!-- | Composer | editor | `ComposerView` | Inbox, Thread | writes or replies to a message | -->
 
 ## Flows

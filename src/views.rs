@@ -1,140 +1,38 @@
 use crate::animation::lore::Unlocks;
 use crate::badges::Badge;
-use crate::chronicles::{
-    ADS, ARCHIVES, BOTTLE_MESSAGES, CHEST_SOUVENIRS, CITIES, DRAWINGS, MARCEL_LETTERS,
-    MARCEL_SENDER, NEIGHBOURS_LETTERS, NEIGHBOURS_SENDER, OBJECTS, RECIPES, RIDDLES, RUMORS,
-    SAM_LETTERS, SAM_SENDER,
-};
-use crate::letters::{self, CHOICES, Entry, Letter};
 use crate::overlay::{self, Frame, Line, View};
 use crate::progress::Progress;
 use crate::release_notes::Section;
+use crate::story::Entry;
+use crate::story::content::chronicles::{
+    BOTTLE_MESSAGES, CHEST_SOUVENIRS, DRAWINGS, OBJECTS, RECIPES,
+};
+use crate::story::content::letters::CHOICES;
+use crate::story::content::{self, MONTHS, ReadContext, postcard_lines, postcard_title, text};
 use chrono::{Datelike, NaiveDate};
 
-const LETTER_FOOTER: &str = "[c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer";
 const INDEX_FOOTER: &str = "[↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer";
-const QUESTION_FOOTER: &str = "[1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer";
-const RIDDLE_FOOTER: &str = "[e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]";
-const INPUT_FOOTER: &str = "Tape ta réponse puis [Entrée]  [Echap] annuler";
 const ALBUM_FOOTER: &str = "[<] [>] pages  [a] ou [Echap] fermer";
 const BOTTLE_FOOTER: &str = "[Echap] fermer";
 const BADGE_CARD_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const HELP_FOOTER: &str = "[h] ou [Echap] fermer";
 const NOTES_FOOTER: &str = "[Entrée] ou [Echap] fermer";
-const NOTES_SCROLL_FOOTER: &str = "[↑] [↓] défiler  [Entrée] ou [Echap] fermer";
+const POSTMAN_NOTE_FOOTER: &str = "[c] suivante  [Echap] fermer";
+const SCROLL_HINT: &str = "[↑] [↓] défiler";
 const HELP_KEY_WIDTH: usize = 10;
 const NOTES_BULLET: &str = "- ";
 const NOTES_INDENT: &str = "  ";
 pub const NOTES_FRAME: Frame = Frame::Plain;
-const MONTHS: [&str; 12] = [
-    "janvier",
-    "février",
-    "mars",
-    "avril",
-    "mai",
-    "juin",
-    "juillet",
-    "août",
-    "septembre",
-    "octobre",
-    "novembre",
-    "décembre",
-];
-
-pub struct MailContext<'a> {
-    pub letters: &'a [Letter],
-    pub progress: &'a Progress,
-    pub start: NaiveDate,
-    pub is_night: bool,
-    pub riddle_input: Option<&'a str>,
-}
-
-fn text(content: impl Into<String>) -> Line {
-    Line::Text(content.into())
-}
-
-fn signed(title: String, body: &str, sender: &str, frame: Frame) -> View {
-    View {
-        title,
-        lines: vec![text(body), Line::Blank, text(format!("— {sender}"))],
-        footer: LETTER_FOOTER.to_string(),
-        frame,
-    }
-}
-
-pub fn entry_view(entry: Entry, number: usize, total: usize, context: &MailContext) -> View {
-    let counter = format!("{number}/{total}");
-    match entry {
-        Entry::Main(main) => village_view(main, &counter, context),
-        Entry::Creepy(index) => {
-            let letter = letters::creepy_letter(index);
-            signed(
-                format!("Lettre {counter} (glissée sous la porte)"),
-                &letter.body,
-                &letter.sender,
-                Frame::Parchment,
-            )
-        }
-        Entry::Sam(index) => signed(
-            format!("Lettre {counter}"),
-            SAM_LETTERS[index],
-            SAM_SENDER,
-            Frame::Parchment,
-        ),
-        Entry::Neighbours(index) => signed(
-            format!("Lettre {counter}"),
-            NEIGHBOURS_LETTERS[index],
-            NEIGHBOURS_SENDER,
-            Frame::Parchment,
-        ),
-        Entry::Marcel(index) => signed(
-            format!("Lettre {counter}"),
-            MARCEL_LETTERS[index],
-            MARCEL_SENDER,
-            Frame::Parchment,
-        ),
-        Entry::Postcard(index) => postcard_view(index, &counter, context.progress),
-        Entry::Archive(index) => {
-            let (source, body) = ARCHIVES[index];
-            signed(
-                format!("Archives de la mairie {counter} : {source}"),
-                body,
-                "Copie transmise par Odile",
-                Frame::Folder,
-            )
-        }
-        Entry::Gazette(week) => gazette_view(week, context),
-        Entry::Recipe(month) => {
-            let (name, body) = RECIPES[month];
-            signed(
-                format!("Recette du mois {counter} : {name}"),
-                body,
-                "Rose, la boulangère",
-                Frame::Recipe,
-            )
-        }
-    }
-}
-
-fn entry_label(entry: Entry, context: &MailContext) -> String {
-    match entry {
-        Entry::Main(main) => context.letters[main].sender.clone(),
-        Entry::Sam(_) => SAM_SENDER.to_string(),
-        Entry::Neighbours(_) => NEIGHBOURS_SENDER.to_string(),
-        Entry::Marcel(_) => MARCEL_SENDER.to_string(),
-        Entry::Archive(index) => format!("Archives : {}", ARCHIVES[index].0),
-        Entry::Gazette(_) => "La Gazette du lundi".to_string(),
-        Entry::Recipe(month) => format!("Recette du mois : {}", RECIPES[month].0),
-        Entry::Postcard(index) => format!("Carte postale : {}", CITIES[index % CITIES.len()].name),
-        Entry::Creepy(_) => letters::CREEPY_SENDER.to_string(),
-    }
-}
+pub const INDEX_FRAME: Frame = Frame::Plain;
+pub const POSTMAN_SIGNATURE: &str = "— Le Facteur";
+const FULL_BOX_NOTE: &str =
+    "Pendant ton absence, tout le village en a profité pour prendre des vacances\u{202F}!";
 
 pub fn index_view(
     read_entries: &[(usize, Entry)],
     selected: usize,
     rows: usize,
-    context: &MailContext,
+    context: &ReadContext,
 ) -> View {
     let rows = rows.max(1);
     let first = selected
@@ -147,12 +45,11 @@ pub fn index_view(
         .take(rows)
         .map(|(index, (day, entry))| {
             let marker = if index == selected { '>' } else { ' ' };
-            let date = context.start + chrono::Duration::days(*day as i64 - 1);
             Line::Preformatted(format!(
                 "{marker} {:>3}. {}  {}",
                 index + 1,
-                date.format("%d/%m"),
-                entry_label(*entry, context)
+                context.clock.date_of(*day).format("%d/%m"),
+                content::label(*entry, context)
             ))
         })
         .collect();
@@ -163,145 +60,59 @@ pub fn index_view(
         title: format!("Lettres reçues ({})", read_entries.len()),
         lines,
         footer: INDEX_FOOTER.to_string(),
-        frame: Frame::Plain,
+        frame: INDEX_FRAME,
     }
 }
 
-fn village_view(main: usize, counter: &str, context: &MailContext) -> View {
-    let letter = &context.letters[main];
-    let number = main + 1;
-    let answers = &context.progress.answers;
-    let mut lines: Vec<Line> = letter
-        .body
-        .lines()
-        .map(|paragraph| {
-            if paragraph.trim().is_empty() {
-                Line::Blank
-            } else {
-                text(paragraph)
-            }
-        })
-        .collect();
-
-    if let Some((_, drawing)) = DRAWINGS.iter().find(|(letter, _)| *letter == number) {
-        lines.push(Line::Blank);
-        lines.extend(
-            drawing
-                .iter()
-                .map(|row| Line::Preformatted(row.to_string())),
-        );
-    }
-    if let Some(echo) = letters::echo_for(number, answers) {
-        lines.extend([Line::Blank, text(echo)]);
-    }
-    if context.is_night {
-        let postscript = letters::NIGHT_POSTSCRIPTS[main % letters::NIGHT_POSTSCRIPTS.len()];
-        lines.extend([Line::Blank, text(postscript)]);
-    }
-    lines.extend([Line::Blank, text(format!("— {}", letter.sender))]);
-
-    let mut footer = LETTER_FOOTER;
-    if let Some(choice) = letters::choice_for(number) {
-        lines.extend([Line::Blank, text(format!("Question : {}", choice.prompt))]);
-        let answer = answers
-            .get(choice.id)
-            .and_then(|answer| choice.options.get(usize::from(*answer).checked_sub(1)?));
-        match answer {
-            Some(option) => lines.push(text(format!("Ta réponse : {option}"))),
-            None => {
-                lines.push(text(format!(
-                    "[1] {}   [2] {}",
-                    choice.options[0], choice.options[1]
-                )));
-                footer = QUESTION_FOOTER;
-            }
-        }
-    }
-
-    View {
-        title: format!("Lettre {counter}"),
-        lines,
-        footer: footer.to_string(),
-        frame: Frame::Parchment,
-    }
-}
-
-fn postcard_lines(index: usize, progress: &Progress) -> Vec<Line> {
-    let city = &CITIES[index % CITIES.len()];
-    let weather = progress
-        .postcard_weather
-        .get(&index)
-        .map_or("La météo s'est perdue en route.", String::as_str);
-    vec![text(city.note), text(weather), Line::Blank, text("— Sam")]
-}
-
-fn postcard_title(index: usize) -> String {
-    let city = &CITIES[index % CITIES.len()];
-    format!("{}, {}", city.name, city.country)
-}
-
-fn postcard_view(index: usize, counter: &str, progress: &Progress) -> View {
-    View {
-        title: format!("Carte postale {counter} : {}", postcard_title(index)),
-        lines: postcard_lines(index, progress),
-        footer: LETTER_FOOTER.to_string(),
-        frame: Frame::Postcard,
-    }
-}
-
-fn gazette_view(week: usize, context: &MailContext) -> View {
-    let date = letters::gazette_date(context.start, week);
-    let riddle = &RIDDLES[week % RIDDLES.len()];
-    let is_solved = context.progress.riddles_solved.contains(&week);
-    let weather = context.progress.gazette_weather.get(&week).map_or(
-        "Ta semaine : les relevés ne sont pas encore arrivés.",
-        String::as_str,
-    );
-
-    let mut lines = vec![
-        text(weather),
-        Line::Blank,
-        text(format!("Les échos : {}", RUMORS[week % RUMORS.len()])),
-        Line::Blank,
-        text(format!(
-            "Petite annonce : {}",
-            ADS[(week * 7 + 3) % ADS.len()]
-        )),
-        Line::Rule,
-        text(format!("L'énigme de la semaine : {}", riddle.question)),
-    ];
-
-    let footer = if is_solved {
-        lines.push(text("Bravo, énigme résolue !"));
-        LETTER_FOOTER
-    } else if let Some(input) = context.riddle_input {
-        lines.push(text(format!("Ta réponse : {input}_")));
-        INPUT_FOOTER
-    } else {
-        RIDDLE_FOOTER
+fn day_and_month(date: NaiveDate) -> String {
+    let day = match date.day() {
+        1 => "1er".to_string(),
+        day => day.to_string(),
     };
+    format!("{day} {}", MONTHS[date.month0() as usize])
+}
 
-    if week > 0 {
-        let previous = &RIDDLES[(week - 1) % RIDDLES.len()];
-        lines.extend([
-            Line::Blank,
-            text(format!(
-                "Réponse de la semaine dernière : {}",
-                previous.answers[0]
-            )),
-        ]);
-    }
+fn full_box_note(back_to_school: NaiveDate) -> Vec<Line> {
+    vec![
+        text(FULL_BOX_NOTE),
+        text(format!(
+            "La rentrée, c'est le {}.",
+            day_and_month(back_to_school)
+        )),
+        Line::Blank,
+        text(POSTMAN_SIGNATURE),
+    ]
+}
 
+pub fn postman_note_view(back_to_school: NaiveDate) -> View {
     View {
-        title: format!(
-            "LA GAZETTE · lundi {} {}",
-            date.day(),
-            MONTHS[date.month0() as usize]
-        ),
-        lines,
-        footer: footer.to_string(),
-        frame: Frame::Newspaper,
+        title: String::new(),
+        lines: full_box_note(back_to_school),
+        footer: POSTMAN_NOTE_FOOTER.to_string(),
+        frame: Frame::Notice,
     }
+}
+
+pub fn full_box_index_view(
+    read_entries: &[(usize, Entry)],
+    selected: usize,
+    rows: usize,
+    width: usize,
+    context: &ReadContext,
+    back_to_school: NaiveDate,
+) -> View {
+    let mut note = full_box_note(back_to_school);
+    note.push(Line::Rule);
+    let note_rows = overlay::lay_out(&note, width).len();
+    let mut view = index_view(
+        read_entries,
+        selected,
+        rows.saturating_sub(note_rows),
+        context,
+    );
+    note.append(&mut view.lines);
+    view.lines = note;
+    view
 }
 
 pub fn bottle_view(index: usize) -> View {
@@ -410,19 +221,23 @@ fn notes_lines(sections: &[Section], width: usize) -> Vec<String> {
     lines
 }
 
-pub fn notes_scroll_limit(sections: &[Section], rows: usize, width: usize) -> usize {
-    notes_lines(sections, width)
-        .len()
-        .saturating_sub(rows.max(1))
+pub fn scroll_limit(lines: &[String], rows: usize) -> usize {
+    lines.len().saturating_sub(rows.max(1))
 }
 
-pub fn notes_view(sections: &[Section], first: usize, rows: usize, width: usize) -> View {
+pub fn scrolled_view(
+    title: &str,
+    lines: Vec<String>,
+    first: usize,
+    rows: usize,
+    footer: &str,
+    frame: Frame,
+) -> View {
     let rows = rows.max(1);
-    let lines = notes_lines(sections, width);
     let is_scrollable = lines.len() > rows;
-    let first = first.min(lines.len().saturating_sub(rows));
+    let first = first.min(scroll_limit(&lines, rows));
     View {
-        title: "Nouveautés".to_string(),
+        title: title.to_string(),
         lines: lines
             .into_iter()
             .skip(first)
@@ -430,13 +245,27 @@ pub fn notes_view(sections: &[Section], first: usize, rows: usize, width: usize)
             .map(Line::Preformatted)
             .collect(),
         footer: if is_scrollable {
-            NOTES_SCROLL_FOOTER
+            format!("{SCROLL_HINT}  {footer}")
         } else {
-            NOTES_FOOTER
-        }
-        .to_string(),
-        frame: NOTES_FRAME,
+            footer.to_string()
+        },
+        frame,
     }
+}
+
+pub fn notes_scroll_limit(sections: &[Section], rows: usize, width: usize) -> usize {
+    scroll_limit(&notes_lines(sections, width), rows)
+}
+
+pub fn notes_view(sections: &[Section], first: usize, rows: usize, width: usize) -> View {
+    scrolled_view(
+        "Nouveautés",
+        notes_lines(sections, width),
+        first,
+        rows,
+        NOTES_FOOTER,
+        NOTES_FRAME,
+    )
 }
 
 fn gifts(unlocks: &Unlocks) -> Vec<&'static str> {
@@ -603,6 +432,89 @@ pub fn album_pages(
 mod tests {
     use super::*;
     use crate::badges;
+    use crate::story::content::save_golden::{SavedGame, courrier_fixture, render};
+
+    #[test]
+    fn test_save_lists_in_courrier_as_before_refactor() {
+        let save = SavedGame::load();
+        let opened = save.progress.letters_read.min(save.available - 1);
+        let read = save
+            .timeline
+            .first_mail(save.progress.letters_read.min(save.available));
+
+        let mut out = format!("opens: {opened}\n");
+        out.push_str(&render(&index_view(read, 0, 200, &save.context(12))));
+        assert_eq!(out, courrier_fixture());
+    }
+
+    fn day(month: u32, day: u32) -> NaiveDate {
+        NaiveDate::from_ymd_opt(2026, month, day).unwrap()
+    }
+
+    const FULL_BOX_NOTE_TEXT: &str = "text: Pendant ton absence, tout le village en a profité pour prendre des vacances\u{202F}!\n";
+
+    #[test]
+    fn test_full_box_note_sits_on_top_of_the_courrier() {
+        let save = SavedGame::load();
+        let read = save.timeline.first_mail(10);
+        let context = save.context(12);
+        let plain = render(&index_view(read, 0, 20, &context));
+        let full = render(&full_box_index_view(
+            read,
+            0,
+            20,
+            200,
+            &context,
+            day(10, 31),
+        ));
+
+        assert!(!plain.contains(FULL_BOX_NOTE_TEXT));
+        assert!(full.contains(&format!(
+            "{FULL_BOX_NOTE_TEXT}\
+             text: La rentrée, c'est le 31 octobre.\n\
+             blank\n\
+             text: — Le Facteur\n\
+             rule\n"
+        )));
+        assert!(
+            full.contains(&plain[plain.find("pre: >").unwrap()..plain.find("footer").unwrap()])
+        );
+    }
+
+    #[test]
+    fn test_postman_note_has_its_own_frame() {
+        let note = postman_note_view(day(10, 31));
+        assert_eq!(note.frame, Frame::Notice);
+        assert!(render(&note).contains(&format!(
+            "{FULL_BOX_NOTE_TEXT}\
+             text: La rentrée, c'est le 31 octobre.\n\
+             blank\n\
+             text: — Le Facteur\n"
+        )));
+    }
+
+    #[test]
+    fn test_back_to_school_says_1er_on_the_first() {
+        let rentree = |date| render(&postman_note_view(date));
+        assert!(rentree(day(11, 1)).contains("La rentrée, c'est le 1er novembre."));
+        assert!(rentree(day(11, 2)).contains("La rentrée, c'est le 2 novembre."));
+        assert!(
+            rentree(NaiveDate::from_ymd_opt(2027, 1, 1).unwrap())
+                .contains("La rentrée, c'est le 1er janvier.")
+        );
+    }
+
+    #[test]
+    fn test_wrapped_note_leaves_the_courrier_within_its_rows() {
+        let save = SavedGame::load();
+        let read = save.timeline.first_mail(10);
+        let context = save.context(12);
+        let (rows, width) = (12, 30);
+        let view = full_box_index_view(read, 0, rows, width, &context, day(10, 31));
+
+        assert!(overlay::lay_out(&view.lines, width).len() <= rows);
+        assert!(render(&view).contains("pre: >"));
+    }
 
     fn centered(view: &View) -> Vec<&str> {
         view.lines
@@ -675,7 +587,7 @@ mod tests {
             rows(&top),
             ["26 octobre 2026", "- Les Perséides font", "  pleuvoir les"]
         );
-        assert_eq!(top.footer, NOTES_SCROLL_FOOTER);
+        assert_eq!(top.footer, "[↑] [↓] défiler  [Entrée] ou [Echap] fermer");
 
         let last = notes_scroll_limit(&sections, height, width);
         assert_eq!(last, 2);

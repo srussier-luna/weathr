@@ -1,6 +1,7 @@
 use crate::animation::cloud_bank::CloudBank;
 use crate::animation::garden::{self, GardenLayout};
 use crate::render::TerminalRenderer;
+use crate::scene::tree::Tree;
 use crate::weather::WeatherConditions;
 use crossterm::style::Color;
 use rand::prelude::*;
@@ -8,11 +9,20 @@ use std::collections::BTreeMap;
 use std::io;
 
 const BENCH: [&str; 2] = ["_____", "|   |"];
-const WELL_ROOF: &str = " /^\\ ";
-const WELL_POSTS: &str = " | | ";
-const WELL_RIM: &str = "(___)";
-const TREEHOUSE: [&str; 2] = [" /\\ ", "|[]|"];
-const CHEST: [&str; 2] = [" ___ ", "[_$_]"];
+const WELL: [&str; 4] = [" _/^^^\\_", "/_______\\", " |  o  |", "(_______)"];
+const _: () = assert!(WELL[1].len() == garden::WELL_WIDTH as usize);
+const ZOOM_HINT: &str = "‹ dézoom";
+const ZOOM_HINT_LIFT: u16 = 4;
+const TREEHOUSE: [&str; 4] = [
+    "   _/------\\_   ",
+    " /____________\\ ",
+    "|  []  ||  []  |",
+    "|______||______|",
+];
+const TREEHOUSE_WIDTH: u16 = 16;
+const TREEHOUSE_MIN_CANOPY_WIDTH: u16 = 18;
+const CHEST: [&str; 3] = [" _______", "/_______\\", "[___$___]"];
+const _: () = assert!(CHEST[1].len() == garden::CHEST_WIDTH as usize);
 const BALLOON: [&str; 4] = [" ,-. ", "(   )", " \\ / ", "  #  "];
 const BALLOON_SPEED: f32 = 0.06;
 const LANTERN_WINDOW: (u16, u16) = (8, 8);
@@ -96,44 +106,6 @@ pub struct Unlocks {
     pub choices: Choices,
 }
 
-impl Unlocks {
-    pub fn after_reading(
-        letters_read: usize,
-        strange_letters_read: usize,
-        archives_read: usize,
-        answers: &BTreeMap<String, u8>,
-    ) -> Self {
-        let read = |letter: usize| letters_read >= letter;
-        let strange = |letter: usize| strange_letters_read >= letter;
-        Self {
-            bench: read(4),
-            cat_bow: read(6),
-            footprints: read(8),
-            well: read(13),
-            bone: read(15),
-            key: read(17),
-            treehouse: read(22),
-            owl_friend: read(24),
-            blue_lantern: read(26),
-            garland: read(31),
-            kittens: read(33),
-            x_mark: read(35),
-            balloon: read(40),
-            ducklings: read(42),
-            weather_vane: read(49),
-            bunting: read(58),
-            chest: read(59),
-            wet_footprints: strange(3),
-            silhouette: strange(5),
-            whispering_well: strange(8),
-            staring: strange(11),
-            found_objects: read(45),
-            bottles: archives_read >= 3,
-            choices: Choices::from_answers(answers),
-        }
-    }
-}
-
 pub struct Lore {
     unlocks: Unlocks,
     balloon_x: Option<f32>,
@@ -211,16 +183,35 @@ impl Lore {
             garden::draw(renderer, x, ground_y - 1, &BENCH[1..], WOOD)?;
         }
 
-        if unlocks.well {
-            let x = layout.house_x + house.porch_x() + 28;
+        if unlocks.well
+            && let Some(x) = layout.well_x()
+        {
             let roof = if unlocks.choices.well_green {
                 Color::DarkGreen
             } else {
                 Color::DarkRed
             };
-            garden::draw_solid(renderer, x, ground_y - 3, &[WELL_ROOF], roof)?;
-            garden::draw(renderer, x, ground_y - 2, &[WELL_POSTS], WOOD)?;
-            garden::draw_solid(renderer, x, ground_y - 1, &[WELL_RIM], Color::Grey)?;
+            garden::draw_solid(renderer, x, ground_y - 4, &WELL[..2], roof)?;
+            garden::draw_solid(renderer, x, ground_y - 2, &WELL[2..3], WOOD)?;
+            garden::draw_solid(renderer, x, ground_y - 1, &WELL[3..], Color::Grey)?;
+        }
+
+        match layout.chest_x() {
+            Some(x) if unlocks.chest => {
+                garden::draw_solid(renderer, x, ground_y - 3, &CHEST, WOOD)?;
+                renderer.render_char(x + 4, ground_y - 1, '$', Color::Yellow)?;
+            }
+            Some(x) if unlocks.x_mark => renderer.render_char(x + 4, ground_y, 'X', Color::Red)?,
+            _ => {}
+        }
+
+        let well_hidden = unlocks.well && layout.well_x().is_none();
+        let chest_hidden = unlocks.chest && layout.chest_x().is_none();
+        if well_hidden || chest_hidden {
+            let y = layout.plan.tree.map_or(ground_y / 2, |tree| {
+                tree.top_y.saturating_sub(ZOOM_HINT_LIFT)
+            });
+            garden::draw_solid(renderer, 0, y, &[ZOOM_HINT], Color::DarkGrey)?;
         }
 
         if unlocks.footprints {
@@ -247,17 +238,9 @@ impl Lore {
         }
 
         if let Some(tree) = layout.plan.tree {
-            let spot_x = tree.trunk_x() + tree.trunk_width() + 2;
-            if unlocks.chest {
-                garden::draw_solid(renderer, spot_x - 1, ground_y - 1, &CHEST, WOOD)?;
-                renderer.render_char(spot_x + 1, ground_y, '$', Color::Yellow)?;
-            } else if unlocks.x_mark {
-                renderer.render_char(spot_x, ground_y, 'X', Color::Red)?;
-            }
-
-            if unlocks.treehouse && tree.canopy_height >= 6 {
-                let x = tree.center_x() + 3;
-                let y = tree.top_y + tree.canopy_height / 4;
+            if unlocks.treehouse
+                && let Some((x, y)) = treehouse_spot(&tree)
+            {
                 let paint = if unlocks.choices.treehouse_blue {
                     Color::Rgb {
                         r: 60,
@@ -341,5 +324,79 @@ impl Lore {
 impl Default for Lore {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+fn treehouse_spot(tree: &Tree) -> Option<(u16, u16)> {
+    if tree.width < TREEHOUSE_MIN_CANOPY_WIDTH {
+        return None;
+    }
+    let x = tree.x + (tree.width - TREEHOUSE_WIDTH) / 2;
+    let rows = TREEHOUSE.len() as u16;
+    (0..=tree.canopy_height.checked_sub(rows)?)
+        .find(|&top| {
+            (top..top + rows).all(|row| {
+                let (start, end) = tree.canopy_span(row);
+                start <= x && x + TREEHOUSE_WIDTH <= end
+            })
+        })
+        .map(|row| (x, tree.top_y + row))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tree(width: u16, canopy_height: u16) -> Tree {
+        Tree {
+            x: 10,
+            top_y: 5,
+            width,
+            canopy_height,
+            trunk_height: 3,
+        }
+    }
+
+    #[test]
+    fn test_treehouse_hidden_in_narrow_canopy() {
+        assert_eq!(treehouse_spot(&tree(17, 7)), None);
+    }
+
+    #[test]
+    fn test_treehouse_centred_inside_wide_canopy() {
+        let tree = tree(24, 12);
+        let (x, y) = treehouse_spot(&tree).unwrap();
+        assert_eq!(x, tree.x + 4);
+        assert!(x + TREEHOUSE_WIDTH <= tree.x + tree.width);
+        assert!(y + TREEHOUSE.len() as u16 <= tree.canopy_bottom_y());
+        for row in y - tree.top_y..y - tree.top_y + TREEHOUSE.len() as u16 {
+            let (start, end) = tree.canopy_span(row);
+            assert!(start <= x && x + TREEHOUSE_WIDTH <= end, "row {row}");
+        }
+    }
+
+    #[test]
+    fn test_treehouse_fits_every_wide_canopy() {
+        let wide_trees: Vec<Tree> = (0..=40)
+            .filter_map(|horizon_y| Tree::fit(100, horizon_y))
+            .filter(|tree| tree.width >= TREEHOUSE_MIN_CANOPY_WIDTH)
+            .collect();
+        assert!(!wide_trees.is_empty());
+        for tree in wide_trees {
+            assert!(
+                treehouse_spot(&tree).is_some(),
+                "canopy {}",
+                tree.canopy_height
+            );
+        }
+    }
+
+    #[test]
+    fn test_treehouse_rows_all_sixteen_wide() {
+        assert!(
+            TREEHOUSE
+                .iter()
+                .all(|row| row.len() == TREEHOUSE_WIDTH as usize)
+        );
     }
 }
