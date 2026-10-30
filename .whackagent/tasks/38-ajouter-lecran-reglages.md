@@ -1,6 +1,6 @@
 ---
 issue: 38
-status: todo
+status: to-test
 wiki: [[render]], [[architecture]], [[weather]]
 note: Écran Réglages : ville, unités, heure du Facteur, barre du haut modifiables dans le jeu, sans éditer config.toml
 created: 2026-10-30
@@ -37,8 +37,30 @@ created: 2026-10-30
 
 ## Implementation
 
+- `src/config.rs` → `src/config/mod.rs` (+ `Setting`, `Config::save`, `save_to_path`) ; `src/config/writer.rs` (nouveau) : `write_value(path, keys, value)` avec `toml_edit`, une seule ligne modifiée, commentaires et ordre gardés, tables manquantes créées en fin de fichier, tests sur fichiers temporaires.
+- `src/settings.rs` (nouveau) : `Row`, `ROWS`, `Settings::stepped` / `apply`, choix en boucle, heure 0–23.
+- `src/story/clock.rs` : `mail_hour_on`, `change_mail_hour` → nouvelle heure du Facteur le lendemain, tests.
+- `src/weather/units.rs` : fonctions `*_symbol` ; `src/app_state.rs` : `set_units` + test.
+- `src/views.rs` : `settings_view`, `[s] réglages` dans l'Aide, test.
+- `src/app.rs` : `Overlay::Settings(usize)`, `toggle_settings`, `change_setting`, touches ↑↓ / ←→ / Entrée / s / Échap.
+- `src/error.rs` : erreurs d'écriture de config. `Cargo.toml` : `toml_edit 0.25` (toml_parser / toml_writer montent aussi).
+- Échec d'écriture → réglage appliqué quand même, message « Réglage non enregistré : vérifie config.toml ».
+- Limite : relancer le jeu le jour même applique tout de suite la nouvelle heure du Facteur (config.toml relu au lancement, pas de date d'effet stockée).
+- L'écran montre les réglages en cours, options de lancement comprises (`--hide-hud`, `--imperial`).
+- Build : `cargo build`, `cargo fmt --check`, `cargo test` verts. Clippy : seule l'erreur connue #79.
+
 ## Review
 
 ## Verification
+
+Captures pty, HOME jetable avec un config.toml commenté (jamais le vrai) :
+- ✅ `s` ouvre l'écran avec les valeurs de config.toml ; l'Aide liste `[s] réglages`.
+- ✅ °F, m/s, mph, in : la Barre du haut suit aussitôt.
+- ✅ Barre du haut masquée puis réaffichée aussitôt.
+- ✅ Heure du Facteur 10 h : « Nouvelle heure du Facteur dès demain. », Jour de jeu inchangé ; règle prouvée par tests de clock.rs.
+- ✅ config.toml : valeurs écrites, commentaires et autres lignes intacts.
+- ✅ Relance : réglages conservés.
+- ✅ config.toml absent : écran OK, fichier créé au premier changement.
+- ✅ Échap ferme, le jeu reprend.
 
 ## Feedback

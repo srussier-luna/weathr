@@ -2,7 +2,7 @@ use crate::animation::lore::{Choices, Unlocks};
 use crate::animation_manager::AnimationManager;
 use crate::app_state::AppState;
 use crate::badges::{self, Badge};
-use crate::config::Config;
+use crate::config::{Config, Setting};
 use crate::demo::{Demo, SCENE_DURATION};
 use crate::error::WeatherError;
 use crate::holiday::{Holiday, MeteorShower};
@@ -13,6 +13,7 @@ use crate::release_notes::{self, Section};
 use crate::remote_weather::{self, Reply, Request};
 use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
+use crate::settings::{self, Settings};
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
@@ -330,6 +331,7 @@ enum Overlay {
     NoteBadge(&'static Badge),
     Notes(usize),
     PostmanNote,
+    Settings(usize),
     Welcome(Step),
 }
 
@@ -364,6 +366,7 @@ pub struct App {
     scene: WorldScene,
     weather_receiver: mpsc::Receiver<Result<WeatherData, WeatherError>>,
     hide_hud: bool,
+    mail_hour: u32,
     simulated_holiday: Option<Holiday>,
     demo: Option<Demo>,
     progress: Progress,
@@ -498,6 +501,7 @@ impl App {
             scene,
             weather_receiver: rx,
             hide_hud: config.hide_hud,
+            mail_hour: config.mail.hour,
             simulated_holiday: simulation.holiday,
             demo,
             progress,
@@ -530,6 +534,8 @@ impl App {
         if self.progress.record_visit() {
             self.progress.save();
         }
+        self.animations
+            .set_mail_hour(self.clock.mail_hour_on(Local::now().date_naive()));
         self.refresh_timeline();
         self.state.set_story_day(self.timeline_day);
         self.request_remote_weather();
@@ -850,6 +856,11 @@ impl App {
                     matches!(entry, Entry::Gazette(_))
                 }) > 0,
             ),
+            Some(Overlay::Settings(selected)) => views::settings_view(
+                &self.settings(),
+                selected,
+                self.clock.mail_hour_on(Local::now().date_naive()) != self.mail_hour,
+            ),
             Some(Overlay::Badges) => {
                 return overlay::render_badges(
                     renderer,
@@ -1077,6 +1088,12 @@ impl App {
                 let last = views::notes_scroll_limit(&self.release_notes, rows, width);
                 self.overlay = Some(Overlay::Notes(first.saturating_add_signed(step).min(last)));
             }
+            Some(Overlay::Settings(selected)) => {
+                let last = settings::ROWS.len() - 1;
+                self.overlay = Some(Overlay::Settings(
+                    selected.saturating_add_signed(step).min(last),
+                ));
+            }
             _ => self.select_in_index(step),
         }
     }
@@ -1107,6 +1124,7 @@ impl App {
                 | Overlay::Notes(_)
                 | Overlay::PostmanNote,
             ) => self.overlay = closed_overlay(self.overlay),
+            Some(Overlay::Settings(_)) => self.change_setting(1),
             _ => self.reread_selected(),
         }
     }
@@ -1116,6 +1134,41 @@ impl App {
             Some(Overlay::Help) => None,
             _ => Some(Overlay::Help),
         };
+    }
+
+    fn toggle_settings(&mut self) {
+        self.overlay = match self.overlay {
+            Some(Overlay::Settings(_)) => None,
+            _ => Some(Overlay::Settings(0)),
+        };
+    }
+
+    fn settings(&self) -> Settings {
+        Settings {
+            units: self.state.units,
+            mail_hour: self.mail_hour,
+            hide_hud: self.hide_hud,
+        }
+    }
+
+    fn change_setting(&mut self, step: isize) {
+        let Some(Overlay::Settings(selected)) = self.overlay else {
+            return;
+        };
+        let mut settings = self.settings();
+        let setting = settings.stepped(settings::ROWS[selected], step);
+        settings.apply(setting);
+        if Config::save(setting).is_err() {
+            self.toasts
+                .push_back("Réglage non enregistré\u{a0}: vérifie config.toml".to_string());
+        }
+        if let Setting::MailHour(hour) = setting {
+            self.clock
+                .change_mail_hour(hour, Local::now().naive_local());
+        }
+        self.mail_hour = settings.mail_hour;
+        self.hide_hud = settings.hide_hud;
+        self.state.set_units(settings.units);
     }
 
     fn toggle_album(&mut self) {
@@ -1132,6 +1185,7 @@ impl App {
                 self.overlay = Some(Overlay::Album(page.saturating_add_signed(step).min(last)));
             }
             Some(Overlay::Letter(_)) => self.browse_letters(step),
+            Some(Overlay::Settings(_)) => self.change_setting(step),
             _ => {}
         }
     }
@@ -1299,6 +1353,7 @@ impl App {
                             KeyCode::Char('2') => self.answer_letter(2),
                             KeyCode::Char('a') | KeyCode::Char('A') => self.toggle_album(),
                             KeyCode::Char('h') | KeyCode::Char('H') => self.toggle_help(),
+                            KeyCode::Char('s') | KeyCode::Char('S') => self.toggle_settings(),
                             KeyCode::Char('l') | KeyCode::Char('L') => self.toggle_index(),
                             KeyCode::Up => self.scroll(-1, rows, width),
                             KeyCode::Down => self.scroll(1, rows, width),
