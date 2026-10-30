@@ -16,13 +16,14 @@ use crate::scene::WorldScene;
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
-use crate::story::{Entry, StoryClock, Thing, Timeline, sources};
+use crate::story::postman_note::{self, MailStep};
+use crate::story::{Entry, StoryClock, Thing, Timeline, pause, sources};
 use crate::views;
 use crate::weather::{
     OpenMeteoProvider, WeatherClient, WeatherCondition, WeatherData, WeatherLocation,
 };
 use crate::welcome::{self, Step};
-use chrono::{Local, Timelike};
+use chrono::{Local, NaiveDate, Timelike};
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::io;
@@ -88,11 +89,33 @@ fn earn(earned: &mut BTreeSet<String>, ids: Vec<&'static str>) -> Vec<&'static B
         .collect()
 }
 
+fn badge_card(overlay: Option<Overlay>) -> Option<&'static Badge> {
+    match overlay {
+        Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => Some(badge),
+        _ => None,
+    }
+}
+
 fn next_overlay(
     overlay: Option<Overlay>,
     pending_badges: &mut VecDeque<&'static Badge>,
 ) -> Option<Overlay> {
-    overlay.or_else(|| pending_badges.pop_front().map(Overlay::NewBadge))
+    match overlay {
+        None => pending_badges.pop_front().map(Overlay::NewBadge),
+        Some(Overlay::PostmanNote) => Some(
+            pending_badges
+                .pop_front()
+                .map_or(Overlay::PostmanNote, Overlay::NoteBadge),
+        ),
+        overlay => overlay,
+    }
+}
+
+fn closed_overlay(overlay: Option<Overlay>) -> Option<Overlay> {
+    match overlay {
+        Some(Overlay::NoteBadge(_)) => Some(Overlay::PostmanNote),
+        _ => None,
+    }
 }
 
 fn requeue_replaced_badge(
@@ -100,8 +123,12 @@ fn requeue_replaced_badge(
     current: Option<Overlay>,
     pending_badges: &mut VecDeque<&'static Badge>,
 ) {
-    if let (Some(Overlay::NewBadge(badge)), Some(current)) = (previous, current)
-        && !matches!(current, Overlay::NewBadge(_))
+    if let (Some(badge), Some(current)) = (badge_card(previous), current)
+        && badge_card(Some(current)).is_none()
+        && !matches!(
+            (previous, current),
+            (Some(Overlay::NoteBadge(_)), Overlay::PostmanNote)
+        )
     {
         pending_badges.push_front(badge);
     }
@@ -181,7 +208,7 @@ fn story_clock(progress: &Progress, mail_hour: u32) -> StoryClock {
     let start = progress
         .start_date()
         .unwrap_or_else(|| Local::now().date_naive());
-    StoryClock::new(start, mail_hour)
+    StoryClock::new(start, mail_hour).with_pauses(progress.paused_days.clone())
 }
 
 fn story_today(clock: &StoryClock) -> usize {
@@ -190,6 +217,15 @@ fn story_today(clock: &StoryClock) -> usize {
 
 fn build_timeline(village_count: usize, clock: &StoryClock, today: usize) -> Timeline {
     Timeline::new(&sources::registered(village_count), clock, today)
+}
+
+fn is_live_box_full(
+    clock: &StoryClock,
+    timeline: &Timeline,
+    day: usize,
+    letters_read: usize,
+) -> bool {
+    !clock.is_frozen() && pause::is_box_full(timeline, day, letters_read)
 }
 
 fn generate_offline_weather(rng: &mut impl rand::Rng) -> WeatherData {
@@ -291,7 +327,9 @@ enum Overlay {
     Help,
     Index(usize),
     NewBadge(&'static Badge),
+    NoteBadge(&'static Badge),
     Notes(usize),
+    PostmanNote,
     Welcome(Step),
 }
 
@@ -454,7 +492,7 @@ impl App {
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
         animations.set_unlocks(unlocks_on(&timeline, timeline_day, &progress.answers));
 
-        Self {
+        let mut app = Self {
             state,
             animations,
             scene,
@@ -483,7 +521,9 @@ impl App {
             pending_requests: BTreeSet::new(),
             frame_count: 0,
             timeline_day,
-        }
+        };
+        app.refresh_timeline();
+        app
     }
 
     fn refresh_progress(&mut self) {
@@ -510,6 +550,8 @@ impl App {
             .saturating_sub(self.progress.letters_read);
         let is_mail_waiting = unread > 0 && !self.hides_mail();
         self.animations.set_mail_waiting(is_mail_waiting);
+        self.animations
+            .set_story_frozen(self.clock.is_frozen() || self.is_box_full());
         let earned = badges::BADGES
             .iter()
             .filter(|badge| self.progress.badges.contains(badge.id))
@@ -638,6 +680,15 @@ impl App {
         self.animations.set_unlocks(self.unlocks());
     }
 
+    fn is_box_full(&self) -> bool {
+        is_live_box_full(
+            &self.clock,
+            &self.timeline,
+            self.timeline_day,
+            self.progress.letters_read,
+        )
+    }
+
     fn available_letters(&self) -> usize {
         self.timeline.delivered_by(story_today(&self.clock))
     }
@@ -684,20 +735,33 @@ impl App {
     }
 
     fn press_mail(&mut self) {
-        let available = self.available_letters();
-        if available == 0 {
-            return;
-        }
-
-        let index = match self.overlay {
-            Some(Overlay::Letter(index)) if index + 1 < available => index + 1,
-            Some(Overlay::Letter(_)) => {
-                self.overlay = None;
-                return;
-            }
-            _ => self.progress.letters_read.min(available - 1),
+        let is_note_waiting = postman_note::is_postman_note_waiting(
+            self.is_box_full(),
+            self.progress.postman_note_day,
+            self.timeline_day,
+        );
+        let open_letter = match self.overlay {
+            Some(Overlay::Letter(index)) => Some(index),
+            _ => None,
         };
-        self.open_letter(index);
+        match postman_note::next_mail(
+            open_letter,
+            self.available_letters(),
+            self.progress.letters_read,
+            is_note_waiting,
+        ) {
+            Some(MailStep::PostmanNote) => self.open_postman_note(),
+            Some(MailStep::Letter(index)) => self.open_letter(index),
+            Some(MailStep::Close) => self.overlay = None,
+            None => {}
+        }
+    }
+
+    fn open_postman_note(&mut self) {
+        self.overlay = Some(Overlay::PostmanNote);
+        self.progress.postman_note_day = Some(self.timeline_day);
+        self.progress.save();
+        self.award(vec!["summer_holidays"]);
     }
 
     fn browse_letters(&mut self, step: isize) {
@@ -760,19 +824,31 @@ impl App {
                 pages.swap_remove(page)
             }
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
-            Some(Overlay::NewBadge(badge)) => views::badge_card_view(badge),
+            Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => {
+                views::badge_card_view(badge)
+            }
+            Some(Overlay::PostmanNote) => views::postman_note_view(self.back_to_school()),
             Some(Overlay::Notes(first)) => views::notes_view(
                 &self.release_notes,
                 first,
                 overlay_rows(renderer.get_size().1),
                 notes_width(renderer),
             ),
-            Some(Overlay::Index(selected)) => views::index_view(
-                self.read_entries(),
-                selected,
-                overlay_rows(renderer.get_size().1),
-                &self.read_context(),
-            ),
+            Some(Overlay::Index(selected)) => {
+                let rows = overlay_rows(renderer.get_size().1);
+                if self.is_box_full() {
+                    views::full_box_index_view(
+                        self.read_entries(),
+                        selected,
+                        rows,
+                        overlay::text_width(renderer, views::INDEX_FRAME),
+                        &self.read_context(),
+                        self.back_to_school(),
+                    )
+                } else {
+                    views::index_view(self.read_entries(), selected, rows, &self.read_context())
+                }
+            }
             Some(Overlay::Help) => views::help_view(
                 &self.unlocks(),
                 count_read(&self.timeline, &self.progress, |entry| {
@@ -833,7 +909,30 @@ impl App {
         views::album_pages(self.read_entries(), &self.progress, &self.unlocks())
     }
 
+    fn back_to_school(&self) -> NaiveDate {
+        self.clock.next_rollover(Local::now().naive_local())
+    }
+
+    fn hold_full_box(&mut self) {
+        if self.clock.is_frozen() {
+            return;
+        }
+        let today = self.clock.mail_date(Local::now().naive_local());
+        if let Some(checked_on) = pause::hold_since(
+            &mut self.clock,
+            &self.timeline,
+            self.progress.letters_read,
+            self.progress.pause_checked_date(),
+            today,
+        ) {
+            self.progress.paused_days = self.clock.pauses().clone();
+            self.progress.mark_pause_checked(checked_on);
+            self.progress.save();
+        }
+    }
+
     fn refresh_timeline(&mut self) {
+        self.hold_full_box();
         let today = story_today(&self.clock);
         if today != self.timeline_day {
             self.timeline = build_timeline(self.letters.len(), &self.clock, today);
@@ -1007,7 +1106,12 @@ impl App {
 
     fn press_enter(&mut self) {
         match self.overlay {
-            Some(Overlay::NewBadge(_) | Overlay::Notes(_)) => self.overlay = None,
+            Some(
+                Overlay::NewBadge(_)
+                | Overlay::NoteBadge(_)
+                | Overlay::Notes(_)
+                | Overlay::PostmanNote,
+            ) => self.overlay = closed_overlay(self.overlay),
             _ => self.reread_selected(),
         }
     }
@@ -1206,7 +1310,7 @@ impl App {
                             KeyCode::Enter => self.press_enter(),
                             KeyCode::Char('r') | KeyCode::Char('R') => self.pick_up(),
                             KeyCode::Char('e') | KeyCode::Char('E') => self.start_riddle(),
-                            KeyCode::Esc => self.overlay = None,
+                            KeyCode::Esc => self.overlay = closed_overlay(self.overlay),
                             KeyCode::Left => self.browse(-1),
                             KeyCode::Right => self.browse(1),
                             _ => {}
@@ -1238,10 +1342,7 @@ mod tests {
     use chrono::{NaiveDate, NaiveDateTime};
 
     fn card_id(overlay: Option<Overlay>) -> Option<&'static str> {
-        match overlay {
-            Some(Overlay::NewBadge(badge)) => Some(badge.id),
-            _ => None,
-        }
+        badge_card(overlay).map(|badge| badge.id)
     }
 
     #[test]
@@ -1332,6 +1433,24 @@ mod tests {
         requeue_replaced_badge(card, card, &mut pending);
         requeue_replaced_badge(card, None, &mut pending);
         assert_eq!(pending.len(), 1);
+    }
+
+    #[test]
+    fn test_postman_note_badge_opens_over_the_note_then_returns_to_it() {
+        let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["summer_holidays"]).into();
+        let card = next_overlay(Some(Overlay::PostmanNote), &mut pending);
+        assert!(matches!(card, Some(Overlay::NoteBadge(_))));
+        assert_eq!(card_id(card), Some("summer_holidays"));
+
+        let closed = closed_overlay(card);
+        assert!(matches!(closed, Some(Overlay::PostmanNote)));
+        requeue_replaced_badge(card, closed, &mut pending);
+        assert!(pending.is_empty());
+        assert!(matches!(
+            next_overlay(closed, &mut pending),
+            Some(Overlay::PostmanNote)
+        ));
+        assert!(closed_overlay(closed).is_none());
     }
 
     #[test]
@@ -1598,6 +1717,32 @@ mod tests {
                     .starts_with(&format!("{} | Jour {day} | ", state.displayed_clock))
             );
         }
+    }
+
+    #[test]
+    fn test_box_full_holds_the_postman_until_a_letter_is_read() {
+        let timeline = timeline_on(7);
+        assert!(is_live_box_full(&clock(), &timeline, 7, 0));
+        assert!(!is_live_box_full(&clock(), &timeline, 7, 1));
+        assert!(!is_live_box_full(&clock(), &timeline, 6, 0));
+    }
+
+    #[test]
+    fn test_postman_note_badge_is_earned_once() {
+        let mut earned = BTreeSet::new();
+        let first = earn(&mut earned, vec!["summer_holidays"]);
+        assert_eq!(
+            first.iter().map(|badge| badge.id).collect::<Vec<_>>(),
+            ["summer_holidays"]
+        );
+        assert!(earn(&mut earned, vec!["summer_holidays"]).is_empty());
+    }
+
+    #[test]
+    fn test_frozen_clock_never_fills_the_box() {
+        let frozen = StoryClock::frozen(date(2026, 10, 26), 9, NonZeroU16::new(7).unwrap());
+        let timeline = build_timeline(letters::defaults().len(), &frozen, 7);
+        assert!(!is_live_box_full(&frozen, &timeline, 7, 0));
     }
 
     #[test]

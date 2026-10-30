@@ -39,12 +39,13 @@ pub enum Frame {
     Photo,
     Stars,
     Bubble,
+    Notice,
 }
 
 impl Frame {
     fn color(self) -> Option<Color> {
         let (r, g, b) = match self {
-            Self::Plain | Self::Bubble => return None,
+            Self::Plain | Self::Bubble | Self::Notice => return None,
             Self::Parchment => (222, 196, 140),
             Self::Newspaper => (205, 205, 195),
             Self::Postcard => (190, 170, 235),
@@ -79,12 +80,14 @@ impl Frame {
             Self::Recipe => (0, "o| ", " |"),
             Self::Waves => (0, "  ", "  "),
             Self::Stars => (0, "* ", " *"),
+            Self::Notice => (0, "║ ", " ║"),
         }
     }
 
     fn inner_width(self, box_width: u16) -> usize {
         let (indent, left, right) = self.edges(0);
-        usize::from(box_width).saturating_sub(usize::from(indent) + left.len() + right.len())
+        usize::from(box_width)
+            .saturating_sub(usize::from(indent) + left.chars().count() + right.chars().count())
     }
 
     fn top(self, width: usize) -> Vec<(u16, String)> {
@@ -107,6 +110,7 @@ impl Frame {
             Self::Photo => vec![(0, rule('/', "-", '\\', width))],
             Self::Stars => vec![(0, "*~".chars().cycle().take(width).collect())],
             Self::Bubble => vec![(0, rule('.', "-", '.', width))],
+            Self::Notice => vec![(0, rule('╔', "═", '╗', width))],
         }
     }
 
@@ -116,6 +120,7 @@ impl Frame {
             Self::Folder => vec![(0, rule('|', "_", '|', width))],
             Self::Photo => vec![(0, rule('\\', "-", '/', width))],
             Self::Bubble => vec![(0, rule('\'', "-", '\'', width))],
+            Self::Notice => vec![(0, rule('╚', "═", '╝', width))],
             _ => self.top(width),
         }
     }
@@ -351,7 +356,7 @@ fn frame_rows(
     rows.extend(body.into_iter().enumerate().map(|(index, (text, color))| {
         let (indent, left, right) = frame.edges(index);
         let edge = frame.color().unwrap_or(color);
-        let start = indent + left.len() as u16;
+        let start = indent + left.chars().count() as u16;
         vec![
             (indent, left.to_string(), edge),
             (start, format!("{text:<inner$}"), color),
@@ -446,7 +451,7 @@ mod tests {
         }
     }
 
-    const FRAMES: [Frame; 10] = [
+    const FRAMES: [Frame; 11] = [
         Frame::Plain,
         Frame::Parchment,
         Frame::Newspaper,
@@ -457,6 +462,7 @@ mod tests {
         Frame::Photo,
         Frame::Stars,
         Frame::Bubble,
+        Frame::Notice,
     ];
 
     fn draw(frame: Frame, title: &str, lines: &[&str], footer: &str, width: u16) -> Vec<String> {
@@ -545,6 +551,11 @@ mod tests {
         let badges = draw(Frame::Stars, "Badges", &[], "", Frame::Stars.fit(12));
         assert_eq!(badges[0], "*~*~*~*~*~*");
         assert_eq!(badges[1], "* Badges  *");
+
+        let notice = draw(Frame::Notice, "", &["Pleine."], "", 12);
+        assert_eq!(notice[0], "╔══════════╗");
+        assert_eq!(notice[1], "║ Pleine.  ║");
+        assert_eq!(notice.last().unwrap(), "╚══════════╝");
     }
 
     #[test]
