@@ -1,6 +1,7 @@
 use crate::animation::cloud_bank::CloudBank;
 use crate::animation::garden::{self, GardenLayout};
 use crate::render::TerminalRenderer;
+use crate::scene::tree::Tree;
 use crate::weather::WeatherConditions;
 use crossterm::style::Color;
 use rand::prelude::*;
@@ -12,7 +13,14 @@ const WELL: [&str; 4] = [" _/^^^\\_", "/_______\\", " |  o  |", "(_______)"];
 const _: () = assert!(WELL[1].len() == garden::WELL_WIDTH as usize);
 const ZOOM_HINT: &str = "‹ dézoom";
 const ZOOM_HINT_LIFT: u16 = 4;
-const TREEHOUSE: [&str; 2] = [" /\\ ", "|[]|"];
+const TREEHOUSE: [&str; 4] = [
+    "   _/------\\_   ",
+    " /____________\\ ",
+    "|  []  ||  []  |",
+    "|______||______|",
+];
+const TREEHOUSE_WIDTH: u16 = 16;
+const TREEHOUSE_MIN_CANOPY_WIDTH: u16 = 18;
 const CHEST: [&str; 3] = [" _______", "/_______\\", "[___$___]"];
 const _: () = assert!(CHEST[1].len() == garden::CHEST_WIDTH as usize);
 const BALLOON: [&str; 4] = [" ,-. ", "(   )", " \\ / ", "  #  "];
@@ -268,9 +276,9 @@ impl Lore {
         }
 
         if let Some(tree) = layout.plan.tree {
-            if unlocks.treehouse && tree.canopy_height >= 6 {
-                let x = tree.center_x() + 3;
-                let y = tree.top_y + tree.canopy_height / 4;
+            if unlocks.treehouse
+                && let Some((x, y)) = treehouse_spot(&tree)
+            {
                 let paint = if unlocks.choices.treehouse_blue {
                     Color::Rgb {
                         r: 60,
@@ -354,5 +362,79 @@ impl Lore {
 impl Default for Lore {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+fn treehouse_spot(tree: &Tree) -> Option<(u16, u16)> {
+    if tree.width < TREEHOUSE_MIN_CANOPY_WIDTH {
+        return None;
+    }
+    let x = tree.x + (tree.width - TREEHOUSE_WIDTH) / 2;
+    let rows = TREEHOUSE.len() as u16;
+    (0..=tree.canopy_height.checked_sub(rows)?)
+        .find(|&top| {
+            (top..top + rows).all(|row| {
+                let (start, end) = tree.canopy_span(row);
+                start <= x && x + TREEHOUSE_WIDTH <= end
+            })
+        })
+        .map(|row| (x, tree.top_y + row))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tree(width: u16, canopy_height: u16) -> Tree {
+        Tree {
+            x: 10,
+            top_y: 5,
+            width,
+            canopy_height,
+            trunk_height: 3,
+        }
+    }
+
+    #[test]
+    fn test_treehouse_hidden_in_narrow_canopy() {
+        assert_eq!(treehouse_spot(&tree(17, 7)), None);
+    }
+
+    #[test]
+    fn test_treehouse_centred_inside_wide_canopy() {
+        let tree = tree(24, 12);
+        let (x, y) = treehouse_spot(&tree).unwrap();
+        assert_eq!(x, tree.x + 4);
+        assert!(x + TREEHOUSE_WIDTH <= tree.x + tree.width);
+        assert!(y + TREEHOUSE.len() as u16 <= tree.canopy_bottom_y());
+        for row in y - tree.top_y..y - tree.top_y + TREEHOUSE.len() as u16 {
+            let (start, end) = tree.canopy_span(row);
+            assert!(start <= x && x + TREEHOUSE_WIDTH <= end, "row {row}");
+        }
+    }
+
+    #[test]
+    fn test_treehouse_fits_every_wide_canopy() {
+        let wide_trees: Vec<Tree> = (0..=40)
+            .filter_map(|horizon_y| Tree::fit(100, horizon_y))
+            .filter(|tree| tree.width >= TREEHOUSE_MIN_CANOPY_WIDTH)
+            .collect();
+        assert!(!wide_trees.is_empty());
+        for tree in wide_trees {
+            assert!(
+                treehouse_spot(&tree).is_some(),
+                "canopy {}",
+                tree.canopy_height
+            );
+        }
+    }
+
+    #[test]
+    fn test_treehouse_rows_all_sixteen_wide() {
+        assert!(
+            TREEHOUSE
+                .iter()
+                .all(|row| row.len() == TREEHOUSE_WIDTH as usize)
+        );
     }
 }

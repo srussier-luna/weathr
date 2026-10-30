@@ -33,6 +33,7 @@ Demo has `Perséides` and `Géminides` scenes. `StarGazing` (constellations) use
 - `Lore` draws gifted props (bench, well, treehouse, chest, balloon, bunting…). `Creepy` handles n°13 neighbour: wet footprints, silhouette, whispering well, "staring" state freezing cat, dog, owl.
 - Puits sits left of Arbre's foliage: `GardenLayout::well_x` (`src/animation/garden.rs`) = `tree.x - (1 + WELL_WIDTH)`, `None` without room. Hidden while unlocked → dark grey `‹ dézoom` at column 0, 4 rows above Arbre top. `Creepy` footprints + whisper read same `well_x`. `WELL_WIDTH` tied to `WELL` drawing by compile-time assert. Props drawn `draw_solid` so mountains don't show through.
 - Coffre sits 5 columns left of Puits: `GardenLayout::chest_x` = `well_x - (CHEST_GAP + CHEST_WIDTH)`, so order left → right Coffre · Puits · Arbre (Puits arrives first in story). Red `X` (`x_mark`) marks Coffre spot before it's unlocked. One `‹ dézoom` for both. `CHEST_WIDTH` tied to `CHEST` by compile-time assert.
+- Cabane (16 × 4) centred on Arbre foliage by `treehouse_spot` (`src/animation/lore.rs`): highest row where all 4 rows fit inside round outline (`Tree::canopy_span`); foliage < 18 columns → no Cabane, no ladder. Winter fir is triangular: Cabane overlaps its narrow top (accepted).
 
 ## Seasons and Fêtes — `src/holiday.rs`
 
