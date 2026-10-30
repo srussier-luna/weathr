@@ -3,12 +3,14 @@ use crate::badges::Badge;
 use crate::overlay::{self, Frame, Line, View};
 use crate::progress::Progress;
 use crate::release_notes::Section;
+use crate::settings::{ROWS, Row, Settings};
 use crate::story::Entry;
 use crate::story::content::chronicles::{
     BOTTLE_MESSAGES, CHEST_SOUVENIRS, DRAWINGS, OBJECTS, RECIPES,
 };
 use crate::story::content::letters::CHOICES;
 use crate::story::content::{self, MONTHS, ReadContext, postcard_lines, postcard_title, text};
+use crate::weather::units::{precipitation_symbol, temperature_symbol, wind_speed_symbol};
 use chrono::{Datelike, NaiveDate};
 
 const INDEX_FOOTER: &str = "[↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer";
@@ -16,6 +18,8 @@ const ALBUM_FOOTER: &str = "[<] [>] pages  [a] ou [Echap] fermer";
 const BOTTLE_FOOTER: &str = "[Echap] fermer";
 const BADGE_CARD_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const HELP_FOOTER: &str = "[h] ou [Echap] fermer";
+const SETTINGS_FOOTER: &str = "[↑] [↓] choisir  [<] [>] changer  [s] ou [Echap] fermer";
+const SETTINGS_LABEL_WIDTH: usize = 18;
 const NOTES_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const POSTMAN_NOTE_FOOTER: &str = "[c] suivante  [Echap] fermer";
 const SCROLL_HINT: &str = "[↑] [↓] défiler";
@@ -167,6 +171,7 @@ pub fn help_view(unlocks: &Unlocks, has_gazette: bool) -> View {
         Some(("[l]", "relire les lettres reçues")),
         Some(("[a]", "album des souvenirs")),
         Some(("[b]", "badges")),
+        Some(("[s]", "réglages")),
         Some(("[h]", "cette aide")),
         Some(("[Echap]", "fermer la fenêtre")),
         Some(("[q]", "quitter")),
@@ -188,6 +193,59 @@ pub fn help_view(unlocks: &Unlocks, has_gazette: bool) -> View {
         lines,
         footer: HELP_FOOTER.to_string(),
         frame: Frame::Plain,
+    }
+}
+
+pub fn settings_view(settings: &Settings, selected: usize, is_hour_for_tomorrow: bool) -> View {
+    let mut lines: Vec<Line> = ROWS
+        .iter()
+        .enumerate()
+        .map(|(index, row)| {
+            let (label, value) = settings_row(settings, *row);
+            let line = if index == selected {
+                format!("> {label:<width$}< {value} >", width = SETTINGS_LABEL_WIDTH)
+            } else {
+                format!("  {label:<width$}  {value}", width = SETTINGS_LABEL_WIDTH)
+            };
+            Line::Preformatted(line)
+        })
+        .collect();
+    if is_hour_for_tomorrow {
+        lines.push(Line::Blank);
+        lines.push(text("Nouvelle heure du Facteur dès demain."));
+    }
+    View {
+        title: "Réglages".to_string(),
+        lines,
+        footer: SETTINGS_FOOTER.to_string(),
+        frame: Frame::Plain,
+    }
+}
+
+fn settings_row(settings: &Settings, row: Row) -> (&'static str, String) {
+    match row {
+        Row::Temperature => (
+            "Température",
+            temperature_symbol(settings.units.temperature).to_string(),
+        ),
+        Row::WindSpeed => (
+            "Vent",
+            wind_speed_symbol(settings.units.wind_speed).to_string(),
+        ),
+        Row::Precipitation => (
+            "Pluie",
+            precipitation_symbol(settings.units.precipitation).to_string(),
+        ),
+        Row::MailHour => ("Heure du Facteur", format!("{} h", settings.mail_hour)),
+        Row::Hud => (
+            "Barre du haut",
+            if settings.hide_hud {
+                "masquée"
+            } else {
+                "affichée"
+            }
+            .to_string(),
+        ),
     }
 }
 
@@ -614,6 +672,28 @@ mod tests {
                 "Patience",
                 "weathr ouvert 1 h d'affilée"
             ]
+        );
+    }
+
+    #[test]
+    fn test_settings_view_points_at_the_selected_row() {
+        let settings = Settings {
+            units: crate::weather::WeatherUnits::default(),
+            mail_hour: 7,
+            hide_hud: true,
+        };
+        let view = settings_view(&settings, 3, false);
+        let lines = overlay::lay_out(&view.lines, 60);
+        assert_eq!(lines.len(), ROWS.len());
+        assert!(lines[0].starts_with("  Température") && lines[0].ends_with("°C"));
+        assert!(lines[3].starts_with("> Heure du Facteur") && lines[3].ends_with("< 7 h >"));
+        assert!(lines[4].ends_with("masquée"));
+
+        let view = settings_view(&settings, 0, true);
+        let lines = overlay::lay_out(&view.lines, 60);
+        assert_eq!(
+            lines.last().unwrap(),
+            "Nouvelle heure du Facteur dès demain."
         );
     }
 }

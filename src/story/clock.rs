@@ -6,6 +6,7 @@ use std::num::NonZeroU16;
 pub struct StoryClock {
     start: NaiveDate,
     mail_hour: u32,
+    next_mail_hour: Option<(NaiveDate, u32)>,
     frozen_day: Option<usize>,
     pauses: BTreeMap<usize, u32>,
 }
@@ -15,6 +16,7 @@ impl StoryClock {
         Self {
             start,
             mail_hour,
+            next_mail_hour: None,
             frozen_day: None,
             pauses: BTreeMap::new(),
         }
@@ -29,6 +31,7 @@ impl StoryClock {
         Self {
             start: today - Duration::days(i64::from(day) - 1),
             mail_hour,
+            next_mail_hour: None,
             frozen_day: Some(usize::from(day)),
             pauses: BTreeMap::new(),
         }
@@ -50,8 +53,21 @@ impl StoryClock {
         *self.pauses.entry(day).or_default() += 1;
     }
 
+    pub fn mail_hour_on(&self, date: NaiveDate) -> u32 {
+        match self.next_mail_hour {
+            Some((from, hour)) if date >= from => hour,
+            _ => self.mail_hour,
+        }
+    }
+
+    pub fn change_mail_hour(&mut self, hour: u32, now: NaiveDateTime) {
+        let today = now.date();
+        self.mail_hour = self.mail_hour_on(today);
+        self.next_mail_hour = (hour != self.mail_hour).then(|| (today + Duration::days(1), hour));
+    }
+
     pub fn mail_date(&self, now: NaiveDateTime) -> NaiveDate {
-        (now - Duration::hours(i64::from(self.mail_hour))).date()
+        (now - Duration::hours(i64::from(self.mail_hour_on(now.date())))).date()
     }
 
     pub fn next_rollover(&self, now: NaiveDateTime) -> NaiveDate {
@@ -113,6 +129,43 @@ mod tests {
         assert_eq!(rollover(31, 8), date(2026, 10, 31));
         assert_eq!(rollover(31, 9), date(2026, 11, 1));
         assert_eq!(rollover(30, 23), date(2026, 10, 31));
+    }
+
+    #[test]
+    fn test_new_mail_hour_waits_for_the_next_day() {
+        let at = |day, hour, minute| date(2026, 10, day).and_hms_opt(hour, minute, 0).unwrap();
+
+        let mut earlier = StoryClock::new(date(2026, 10, 1), 9);
+        earlier.change_mail_hour(6, at(8, 10, 0));
+        assert_eq!(earlier.day_on(at(8, 10, 0)), 8);
+        assert_eq!(earlier.day_on(at(8, 23, 59)), 8);
+        assert_eq!(earlier.day_on(at(9, 5, 59)), 8);
+        assert_eq!(earlier.day_on(at(9, 6, 0)), 9);
+        assert_eq!(earlier.mail_hour_on(date(2026, 10, 8)), 9);
+        assert_eq!(earlier.mail_hour_on(date(2026, 10, 9)), 6);
+
+        let mut later = StoryClock::new(date(2026, 10, 1), 9);
+        later.change_mail_hour(12, at(8, 8, 0));
+        assert_eq!(later.day_on(at(8, 8, 59)), 7);
+        assert_eq!(later.day_on(at(8, 9, 0)), 8);
+        assert_eq!(later.day_on(at(9, 11, 59)), 8);
+        assert_eq!(later.day_on(at(9, 12, 0)), 9);
+    }
+
+    #[test]
+    fn test_mail_hour_changes_settle_day_after_day() {
+        let at = |day, hour| date(2026, 10, day).and_hms_opt(hour, 0, 0).unwrap();
+        let mut clock = StoryClock::new(date(2026, 10, 1), 9);
+        clock.change_mail_hour(7, at(8, 12));
+        clock.change_mail_hour(11, at(9, 12));
+        assert_eq!(clock.mail_hour_on(date(2026, 10, 9)), 7);
+        assert_eq!(clock.mail_hour_on(date(2026, 10, 10)), 11);
+        assert_eq!(clock.day_on(at(10, 10)), 9);
+        assert_eq!(clock.day_on(at(10, 11)), 10);
+
+        clock.change_mail_hour(11, at(10, 12));
+        clock.change_mail_hour(11, at(10, 13));
+        assert_eq!(clock.mail_hour_on(date(2026, 10, 11)), 11);
     }
 
     #[test]
