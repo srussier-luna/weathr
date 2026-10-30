@@ -30,7 +30,7 @@ situations:              # override tones only; guardrails are fixed (wording/si
 
 weathr tutoie, chaleureux et un peu malicieux : le village parle comme des voisins qui se connaissent. Messages système (`[weathr] …`) courts et factuels, humour réservé aux lettres, cartes postales et détails du village. Pas d'emoji ; points d'exclamation rares, seulement dans les lettres des habitants.
 
-Notes de version : tout ce qui est sur GitHub (PR de version `develop` → `main`, Release, tag) est une vraie note de version, factuelle — sections Nouveautés / Changements / Mise à jour, une ligne par changement avec son numéro de PR. Les jolies phrases rigolotes, uniquement dans le jeu (`NOUVEAUTES.md`, boîte Nouveautés).
+Notes de version : tout ce qui est sur GitHub (PR de version `develop` → `main`, Release, tag) est une vraie note de version, factuelle — sections Nouveautés / Changements / Mise à jour, une ligne par changement avec son numéro de PR. Les jolies phrases rigolotes, uniquement dans le jeu (`NOUVEAUTES.md`, boîte Nouveautés). Notes dans le jeu : aucun spoiler — ni mécanique cachée (pause de la boîte pleine…), ni objet, lieu ou courrier qu'un joueur n'a peut-être pas encore vu (Recette, Coffre, Puits…). Un événement déjà annoncé par un Badge peut être évoqué : il éveille la curiosité sans rien dévoiler.
 
 Tickets de saison (sprints « Saison N ») : titre et résumé sans spoiler de l'histoire — ni nouveau lieu, ni personnage, ni Habitant, ni événement nommé ; seuls les mots déjà connus en saison 1 (Lettres, Habitants, Voisin, scène). Les détails vont dans un bloc `<details><summary>Spoiler</summary>` replié, sous le résumé.
 
