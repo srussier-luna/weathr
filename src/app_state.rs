@@ -16,6 +16,7 @@ pub struct AppState {
     pub cached_weather_info: String,
     pub weather_info_needs_update: bool,
     pub displayed_clock: String,
+    pub story_day: usize,
     pub demo_label: Option<String>,
     pub is_mail_waiting: bool,
     pub umbrella: Option<String>,
@@ -47,6 +48,7 @@ impl AppState {
             cached_weather_info: String::new(),
             weather_info_needs_update: true,
             displayed_clock: String::new(),
+            story_day: 1,
             demo_label: None,
             is_mail_waiting: false,
             umbrella: None,
@@ -71,6 +73,7 @@ impl AppState {
         self.weather_conditions.is_raining =
             weather.condition.is_raining() && !self.weather_conditions.is_thunderstorm;
         self.weather_conditions.is_cloudy = weather.condition.is_cloudy();
+        self.weather_conditions.is_overcast = weather.condition.is_overcast();
         self.weather_conditions.is_foggy = weather.condition.is_foggy();
         self.weather_conditions.is_day = weather.is_day;
 
@@ -109,6 +112,13 @@ impl AppState {
     pub fn set_umbrella(&mut self, message: Option<String>) {
         if message != self.umbrella {
             self.umbrella = message;
+            self.weather_info_needs_update = true;
+        }
+    }
+
+    pub fn set_story_day(&mut self, day: usize) {
+        if day != self.story_day {
+            self.story_day = day;
             self.weather_info_needs_update = true;
         }
     }
@@ -231,8 +241,9 @@ impl AppState {
             };
 
             format!(
-                "{} | {}{}{}Badges {}/{} [b] | Aide [h] | {}{}Weather: {} | Temp: {:.1}{} | Wind: {:.1}{} | Precip: {:.1}{}{} | Press 'q' to quit",
+                "{} | Jour {} | {}{}{}Badges {}/{} [b] | Aide [h] | {}{}Weather: {} | Temp: {:.1}{} | Wind: {:.1}{} | Precip: {:.1}{}{} | Press 'q' to quit",
                 self.displayed_clock,
+                self.story_day,
                 umbrella_indicator,
                 finds_indicator,
                 mail_indicator,
@@ -251,8 +262,9 @@ impl AppState {
             )
         } else {
             format!(
-                "{} | Weather: Loading... {}",
+                "{} | Jour {} | Weather: Loading... {}",
                 self.displayed_clock,
+                self.story_day,
                 self.loading_state.current_char()
             )
         };
@@ -508,5 +520,44 @@ mod tests {
                 .contains("Location: 34.08°N, 84.29°W")
         );
         assert!(!app.cached_weather_info.contains("("));
+    }
+
+    #[test]
+    fn test_bar_shows_story_day_right_after_the_clock() {
+        let mut app = create_app_state(0.0, 0.0);
+        app.set_progress_summary(true, 3, 40);
+        app.set_story_day(8);
+        app.update_cached_info();
+
+        assert!(app.cached_weather_info.starts_with(&format!(
+            "{} | Jour 8 | Lettre ! [c] | Badges 3/40 [b] | ",
+            app.displayed_clock
+        )));
+    }
+
+    #[test]
+    fn test_loading_line_shows_story_day_right_after_the_clock() {
+        let mut app = create_app_state(0.0, 0.0);
+        app.current_weather = None;
+        app.set_story_day(8);
+        app.update_cached_info();
+
+        assert!(app.cached_weather_info.starts_with(&format!(
+            "{} | Jour 8 | Weather: Loading... ",
+            app.displayed_clock
+        )));
+    }
+
+    #[test]
+    fn test_story_day_change_redraws_the_bar() {
+        let mut app = create_app_state(0.0, 0.0);
+        app.set_story_day(7);
+        app.update_cached_info();
+        assert!(!app.weather_info_needs_update);
+
+        app.set_story_day(8);
+        assert!(app.weather_info_needs_update);
+        app.update_cached_info();
+        assert!(app.cached_weather_info.contains(" | Jour 8 | "));
     }
 }

@@ -108,7 +108,7 @@ branch:
   per_task: true              # /wa-code work on own branch per task, not current
                                # github backend: always true — task file live on task branch
   prefix: "wa/"                # branch name: <prefix><key> → wa/add-apple-login (github: wa/42-add-apple-login)
-  base: current                # fork point: current | main | <branch name>
+  base: develop                # fork point: current | main | <branch name>
   sprint_prefix: "sprint/"     # task with `sprint:` branch off SPRINT branch, not base:
                                #   sprint/login-refacto   ← kebab of sprint "Login refacto",
                                #                            created from base: on first task
@@ -136,7 +136,7 @@ close:                         # WHERE work land when /wa-close finish task. Spr
                                # merge  — merge branch into target: locally, no push.
                                # github backend: ignored — task already have draft PR;
                                #   /wa-close rebase, push, mark ready. YOU merge.
-  target: main                 # where pr/merge land. Ignored by `nothing`.
+  target: develop              # where pr/merge land. Ignored by `nothing`.
   delete_branch: auto          # auto   — delete only once code live elsewhere (merged into sprint
                                #   branch or target). `pr` and `nothing` keep it:
                                #   PR need branch, so do you.
@@ -171,3 +171,8 @@ Inside autopilot: never ask (nobody watching) — freeze task, log open question
 
 - Rust (edition 2024) TUI binary: `generic` module, no Rust-specific one. Proof = CI gate (`cargo fmt --check`, `cargo clippy -D warnings`, `cargo test`).
 - Fork of Veirt/weathr, customized with French village story. UI strings French, `tu`.
+- Versions: a release = merge `develop` → `main` (players install `main`), tagged `vX.Y.Z`. Sprints stay grouped by theme; the target version is a label on the issue:
+  - `vX` (`v1`, `v2`, `v3`…) = any `X.y` release, e.g. `v2` = 2.0, 2.1…
+  - `vX.Y` (`v1.6`…) = exactly that release.
+- `/wa-task` grill: always ask which version the task targets (`vX` or `vX.Y`), then put that label on the issue (create it if missing). Every open task carries one.
+- Never merge into `develop` a PR whose label targets a release not being prepared: `vX` waits for the first `X.y` release, `vX.Y` for `X.Y`.

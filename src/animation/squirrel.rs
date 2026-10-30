@@ -30,7 +30,7 @@ pub struct Squirrel {
     y: f32,
     is_facing_right: bool,
     frame: u32,
-    is_placed: bool,
+    placed_on: Option<(u16, u16)>,
 }
 
 impl Squirrel {
@@ -41,7 +41,7 @@ impl Squirrel {
             y: 0.0,
             is_facing_right: true,
             frame: 0,
-            is_placed: false,
+            placed_on: None,
         }
     }
 
@@ -64,18 +64,19 @@ impl Squirrel {
         rng: &mut impl Rng,
     ) {
         let Some(tree) = layout.plan.tree.filter(|_| Self::is_visible(conditions)) else {
-            self.is_placed = false;
+            self.placed_on = None;
             return;
         };
 
         self.frame = self.frame.wrapping_add(1);
         let ground_y = Self::ground_y(layout);
         let climb_x = Self::climb_x(&tree);
-        if !self.is_placed {
+        let size = (layout.width, layout.horizon_y);
+        if self.placed_on != Some(size) {
+            self.placed_on = Some(size);
             self.x = climb_x;
             self.y = ground_y;
             self.phase = Phase::Resting(60);
-            self.is_placed = true;
         }
 
         self.phase = match self.phase {
@@ -127,7 +128,7 @@ impl Squirrel {
     }
 
     pub fn render(&self, renderer: &mut TerminalRenderer) -> io::Result<()> {
-        if !self.is_placed || matches!(self.phase, Phase::Hiding(_)) {
+        if self.placed_on.is_none() || matches!(self.phase, Phase::Hiding(_)) {
             return Ok(());
         }
 
@@ -145,5 +146,31 @@ impl Squirrel {
 impl Default for Squirrel {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sunny_day() -> WeatherConditions {
+        WeatherConditions {
+            is_day: true,
+            ..WeatherConditions::default()
+        }
+    }
+
+    #[test]
+    fn test_squirrel_moves_back_to_tree_after_resize() {
+        let mut squirrel = Squirrel::new();
+        let mut rng = rand::rng();
+        squirrel.update(&GardenLayout::new(120, 30), &sunny_day(), &mut rng);
+
+        let wide = GardenLayout::new(240, 50);
+        squirrel.update(&wide, &sunny_day(), &mut rng);
+
+        let tree = wide.plan.tree.unwrap();
+        assert_eq!(squirrel.x, Squirrel::climb_x(&tree));
+        assert_eq!(squirrel.y, Squirrel::ground_y(&wide));
     }
 }
