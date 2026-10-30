@@ -31,7 +31,7 @@ Static French content: correspondents' letters + days, `CITIES` (40 Cartes posta
 `is_right_answer` (`:731`) folds case, accents, punctuation, leading article.
 
 - **Carte postale**: from Sam travelling; `remote_weather` adds today's weather there.
-- **Gazette**: weekly recap — home weather, rumour, ad, week's Énigme, last week's answer. Key `e` opens text input; solved weeks go in `riddles_solved`.
+- **Gazette**: weekly — home weather of its Monday → Sunday (past days real, rest forecast), rumour, ad, week's Énigme, last week's answer. Weather lines: max/min, Plus beau jour (sunny day, else snow day, else least rain; then warmest, earliest; never an alert day), Pluie (rain + showers ≥ 1 mm, snow excluded) or « Semaine ensoleillée / nuageuse, sans pluie. », Neige, ⚠ Alerte météo (orage, canicule ≥ 35 °C, grand froid ≤ −10 °C, vent fort ≥ 70 km/h; raw values vs rounded text). Old saves keep « Ta semaine : … ». Not fetched → « Les prévisions ne sont pas encore arrivées. ». Key `e` opens text input; solved weeks go in `riddles_solved`.
 - **Bouteille**: drifts down river once 3 archives read; `r` picks up + opens. **Objet**: appears in garden by day once unlocked.
 
 ## Badges — `src/badges.rs`

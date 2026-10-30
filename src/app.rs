@@ -850,14 +850,17 @@ impl App {
 
         let available = self.available_letters();
         let mut requests = Vec::new();
-        for (_, entry) in self.timeline.mail().take(available) {
+        for (day, entry) in self.timeline.mail().take(available) {
             let request = match entry {
                 Entry::Postcard(index) if !self.progress.postcard_weather.contains_key(&index) => {
                     let city = &CITIES[index % CITIES.len()];
                     (Request::Postcard(index), city.latitude, city.longitude)
                 }
                 Entry::Gazette(week) if !self.progress.gazette_weather.contains_key(&week) => (
-                    Request::WeekRecap(week),
+                    Request::WeekForecast {
+                        week,
+                        monday: self.clock.date_of(day),
+                    },
                     self.state.location.latitude,
                     self.state.location.longitude,
                 ),
@@ -879,7 +882,9 @@ impl App {
             self.pending_requests.remove(&request);
             match request {
                 Request::Postcard(index) => self.progress.postcard_weather.insert(index, text),
-                Request::WeekRecap(week) => self.progress.gazette_weather.insert(week, text),
+                Request::WeekForecast { week, .. } => {
+                    self.progress.gazette_weather.insert(week, text)
+                }
             };
             has_changed = true;
         }
