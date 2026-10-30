@@ -21,6 +21,7 @@ pub mod kid;
 pub mod leaves;
 pub mod lore;
 pub mod moon;
+pub mod music;
 pub mod new_year;
 pub mod owl;
 pub mod postman;
