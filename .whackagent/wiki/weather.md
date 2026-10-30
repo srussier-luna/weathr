@@ -51,7 +51,7 @@ decimals), `location.json` + `geocode.json` (24 h). Writes fire-and-forget
   Disabled in simulation.
 - `remote_weather.rs` — one-shot fetches for story content (`src/remote_weather.rs:46`):
   `Request::Postcard(i)` gets current weather in Carte postale's city;
-  `Request::WeekRecap(week)` gets past 7 days at home for Gazette. Replies land
+  `Request::WeekForecast { week, monday }` gets the Gazette's Monday → Sunday at home (`start_date`/`end_date`, daily max/min, rain + showers, snowfall, weather code, gusts) and turns it into the Gazette text (`describe_week`). Replies land
   in `Progress`, saved once, so each fetched once. See [[mail]].
 
 ## Offline and simulation

@@ -1,6 +1,6 @@
 ---
 issue: 43
-status: to-test
+status: to-close
 wiki: [[mail]], [[weather]]
 note: "Prévisions dans la Gazette au lieu de la météo passée"
 created: 2026-10-29
@@ -17,7 +17,7 @@ created: 2026-10-29
 - Text, one line each, empty lines skipped:
   - `Prévisions de la semaine : 18 °C au plus, 2 °C au moins.`
   - `Plus beau jour : jeudi.`
-  - `Pluie : lundi, mardi.` — rainy day = precipitation ≥ `RAINY_DAY_MM` (existing 1 mm).
+  - `Pluie : lundi, mardi.` — rainy day = rain + showers ≥ `RAINY_DAY_MM` (1 mm), snow excluded (validation, user decision).
   - No rainy day → `Semaine ensoleillée, sans pluie.` when more than half of the days with a weather code are Clear / PartlyCloudy, else `Semaine nuageuse, sans pluie.` (feedback round 1). No weather code at all → no line.
   - `Neige : samedi.` — only if a snow day (snowfall > 0 or snow weather code).
   - `⚠ Alerte orage : vendredi.` — thunderstorm weather code (95, 96, 99).
@@ -25,7 +25,7 @@ created: 2026-10-29
   - `⚠ Alerte grand froid : mercredi (−12 °C).` — min ≤ −10 °C.
   - `⚠ Alerte vent fort : mercredi (rafales 85 km/h).` — gusts ≥ 70 km/h.
   - Several days → `lundi, jeudi`; alert value = the worst of those days.
-- **Plus beau jour**: least precipitation, then warmest max, then earliest; never an alert day. All days on alert → no line.
+- **Plus beau jour** (validation, user decision « soleil, si pas soleil neige, si pas neige celui avec le moins de pluie »): sunny days first, else snow days, else all; inside the level least rain, then warmest max, then earliest; never an alert day. No candidate → no line.
 - Alerts are computed from the forecast, not Météo-France vigilances (not provided by Open-Meteo).
 - Day names lowercase, French (`lundi` … `dimanche`).
 - New strings: non-breaking `\u{202F}` before `:` per wording.md. Existing Gazette strings untouched.
@@ -40,7 +40,8 @@ created: 2026-10-29
 - [ ] Text test on a fixed week (Mon → Sun): max/min line, `Plus beau jour`, `Pluie : lundi, mardi.`, no `Neige`/alert line when none.
 - [ ] Text test: snow day → `Neige : samedi.`; thunderstorm code → `⚠ Alerte orage : vendredi.`; 36 °C → `⚠ Alerte canicule : mardi (36 °C).`; −12 °C → grand froid line; gusts 85 km/h → vent fort line; thresholds exactly at 35 / −10 / 70 trigger, just below don't.
 - [ ] Dry-week test: sunny dry week → `Semaine ensoleillée, sans pluie.`; grey → `Semaine nuageuse, sans pluie.`; exactly half sunny → nuageuse; no weather code → no line; any rainy day → `Pluie : …` and no recap line.
-- [ ] Best-day test: driest wins; tie → warmest; tie → earliest; an alert day never wins; all days on alert → no `Plus beau jour` line.
+- [ ] Best-day test: sunny beats a drier grey day and a drier, warmer snow day; no sun → snow beats dry grey; no sun, no snow → least rain; then warmest, then earliest; an alert day never wins; all on alert → no line.
+- [ ] Snow is not rain: snow-only day → only `Neige`; snow-only week → no `Pluie` line, dry-week line.
 - [ ] Request test: a Gazette of Monday 2026-11-02 asks Open-Meteo for `start_date=2026-11-02&end_date=2026-11-08` with max/min temperature, precipitation, snowfall, weather code, gusts.
 - [ ] Old save with `gazette_weather` « Ta semaine : … » → that Gazette still shows it, unchanged.
 - [ ] Offline, Gazette not fetched → « Les prévisions ne sont pas encore arrivées. »
@@ -62,7 +63,21 @@ Autopilot 2026-10-29, one implementer, one brick.
 
 - Round 1 hunks (feedback): `src/remote_weather.rs` — `skies` / `sunny_days` from `wmo_code_to_condition` (`Clear | PartlyCloudy`), `dry_week` line when no rainy day and at least one code, takes the `Pluie` line's place (`days_line("Pluie", …).or(dry_week)`); test `test_dry_week_recap`.
 
+- Validation autofix (3 rounds): `precipitation_sum` → `rain_sum` + `showers_sum` (`rain_at`), snow no longer counts as rain; `best_day` (levels sunny → snow → rest, then rain, max, order) and `dry_week` extracted, `is_sunny` shared; closure param `sky`; tests `test_snow_is_not_rain`, `test_best_day` rewritten incl. sunny-over-snow.
+
 ## Review
+
+### Round validation — 2026-10-30
+
+LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓
+
+- 🟡 [correctness] `precipitation_sum` includes snow: snow-only day showed Pluie + Neige → fixed, rain + showers only (user decision) (autofix 1)
+- 🟡 [structure] `describe_week` 99 lines → fixed, `best_day` / `dry_week` extracted (autofix 1)
+- 🟡 [style] closure param shadowed `condition` → fixed, `sky` (autofix 1)
+- 🟠 [correctness] after autofix 1 a snow day could win « Plus beau jour » → fixed, levels sunny → snow → least rain (user decision) (autofix 2)
+- 🟡 [correctness] no test for sunny over snow → fixed, test bites when levels swapped (autofix 3)
+
+VERDICT: clean · 3 autofix rounds · proof: fmt ✅ clippy ✅ (`-A clippy::double_must_use`, pre-existing) test ✅ (281)
 
 ## Verification
 

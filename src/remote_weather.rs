@@ -45,7 +45,8 @@ struct DailyResponse {
 struct Daily {
     temperature_2m_max: Vec<Option<f64>>,
     temperature_2m_min: Vec<Option<f64>>,
-    precipitation_sum: Vec<Option<f64>>,
+    rain_sum: Vec<Option<f64>>,
+    showers_sum: Vec<Option<f64>>,
     snowfall_sum: Vec<Option<f64>>,
     weather_code: Vec<Option<i32>>,
     wind_gusts_10m_max: Vec<Option<f64>>,
@@ -99,7 +100,7 @@ async fn week_forecast(
 fn week_forecast_url(latitude: f64, longitude: f64, monday: NaiveDate) -> String {
     let sunday = monday + Days::new(6);
     format!(
-        "{FORECAST_URL}?latitude={latitude}&longitude={longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,snowfall_sum,weather_code,wind_gusts_10m_max&start_date={monday}&end_date={sunday}&timezone=auto"
+        "{FORECAST_URL}?latitude={latitude}&longitude={longitude}&daily=temperature_2m_max,temperature_2m_min,rain_sum,showers_sum,snowfall_sum,weather_code,wind_gusts_10m_max&start_date={monday}&end_date={sunday}&timezone=auto"
     )
 }
 
@@ -119,32 +120,15 @@ fn describe_week(daily: &Daily) -> Option<String> {
     let condition =
         |day| at(&daily.weather_code, day).map(WeatherNormalizer::wmo_code_to_condition);
     let rainy = days_where(|day| {
-        at(&daily.precipitation_sum, day).is_some_and(|millimeters| millimeters >= RAINY_DAY_MM)
+        rain_at(daily, day).is_some_and(|millimeters| millimeters >= RAINY_DAY_MM)
     });
     let skies: Vec<_> = (0..WEEKDAYS.len()).filter_map(condition).collect();
-    let sunny_days = skies
-        .iter()
-        .filter(|sky| {
-            matches!(
-                sky,
-                WeatherCondition::Clear | WeatherCondition::PartlyCloudy
-            )
-        })
-        .count();
-    let dry_week = (rainy.is_empty() && !skies.is_empty()).then(|| {
-        if sunny_days * 2 > skies.len() {
-            "Semaine ensoleillée, sans pluie."
-        } else {
-            "Semaine nuageuse, sans pluie."
-        }
-        .to_string()
-    });
+    let sunny = days_where(|day| condition(day).is_some_and(is_sunny));
     let snowy = days_where(|day| {
         at(&daily.snowfall_sum, day).is_some_and(|centimeters| centimeters > 0.0)
-            || condition(day).is_some_and(|condition| condition.is_snowing())
+            || condition(day).is_some_and(|sky| sky.is_snowing())
     });
-    let stormy =
-        days_where(|day| condition(day).is_some_and(|condition| condition.is_thunderstorm()));
+    let stormy = days_where(|day| condition(day).is_some_and(|sky| sky.is_thunderstorm()));
     let hot = days_where(|day| {
         at(&daily.temperature_2m_max, day).is_some_and(|celsius| celsius >= HEAT_WAVE_CELSIUS)
     });
@@ -154,24 +138,6 @@ fn describe_week(daily: &Daily) -> Option<String> {
     let windy = days_where(|day| {
         at(&daily.wind_gusts_10m_max, day).is_some_and(|kmh| kmh >= STRONG_GUSTS_KMH)
     });
-    let best_day = (0..WEEKDAYS.len())
-        .filter(|day| {
-            ![&stormy, &hot, &cold, &windy]
-                .iter()
-                .any(|alert| alert.contains(day))
-        })
-        .filter_map(|day| {
-            Some((
-                day,
-                at(&daily.precipitation_sum, day)?,
-                at(&daily.temperature_2m_max, day)?,
-            ))
-        })
-        .min_by(|(_, rain, warmth), (_, other_rain, other_warmth)| {
-            rain.total_cmp(other_rain)
-                .then(other_warmth.total_cmp(warmth))
-        })
-        .map(|(day, ..)| day);
 
     let lines = [
         Some(format!(
@@ -179,8 +145,9 @@ fn describe_week(daily: &Daily) -> Option<String> {
             degrees(maximum),
             degrees(minimum)
         )),
-        best_day.map(|day| format!("Plus beau jour\u{202F}: {}.", WEEKDAYS[day])),
-        days_line("Pluie", &rainy, None).or(dry_week),
+        best_day(daily, &[&sunny, &snowy], &[&stormy, &hot, &cold, &windy])
+            .map(|day| format!("Plus beau jour\u{202F}: {}.", WEEKDAYS[day])),
+        days_line("Pluie", &rainy, None).or_else(|| dry_week(&skies)),
         days_line("Neige", &snowy, None),
         days_line("⚠ Alerte orage", &stormy, None),
         days_line(
@@ -203,8 +170,60 @@ fn describe_week(daily: &Daily) -> Option<String> {
     Some(lines.into_iter().flatten().collect::<Vec<_>>().join("\n"))
 }
 
+fn best_day(daily: &Daily, preferred: &[&[usize]], alerts: &[&[usize]]) -> Option<usize> {
+    (0..WEEKDAYS.len())
+        .filter(|day| !alerts.iter().any(|alert| alert.contains(day)))
+        .filter_map(|day| {
+            let tier = preferred
+                .iter()
+                .position(|days| days.contains(&day))
+                .unwrap_or(preferred.len());
+            Some((
+                day,
+                tier,
+                rain_at(daily, day)?,
+                at(&daily.temperature_2m_max, day)?,
+            ))
+        })
+        .min_by(
+            |(_, tier, rain, warmth), (_, other_tier, other_rain, other_warmth)| {
+                tier.cmp(other_tier)
+                    .then(rain.total_cmp(other_rain))
+                    .then(other_warmth.total_cmp(warmth))
+            },
+        )
+        .map(|(day, ..)| day)
+}
+
+fn dry_week(skies: &[WeatherCondition]) -> Option<String> {
+    if skies.is_empty() {
+        return None;
+    }
+    let sunny_days = skies.iter().filter(|sky| is_sunny(**sky)).count();
+    let recap = if sunny_days * 2 > skies.len() {
+        "Semaine ensoleillée, sans pluie."
+    } else {
+        "Semaine nuageuse, sans pluie."
+    };
+    Some(recap.to_string())
+}
+
+fn is_sunny(sky: WeatherCondition) -> bool {
+    matches!(
+        sky,
+        WeatherCondition::Clear | WeatherCondition::PartlyCloudy
+    )
+}
+
 fn at<T: Copy>(values: &[Option<T>], day: usize) -> Option<T> {
     values.get(day).copied().flatten()
+}
+
+fn rain_at(daily: &Daily, day: usize) -> Option<f64> {
+    [at(&daily.rain_sum, day), at(&daily.showers_sum, day)]
+        .into_iter()
+        .flatten()
+        .reduce(|rain, showers| rain + showers)
 }
 
 fn days_where(is_met: impl Fn(usize) -> bool) -> Vec<usize> {
@@ -258,14 +277,23 @@ mod tests {
                 Some(4.0),
                 Some(3.0),
             ],
-            precipitation_sum: vec![
+            rain_sum: vec![
                 Some(4.0),
-                Some(1.0),
+                Some(0.5),
                 Some(0.9),
                 Some(0.0),
                 Some(0.2),
                 Some(0.0),
                 Some(0.4),
+            ],
+            showers_sum: vec![
+                Some(0.0),
+                Some(0.5),
+                Some(0.0),
+                Some(0.0),
+                Some(0.0),
+                Some(0.0),
+                Some(0.0),
             ],
             snowfall_sum: vec![Some(0.0); 7],
             weather_code: vec![
@@ -303,8 +331,9 @@ mod tests {
     #[test]
     fn test_dry_week_recap() {
         let mut daily = calm_week();
-        daily.precipitation_sum[0] = Some(0.0);
-        daily.precipitation_sum[1] = Some(0.0);
+        daily.rain_sum[0] = Some(0.0);
+        daily.rain_sum[1] = Some(0.0);
+        daily.showers_sum[1] = Some(0.0);
         daily.weather_code = vec![
             Some(0),
             Some(1),
@@ -318,7 +347,7 @@ mod tests {
             describe_week(&daily).as_deref(),
             Some(
                 "Prévisions de la semaine\u{202F}: 18 °C au plus, 2 °C au moins.\n\
-                 Plus beau jour\u{202F}: jeudi.\n\
+                 Plus beau jour\u{202F}: samedi.\n\
                  Semaine ensoleillée, sans pluie."
             )
         );
@@ -363,6 +392,39 @@ mod tests {
         assert_eq!(
             line(&daily, "Neige").as_deref(),
             Some("Neige\u{202F}: samedi.")
+        );
+    }
+
+    #[test]
+    fn test_snow_is_not_rain() {
+        let mut daily = calm_week();
+        daily.snowfall_sum[5] = Some(4.2);
+        daily.weather_code[5] = Some(73);
+        assert_eq!(
+            line(&daily, "Pluie").as_deref(),
+            Some("Pluie\u{202F}: lundi, mardi.")
+        );
+        assert_eq!(
+            line(&daily, "Neige").as_deref(),
+            Some("Neige\u{202F}: samedi.")
+        );
+
+        daily.rain_sum = vec![Some(0.0); 7];
+        daily.showers_sum = vec![Some(0.0); 7];
+        daily.snowfall_sum = vec![Some(2.0); 7];
+        daily.weather_code = vec![Some(71); 7];
+        assert_eq!(line(&daily, "Pluie"), None);
+        assert_eq!(
+            line(&daily, "Neige").as_deref(),
+            Some("Neige\u{202F}: lundi, mardi, mercredi, jeudi, vendredi, samedi, dimanche.")
+        );
+        assert_eq!(
+            line(&daily, "Semaine").as_deref(),
+            Some("Semaine nuageuse, sans pluie.")
+        );
+        assert_eq!(
+            line(&daily, "Plus beau jour").as_deref(),
+            Some("Plus beau jour\u{202F}: jeudi.")
         );
     }
 
@@ -451,37 +513,69 @@ mod tests {
         let best_day = |daily: &Daily| line(daily, "Plus beau jour");
 
         let mut daily = calm_week();
-        daily.precipitation_sum[6] = Some(0.0);
-        daily.temperature_2m_max[6] = Some(17.6);
-        assert_eq!(
-            best_day(&daily).as_deref(),
-            Some("Plus beau jour\u{202F}: jeudi.")
-        );
-
-        daily.precipitation_sum[3] = Some(0.1);
-        assert_eq!(
-            best_day(&daily).as_deref(),
-            Some("Plus beau jour\u{202F}: dimanche.")
-        );
-
-        daily.temperature_2m_max[6] = Some(13.1);
+        daily.rain_sum[3] = Some(0.3);
+        daily.rain_sum[5] = Some(0.1);
+        daily.rain_sum[6] = Some(0.0);
         assert_eq!(
             best_day(&daily).as_deref(),
             Some("Plus beau jour\u{202F}: samedi.")
         );
 
-        daily.wind_gusts_10m_max[5] = Some(80.0);
+        daily.rain_sum[4] = Some(0.1);
         assert_eq!(
             best_day(&daily).as_deref(),
-            Some("Plus beau jour\u{202F}: dimanche.")
+            Some("Plus beau jour\u{202F}: vendredi.")
         );
 
-        daily.weather_code[6] = Some(95);
-        daily.temperature_2m_max[3] = Some(36.0);
-        daily.temperature_2m_min[4] = Some(-11.0);
+        daily.temperature_2m_max[5] = Some(15.0);
         assert_eq!(
             best_day(&daily).as_deref(),
-            Some("Plus beau jour\u{202F}: mercredi.")
+            Some("Plus beau jour\u{202F}: vendredi.")
+        );
+
+        daily.wind_gusts_10m_max[4] = Some(80.0);
+        assert_eq!(
+            best_day(&daily).as_deref(),
+            Some("Plus beau jour\u{202F}: samedi.")
+        );
+
+        let mut daily = calm_week();
+        daily.weather_code = vec![
+            Some(61),
+            Some(61),
+            Some(3),
+            Some(3),
+            Some(3),
+            Some(1),
+            Some(71),
+        ];
+        daily.rain_sum[5] = Some(0.3);
+        daily.rain_sum[6] = Some(0.0);
+        daily.snowfall_sum[6] = Some(2.0);
+        daily.temperature_2m_max[6] = Some(20.0);
+        assert_eq!(
+            best_day(&daily).as_deref(),
+            Some("Plus beau jour\u{202F}: samedi.")
+        );
+
+        let mut daily = calm_week();
+        daily.weather_code = vec![Some(3); 7];
+        daily.snowfall_sum[4] = Some(1.5);
+        assert_eq!(
+            best_day(&daily).as_deref(),
+            Some("Plus beau jour\u{202F}: vendredi.")
+        );
+
+        daily.snowfall_sum[4] = Some(0.0);
+        assert_eq!(
+            best_day(&daily).as_deref(),
+            Some("Plus beau jour\u{202F}: jeudi.")
+        );
+
+        daily.temperature_2m_max[3] = Some(36.0);
+        assert_eq!(
+            best_day(&daily).as_deref(),
+            Some("Plus beau jour\u{202F}: samedi.")
         );
 
         daily.wind_gusts_10m_max = vec![Some(90.0); 7];
@@ -494,7 +588,7 @@ mod tests {
         assert_eq!(
             week_forecast_url(48.85, 2.35, monday),
             "https://api.open-meteo.com/v1/forecast?latitude=48.85&longitude=2.35\
-             &daily=temperature_2m_max,temperature_2m_min,precipitation_sum,snowfall_sum,weather_code,wind_gusts_10m_max\
+             &daily=temperature_2m_max,temperature_2m_min,rain_sum,showers_sum,snowfall_sum,weather_code,wind_gusts_10m_max\
              &start_date=2026-11-02&end_date=2026-11-08&timezone=auto"
         );
     }
