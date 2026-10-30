@@ -104,7 +104,7 @@ fn content_for(day: usize, entry: Entry, counter: String) -> Box<dyn MailContent
             format!("Lettre {counter} (glissée sous la porte)"),
             CREEPY_LETTERS[index],
             CREEPY_SENDER,
-            Frame::Parchment,
+            Frame::Torn,
         )),
         Entry::Sam(index) => Box::new(Written::new(
             format!("Lettre {counter}"),
@@ -251,6 +251,7 @@ pub(crate) mod save_golden {
 mod tests {
     use super::entry_view;
     use super::save_golden::{SavedGame, entries_fixture, render};
+    use crate::overlay::Frame;
     use crate::story::Entry;
 
     fn titles(entries: &[Entry]) -> Vec<String> {
@@ -314,6 +315,32 @@ mod tests {
                 "Lettre 4/6",
                 "Lettre 5/6 (glissée sous la porte)",
                 "Lettre 6/6",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_letter_slipped_under_the_door_comes_on_torn_paper() {
+        let save = SavedGame::load();
+        let context = save.context(12);
+        let delivered = [
+            (1, Entry::Main(0)),
+            (1, Entry::Sam(0)),
+            (1, Entry::Neighbours(0)),
+            (1, Entry::Marcel(0)),
+            (1, Entry::Creepy(0)),
+        ];
+        let frames: Vec<Frame> = (0..delivered.len())
+            .map(|index| entry_view(&delivered, index, &context).unwrap().frame)
+            .collect();
+        assert_eq!(
+            frames,
+            [
+                Frame::Parchment,
+                Frame::Parchment,
+                Frame::Parchment,
+                Frame::Parchment,
+                Frame::Torn,
             ]
         );
     }
