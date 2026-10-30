@@ -82,6 +82,9 @@ struct Cli {
     #[arg(long, help = "Simulate July 14th fireworks (at night)")]
     fireworks: bool,
 
+    #[arg(long, help = "Simulate the neighbours' party (table in the garden)")]
+    neighbours: bool,
+
     #[arg(long, help = "Cycle through every weather scene, 1 second each")]
     demo: bool,
 
@@ -334,6 +337,8 @@ async fn main() -> io::Result<()> {
                 Some(holiday::Holiday::christmas())
             } else if cli.fireworks {
                 Some(holiday::Holiday::national_day())
+            } else if cli.neighbours {
+                Some(holiday::Holiday::neighbours_party())
             } else {
                 None
             },

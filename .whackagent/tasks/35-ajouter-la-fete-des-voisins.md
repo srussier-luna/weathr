@@ -1,6 +1,6 @@
 ---
 issue: 35
-status: todo
+status: to-test
 wiki: [[animation]], [[mail]]
 note: fin mai : table dehors, les Voisins réunis au jardin
 created: 2026-10-30
@@ -37,8 +37,28 @@ created: 2026-10-30
 
 ## Implementation
 
+- `src/holiday.rs` : `is_neighbours_party`, `Holiday::neighbours_party()`, `last_friday_of_may()`, test 29/05/2026 et 28/05/2027 contre les jours voisins.
+- `src/animation/neighbours_party.rs` (nouveau) : `Neighbour` {Rose, Paulo, Odile, Leo, Gaston}, table, bancs, places, `party_x`, rendu, 4 tests.
+- `src/app.rs` : `NEIGHBOUR_FIRST_LETTERS` (Rose 1, Paulo 4, Odile 7, Gaston 10, Léo 16), `guests_on()` depuis la Timeline, `invites_every_neighbour`, Badge après Pâques ; tests (table conforme aux expéditeurs de `letters::defaults()`, invités jours 1 / 3 / 15 / 16).
+- `src/animation_manager.rs` : `set_guests` ; fête dessinée avant le Facteur et Léo ; Gaston absent de table pendant toute sa tournée (`postman.is_on_round()`), Léo marchant masqué quand il est à table.
+- `src/animation/postman.rs` : `is_on_round()` + test, `POSTAL_YELLOW` public ; `src/animation/kid.rs` : `SKIN` / `SHIRT` publics.
+- `src/scene/decorations.rs` : `PINE_OFFSET` / `PINE_WIDTH` en constantes (comportement inchangé).
+- `src/badges.rs` : Badge `neighbours_party` « Fête des voisins » ; `src/main.rs` : `--neighbours` ; `src/demo.rs` : scène après Pâques.
+- Choix : expéditeurs jamais comparés à l'exécution (fichier de Lettres modifiable), seulement en test. Jeanne n'a pas de place.
+- Build : `cargo build`, `cargo fmt --check`, `cargo test` verts. Clippy : seule l'erreur connue #79.
+
 ## Review
 
 ## Verification
+
+Captures pty, HOME jetable (jamais le vrai) :
+- ✅ `--neighbours` à 200×45, 121×40, 90×30, 80×24 : table et 5 invités entre maison et rivière, loin de la mare et de la boîte aux lettres.
+- ✅ Nuit + pluie : table et invités présents.
+- ✅ `--neighbours --day 1` : Rose seule ; `--day 12` : Rose, Paulo, Odile, Gaston.
+- ✅ Visite d'accueil (Facteur dehors) : place de Gaston vide.
+- ✅ Jour normal : pas de table.
+- ✅ `--demo` : `DEMO 34/37 Fête des voisins`.
+- ⚠️ Badge un vrai jour de fête : non vu (simulations sans Badges).
+- ⚠️ Avant le jour 16, Léo qui joue peut passer devant la table.
 
 ## Feedback

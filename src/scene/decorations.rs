@@ -4,6 +4,8 @@ use crate::scene::tree::Tree;
 use crossterm::style::Color;
 use std::io;
 
+pub const PINE_OFFSET: u16 = 18;
+pub const PINE_WIDTH: u16 = 10;
 const MAILBOX_WIDTH: u16 = 7;
 const MAILBOX_DAY: Color = Color::Rgb {
     r: 255,
@@ -106,10 +108,10 @@ impl Decorations {
         if config.width > 120 {
             let (pine_lines, pine_color) = self.get_pine_tree(config.is_day);
             let pine_height = pine_lines.len() as u16;
-            let pine_x = config.house_x + config.house_width + 18; // 18 chars right of house
+            let pine_x = config.house_x + config.house_width + PINE_OFFSET; // 18 chars right of house
             let pine_y = config.horizon_y.saturating_sub(pine_height);
 
-            if pine_x + 10 < config.width {
+            if pine_x + PINE_WIDTH < config.width {
                 // Check if full tree fits
                 for (i, line) in pine_lines.iter().enumerate() {
                     for (j, ch) in line.chars().enumerate() {

@@ -1,4 +1,4 @@
-use chrono::{Datelike, Local, NaiveDate};
+use chrono::{Datelike, Days, Local, NaiveDate, Weekday};
 
 const NEW_YEAR_WINDOW_DAYS: i64 = 7;
 const EASTER_WINDOW_DAYS: i64 = 7;
@@ -50,6 +50,7 @@ pub struct Holiday {
     pub is_spring: bool,
     pub is_easter: bool,
     pub is_epiphany: bool,
+    pub is_neighbours_party: bool,
     pub meteor_shower: Option<MeteorShower>,
     pub is_winter: bool,
     pub season: Season,
@@ -74,6 +75,7 @@ impl Holiday {
             is_easter: easter_sunday(date.year())
                 .is_some_and(|easter| (date - easter).num_days().abs() <= EASTER_WINDOW_DAYS),
             is_epiphany: month == 1 && day == 6,
+            is_neighbours_party: last_friday_of_may(date.year()) == Some(date),
             meteor_shower: MeteorShower::on(month, day),
             is_winter: matches!(month, 12 | 1 | 2),
             season: Season::on(month, day),
@@ -118,6 +120,15 @@ impl Holiday {
         Self {
             is_spring: true,
             is_easter: true,
+            season: Season::Spring,
+            ..Self::default()
+        }
+    }
+
+    pub fn neighbours_party() -> Self {
+        Self {
+            is_spring: true,
+            is_neighbours_party: true,
             season: Season::Spring,
             ..Self::default()
         }
@@ -176,6 +187,13 @@ fn easter_sunday(year: i32) -> Option<NaiveDate> {
     let day = (h + l - 7 * m + 114) % 31 + 1;
 
     NaiveDate::from_ymd_opt(year, month as u32, day as u32)
+}
+
+fn last_friday_of_may(year: i32) -> Option<NaiveDate> {
+    let last_day = NaiveDate::from_ymd_opt(year, 5, 31)?;
+    let since_friday =
+        (last_day.weekday().num_days_from_monday() + 7 - Weekday::Fri.num_days_from_monday()) % 7;
+    last_day.checked_sub_days(Days::new(since_friday.into()))
 }
 
 #[cfg(test)]
@@ -271,5 +289,17 @@ mod tests {
         assert!(Holiday::on(date(2027, 1, 6)).is_epiphany);
         assert!(!Holiday::on(date(2027, 1, 7)).is_epiphany);
         assert!(!Holiday::on(date(2027, 6, 6)).is_epiphany);
+    }
+
+    #[test]
+    fn test_neighbours_party_is_the_last_friday_of_may() {
+        assert!(Holiday::on(date(2026, 5, 29)).is_neighbours_party);
+        assert!(!Holiday::on(date(2026, 5, 28)).is_neighbours_party);
+        assert!(!Holiday::on(date(2026, 5, 30)).is_neighbours_party);
+        assert!(!Holiday::on(date(2026, 5, 22)).is_neighbours_party);
+        assert!(Holiday::on(date(2027, 5, 28)).is_neighbours_party);
+        assert!(!Holiday::on(date(2027, 5, 27)).is_neighbours_party);
+        assert!(!Holiday::on(date(2027, 5, 29)).is_neighbours_party);
+        assert!(Holiday::on(date(2026, 5, 29)).is_spring);
     }
 }

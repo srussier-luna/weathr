@@ -24,6 +24,7 @@ use crate::animation::{
     leaves::FallingLeaves,
     lore::{Lore, Unlocks},
     moon::MoonSystem,
+    neighbours_party::{self, Neighbour},
     new_year::NewYearBanner,
     owl::Owl,
     postman::Postman,
@@ -103,6 +104,7 @@ pub struct AnimationManager {
     creepy: Creepy,
     finds: Finds,
     star_gazing: StarGazing,
+    guests: Vec<Neighbour>,
     season: Season,
     animation_controller: AnimationController,
     last_frame_time: Instant,
@@ -153,6 +155,7 @@ impl AnimationManager {
             creepy: Creepy::new(),
             finds: Finds::new(),
             star_gazing: StarGazing::new(),
+            guests: Vec::new(),
             season: Season::default(),
             animation_controller: AnimationController::new(),
             last_frame_time: Instant::now(),
@@ -185,6 +188,10 @@ impl AnimationManager {
         self.lore.set_unlocks(unlocks);
         self.postman.set_bell(unlocks.choices.postman_bell);
         self.kid.set_avoids_puddles(unlocks.choices.avoids_puddles);
+    }
+
+    pub fn set_guests(&mut self, guests: Vec<Neighbour>) {
+        self.guests = guests;
     }
 
     pub fn set_finds_remaining(&mut self, has_objects_left: bool, has_bottles_left: bool) {
@@ -495,12 +502,26 @@ impl AnimationManager {
         self.squirrel.update(&layout, conditions, &mut rng);
         self.squirrel.render(renderer)?;
 
+        let is_leo_at_table = holiday.is_neighbours_party && self.guests.contains(&Neighbour::Leo);
+        if holiday.is_neighbours_party {
+            let is_gaston_on_round = self.postman.is_on_round();
+            let seated: Vec<Neighbour> = self
+                .guests
+                .iter()
+                .copied()
+                .filter(|guest| *guest != Neighbour::Gaston || !is_gaston_on_round)
+                .collect();
+            neighbours_party::render(renderer, &layout, &river, &seated)?;
+        }
+
         self.postman.set_april_fools(holiday.is_april_fools);
         self.postman.update(&layout);
         self.postman.render(renderer, &layout)?;
 
-        self.kid.update(&layout, conditions, &mut rng);
-        self.kid.render(renderer, &layout, conditions)?;
+        if !is_leo_at_table {
+            self.kid.update(&layout, conditions, &mut rng);
+            self.kid.render(renderer, &layout, conditions)?;
+        }
 
         if holiday.is_halloween {
             self.halloween.render_spirits(renderer, &layout)?;
