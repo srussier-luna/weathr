@@ -27,7 +27,7 @@ Version personnalisée de [Veirt/weathr](https://github.com/Veirt/weathr) : la m
 Il faut [Rust](https://www.rust-lang.org/tools/install) et git. Le dépôt est privé : demander une invitation au préalable.
 
 ```bash
-git clone git@github.com:srussier-luna/weathr.git ~/.weathr
+git clone -b main git@github.com:srussier-luna/weathr.git ~/.weathr
 cargo build --release --manifest-path ~/.weathr/Cargo.toml
 cp ~/.weathr/target/release/weathr ~/.local/bin/weathr
 ```

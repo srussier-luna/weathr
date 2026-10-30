@@ -17,7 +17,7 @@ All network calls go to Open-Meteo (weather), ipinfo.io (IP location), Nominatim
   `Result` over `mpsc(1)` channel drained by main loop (see [[architecture]]).
 - `AppState::update_weather` (`src/app_state.rs:66`) derives `WeatherConditions`
   (`src/weather/types.rs:210`): `is_raining`, `is_snowing`, `is_thunderstorm`,
-  `is_cloudy`, `is_foggy`, `is_day`. Thunderstorm beats rain. Rain stop
+  `is_cloudy`, `is_overcast`, `is_foggy`, `is_day`. `is_cloudy` (Éclaircies, Nuageux, Couvert) drives cloud drawing; `is_overcast` (Nuageux, Couvert) drives `is_clear_sky()` for shooting stars and constellations. Thunderstorm beats rain. Rain stop
   (not into snow) → 30 min rainbow.
 
 ### Units invariant
@@ -51,7 +51,7 @@ decimals), `location.json` + `geocode.json` (24 h). Writes fire-and-forget
   Disabled in simulation.
 - `remote_weather.rs` — one-shot fetches for story content (`src/remote_weather.rs:46`):
   `Request::Postcard(i)` gets current weather in Carte postale's city;
-  `Request::WeekRecap(week)` gets past 7 days at home for Gazette. Replies land
+  `Request::WeekForecast { week, monday }` gets the Gazette's Monday → Sunday at home (`start_date`/`end_date`, daily max/min, rain + showers, snowfall, weather code, gusts) and turns it into the Gazette text (`describe_week`). Replies land
   in `Progress`, saved once, so each fetched once. See [[mail]].
 
 ## Offline and simulation

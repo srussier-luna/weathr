@@ -11,6 +11,7 @@ use crate::animation::{
     creepy::Creepy,
     dog::Dog,
     duck::Duck,
+    epiphany,
     finds::Finds,
     fireflies::FireflySystem,
     fireworks::Fireworks,
@@ -34,7 +35,7 @@ use crate::animation::{
     snowman::Snowman,
     spring::Spring,
     squirrel::Squirrel,
-    stars::StarSystem,
+    stars::{ShootingStarSky, StarSystem},
     sunny::SunnyAnimation,
     thunderstorm::ThunderstormSystem,
 };
@@ -206,8 +207,30 @@ impl AnimationManager {
         self.postman.set_round_hour(hour);
     }
 
+    pub fn set_story_frozen(&mut self, is_frozen: bool) {
+        self.postman.set_story_frozen(is_frozen);
+    }
+
     pub fn set_mail_waiting(&mut self, is_waiting: bool) {
         self.postman.set_mail_waiting(is_waiting);
+    }
+
+    pub fn postman_visit(&mut self) {
+        self.postman.visit();
+    }
+
+    pub fn postman_leave(&mut self) {
+        self.postman.leave();
+    }
+
+    pub fn is_postman_arriving(&self, term_width: u16, term_height: u16) -> bool {
+        self.postman
+            .is_arriving(&GardenLayout::new(term_width, term_height))
+    }
+
+    pub fn postman_head(&self, term_width: u16, term_height: u16) -> Option<(u16, u16)> {
+        self.postman
+            .head(&GardenLayout::new(term_width, term_height))
     }
 
     pub fn sightings(&self, conditions: &WeatherConditions) -> Sightings {
@@ -236,6 +259,13 @@ impl AnimationManager {
         let horizon_y = term_height.saturating_sub(ground_height);
 
         if !conditions.is_day {
+            self.star_system.set_sky(if !conditions.is_clear_sky() {
+                ShootingStarSky::Covered
+            } else if state.holiday.meteor_shower.is_some() {
+                ShootingStarSky::MeteorShower
+            } else {
+                ShootingStarSky::Clear
+            });
             self.star_system.update(term_width, term_height, &mut rng);
             self.star_system.render(renderer)?;
             self.moon_system.update(term_width, term_height);
@@ -416,6 +446,10 @@ impl AnimationManager {
         self.lore.render_balloon(renderer)?;
         self.lore.render_scenery(renderer, &layout, conditions)?;
 
+        if holiday.is_epiphany {
+            epiphany::render_crown(renderer, &layout)?;
+        }
+
         self.creepy.update(conditions, &unlocks, &mut rng);
         self.creepy
             .render(renderer, &layout, conditions, &unlocks)?;
@@ -461,6 +495,7 @@ impl AnimationManager {
         self.squirrel.update(&layout, conditions, &mut rng);
         self.squirrel.render(renderer)?;
 
+        self.postman.set_april_fools(holiday.is_april_fools);
         self.postman.update(&layout);
         self.postman.render(renderer, &layout)?;
 
