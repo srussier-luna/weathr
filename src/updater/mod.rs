@@ -11,7 +11,7 @@ use std::process::{Command, ExitStatus, Stdio};
 use std::thread;
 use std::time::Duration;
 
-const SOURCE_DIR: &str = env!("CARGO_MANIFEST_DIR");
+pub(crate) const SOURCE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 const LOG_FILE: &str = "update.log";
 const PREFIX: &str = "[weathr]";
@@ -67,11 +67,11 @@ fn update_source() -> io::Result<()> {
     update(source)
 }
 
-fn is_git_checkout(source: &Path) -> bool {
+pub(crate) fn is_git_checkout(source: &Path) -> bool {
     source.join(".git").exists()
 }
 
-fn git_output(source: &Path, args: &[&str]) -> Option<String> {
+pub(crate) fn git_output(source: &Path, args: &[&str]) -> Option<String> {
     let output = Command::new("git")
         .args(args)
         .current_dir(source)
@@ -85,12 +85,12 @@ fn git_output(source: &Path, args: &[&str]) -> Option<String> {
         .then(|| String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
-fn is_clean(source: &Path) -> bool {
+pub(crate) fn is_clean(source: &Path) -> bool {
     git_output(source, &["status", "--porcelain", "--untracked-files=no"])
         .is_some_and(|status| status.trim().is_empty())
 }
 
-async fn fetch(source: &Path) -> bool {
+pub(crate) async fn fetch(source: &Path) -> bool {
     let mut command = tokio::process::Command::new("git");
     command
         .args(["fetch", "--quiet"])
@@ -118,9 +118,12 @@ fn uses_default_ssh(source: &Path) -> bool {
 }
 
 fn has_pending_changes(source: &Path) -> bool {
+    pending_count(source).is_some_and(|count| count > 0)
+}
+
+pub(crate) fn pending_count(source: &Path) -> Option<usize> {
     git_output(source, &["rev-list", "--count", "HEAD..@{u}"])
-        .and_then(|count| count.trim().parse::<usize>().ok())
-        .is_some_and(|count| count > 0)
+        .and_then(|count| count.trim().parse().ok())
 }
 
 fn ask_confirmation() -> bool {
@@ -302,8 +305,12 @@ fn wait_for_enter() {
     let _ = io::stdin().read_line(&mut String::new());
 }
 
+pub(crate) fn config_dir() -> Option<PathBuf> {
+    dirs::config_dir().map(|dir| dir.join("weathr"))
+}
+
 fn config_path(file: &str) -> Option<PathBuf> {
-    dirs::config_dir().map(|dir| dir.join("weathr").join(file))
+    config_dir().map(|dir| dir.join(file))
 }
 
 #[cfg(test)]

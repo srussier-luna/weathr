@@ -6,6 +6,7 @@ mod badges;
 mod cache;
 mod config;
 mod demo;
+mod diagnostic;
 mod error;
 mod geolocation;
 mod holiday;
@@ -126,6 +127,12 @@ struct Cli {
         help = "Update weathr from its git repository, then rebuild and reinstall it"
     )]
     update: bool,
+
+    #[arg(
+        long,
+        help = "Check git, cargo, the source clone, the network and file rights, then say what to fix"
+    )]
+    diagnostic: bool,
 }
 
 #[tokio::main]
@@ -183,6 +190,13 @@ async fn main() -> io::Result<()> {
         let mut cmd = Cli::command();
         let mut out = io::stdout();
         generate(shell, &mut cmd, "weathr", &mut out);
+        return Ok(());
+    }
+
+    if cli.diagnostic {
+        if !diagnostic::run().await {
+            std::process::exit(1);
+        }
         return Ok(());
     }
 
