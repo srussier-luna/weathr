@@ -88,11 +88,33 @@ fn earn(earned: &mut BTreeSet<String>, ids: Vec<&'static str>) -> Vec<&'static B
         .collect()
 }
 
+fn badge_card(overlay: Option<Overlay>) -> Option<&'static Badge> {
+    match overlay {
+        Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => Some(badge),
+        _ => None,
+    }
+}
+
 fn next_overlay(
     overlay: Option<Overlay>,
     pending_badges: &mut VecDeque<&'static Badge>,
 ) -> Option<Overlay> {
-    overlay.or_else(|| pending_badges.pop_front().map(Overlay::NewBadge))
+    match overlay {
+        None => pending_badges.pop_front().map(Overlay::NewBadge),
+        Some(Overlay::PostmanNote) => Some(
+            pending_badges
+                .pop_front()
+                .map_or(Overlay::PostmanNote, Overlay::NoteBadge),
+        ),
+        overlay => overlay,
+    }
+}
+
+fn closed_overlay(overlay: Option<Overlay>) -> Option<Overlay> {
+    match overlay {
+        Some(Overlay::NoteBadge(_)) => Some(Overlay::PostmanNote),
+        _ => None,
+    }
 }
 
 fn requeue_replaced_badge(
@@ -100,8 +122,12 @@ fn requeue_replaced_badge(
     current: Option<Overlay>,
     pending_badges: &mut VecDeque<&'static Badge>,
 ) {
-    if let (Some(Overlay::NewBadge(badge)), Some(current)) = (previous, current)
-        && !matches!(current, Overlay::NewBadge(_))
+    if let (Some(badge), Some(current)) = (badge_card(previous), current)
+        && badge_card(Some(current)).is_none()
+        && !matches!(
+            (previous, current),
+            (Some(Overlay::NoteBadge(_)), Overlay::PostmanNote)
+        )
     {
         pending_badges.push_front(badge);
     }
@@ -323,6 +349,7 @@ enum Overlay {
     Help,
     Index(usize),
     NewBadge(&'static Badge),
+    NoteBadge(&'static Badge),
     Notes(usize),
     PostmanNote,
     Welcome(Step),
@@ -815,8 +842,10 @@ impl App {
                 pages.swap_remove(page)
             }
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
-            Some(Overlay::NewBadge(badge)) => views::badge_card_view(badge),
-            Some(Overlay::PostmanNote) => views::postman_note_view(),
+            Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => {
+                views::badge_card_view(badge)
+            }
+            Some(Overlay::PostmanNote) => views::postman_note_view(Local::now().date_naive()),
             Some(Overlay::Notes(first)) => views::notes_view(
                 &self.release_notes,
                 first,
@@ -824,17 +853,18 @@ impl App {
                 notes_width(renderer),
             ),
             Some(Overlay::Index(selected)) => {
-                let index_view = if self.is_box_full() {
-                    views::full_box_index_view
+                let rows = overlay_rows(renderer.get_size().1);
+                if self.is_box_full() {
+                    views::full_box_index_view(
+                        self.read_entries(),
+                        selected,
+                        rows,
+                        &self.read_context(),
+                        Local::now().date_naive(),
+                    )
                 } else {
-                    views::index_view
-                };
-                index_view(
-                    self.read_entries(),
-                    selected,
-                    overlay_rows(renderer.get_size().1),
-                    &self.read_context(),
-                )
+                    views::index_view(self.read_entries(), selected, rows, &self.read_context())
+                }
             }
             Some(Overlay::Help) => views::help_view(
                 &self.unlocks(),
@@ -1094,9 +1124,12 @@ impl App {
 
     fn press_enter(&mut self) {
         match self.overlay {
-            Some(Overlay::NewBadge(_) | Overlay::Notes(_) | Overlay::PostmanNote) => {
-                self.overlay = None
-            }
+            Some(
+                Overlay::NewBadge(_)
+                | Overlay::NoteBadge(_)
+                | Overlay::Notes(_)
+                | Overlay::PostmanNote,
+            ) => self.overlay = closed_overlay(self.overlay),
             _ => self.reread_selected(),
         }
     }
@@ -1295,7 +1328,7 @@ impl App {
                             KeyCode::Enter => self.press_enter(),
                             KeyCode::Char('r') | KeyCode::Char('R') => self.pick_up(),
                             KeyCode::Char('e') | KeyCode::Char('E') => self.start_riddle(),
-                            KeyCode::Esc => self.overlay = None,
+                            KeyCode::Esc => self.overlay = closed_overlay(self.overlay),
                             KeyCode::Left => self.browse(-1),
                             KeyCode::Right => self.browse(1),
                             _ => {}
@@ -1327,10 +1360,7 @@ mod tests {
     use chrono::{NaiveDate, NaiveDateTime};
 
     fn card_id(overlay: Option<Overlay>) -> Option<&'static str> {
-        match overlay {
-            Some(Overlay::NewBadge(badge)) => Some(badge.id),
-            _ => None,
-        }
+        badge_card(overlay).map(|badge| badge.id)
     }
 
     #[test]
@@ -1421,6 +1451,24 @@ mod tests {
         requeue_replaced_badge(card, card, &mut pending);
         requeue_replaced_badge(card, None, &mut pending);
         assert_eq!(pending.len(), 1);
+    }
+
+    #[test]
+    fn test_postman_note_badge_opens_over_the_note_then_returns_to_it() {
+        let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["summer_holidays"]).into();
+        let card = next_overlay(Some(Overlay::PostmanNote), &mut pending);
+        assert!(matches!(card, Some(Overlay::NoteBadge(_))));
+        assert_eq!(card_id(card), Some("summer_holidays"));
+
+        let closed = closed_overlay(card);
+        assert!(matches!(closed, Some(Overlay::PostmanNote)));
+        requeue_replaced_badge(card, closed, &mut pending);
+        assert!(pending.is_empty());
+        assert!(matches!(
+            next_overlay(closed, &mut pending),
+            Some(Overlay::PostmanNote)
+        ));
+        assert!(closed_overlay(closed).is_none());
     }
 
     #[test]

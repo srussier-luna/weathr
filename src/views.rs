@@ -9,7 +9,7 @@ use crate::story::content::chronicles::{
 };
 use crate::story::content::letters::CHOICES;
 use crate::story::content::{self, MONTHS, ReadContext, postcard_lines, postcard_title, text};
-use chrono::Datelike;
+use chrono::{Datelike, NaiveDate};
 
 const INDEX_FOOTER: &str = "[↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer";
 const ALBUM_FOOTER: &str = "[<] [>] pages  [a] ou [Echap] fermer";
@@ -24,11 +24,8 @@ const NOTES_BULLET: &str = "- ";
 const NOTES_INDENT: &str = "  ";
 pub const NOTES_FRAME: Frame = Frame::Plain;
 pub const POSTMAN_SIGNATURE: &str = "— Le Facteur";
-const FULL_BOX_NOTE: [&str; 3] = [
-    "Ta boîte est pleine.",
-    "Je garde le reste à la poste",
-    "et je te l'apporte dès qu'il y a de la place.",
-];
+const FULL_BOX_NOTE: &str =
+    "Pendant ton absence, tout le village en a profité pour prendre des vacances\u{202F}!";
 
 pub fn index_view(
     read_entries: &[(usize, Entry)],
@@ -66,16 +63,31 @@ pub fn index_view(
     }
 }
 
-fn full_box_note() -> Vec<Line> {
-    let mut note: Vec<Line> = FULL_BOX_NOTE.into_iter().map(text).collect();
-    note.extend([Line::Blank, text(POSTMAN_SIGNATURE)]);
-    note
+fn day_and_month(date: NaiveDate) -> String {
+    let day = match date.day() {
+        1 => "1er".to_string(),
+        day => day.to_string(),
+    };
+    format!("{day} {}", MONTHS[date.month0() as usize])
 }
 
-pub fn postman_note_view() -> View {
+fn full_box_note(today: NaiveDate) -> Vec<Line> {
+    let back_to_school = today.succ_opt().unwrap_or(today);
+    vec![
+        text(FULL_BOX_NOTE),
+        text(format!(
+            "La rentrée, c'est le {}.",
+            day_and_month(back_to_school)
+        )),
+        Line::Blank,
+        text(POSTMAN_SIGNATURE),
+    ]
+}
+
+pub fn postman_note_view(today: NaiveDate) -> View {
     View {
         title: String::new(),
-        lines: full_box_note(),
+        lines: full_box_note(today),
         footer: POSTMAN_NOTE_FOOTER.to_string(),
         frame: Frame::Notice,
     }
@@ -86,8 +98,9 @@ pub fn full_box_index_view(
     selected: usize,
     rows: usize,
     context: &ReadContext,
+    today: NaiveDate,
 ) -> View {
-    let mut note = full_box_note();
+    let mut note = full_box_note(today);
     note.push(Line::Rule);
     let mut view = index_view(
         read_entries,
@@ -432,23 +445,28 @@ mod tests {
         assert_eq!(out, courrier_fixture());
     }
 
+    fn day(month: u32, day: u32) -> NaiveDate {
+        NaiveDate::from_ymd_opt(2026, month, day).unwrap()
+    }
+
+    const FULL_BOX_NOTE_TEXT: &str = "text: Pendant ton absence, tout le village en a profité pour prendre des vacances\u{202F}!\n";
+
     #[test]
     fn test_full_box_note_sits_on_top_of_the_courrier() {
         let save = SavedGame::load();
         let read = save.timeline.first_mail(10);
         let context = save.context(12);
         let plain = render(&index_view(read, 0, 20, &context));
-        let full = render(&full_box_index_view(read, 0, 20, &context));
+        let full = render(&full_box_index_view(read, 0, 20, &context, day(10, 30)));
 
-        assert!(!plain.contains("Ta boîte est pleine."));
-        assert!(full.contains(
-            "text: Ta boîte est pleine.\n\
-             text: Je garde le reste à la poste\n\
-             text: et je te l'apporte dès qu'il y a de la place.\n\
+        assert!(!plain.contains(FULL_BOX_NOTE_TEXT));
+        assert!(full.contains(&format!(
+            "{FULL_BOX_NOTE_TEXT}\
+             text: La rentrée, c'est le 31 octobre.\n\
              blank\n\
              text: — Le Facteur\n\
              rule\n"
-        ));
+        )));
         assert!(
             full.contains(&plain[plain.find("pre: >").unwrap()..plain.find("footer").unwrap()])
         );
@@ -456,15 +474,22 @@ mod tests {
 
     #[test]
     fn test_postman_note_has_its_own_frame() {
-        let note = postman_note_view();
+        let note = postman_note_view(day(10, 30));
         assert_eq!(note.frame, Frame::Notice);
-        assert!(render(&note).contains(
-            "text: Ta boîte est pleine.\n\
-             text: Je garde le reste à la poste\n\
-             text: et je te l'apporte dès qu'il y a de la place.\n\
+        assert!(render(&note).contains(&format!(
+            "{FULL_BOX_NOTE_TEXT}\
+             text: La rentrée, c'est le 31 octobre.\n\
              blank\n\
              text: — Le Facteur\n"
-        ));
+        )));
+    }
+
+    #[test]
+    fn test_back_to_school_is_tomorrow_with_1er_on_the_first() {
+        let rentree = |today| render(&postman_note_view(today));
+        assert!(rentree(day(10, 31)).contains("La rentrée, c'est le 1er novembre."));
+        assert!(rentree(day(11, 1)).contains("La rentrée, c'est le 2 novembre."));
+        assert!(rentree(day(12, 31)).contains("La rentrée, c'est le 1er janvier."));
     }
 
     fn centered(view: &View) -> Vec<&str> {
