@@ -29,15 +29,22 @@ impl Entry {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Thing {
+    Cat,
     Bench,
     CatBow,
     Footprints,
+    Dog,
+    Owl,
     Well,
     Bone,
     Key,
+    Duck,
+    Snail,
     Treehouse,
     OwlFriend,
     BlueLantern,
+    Squirrel,
+    Frog,
     Garland,
     Kittens,
     XMark,
