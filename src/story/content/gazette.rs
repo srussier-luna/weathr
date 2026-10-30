@@ -24,12 +24,12 @@ impl MailContent for Gazette {
         let riddle = &RIDDLES[week % RIDDLES.len()];
         let is_solved = ctx.progress.riddles_solved.contains(&week);
         let weather = ctx.progress.gazette_weather.get(&week).map_or(
-            "Ta semaine : les relevés ne sont pas encore arrivés.",
+            "Les prévisions ne sont pas encore arrivées.",
             String::as_str,
         );
 
-        let mut lines = vec![
-            text(weather),
+        let mut lines: Vec<Line> = weather.lines().map(text).collect();
+        lines.extend([
             Line::Blank,
             text(format!("Les échos : {}", RUMORS[week % RUMORS.len()])),
             Line::Blank,
@@ -39,7 +39,7 @@ impl MailContent for Gazette {
             )),
             Line::Rule,
             text(format!("L'énigme de la semaine : {}", riddle.question)),
-        ];
+        ]);
 
         let footer = if is_solved {
             lines.push(text("Bravo, énigme résolue !"));
@@ -80,6 +80,7 @@ mod tests {
     use super::*;
     use crate::progress::Progress;
     use crate::story::clock::StoryClock;
+    use crate::story::content::save_golden::render;
     use chrono::NaiveDate;
 
     #[test]
@@ -115,5 +116,40 @@ mod tests {
         let view = compose(&progress);
         assert_eq!(view.title, "LA GAZETTE · lundi 26 octobre");
         assert_eq!(first_weather(view), "Ta semaine : soleil, 21 °C.");
+    }
+
+    #[test]
+    fn test_gazette_shows_forecast_lines_once_fetched() {
+        let mut progress = Progress::default();
+        let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 10, 22).unwrap(), 9);
+        let gazette = Gazette::new(0, 5);
+        let compose = |progress: &Progress| {
+            render(&gazette.compose(&ReadContext {
+                letters: &[],
+                progress,
+                clock: &clock,
+                reading_hour: 10,
+                riddle_input: None,
+            }))
+        };
+
+        assert!(compose(&progress).starts_with(
+            "title: LA GAZETTE · lundi 26 octobre\n\
+             text: Les prévisions ne sont pas encore arrivées.\n\
+             blank\n"
+        ));
+
+        progress.gazette_weather.insert(
+            0,
+            "Prévisions de la semaine\u{202F}: 18 °C au plus, 2 °C au moins.\n\
+             ⚠ Alerte orage\u{202F}: vendredi."
+                .to_string(),
+        );
+        assert!(compose(&progress).starts_with(
+            "title: LA GAZETTE · lundi 26 octobre\n\
+             text: Prévisions de la semaine\u{202F}: 18 °C au plus, 2 °C au moins.\n\
+             text: ⚠ Alerte orage\u{202F}: vendredi.\n\
+             blank\n"
+        ));
     }
 }
