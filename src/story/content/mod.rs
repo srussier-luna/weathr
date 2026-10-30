@@ -60,14 +60,40 @@ pub fn text(content: impl Into<String>) -> Line {
     Line::Text(content.into())
 }
 
-pub fn entry_view(
-    day: usize,
-    entry: Entry,
-    number: usize,
-    total: usize,
-    ctx: &ReadContext,
-) -> View {
-    content_for(day, entry, format!("{number}/{total}")).compose(ctx)
+#[derive(PartialEq, Eq)]
+enum Series {
+    Letter,
+    Postcard,
+    Archive,
+    Recipe,
+    Gazette,
+}
+
+fn series(entry: Entry) -> Series {
+    match entry {
+        Entry::Main(_)
+        | Entry::Sam(_)
+        | Entry::Neighbours(_)
+        | Entry::Marcel(_)
+        | Entry::Creepy(_) => Series::Letter,
+        Entry::Postcard(_) => Series::Postcard,
+        Entry::Archive(_) => Series::Archive,
+        Entry::Recipe(_) => Series::Recipe,
+        Entry::Gazette(_) => Series::Gazette,
+    }
+}
+
+fn counter(delivered: &[(usize, Entry)], index: usize, entry: Entry) -> String {
+    let kind = series(entry);
+    let same_kind = |(_, other): &&(usize, Entry)| series(*other) == kind;
+    let number = delivered[..=index].iter().filter(same_kind).count();
+    let total = delivered.iter().filter(same_kind).count();
+    format!("{number}/{total}")
+}
+
+pub fn entry_view(delivered: &[(usize, Entry)], index: usize, ctx: &ReadContext) -> Option<View> {
+    let &(day, entry) = delivered.get(index)?;
+    Some(content_for(day, entry, counter(delivered, index, entry)).compose(ctx))
 }
 
 fn content_for(day: usize, entry: Entry, counter: String) -> Box<dyn MailContent> {
@@ -224,6 +250,16 @@ pub(crate) mod save_golden {
 mod tests {
     use super::entry_view;
     use super::save_golden::{SavedGame, entries_fixture, render};
+    use crate::story::Entry;
+
+    fn titles(entries: &[Entry]) -> Vec<String> {
+        let save = SavedGame::load();
+        let context = save.context(12);
+        let delivered: Vec<(usize, Entry)> = entries.iter().map(|entry| (1, *entry)).collect();
+        (0..delivered.len())
+            .map(|index| entry_view(&delivered, index, &context).unwrap().title)
+            .collect()
+    }
 
     #[test]
     fn test_save_opens_each_entry_as_before_refactor() {
@@ -231,17 +267,75 @@ mod tests {
         let mut out = String::new();
         for (is_night, reading_hour) in [(false, 12), (true, 23)] {
             let context = save.context(reading_hour);
-            for (index, (day, entry)) in save.timeline.mail().take(save.available).enumerate() {
+            let delivered = save.timeline.first_mail(save.available);
+            for index in 0..delivered.len() {
                 out.push_str(&format!("== entry {index} night {is_night}\n"));
-                out.push_str(&render(&entry_view(
-                    day,
-                    entry,
-                    index + 1,
-                    save.available,
-                    &context,
-                )));
+                out.push_str(&render(&entry_view(delivered, index, &context).unwrap()));
             }
         }
         assert_eq!(out, entries_fixture());
+    }
+
+    #[test]
+    fn test_gazette_does_not_bump_the_lettre_counter() {
+        let titles = titles(&[
+            Entry::Main(0),
+            Entry::Main(1),
+            Entry::Main(2),
+            Entry::Main(3),
+            Entry::Gazette(0),
+            Entry::Main(4),
+            Entry::Main(5),
+            Entry::Main(6),
+        ]);
+        assert_eq!(titles[3], "Lettre 4/7");
+        assert!(titles[4].starts_with("LA GAZETTE · "));
+        assert!(!titles[4].contains('/'));
+        assert_eq!(titles[5], "Lettre 5/7");
+    }
+
+    #[test]
+    fn test_correspondents_continue_the_lettre_series() {
+        let titles = titles(&[
+            Entry::Main(0),
+            Entry::Sam(0),
+            Entry::Neighbours(0),
+            Entry::Marcel(0),
+            Entry::Creepy(0),
+            Entry::Main(1),
+        ]);
+        assert_eq!(
+            titles,
+            [
+                "Lettre 1/6",
+                "Lettre 2/6",
+                "Lettre 3/6",
+                "Lettre 4/6",
+                "Lettre 5/6 (glissée sous la porte)",
+                "Lettre 6/6",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_postcards_archives_and_recipes_count_on_their_own() {
+        let titles = titles(&[
+            Entry::Main(0),
+            Entry::Archive(0),
+            Entry::Postcard(0),
+            Entry::Gazette(0),
+            Entry::Recipe(0),
+            Entry::Archive(1),
+            Entry::Postcard(1),
+            Entry::Archive(2),
+            Entry::Recipe(1),
+            Entry::Postcard(2),
+        ]);
+        assert_eq!(titles[0], "Lettre 1/1");
+        assert!(titles[1].starts_with("Archives de la mairie 1/3 : "));
+        assert!(titles[2].starts_with("Carte postale 1/3 : "));
+        assert!(titles[4].starts_with("Recette du mois 1/2 : "));
+        assert!(titles[7].starts_with("Archives de la mairie 3/3 : "));
+        assert!(titles[9].starts_with("Carte postale 3/3 : "));
     }
 }
