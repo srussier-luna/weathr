@@ -1,6 +1,6 @@
 ---
 issue: 19
-status: to-test
+status: to-close
 wiki: [[mail]], [[animation]]
 note: "bloquer la boite au lettre a 7 lettre maximum, si on pars en vacances trop longtemps on a pas 21 lettres a lire au retour, c'est trop"
 created: 2026-10-26
@@ -46,7 +46,7 @@ created: 2026-10-26
 - [ ] Note opened: `c` goes to the Lettres; the note stays only on top of the Courrier (`l`) until a slot frees.
 - [ ] Box full again (new pause): the note is delivered again.
 - [ ] First note opened: secret Badge « Grandes vacances » card shows on top of the note, once; closing it returns to the note.
-- [ ] Note text: « Pendant ton absence, tout le village en a profité pour prendre des vacances ! La rentrée, c'est le <tomorrow>. — Le Facteur » (« 1er » on the 1st).
+- [ ] Note text: « Pendant ton absence, tout le village en a profité pour prendre des vacances ! La rentrée, c'est le <next courrier.heure date>. — Le Facteur » (« 1er » on the 1st).
 - [ ] Box full: the Facteur doesn't come to the mailbox.
 - [ ] 6 unread village Lettres + 3 Gazettes: no pause, no Facteur note.
 
@@ -68,6 +68,16 @@ created: 2026-10-26
 - Round 2 (feedback): `Overlay::NoteBadge` + `closed_overlay` / `badge_card` (`src/app.rs`): Badge card over the note, back to the note on close. New FULL_BOX_NOTE text, `day_and_month` (« 1er »), views take `today`. Proof: fmt ✅ · clippy ✅ (except provider.rs:23) · 293 tests ✅.
 
 ## Review
+
+Round validation — LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓ — 6 + 1 minor, all fixed by autofix:
+- 🟡 [correctness] rentrée date from midnight → `StoryClock::next_rollover` (next `courrier.heure`).
+- 🟡 [correctness] Courrier note height counted unwrapped → measured with `overlay::lay_out` at `INDEX_FRAME` width.
+- 🟡 [correctness] old-save test couldn't fail → pure `pause::hold_since` tested on `letters_read: 37` after 3 weeks away.
+- 🟡 [style] three `is_box_full` → param `box_full`, free fn `is_live_box_full`.
+- 🟡 [elegance] `SIGNATURE` alias in welcome.rs removed.
+- 🟡 [structure] note flow (`MailStep`, `next_mail`, `is_postman_note_waiting`) moved to `src/story/postman_note.rs`.
+- 🟡 [elegance] `hold_since -> bool` → `Option<NaiveDate>` (date to mark checked).
+Final: clean. fmt ✅ · clippy ✅ (except pre-existing provider.rs:23) · 307 tests ✅.
 
 ## Verification
 

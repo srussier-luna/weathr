@@ -16,13 +16,14 @@ use crate::scene::WorldScene;
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
+use crate::story::postman_note::{self, MailStep};
 use crate::story::{Entry, StoryClock, Thing, Timeline, pause, sources};
 use crate::views;
 use crate::weather::{
     OpenMeteoProvider, WeatherClient, WeatherCondition, WeatherData, WeatherLocation,
 };
 use crate::welcome::{self, Step};
-use chrono::{Local, Timelike};
+use chrono::{Local, NaiveDate, Timelike};
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::io;
@@ -218,36 +219,13 @@ fn build_timeline(village_count: usize, clock: &StoryClock, today: usize) -> Tim
     Timeline::new(&sources::registered(village_count), clock, today)
 }
 
-fn is_box_full(clock: &StoryClock, timeline: &Timeline, day: usize, letters_read: usize) -> bool {
-    !clock.is_frozen() && pause::is_box_full(timeline, day, letters_read)
-}
-
-fn is_postman_note_waiting(is_box_full: bool, note_day: Option<usize>, day: usize) -> bool {
-    is_box_full && note_day != Some(day)
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum MailStep {
-    PostmanNote,
-    Letter(usize),
-    Close,
-}
-
-fn next_mail(
-    overlay: Option<Overlay>,
-    available: usize,
+fn is_live_box_full(
+    clock: &StoryClock,
+    timeline: &Timeline,
+    day: usize,
     letters_read: usize,
-    is_note_waiting: bool,
-) -> Option<MailStep> {
-    if available == 0 {
-        return None;
-    }
-    Some(match overlay {
-        Some(Overlay::Letter(index)) if index + 1 < available => MailStep::Letter(index + 1),
-        Some(Overlay::Letter(_)) => MailStep::Close,
-        _ if is_note_waiting => MailStep::PostmanNote,
-        _ => MailStep::Letter(letters_read.min(available - 1)),
-    })
+) -> bool {
+    !clock.is_frozen() && pause::is_box_full(timeline, day, letters_read)
 }
 
 fn generate_offline_weather(rng: &mut impl rand::Rng) -> WeatherData {
@@ -703,7 +681,7 @@ impl App {
     }
 
     fn is_box_full(&self) -> bool {
-        is_box_full(
+        is_live_box_full(
             &self.clock,
             &self.timeline,
             self.timeline_day,
@@ -757,13 +735,17 @@ impl App {
     }
 
     fn press_mail(&mut self) {
-        let is_note_waiting = is_postman_note_waiting(
+        let is_note_waiting = postman_note::is_postman_note_waiting(
             self.is_box_full(),
             self.progress.postman_note_day,
             self.timeline_day,
         );
-        match next_mail(
-            self.overlay,
+        let open_letter = match self.overlay {
+            Some(Overlay::Letter(index)) => Some(index),
+            _ => None,
+        };
+        match postman_note::next_mail(
+            open_letter,
             self.available_letters(),
             self.progress.letters_read,
             is_note_waiting,
@@ -845,7 +827,7 @@ impl App {
             Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => {
                 views::badge_card_view(badge)
             }
-            Some(Overlay::PostmanNote) => views::postman_note_view(Local::now().date_naive()),
+            Some(Overlay::PostmanNote) => views::postman_note_view(self.back_to_school()),
             Some(Overlay::Notes(first)) => views::notes_view(
                 &self.release_notes,
                 first,
@@ -859,8 +841,9 @@ impl App {
                         self.read_entries(),
                         selected,
                         rows,
+                        overlay::text_width(renderer, views::INDEX_FRAME),
                         &self.read_context(),
-                        Local::now().date_naive(),
+                        self.back_to_school(),
                     )
                 } else {
                     views::index_view(self.read_entries(), selected, rows, &self.read_context())
@@ -926,27 +909,26 @@ impl App {
         views::album_pages(self.read_entries(), &self.progress, &self.unlocks())
     }
 
+    fn back_to_school(&self) -> NaiveDate {
+        self.clock.next_rollover(Local::now().naive_local())
+    }
+
     fn hold_full_box(&mut self) {
         if self.clock.is_frozen() {
             return;
         }
         let today = self.clock.mail_date(Local::now().naive_local());
-        let checked = self.progress.pause_checked_date();
-        if checked.is_some_and(|checked| checked >= today) {
-            return;
-        }
-        if let Some(checked) = checked {
-            pause::hold_full_box(
-                &mut self.clock,
-                &self.timeline,
-                self.progress.letters_read,
-                checked,
-                today,
-            );
+        if let Some(checked_on) = pause::hold_since(
+            &mut self.clock,
+            &self.timeline,
+            self.progress.letters_read,
+            self.progress.pause_checked_date(),
+            today,
+        ) {
             self.progress.paused_days = self.clock.pauses().clone();
+            self.progress.mark_pause_checked(checked_on);
+            self.progress.save();
         }
-        self.progress.mark_pause_checked(today);
-        self.progress.save();
     }
 
     fn refresh_timeline(&mut self) {
@@ -1738,75 +1720,11 @@ mod tests {
     }
 
     #[test]
-    fn test_save_without_pause_fields_keeps_its_story_day() {
-        let progress: Progress =
-            serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":37}"#).unwrap();
-        let clock = story_clock(&progress, 0);
-        let now = date(2026, 10, 26).and_hms_opt(12, 0, 0).unwrap();
-        let today = clock.day_on(now);
-        let timeline = build_timeline(letters::defaults().len(), &clock, today);
-        let before = StoryClock::new(date(2026, 9, 1), 0);
-        let expected = build_timeline(letters::defaults().len(), &before, today);
-
-        assert_eq!(today, before.day_on(now));
-        assert_eq!(
-            timeline.mail_at(progress.letters_read),
-            expected.mail_at(progress.letters_read)
-        );
-    }
-
-    #[test]
     fn test_box_full_holds_the_postman_until_a_letter_is_read() {
         let timeline = timeline_on(7);
-        assert!(is_box_full(&clock(), &timeline, 7, 0));
-        assert!(!is_box_full(&clock(), &timeline, 7, 1));
-        assert!(!is_box_full(&clock(), &timeline, 6, 0));
-    }
-
-    #[test]
-    fn test_full_box_opens_the_postman_note_before_any_letter() {
-        let timeline = timeline_on(7);
-        let is_full = is_box_full(&clock(), &timeline, 7, 0);
-        let available = timeline.delivered_by(7);
-        let waiting = is_postman_note_waiting(is_full, None, 7);
-
-        assert!(waiting);
-        assert_eq!(
-            next_mail(None, available, 0, waiting),
-            Some(MailStep::PostmanNote)
-        );
-        assert_eq!(
-            next_mail(Some(Overlay::Index(0)), available, 0, waiting),
-            Some(MailStep::PostmanNote)
-        );
-        assert_eq!(
-            next_mail(Some(Overlay::PostmanNote), available, 0, false),
-            Some(MailStep::Letter(0))
-        );
-    }
-
-    #[test]
-    fn test_opened_postman_note_comes_back_only_with_a_new_pause() {
-        let timeline = timeline_on(7);
-        let available = timeline.delivered_by(7);
-        let is_full = is_box_full(&clock(), &timeline, 7, 0);
-        let waiting = is_postman_note_waiting(is_full, Some(7), 7);
-
-        assert!(!waiting);
-        assert_eq!(
-            next_mail(None, available, 0, waiting),
-            Some(MailStep::Letter(0))
-        );
-        assert!(!is_postman_note_waiting(
-            is_box_full(&clock(), &timeline, 7, 1),
-            None,
-            7
-        ));
-        assert!(is_postman_note_waiting(
-            is_box_full(&clock(), &timeline_on(8), 8, 1),
-            Some(7),
-            8
-        ));
+        assert!(is_live_box_full(&clock(), &timeline, 7, 0));
+        assert!(!is_live_box_full(&clock(), &timeline, 7, 1));
+        assert!(!is_live_box_full(&clock(), &timeline, 6, 0));
     }
 
     #[test]
@@ -1824,7 +1742,7 @@ mod tests {
     fn test_frozen_clock_never_fills_the_box() {
         let frozen = StoryClock::frozen(date(2026, 10, 26), 9, NonZeroU16::new(7).unwrap());
         let timeline = build_timeline(letters::defaults().len(), &frozen, 7);
-        assert!(!is_box_full(&frozen, &timeline, 7, 0));
+        assert!(!is_live_box_full(&frozen, &timeline, 7, 0));
     }
 
     #[test]

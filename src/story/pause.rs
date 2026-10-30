@@ -23,6 +23,21 @@ pub fn hold_full_box(
     }
 }
 
+pub fn hold_since(
+    clock: &mut StoryClock,
+    timeline: &Timeline,
+    letters_read: usize,
+    checked: Option<NaiveDate>,
+    today: NaiveDate,
+) -> Option<NaiveDate> {
+    match checked {
+        Some(checked) if checked >= today => return None,
+        Some(checked) => hold_full_box(clock, timeline, letters_read, checked, today),
+        None => {}
+    }
+    Some(today)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -175,5 +190,41 @@ mod tests {
         live(&mut clock, 0, date(10, 22), at(date(10, 22), 23, 0));
         live(&mut clock, 0, date(10, 22), at(date(10, 20), 12, 0));
         assert_eq!(clock.pauses(), &paused);
+    }
+
+    #[test]
+    fn test_save_without_pause_check_keeps_its_story_day_after_three_weeks_away() {
+        let read = 37;
+        let start = date(8, 1);
+        let (left, back) = (date(10, 1), date(10, 22));
+        let walk = |checked| {
+            let mut clock = StoryClock::new(start, MAIL_HOUR);
+            let before = timeline(&clock, clock.day_of(left));
+            assert!(is_box_full(&before, clock.day_of(left), read));
+            let checked_on = hold_since(&mut clock, &before, read, checked, back);
+            (clock, checked_on)
+        };
+
+        let (old_save, checked_on) = walk(None);
+        assert_eq!(checked_on, Some(back));
+        assert!(old_save.pauses().is_empty());
+        assert_eq!(
+            old_save.day_of(back),
+            StoryClock::new(start, MAIL_HOUR).day_of(back)
+        );
+
+        let (checked_save, checked_on) = walk(Some(left));
+        assert_eq!(checked_on, Some(back));
+        assert!(!checked_save.pauses().is_empty());
+        assert!(checked_save.day_of(back) < old_save.day_of(back));
+    }
+
+    #[test]
+    fn test_save_checked_today_is_left_untouched() {
+        let mut clock = StoryClock::new(date(10, 1), MAIL_HOUR);
+        let before = timeline(&clock, 7);
+        let checked_on = hold_since(&mut clock, &before, 0, Some(date(10, 22)), date(10, 22));
+        assert_eq!(checked_on, None);
+        assert!(clock.pauses().is_empty());
     }
 }

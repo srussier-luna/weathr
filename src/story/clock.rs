@@ -54,6 +54,10 @@ impl StoryClock {
         (now - Duration::hours(i64::from(self.mail_hour))).date()
     }
 
+    pub fn next_rollover(&self, now: NaiveDateTime) -> NaiveDate {
+        self.mail_date(now) + Duration::days(1)
+    }
+
     /// Never below 1, so a clock set in the future stays on day 1.
     pub fn day_on(&self, now: NaiveDateTime) -> usize {
         if let Some(day) = self.frozen_day {
@@ -98,6 +102,17 @@ mod tests {
         let morning = date(2026, 10, 8);
         assert_eq!(clock.day_on(morning.and_hms_opt(8, 59, 0).unwrap()), 7);
         assert_eq!(clock.day_on(morning.and_hms_opt(9, 0, 0).unwrap()), 8);
+    }
+
+    #[test]
+    fn test_next_rollover_is_the_next_mail_hour_date() {
+        let clock = StoryClock::new(date(2026, 10, 1), 9);
+        let rollover =
+            |day, hour| clock.next_rollover(date(2026, 10, day).and_hms_opt(hour, 0, 0).unwrap());
+        assert_eq!(rollover(31, 2), date(2026, 10, 31));
+        assert_eq!(rollover(31, 8), date(2026, 10, 31));
+        assert_eq!(rollover(31, 9), date(2026, 11, 1));
+        assert_eq!(rollover(30, 23), date(2026, 10, 31));
     }
 
     #[test]

@@ -23,6 +23,7 @@ const HELP_KEY_WIDTH: usize = 10;
 const NOTES_BULLET: &str = "- ";
 const NOTES_INDENT: &str = "  ";
 pub const NOTES_FRAME: Frame = Frame::Plain;
+pub const INDEX_FRAME: Frame = Frame::Plain;
 pub const POSTMAN_SIGNATURE: &str = "— Le Facteur";
 const FULL_BOX_NOTE: &str =
     "Pendant ton absence, tout le village en a profité pour prendre des vacances\u{202F}!";
@@ -59,7 +60,7 @@ pub fn index_view(
         title: format!("Lettres reçues ({})", read_entries.len()),
         lines,
         footer: INDEX_FOOTER.to_string(),
-        frame: Frame::Plain,
+        frame: INDEX_FRAME,
     }
 }
 
@@ -71,8 +72,7 @@ fn day_and_month(date: NaiveDate) -> String {
     format!("{day} {}", MONTHS[date.month0() as usize])
 }
 
-fn full_box_note(today: NaiveDate) -> Vec<Line> {
-    let back_to_school = today.succ_opt().unwrap_or(today);
+fn full_box_note(back_to_school: NaiveDate) -> Vec<Line> {
     vec![
         text(FULL_BOX_NOTE),
         text(format!(
@@ -84,10 +84,10 @@ fn full_box_note(today: NaiveDate) -> Vec<Line> {
     ]
 }
 
-pub fn postman_note_view(today: NaiveDate) -> View {
+pub fn postman_note_view(back_to_school: NaiveDate) -> View {
     View {
         title: String::new(),
-        lines: full_box_note(today),
+        lines: full_box_note(back_to_school),
         footer: POSTMAN_NOTE_FOOTER.to_string(),
         frame: Frame::Notice,
     }
@@ -97,15 +97,17 @@ pub fn full_box_index_view(
     read_entries: &[(usize, Entry)],
     selected: usize,
     rows: usize,
+    width: usize,
     context: &ReadContext,
-    today: NaiveDate,
+    back_to_school: NaiveDate,
 ) -> View {
-    let mut note = full_box_note(today);
+    let mut note = full_box_note(back_to_school);
     note.push(Line::Rule);
+    let note_rows = overlay::lay_out(&note, width).len();
     let mut view = index_view(
         read_entries,
         selected,
-        rows.saturating_sub(note.len()),
+        rows.saturating_sub(note_rows),
         context,
     );
     note.append(&mut view.lines);
@@ -457,7 +459,14 @@ mod tests {
         let read = save.timeline.first_mail(10);
         let context = save.context(12);
         let plain = render(&index_view(read, 0, 20, &context));
-        let full = render(&full_box_index_view(read, 0, 20, &context, day(10, 30)));
+        let full = render(&full_box_index_view(
+            read,
+            0,
+            20,
+            200,
+            &context,
+            day(10, 31),
+        ));
 
         assert!(!plain.contains(FULL_BOX_NOTE_TEXT));
         assert!(full.contains(&format!(
@@ -474,7 +483,7 @@ mod tests {
 
     #[test]
     fn test_postman_note_has_its_own_frame() {
-        let note = postman_note_view(day(10, 30));
+        let note = postman_note_view(day(10, 31));
         assert_eq!(note.frame, Frame::Notice);
         assert!(render(&note).contains(&format!(
             "{FULL_BOX_NOTE_TEXT}\
@@ -485,11 +494,26 @@ mod tests {
     }
 
     #[test]
-    fn test_back_to_school_is_tomorrow_with_1er_on_the_first() {
-        let rentree = |today| render(&postman_note_view(today));
-        assert!(rentree(day(10, 31)).contains("La rentrée, c'est le 1er novembre."));
-        assert!(rentree(day(11, 1)).contains("La rentrée, c'est le 2 novembre."));
-        assert!(rentree(day(12, 31)).contains("La rentrée, c'est le 1er janvier."));
+    fn test_back_to_school_says_1er_on_the_first() {
+        let rentree = |date| render(&postman_note_view(date));
+        assert!(rentree(day(11, 1)).contains("La rentrée, c'est le 1er novembre."));
+        assert!(rentree(day(11, 2)).contains("La rentrée, c'est le 2 novembre."));
+        assert!(
+            rentree(NaiveDate::from_ymd_opt(2027, 1, 1).unwrap())
+                .contains("La rentrée, c'est le 1er janvier.")
+        );
+    }
+
+    #[test]
+    fn test_wrapped_note_leaves_the_courrier_within_its_rows() {
+        let save = SavedGame::load();
+        let read = save.timeline.first_mail(10);
+        let context = save.context(12);
+        let (rows, width) = (12, 30);
+        let view = full_box_index_view(read, 0, rows, width, &context, day(10, 31));
+
+        assert!(overlay::lay_out(&view.lines, width).len() <= rows);
+        assert!(render(&view).contains("pre: >"));
     }
 
     fn centered(view: &View) -> Vec<&str> {
