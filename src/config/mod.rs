@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use toml_edit::ser::ValueSerializer;
 
 use crate::error::ConfigError;
+use crate::geolocation::GeoLocation;
 use crate::weather::types::{PrecipitationUnit, TemperatureUnit, WeatherUnits, WindSpeedUnit};
 
 pub const ENV_LATITUDE: &str = "WEATHR_LATITUDE";
@@ -136,6 +137,29 @@ impl Config {
 
     pub fn save_to_path(path: &Path, setting: Setting) -> Result<(), ConfigError> {
         writer::write_value(path, setting.keys(), setting.value()?)
+    }
+
+    pub fn save_location(location: &GeoLocation, auto: bool) -> Result<(), ConfigError> {
+        Self::save_location_to_path(&Self::get_config_path()?, location, auto)
+    }
+
+    pub fn save_location_to_path(
+        path: &Path,
+        location: &GeoLocation,
+        auto: bool,
+    ) -> Result<(), ConfigError> {
+        writer::write_values(
+            path,
+            &[
+                (&["location", "latitude"], Some(location.latitude.into())),
+                (&["location", "longitude"], Some(location.longitude.into())),
+                (
+                    &["location", "city"],
+                    location.city.as_deref().map(Into::into),
+                ),
+                (&["location", "auto"], Some(auto.into())),
+            ],
+        )
     }
 
     pub fn load() -> Result<Self, ConfigError> {
@@ -783,5 +807,28 @@ auto = false
         assert_eq!(config.units.precipitation, PrecipitationUnit::Inch);
         assert_eq!(config.mail.hour, 23);
         assert!(config.hide_hud);
+    }
+
+    #[test]
+    fn test_saved_location_loads_back() {
+        let dir = std::env::temp_dir().join(format!("weathr_test_location_{}", std::process::id()));
+        let path = dir.join("config.toml");
+        fs::remove_dir_all(&dir).ok();
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(&path, "# Ma ville\n[location]\nauto = true # détection\n").unwrap();
+        let lyon = GeoLocation {
+            latitude: 45.7578137,
+            longitude: 4.8320114,
+            city: Some("Lyon".to_string()),
+        };
+        Config::save_location_to_path(&path, &lyon, false).unwrap();
+        let written = fs::read_to_string(&path).unwrap();
+        let config = Config::load_from_path(&path).unwrap();
+        fs::remove_dir_all(&dir).ok();
+        assert!(written.starts_with("# Ma ville\n[location]\nauto = false # détection\n"));
+        assert_eq!(config.location.latitude, 45.7578137);
+        assert_eq!(config.location.longitude, 4.8320114);
+        assert_eq!(config.location.city.as_deref(), Some("Lyon"));
+        assert!(!config.location.auto);
     }
 }

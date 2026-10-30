@@ -4,7 +4,8 @@ use crate::app_state::AppState;
 use crate::badges::{self, Badge};
 use crate::config::{Config, Setting};
 use crate::demo::{Demo, SCENE_DURATION};
-use crate::error::WeatherError;
+use crate::error::{GeolocationError, WeatherError};
+use crate::geolocation::{self, GeoLocation};
 use crate::holiday::{Holiday, MeteorShower};
 use crate::overlay;
 use crate::progress::Progress;
@@ -13,7 +14,7 @@ use crate::release_notes::{self, Section};
 use crate::remote_weather::{self, Reply, Request};
 use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
-use crate::settings::{self, Settings};
+use crate::settings::{self, CitySearch, Row, Settings};
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
@@ -21,7 +22,7 @@ use crate::story::postman_note::{self, MailStep};
 use crate::story::{Entry, StoryClock, Thing, Timeline, pause, sources};
 use crate::views;
 use crate::weather::{
-    OpenMeteoProvider, WeatherClient, WeatherCondition, WeatherData, WeatherLocation,
+    OpenMeteoProvider, WeatherClient, WeatherCondition, WeatherData, WeatherLocation, WeatherUnits,
 };
 use crate::welcome::{self, Step};
 use chrono::{Local, NaiveDate, Timelike};
@@ -31,7 +32,7 @@ use std::io;
 use std::num::NonZeroU16;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 
 const REFRESH_INTERVAL: Duration = Duration::from_secs(300);
 const INPUT_POLL_FPS: u64 = 30;
@@ -43,6 +44,7 @@ const REMOTE_CHECK_FRAMES: u32 = 300;
 const MAX_ANSWER_LENGTH: usize = 30;
 const REMOTE_CHANNEL_SIZE: usize = 16;
 const OVERLAY_MARGIN_ROWS: u16 = 12;
+const SETTING_NOT_SAVED: &str = "Réglage non enregistré\u{a0}: vérifie config.toml";
 
 fn count_read(timeline: &Timeline, progress: &Progress, kind: fn(&Entry) -> bool) -> usize {
     timeline
@@ -229,6 +231,24 @@ fn is_live_box_full(
     !clock.is_frozen() && pause::is_box_full(timeline, day, letters_read)
 }
 
+fn spawn_weather(
+    sender: mpsc::Sender<Result<WeatherData, WeatherError>>,
+    location: WeatherLocation,
+    units: WeatherUnits,
+) {
+    let provider = Arc::new(OpenMeteoProvider::new());
+    let weather_client = WeatherClient::new(provider, REFRESH_INTERVAL);
+    tokio::spawn(async move {
+        loop {
+            let result = weather_client.get_current_weather(&location, &units).await;
+            if sender.send(result).await.is_err() {
+                break;
+            }
+            tokio::time::sleep(REFRESH_INTERVAL).await;
+        }
+    });
+}
+
 fn generate_offline_weather(rng: &mut impl rand::Rng) -> WeatherData {
     use rand::RngExt;
 
@@ -390,6 +410,11 @@ pub struct App {
     pending_requests: BTreeSet<Request>,
     frame_count: u32,
     timeline_day: usize,
+    fetches_weather: bool,
+    auto_location: bool,
+    city_name_language: String,
+    city_search: Option<CitySearch>,
+    location_detection: Option<oneshot::Receiver<Result<GeoLocation, GeolocationError>>>,
 }
 
 impl App {
@@ -423,6 +448,7 @@ impl App {
         let (tx, rx) = mpsc::channel(1);
 
         let demo = simulation.demo.then(Demo::new);
+        let fetches_weather = demo.is_none() && simulation.condition.is_none();
 
         if let Some(demo) = &demo {
             apply_demo_scene(&mut state, &mut animations, demo);
@@ -441,19 +467,7 @@ impl App {
                 simulated_weather(simulated_condition, !simulation.night),
             );
         } else {
-            let provider = Arc::new(OpenMeteoProvider::new());
-            let weather_client = WeatherClient::new(provider, REFRESH_INTERVAL);
-            let units = config.units;
-
-            tokio::spawn(async move {
-                loop {
-                    let result = weather_client.get_current_weather(&location, &units).await;
-                    if tx.send(result).await.is_err() {
-                        break;
-                    }
-                    tokio::time::sleep(REFRESH_INTERVAL).await;
-                }
-            });
+            spawn_weather(tx, location, config.units);
         }
 
         let launch = if simulation.day.is_some() {
@@ -525,6 +539,11 @@ impl App {
             pending_requests: BTreeSet::new(),
             frame_count: 0,
             timeline_day,
+            fetches_weather,
+            auto_location: config.location.auto,
+            city_name_language: config.location.city_name_language.clone(),
+            city_search: None,
+            location_detection: None,
         };
         app.refresh_timeline();
         app
@@ -856,11 +875,14 @@ impl App {
                     matches!(entry, Entry::Gazette(_))
                 }) > 0,
             ),
-            Some(Overlay::Settings(selected)) => views::settings_view(
-                &self.settings(),
-                selected,
-                self.clock.mail_hour_on(Local::now().date_naive()) != self.mail_hour,
-            ),
+            Some(Overlay::Settings(selected)) => match &self.city_search {
+                Some(search) => views::city_search_view(search),
+                None => views::settings_view(
+                    &self.settings(),
+                    selected,
+                    self.clock.mail_hour_on(Local::now().date_naive()) != self.mail_hour,
+                ),
+            },
             Some(Overlay::Badges) => {
                 return overlay::render_badges(
                     renderer,
@@ -1144,10 +1166,18 @@ impl App {
     }
 
     fn settings(&self) -> Settings {
+        let location = &self.state.location;
         Settings {
             units: self.state.units,
             mail_hour: self.mail_hour,
             hide_hud: self.hide_hud,
+            city: self
+                .state
+                .city_name
+                .clone()
+                .unwrap_or_else(|| format!("{:.2}, {:.2}", location.latitude, location.longitude)),
+            auto_location: self.auto_location,
+            is_locating: self.location_detection.is_some(),
         }
     }
 
@@ -1155,12 +1185,21 @@ impl App {
         let Some(Overlay::Settings(selected)) = self.overlay else {
             return;
         };
+        match settings::ROWS[selected] {
+            Row::City => self.city_search = Some(CitySearch::default()),
+            Row::AutoLocation => self.toggle_auto_location(),
+            row => self.step_setting(row, step),
+        }
+    }
+
+    fn step_setting(&mut self, row: Row, step: isize) {
         let mut settings = self.settings();
-        let setting = settings.stepped(settings::ROWS[selected], step);
+        let Some(setting) = settings.stepped(row, step) else {
+            return;
+        };
         settings.apply(setting);
         if Config::save(setting).is_err() {
-            self.toasts
-                .push_back("Réglage non enregistré\u{a0}: vérifie config.toml".to_string());
+            self.toasts.push_back(SETTING_NOT_SAVED.to_string());
         }
         if let Setting::MailHour(hour) = setting {
             self.clock
@@ -1169,6 +1208,114 @@ impl App {
         self.mail_hour = settings.mail_hour;
         self.hide_hud = settings.hide_hud;
         self.state.set_units(settings.units);
+    }
+
+    fn handle_city_key(&mut self, code: KeyCode) {
+        let Some(search) = self.city_search.as_mut() else {
+            return;
+        };
+        match code {
+            KeyCode::Char(ch) => search.type_char(ch),
+            KeyCode::Backspace => search.erase(),
+            KeyCode::Up => search.select(-1),
+            KeyCode::Down => search.select(1),
+            KeyCode::Esc => self.city_search = None,
+            KeyCode::Enter => self.submit_city_search(),
+            _ => {}
+        }
+    }
+
+    fn submit_city_search(&mut self) {
+        let Some(search) = self.city_search.as_mut() else {
+            return;
+        };
+        if let Some(place) = search.chosen() {
+            let location = place.location.clone();
+            self.city_search = None;
+            self.auto_location = false;
+            self.location_detection = None;
+            self.move_to(location, false);
+            return;
+        }
+        let Some(query) = search.query_to_search().map(str::to_string) else {
+            return;
+        };
+        let language = self.city_name_language.clone();
+        let (sender, receiver) = oneshot::channel();
+        tokio::spawn(async move {
+            sender
+                .send(geolocation::search_cities(&query, &language).await)
+                .ok();
+        });
+        search.wait(receiver);
+    }
+
+    fn toggle_auto_location(&mut self) {
+        if self.auto_location || self.location_detection.is_some() {
+            self.auto_location = false;
+            self.location_detection = None;
+            let location = GeoLocation {
+                latitude: self.state.location.latitude,
+                longitude: self.state.location.longitude,
+                city: self.state.city_name.clone(),
+            };
+            self.move_to(location, false);
+            return;
+        }
+        let language = self.city_name_language.clone();
+        let (sender, receiver) = oneshot::channel();
+        tokio::spawn(async move {
+            sender
+                .send(geolocation::detect_location_with_city(&language).await)
+                .ok();
+        });
+        self.location_detection = Some(receiver);
+    }
+
+    fn receive_location_search(&mut self) {
+        if let Some(search) = self.city_search.as_mut() {
+            search.receive();
+        }
+        let Some(receiver) = self.location_detection.as_mut() else {
+            return;
+        };
+        let result = match receiver.try_recv() {
+            Ok(result) => result,
+            Err(oneshot::error::TryRecvError::Empty) => return,
+            Err(oneshot::error::TryRecvError::Closed) => {
+                self.location_detection = None;
+                return;
+            }
+        };
+        self.location_detection = None;
+        match result {
+            Ok(location) => {
+                self.auto_location = true;
+                self.move_to(location, true);
+            }
+            Err(_) => self.toasts.push_back("Pas de connexion".to_string()),
+        }
+    }
+
+    fn move_to(&mut self, location: GeoLocation, auto: bool) {
+        if Config::save_location(&location, auto).is_err() {
+            self.toasts.push_back(SETTING_NOT_SAVED.to_string());
+        }
+        let weather_location = WeatherLocation {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            elevation: None,
+        };
+        if self.fetches_weather {
+            let (sender, receiver) = mpsc::channel(1);
+            spawn_weather(sender, weather_location, self.state.units);
+            self.weather_receiver = receiver;
+        }
+        if self.rain_receiver.is_some() {
+            self.rain_receiver = Some(rain_alert::spawn(location.latitude, location.longitude));
+            self.rain_alert = None;
+        }
+        self.state.set_location(weather_location, location.city);
     }
 
     fn toggle_album(&mut self) {
@@ -1298,6 +1445,7 @@ impl App {
             self.update_welcome(term_width, term_height);
             self.update_toasts();
             self.refresh_rain_alert();
+            self.receive_location_search();
             self.state.update_loading_animation();
             self.state.update_cached_info();
 
@@ -1323,6 +1471,12 @@ impl App {
                             && !key_event.modifiers.contains(KeyModifiers::CONTROL) =>
                     {
                         self.handle_riddle_key(key_event.code);
+                    }
+                    Event::Key(key_event)
+                        if self.city_search.is_some()
+                            && !key_event.modifiers.contains(KeyModifiers::CONTROL) =>
+                    {
+                        self.handle_city_key(key_event.code);
                     }
                     Event::Key(key_event) => {
                         let previous = self.overlay;

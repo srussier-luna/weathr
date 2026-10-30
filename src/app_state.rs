@@ -133,6 +133,12 @@ impl AppState {
         }
     }
 
+    pub fn set_location(&mut self, location: WeatherLocation, city_name: Option<String>) {
+        self.location = location;
+        self.city_name = city_name;
+        self.weather_info_needs_update = true;
+    }
+
     pub fn set_units(&mut self, units: WeatherUnits) {
         self.units = units;
         self.weather_info_needs_update = true;
