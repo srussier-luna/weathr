@@ -11,6 +11,7 @@ use crate::animation::{
     creepy::Creepy,
     dog::Dog,
     duck::Duck,
+    epiphany,
     finds::Finds,
     fireflies::FireflySystem,
     fireworks::Fireworks,
@@ -204,6 +205,10 @@ impl AnimationManager {
 
     pub fn set_mail_hour(&mut self, hour: u32) {
         self.postman.set_round_hour(hour);
+    }
+
+    pub fn set_story_frozen(&mut self, is_frozen: bool) {
+        self.postman.set_story_frozen(is_frozen);
     }
 
     pub fn set_mail_waiting(&mut self, is_waiting: bool) {
@@ -441,6 +446,10 @@ impl AnimationManager {
         self.lore.render_balloon(renderer)?;
         self.lore.render_scenery(renderer, &layout, conditions)?;
 
+        if holiday.is_epiphany {
+            epiphany::render_crown(renderer, &layout)?;
+        }
+
         self.creepy.update(conditions, &unlocks, &mut rng);
         self.creepy
             .render(renderer, &layout, conditions, &unlocks)?;
@@ -486,6 +495,7 @@ impl AnimationManager {
         self.squirrel.update(&layout, conditions, &mut rng);
         self.squirrel.render(renderer)?;
 
+        self.postman.set_april_fools(holiday.is_april_fools);
         self.postman.update(&layout);
         self.postman.render(renderer, &layout)?;
 

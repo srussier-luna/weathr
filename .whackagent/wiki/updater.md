@@ -41,6 +41,7 @@ Assumes binary built from local clone of this fork.
 | `--auto-location`, `--hide-location`, `--hide-hud` | override config |
 | `--imperial` / `--metric` | units (mutually exclusive) |
 | `--silent` | no info output, **and no update prompt** |
+| `--day <N>` | preview the story on Jour de jeu N (1–65535) in a fresh in-memory game, real save untouched, see [[mail]] |
 | `--completions <shell>` | print completions, exit |
 | `--update` | update now, exit |
 

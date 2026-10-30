@@ -1,5 +1,4 @@
 pub const SAM_SENDER: &str = "Sam, le voisin du moulin";
-pub const SAM_DAYS: [usize; 5] = [8, 14, 20, 26, 33];
 pub const SAM_LETTERS: [&str; 5] = [
     "Bonjour d'en face ! Je suis Sam, j'habite le vieux moulin au bord de la rivière. Je dessinais des cartes, autrefois. Aujourd'hui, je les regarde surtout. Ton jardin figure sur trois de mes plans, tu savais ?",
     "Rose m'a vendu un croissant brûlé, je l'ai mangé quand même. Le soir, je trace des routes sur de vieilles cartes, vers des villes que je n'ai jamais vues.",
@@ -9,7 +8,6 @@ pub const SAM_LETTERS: [&str; 5] = [
 ];
 
 pub const NEIGHBOURS_SENDER: &str = "Nadia et Claire, les apicultrices";
-pub const NEIGHBOURS_DAYS: [usize; 5] = [11, 18, 25, 36, 47];
 pub const NEIGHBOURS_LETTERS: [&str; 5] = [
     "Bonjour ! Nous sommes Nadia et Claire. On vient d'emménager dans la maison derrière le verger, avec nos quatre ruches. Si tu vois des abeilles dans ton jardin, ce sont les nôtres : elles adorent ton arbre.",
     "Rose nous apprend quelques mots en langue des signes. Claire a retenu « miel » et « merci ». Nadia confond encore les deux, ce qui donne des conversations très polies.",
@@ -19,7 +17,6 @@ pub const NEIGHBOURS_LETTERS: [&str; 5] = [
 ];
 
 pub const MARCEL_SENDER: &str = "Marcel, le garde champêtre";
-pub const MARCEL_DAYS: [usize; 5] = [12, 21, 30, 44, 56];
 pub const MARCEL_LETTERS: [&str; 5] = [
     "Bonsoir. Marcel, garde champêtre. Je fais ma ronde chaque nuit, de la mairie jusqu'au bout de ton chemin. Si tu vois une lanterne passer derrière ta haie vers minuit, c'est moi. En général, rien à signaler.",
     "On m'a dit que tu posais des questions sur une maison numéro 13. Je fais cette ronde depuis vingt-deux ans. Le village a toujours eu douze maisons. Toujours.",
@@ -27,9 +24,6 @@ pub const MARCEL_LETTERS: [&str; 5] = [
     "Je compte les maisons à chaque ronde. Douze. Cette nuit, j'ai compté treize fenêtres allumées. J'ai recommencé : douze. Je n'ai rien noté dans le registre. Il vaut mieux ne rien noter.",
     "La fête approche, alors un conseil. Le soir, si on frappe trois coups à ta porte, ne réponds pas. Nous avons tous appris à ne pas répondre. Moi aussi, j'ai appris.",
 ];
-
-pub const POSTCARD_FIRST_DAY: usize = 40;
-pub const POSTCARD_INTERVAL_DAYS: usize = 7;
 
 pub struct City {
     pub name: &'static str,
@@ -337,9 +331,6 @@ pub const CITIES: [City; 40] = [
         "On m'a servi du pain en forme de bateau. Je l'ai mangé sans couler.",
     ),
 ];
-
-pub const ARCHIVE_FIRST_DAY: usize = 28;
-pub const ARCHIVE_INTERVAL_DAYS: usize = 6;
 
 pub const ARCHIVES: [(&str, &str); 10] = [
     (

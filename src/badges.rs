@@ -67,7 +67,7 @@ pub const KINDS: [BadgeKind; 5] = [
     BadgeKind::Secret,
 ];
 
-pub const BADGES: [Badge; 39] = [
+pub const BADGES: [Badge; 40] = [
     badge(
         "clear",
         "Ciel dégagé",
@@ -301,6 +301,12 @@ pub const BADGES: [Badge; 39] = [
         "Lecture nocturne",
         "une lettre lue entre 22 h et 6 h",
         ["  ,  ", " |=| ", " |_| "],
+    ),
+    secret(
+        "summer_holidays",
+        "Grandes vacances",
+        "boîte aux lettres pleine",
+        [" _n_ ", "| | |", "|_|_|"],
     ),
 ];
 
