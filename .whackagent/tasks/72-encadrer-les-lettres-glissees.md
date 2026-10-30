@@ -1,6 +1,6 @@
 ---
 issue: 72
-status: todo
+status: to-test
 wiki: [[render]], [[mail]]
 note: donner un cadre different au lettre glisser sous la porte v1.7
 created: 2026-10-30
@@ -22,8 +22,16 @@ created: 2026-10-30
 
 ## Implementation
 
+- Nouveau cadre `Frame::Torn` (`src/overlay.rs`) : bords irréguliers sur un cycle de 5 lignes, haut et bas en dents de scie (`TORN_TOP` / `TORN_BOTTOM`), couleur Rgb (150, 95, 95). Zone de texte fixe : seul le bord droit varie.
+- `Entry::Creepy` utilise `Frame::Torn` (`src/story/content/mod.rs`). Titre et compteur inchangés.
+- Golden `save_37_golden.txt` : `frame: Parchment` → `frame: Torn` sur les 26 Lettres glissées sous la porte, rien d'autre.
+- Tests : `test_torn_frame_has_ragged_edges`, `test_torn_frame_keeps_text_in_place_on_narrow_terminals` (largeurs 12 à 66), `test_letter_slipped_under_the_door_comes_on_torn_paper`, `Frame::Torn` ajouté à `FRAMES`.
+- Build : `cargo build`, `cargo fmt --check`, `cargo test` verts. Clippy : seule l'erreur connue `double_must_use` (#79).
+
 ## Review
 
 ## Verification
+
+- Application non lancée (Lettre glissée = partie avancée) : preuve par tests de rendu (`frame_rows`, lignes exactes). Validation manuelle à faire.
 
 ## Feedback

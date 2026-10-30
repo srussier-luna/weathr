@@ -83,7 +83,7 @@ text: Bonjour. J'habite au numéro 13, juste derrière chez toi. Tu ne vois pas 
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 6 night false
 title: Lettre 7/84
 text: Rose m'a offert un nœud. Les astres l'avaient annoncé : je suis désormais la chatte la plus élégante du village. Biscuit est jaloux, mais Biscuit ne lit pas les étoiles. Regarde bien mon oreille !
@@ -141,7 +141,7 @@ text: Tu as bien dormi ? Moi, je dors peu. Je regarde les fenêtres du village. 
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 13 night false
 title: Lettre 13/84
 text: Trente ans que je fais la tournée à vélo ! Ta boîte aux lettres est ma préférée : elle grince joliment. Quand son drapeau rouge est levé, c'est qu'une lettre t'attend.
@@ -198,7 +198,7 @@ text: J'ai marché dans ton jardin cette nuit. J'espère que ça ne te dérange 
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 20 night false
 title: Lettre 20/84
 text: Le puits, oui. Il y a longtemps, quelqu'un y a jeté une pièce en faisant un vœu : que cette maison reste heureuse. Ce vœu, c'est moi qui l'ai fait.
@@ -265,7 +265,7 @@ text: Gaston ne passe jamais chez moi. Alors je dépose mes lettres moi-même, s
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 27 night false
 title: Lettre 26/84
 text: Coin ! La mare au bout de ton jardin est la plus belle de la région quand il pleut. Je la partage avec la grenouille, mais elle chante faux.
@@ -337,7 +337,7 @@ text: Ce soir, je suis passé te voir. Tu étais dans l'autre pièce. Je n'ai pa
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 36 night false
 title: Lettre 34/84
 text: Avec Léo, on a construit une cabane dans le grand arbre. Il y a une échelle, un toit et une fenêtre pour surveiller la rivière. Interdite aux adultes, paraît-il.
@@ -382,7 +382,7 @@ text: Tu as demandé à Marcel où se trouve le numéro 13 ? Il t'a dit qu'il n'
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 42 night false
 title: Lettre 40/84
 text: Ce soir, regarde la petite fenêtre en haut à gauche. La lanterne bleue est revenue. Quelqu'un pense encore au pêcheur.
@@ -450,7 +450,7 @@ text: Ton chat me connaît. Il me regarde quand je passe. Le chien aussi, mais l
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 50 night false
 title: Lettre 46/84
 text: Je ne chante pas faux, c'est le canard qui n'a pas d'oreille. Quand il pleut, je saute dans la mare : plouf ! C'est mon meilleur numéro.
@@ -512,7 +512,7 @@ text: Le puits n'est pas aussi profond qu'on le croit. Penche-toi, un soir. On e
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 58 night false
 title: Lettre 53/84
 text: Mamie s'appelle Jeanne. Elle habite la maison de retraite au bord de la rivière. Elle me demande toujours des nouvelles de ta maison, du grand arbre et du puits.
@@ -579,7 +579,7 @@ text: J'ai retrouvé une photo très ancienne de ta maison. Il y a quelqu'un à 
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 66 night false
 title: Lettre 59/84
 text: Tu as sûrement deviné. Je m'appelle Jeanne, je suis la mamie de Léo. Paulo et moi, nous nous sommes aimés quand nous étions jeunes, puis la vie nous a séparés.
@@ -629,7 +629,7 @@ text: Les canetons ne s'approchent jamais du puits. Les animaux savent des chose
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 73 night false
 title: Lettre 64/84
 text: Coin coin ! Des canetons sont nés au bord de la mare. Ils me suivent partout, même sous la pluie. Surtout sous la pluie.
@@ -687,7 +687,7 @@ text: Parfois, ils s'arrêtent tous en même temps et regardent dans la même di
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 80 night false
 title: Lettre 70/84
 text: Gros secret : Paulo m'a commandé un gâteau en forme de cœur. Sur mon carnet, j'ai écrit « Pour qui ? ». Il a rougi et il est reparti sans répondre.
@@ -757,7 +757,7 @@ text: Treize maisons, treize fenêtres, treize marches jusqu'à ta porte. J'ai c
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 89 night false
 title: Lettre 76/84
 text: La clé sous la boîte aux lettres ouvre le coffre. Le jour de la fête, nous l'ouvrirons ensemble, avec Paulo et Léo.
@@ -805,7 +805,7 @@ text: Jeanne connaissait mon nom, autrefois. Elle ne le prononce plus. Demande-l
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 95 night false
 title: Lettre 81/84
 text: Mes chatons ont appris à grimper sur la cheminée. Ils disent que, de là-haut, on entend mieux les étoiles. Je fais semblant de ne pas les connaître.
@@ -909,7 +909,7 @@ text: Bonjour. J'habite au numéro 13, juste derrière chez toi. Tu ne vois pas 
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 6 night true
 title: Lettre 7/84
 text: Rose m'a offert un nœud. Les astres l'avaient annoncé : je suis désormais la chatte la plus élégante du village. Biscuit est jaloux, mais Biscuit ne lit pas les étoiles. Regarde bien mon oreille !
@@ -975,7 +975,7 @@ text: Tu as bien dormi ? Moi, je dors peu. Je regarde les fenêtres du village. 
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 13 night true
 title: Lettre 13/84
 text: Trente ans que je fais la tournée à vélo ! Ta boîte aux lettres est ma préférée : elle grince joliment. Quand son drapeau rouge est levé, c'est qu'une lettre t'attend.
@@ -1040,7 +1040,7 @@ text: J'ai marché dans ton jardin cette nuit. J'espère que ça ne te dérange 
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 20 night true
 title: Lettre 20/84
 text: Le puits, oui. Il y a longtemps, quelqu'un y a jeté une pièce en faisant un vœu : que cette maison reste heureuse. Ce vœu, c'est moi qui l'ai fait.
@@ -1115,7 +1115,7 @@ text: Gaston ne passe jamais chez moi. Alors je dépose mes lettres moi-même, s
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 27 night true
 title: Lettre 26/84
 text: Coin ! La mare au bout de ton jardin est la plus belle de la région quand il pleut. Je la partage avec la grenouille, mais elle chante faux.
@@ -1195,7 +1195,7 @@ text: Ce soir, je suis passé te voir. Tu étais dans l'autre pièce. Je n'ai pa
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 36 night true
 title: Lettre 34/84
 text: Avec Léo, on a construit une cabane dans le grand arbre. Il y a une échelle, un toit et une fenêtre pour surveiller la rivière. Interdite aux adultes, paraît-il.
@@ -1248,7 +1248,7 @@ text: Tu as demandé à Marcel où se trouve le numéro 13 ? Il t'a dit qu'il n'
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 42 night true
 title: Lettre 40/84
 text: Ce soir, regarde la petite fenêtre en haut à gauche. La lanterne bleue est revenue. Quelqu'un pense encore au pêcheur.
@@ -1324,7 +1324,7 @@ text: Ton chat me connaît. Il me regarde quand je passe. Le chien aussi, mais l
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 50 night true
 title: Lettre 46/84
 text: Je ne chante pas faux, c'est le canard qui n'a pas d'oreille. Quand il pleut, je saute dans la mare : plouf ! C'est mon meilleur numéro.
@@ -1394,7 +1394,7 @@ text: Le puits n'est pas aussi profond qu'on le croit. Penche-toi, un soir. On e
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 58 night true
 title: Lettre 53/84
 text: Mamie s'appelle Jeanne. Elle habite la maison de retraite au bord de la rivière. Elle me demande toujours des nouvelles de ta maison, du grand arbre et du puits.
@@ -1469,7 +1469,7 @@ text: J'ai retrouvé une photo très ancienne de ta maison. Il y a quelqu'un à 
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 66 night true
 title: Lettre 59/84
 text: Tu as sûrement deviné. Je m'appelle Jeanne, je suis la mamie de Léo. Paulo et moi, nous nous sommes aimés quand nous étions jeunes, puis la vie nous a séparés.
@@ -1527,7 +1527,7 @@ text: Les canetons ne s'approchent jamais du puits. Les animaux savent des chose
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 73 night true
 title: Lettre 64/84
 text: Coin coin ! Des canetons sont nés au bord de la mare. Ils me suivent partout, même sous la pluie. Surtout sous la pluie.
@@ -1593,7 +1593,7 @@ text: Parfois, ils s'arrêtent tous en même temps et regardent dans la même di
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 80 night true
 title: Lettre 70/84
 text: Gros secret : Paulo m'a commandé un gâteau en forme de cœur. Sur mon carnet, j'ai écrit « Pour qui ? ». Il a rougi et il est reparti sans répondre.
@@ -1671,7 +1671,7 @@ text: Treize maisons, treize fenêtres, treize marches jusqu'à ta porte. J'ai c
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 89 night true
 title: Lettre 76/84
 text: La clé sous la boîte aux lettres ouvre le coffre. Le jour de la fête, nous l'ouvrirons ensemble, avec Paulo et Léo.
@@ -1727,7 +1727,7 @@ text: Jeanne connaissait mon nom, autrefois. Elle ne le prononce plus. Demande-l
 blank
 text: — Le voisin du n°13
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
-frame: Parchment
+frame: Torn
 == entry 95 night true
 title: Lettre 81/84
 text: Mes chatons ont appris à grimper sur la cheminée. Ils disent que, de là-haut, on entend mieux les étoiles. Je fais semblant de ne pas les connaître.

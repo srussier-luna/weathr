@@ -12,6 +12,8 @@ const BADGES_FOOTER: &str = "[b] ou [Echap] fermer";
 const FOOTER_GAP: &str = "  ";
 const FOLDER_TAB: &str = "/  Archives  \\";
 const STAMP: &str = "[~]";
+const TORN_TOP: &str = "_/\\__/\\/\\___/\\_";
+const TORN_BOTTOM: &str = "\\/^\\_/\\/\\^^\\/";
 const MAX_BUBBLE_WIDTH: u16 = 40;
 const BUBBLE_GAP: &str = ". .";
 const BUBBLE_TAIL: &str = "V";
@@ -31,6 +33,7 @@ pub enum Line {
 pub enum Frame {
     Plain,
     Parchment,
+    Torn,
     Newspaper,
     Postcard,
     Folder,
@@ -47,6 +50,7 @@ impl Frame {
         let (r, g, b) = match self {
             Self::Plain | Self::Bubble | Self::Notice => return None,
             Self::Parchment => (222, 196, 140),
+            Self::Torn => (150, 95, 95),
             Self::Newspaper => (205, 205, 195),
             Self::Postcard => (190, 170, 235),
             Self::Folder => (230, 160, 80),
@@ -76,6 +80,13 @@ impl Frame {
             }
             Self::Parchment if row % 2 == 0 => (0, "(  ", "  )"),
             Self::Parchment => (1, ") ", " ("),
+            Self::Torn => match row % 5 {
+                0 => (0, "|  ", "  |"),
+                1 => (1, "> ", " <"),
+                2 => (0, "|  ", "  \\"),
+                3 => (1, "/ ", "  |"),
+                _ => (0, "|  ", " <"),
+            },
             Self::Newspaper => (0, "|| ", " ||"),
             Self::Recipe => (0, "o| ", " |"),
             Self::Waves => (0, "  ", "  "),
@@ -94,6 +105,7 @@ impl Frame {
         match self {
             Self::Plain | Self::Postcard => vec![(0, rule('+', "-", '+', width))],
             Self::Parchment => vec![(1, rule('.', "~", '.', width.saturating_sub(2)))],
+            Self::Torn => vec![(0, TORN_TOP.chars().cycle().take(width).collect())],
             Self::Newspaper => vec![(0, "=".repeat(width))],
             Self::Folder => vec![
                 (1, "_".repeat(FOLDER_TAB.len() - 2)),
@@ -117,6 +129,7 @@ impl Frame {
     fn bottom(self, width: usize) -> Vec<(u16, String)> {
         match self {
             Self::Parchment => vec![(1, rule('\'', "~", '\'', width.saturating_sub(2)))],
+            Self::Torn => vec![(0, TORN_BOTTOM.chars().cycle().take(width).collect())],
             Self::Folder => vec![(0, rule('|', "_", '|', width))],
             Self::Photo => vec![(0, rule('\\', "-", '/', width))],
             Self::Bubble => vec![(0, rule('\'', "-", '\'', width))],
@@ -451,9 +464,10 @@ mod tests {
         }
     }
 
-    const FRAMES: [Frame; 11] = [
+    const FRAMES: [Frame; 12] = [
         Frame::Plain,
         Frame::Parchment,
+        Frame::Torn,
         Frame::Newspaper,
         Frame::Postcard,
         Frame::Folder,
@@ -516,6 +530,37 @@ mod tests {
                 " '~~~~~~~~~~~~~~~~'",
             ]
         );
+    }
+
+    #[test]
+    fn test_torn_frame_has_ragged_edges() {
+        let rows = draw(Frame::Torn, "Lettre 5/6", &["Je te vois."], "[c]", 20);
+        assert_eq!(
+            rows,
+            [
+                "_/\\__/\\/\\___/\\__/\\__",
+                "|  Lettre 5/6      |",
+                " >                <",
+                "|  Je te vois.     \\",
+                " /                 |",
+                "|  [c]            <",
+                "\\/^\\_/\\/\\^^\\/\\/^\\_/\\",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_torn_frame_keeps_text_in_place_on_narrow_terminals() {
+        for width in 12..=MAX_BOX_WIDTH {
+            let inner = Frame::Torn.inner_width(width);
+            for row in frame_rows(Frame::Torn, "Lettre 5/6", &[], "[c]", width) {
+                if let [(indent, left, _), (start, text, _), _] = row.as_slice() {
+                    assert_eq!(*start, 3, "{width}");
+                    assert_eq!(usize::from(*indent) + left.chars().count(), 3, "{width}");
+                    assert_eq!(text.chars().count(), inner, "{width}");
+                }
+            }
+        }
     }
 
     #[test]
