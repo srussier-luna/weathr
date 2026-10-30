@@ -31,6 +31,35 @@ const TRUNK_COLOR: Color = Color::Rgb {
     b: 40,
 };
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Growth {
+    Baby,
+    Third,
+    TwoThirds,
+    #[default]
+    Full,
+}
+
+impl Growth {
+    pub fn on_day(day: usize) -> Self {
+        match day {
+            ..=3 => Self::Baby,
+            4..=7 => Self::Third,
+            8..=11 => Self::TwoThirds,
+            _ => Self::Full,
+        }
+    }
+
+    fn height(self, full_height: u16) -> u16 {
+        match self {
+            Self::Baby => MIN_HEIGHT,
+            Self::Third => (full_height / 3).max(MIN_HEIGHT),
+            Self::TwoThirds => (full_height * 2 / 3).max(MIN_HEIGHT),
+            Self::Full => full_height,
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct Tree {
     pub x: u16,
@@ -48,6 +77,15 @@ impl Tree {
             .find_map(|height| Self::with_height(height, house_x, horizon_y))
     }
 
+    pub fn grown(house_x: u16, horizon_y: u16, growth: Growth) -> Option<Self> {
+        let full = Self::fit(house_x, horizon_y)?;
+        let young = Self::with_height(growth.height(full.height()), house_x, horizon_y)?;
+        Some(Self {
+            x: full.center_x() - young.width / 2,
+            ..young
+        })
+    }
+
     fn with_height(height: u16, house_x: u16, horizon_y: u16) -> Option<Self> {
         let trunk_height = (height / 4).max(1);
         let canopy_height = height - trunk_height;
@@ -61,6 +99,10 @@ impl Tree {
             canopy_height,
             trunk_height,
         })
+    }
+
+    pub fn height(&self) -> u16 {
+        self.canopy_height + self.trunk_height
     }
 
     pub fn center_x(&self) -> u16 {
@@ -223,5 +265,77 @@ fn dim(color: Color, is_day: bool) -> Color {
             b: (b as f32 * NIGHT_DIMMING) as u8,
         },
         _ => color,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const HOUSE_X: u16 = 100;
+    const HORIZON_Y: u16 = 40;
+
+    fn full_height() -> u16 {
+        Tree::fit(HOUSE_X, HORIZON_Y).unwrap().height()
+    }
+
+    fn grown(growth: Growth) -> Tree {
+        Tree::grown(HOUSE_X, HORIZON_Y, growth).unwrap()
+    }
+
+    #[test]
+    fn test_growth_follows_story_days() {
+        let stages = [
+            (1, Growth::Baby),
+            (3, Growth::Baby),
+            (4, Growth::Third),
+            (7, Growth::Third),
+            (8, Growth::TwoThirds),
+            (11, Growth::TwoThirds),
+            (12, Growth::Full),
+            (20, Growth::Full),
+        ];
+        for (day, growth) in stages {
+            assert_eq!(Growth::on_day(day), growth, "day {day}");
+        }
+    }
+
+    #[test]
+    fn test_baby_tree_is_smallest_drawable() {
+        let tree = grown(Growth::Baby);
+        assert_eq!(tree.height(), MIN_HEIGHT);
+        assert_eq!(tree.canopy_height, 4);
+        assert_eq!(tree.trunk_width(), 2);
+        assert_eq!(tree.top_y + tree.height(), HORIZON_Y);
+    }
+
+    #[test]
+    fn test_young_trees_reach_their_share_of_full_height() {
+        assert_eq!(grown(Growth::Third).height(), full_height() / 3);
+        assert_eq!(grown(Growth::TwoThirds).height(), full_height() * 2 / 3);
+        assert_eq!(grown(Growth::Full).height(), full_height());
+    }
+
+    #[test]
+    fn test_tree_grows_around_the_same_trunk() {
+        let full = grown(Growth::Full);
+        for growth in [Growth::Baby, Growth::Third, Growth::TwoThirds] {
+            let young = grown(growth);
+            assert_eq!(young.center_x(), full.center_x(), "{growth:?}");
+            assert!(young.x >= full.x && young.x + young.width <= full.x + full.width);
+        }
+    }
+
+    #[test]
+    fn test_young_tree_never_below_baby_size() {
+        let low_horizon = TOP_MARGIN + MIN_HEIGHT + 2;
+        let tree = Tree::grown(HOUSE_X, low_horizon, Growth::Third).unwrap();
+        assert_eq!(tree.height(), MIN_HEIGHT);
+    }
+
+    #[test]
+    fn test_no_room_for_full_tree_means_no_tree_at_any_stage() {
+        assert!(Tree::fit(5, HORIZON_Y).is_none());
+        assert!(Tree::grown(5, HORIZON_Y, Growth::Baby).is_none());
     }
 }

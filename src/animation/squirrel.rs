@@ -30,7 +30,7 @@ pub struct Squirrel {
     y: f32,
     is_facing_right: bool,
     frame: u32,
-    placed_on: Option<(u16, u16)>,
+    placed_on: Option<(u16, u16, u16)>,
 }
 
 impl Squirrel {
@@ -71,9 +71,9 @@ impl Squirrel {
         self.frame = self.frame.wrapping_add(1);
         let ground_y = Self::ground_y(layout);
         let climb_x = Self::climb_x(&tree);
-        let size = (layout.width, layout.horizon_y);
-        if self.placed_on != Some(size) {
-            self.placed_on = Some(size);
+        let spot = (layout.width, layout.horizon_y, tree.x);
+        if self.placed_on != Some(spot) {
+            self.placed_on = Some(spot);
             self.x = climb_x;
             self.y = ground_y;
             self.phase = Phase::Resting(60);
@@ -152,6 +152,7 @@ impl Default for Squirrel {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::scene::tree::Growth;
 
     fn sunny_day() -> WeatherConditions {
         WeatherConditions {
@@ -164,13 +165,33 @@ mod tests {
     fn test_squirrel_moves_back_to_tree_after_resize() {
         let mut squirrel = Squirrel::new();
         let mut rng = rand::rng();
-        squirrel.update(&GardenLayout::new(120, 30), &sunny_day(), &mut rng);
+        squirrel.update(
+            &GardenLayout::new(120, 30, Growth::Full),
+            &sunny_day(),
+            &mut rng,
+        );
 
-        let wide = GardenLayout::new(240, 50);
+        let wide = GardenLayout::new(240, 50, Growth::Full);
         squirrel.update(&wide, &sunny_day(), &mut rng);
 
         let tree = wide.plan.tree.unwrap();
         assert_eq!(squirrel.x, Squirrel::climb_x(&tree));
         assert_eq!(squirrel.y, Squirrel::ground_y(&wide));
+    }
+
+    #[test]
+    fn test_squirrel_moves_to_tree_when_it_grows() {
+        let mut squirrel = Squirrel::new();
+        let mut rng = rand::rng();
+        squirrel.update(
+            &GardenLayout::new(240, 50, Growth::Baby),
+            &sunny_day(),
+            &mut rng,
+        );
+
+        let grown = GardenLayout::new(240, 50, Growth::Full);
+        squirrel.update(&grown, &sunny_day(), &mut rng);
+
+        assert_eq!(squirrel.x, Squirrel::climb_x(&grown.plan.tree.unwrap()));
     }
 }
