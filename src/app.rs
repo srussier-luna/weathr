@@ -807,16 +807,11 @@ impl App {
 
         let view = match self.overlay {
             Some(Overlay::Letter(index)) => {
-                let Some((day, entry)) = self.timeline.mail_at(index) else {
+                let delivered = self.timeline.first_mail(self.available_letters());
+                let Some(view) = content::entry_view(delivered, index, &self.read_context()) else {
                     return Ok(());
                 };
-                content::entry_view(
-                    day,
-                    entry,
-                    index + 1,
-                    self.available_letters(),
-                    &self.read_context(),
-                )
+                view
             }
             Some(Overlay::Album(page)) => {
                 let mut pages = self.album_pages();
