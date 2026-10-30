@@ -61,6 +61,7 @@ impl Demo {
                 Holiday::new_year(Local::now().year() + 1),
             ),
             scene(WeatherCondition::Clear, true, Holiday::easter()),
+            scene(WeatherCondition::Clear, true, Holiday::neighbours_party()),
             scene(WeatherCondition::Clear, false, Holiday::perseids()),
             scene(WeatherCondition::Clear, false, Holiday::geminids()),
             DemoScene {
@@ -105,6 +106,8 @@ impl Demo {
             " New Year"
         } else if scene.holiday.is_easter {
             " Spring"
+        } else if scene.holiday.is_neighbours_party {
+            " Fête des voisins"
         } else if let Some(meteor_shower) = scene.holiday.meteor_shower {
             match meteor_shower {
                 MeteorShower::Perseids => " Perséides",

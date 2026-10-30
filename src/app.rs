@@ -1,4 +1,5 @@
 use crate::animation::lore::{Choices, Unlocks};
+use crate::animation::neighbours_party::Neighbour;
 use crate::animation_manager::AnimationManager;
 use crate::app_state::AppState;
 use crate::badges::{self, Badge};
@@ -42,6 +43,13 @@ const REMOTE_CHECK_FRAMES: u32 = 300;
 const MAX_ANSWER_LENGTH: usize = 30;
 const REMOTE_CHANNEL_SIZE: usize = 16;
 const OVERLAY_MARGIN_ROWS: u16 = 12;
+const NEIGHBOUR_FIRST_LETTERS: [(Neighbour, usize); 5] = [
+    (Neighbour::Rose, 1),
+    (Neighbour::Paulo, 4),
+    (Neighbour::Odile, 7),
+    (Neighbour::Gaston, 10),
+    (Neighbour::Leo, 16),
+];
 
 fn count_read(timeline: &Timeline, progress: &Progress, kind: fn(&Entry) -> bool) -> usize {
     timeline
@@ -80,6 +88,19 @@ fn unlocks_on(timeline: &Timeline, day: usize, answers: &BTreeMap<String, u8>) -
         bottles: has_arrived(Thing::Bottles),
         choices: Choices::from_answers(answers),
     }
+}
+
+fn guests_on(timeline: &Timeline, day: usize) -> Vec<Neighbour> {
+    let delivered = timeline.first_mail(timeline.delivered_by(day));
+    NEIGHBOUR_FIRST_LETTERS
+        .into_iter()
+        .filter(|(_, number)| {
+            delivered
+                .iter()
+                .any(|(_, entry)| *entry == Entry::Main(number - 1))
+        })
+        .map(|(neighbour, _)| neighbour)
+        .collect()
 }
 
 fn earn(earned: &mut BTreeSet<String>, ids: Vec<&'static str>) -> Vec<&'static Badge> {
@@ -365,6 +386,7 @@ pub struct App {
     weather_receiver: mpsc::Receiver<Result<WeatherData, WeatherError>>,
     hide_hud: bool,
     simulated_holiday: Option<Holiday>,
+    invites_every_neighbour: bool,
     demo: Option<Demo>,
     progress: Progress,
     letters: Vec<Letter>,
@@ -499,6 +521,8 @@ impl App {
             weather_receiver: rx,
             hide_hud: config.hide_hud,
             simulated_holiday: simulation.holiday,
+            invites_every_neighbour: simulation.demo
+                || (simulation.holiday.is_some() && simulation.day.is_none()),
             demo,
             progress,
             letters,
@@ -522,6 +546,7 @@ impl App {
             frame_count: 0,
             timeline_day,
         };
+        app.animations.set_guests(app.guests());
         app.refresh_timeline();
         app
     }
@@ -608,6 +633,7 @@ impl App {
                 (holiday.is_halloween, "halloween"),
                 (holiday.new_year.is_some(), "new_year"),
                 (holiday.is_easter, "easter"),
+                (holiday.is_neighbours_party, "neighbours_party"),
                 (self.state.shows_rainbow(), "rainbow"),
                 (sightings.postman, "postman"),
                 (sightings.snowman, "snowman"),
@@ -676,8 +702,17 @@ impl App {
         unlocks_on(&self.timeline, self.timeline_day, &self.progress.answers)
     }
 
+    fn guests(&self) -> Vec<Neighbour> {
+        if self.invites_every_neighbour {
+            Neighbour::ALL.to_vec()
+        } else {
+            guests_on(&self.timeline, self.timeline_day)
+        }
+    }
+
     fn refresh_unlocks(&mut self) {
         self.animations.set_unlocks(self.unlocks());
+        self.animations.set_guests(self.guests());
     }
 
     fn is_box_full(&self) -> bool {
@@ -1661,6 +1696,48 @@ mod tests {
             );
             assert!(shows(&unlocks_on_day(day), thing), "{thing:?} on day {day}");
         }
+    }
+
+    #[test]
+    fn test_first_letters_match_the_default_story() {
+        let senders = [
+            (Neighbour::Rose, "Rose, la boulangère"),
+            (Neighbour::Paulo, "Paulo, le pêcheur"),
+            (Neighbour::Odile, "Odile, la maire"),
+            (Neighbour::Leo, "Léo, le petit voisin"),
+            (Neighbour::Gaston, "Gaston, le facteur"),
+        ];
+        let defaults = letters::defaults();
+        for (neighbour, sender) in senders {
+            let first = defaults
+                .iter()
+                .position(|letter| letter.sender == sender)
+                .map(|index| index + 1);
+            let expected = NEIGHBOUR_FIRST_LETTERS
+                .iter()
+                .find(|(written, _)| *written == neighbour)
+                .map(|(_, number)| *number);
+            assert_eq!(first, expected, "{neighbour:?}");
+        }
+    }
+
+    #[test]
+    fn test_guests_come_once_their_first_letter_is_delivered() {
+        let guests = |day| guests_on(&timeline_on(day), day);
+        assert_eq!(guests(1), [Neighbour::Rose]);
+        assert_eq!(guests(3), [Neighbour::Rose]);
+        assert_eq!(
+            guests(15),
+            [
+                Neighbour::Rose,
+                Neighbour::Paulo,
+                Neighbour::Odile,
+                Neighbour::Gaston
+            ]
+        );
+        let everyone = guests(16);
+        assert_eq!(everyone.len(), Neighbour::ALL.len());
+        assert!(Neighbour::ALL.iter().all(|guest| everyone.contains(guest)));
     }
 
     #[test]

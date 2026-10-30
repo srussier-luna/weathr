@@ -14,7 +14,7 @@ const ROUND_WINDOW_MINUTES: i64 = 1;
 const RIDER: [&str; 2] = ["   __o", " _`\\<,_"];
 const WHEELS: &str = "(*)/ (*)";
 const SPRITE_WIDTH: f32 = 8.0;
-const POSTAL_YELLOW: Color = Color::Rgb {
+pub const POSTAL_YELLOW: Color = Color::Rgb {
     r: 255,
     g: 204,
     b: 0,
@@ -83,6 +83,10 @@ impl Postman {
 
     pub fn is_delivering(&self) -> bool {
         matches!(self.trip, Trip::Delivering(_))
+    }
+
+    pub fn is_on_round(&self) -> bool {
+        !matches!(self.trip, Trip::Waiting)
     }
 
     pub fn visit(&mut self) {
@@ -298,6 +302,22 @@ mod tests {
         postman.leave();
         assert!(matches!(postman.trip, Trip::Leaving));
         assert_eq!(postman.head(&layout), None);
+    }
+
+    #[test]
+    fn test_on_round_from_departure_until_back_home() {
+        let layout = GardenLayout::new(120, 40);
+        let mut postman = Postman::new();
+        assert!(!postman.is_on_round());
+
+        postman.trip = Trip::Riding;
+        assert!(postman.is_on_round());
+        postman.trip = Trip::Delivering(STOP_FRAMES);
+        assert!(postman.is_on_round());
+        postman.trip = Trip::Leaving;
+        postman.x = layout.width as f32;
+        postman.update(&layout);
+        assert!(!postman.is_on_round());
     }
 
     #[test]
