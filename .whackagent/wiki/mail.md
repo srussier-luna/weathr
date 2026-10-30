@@ -19,6 +19,7 @@ Two clocks: real time + real weather drive scenery only ([[animation]]); **Jour 
 ### When vs what — `src/story/content/`
 
 - Timeline says **when**; `trait MailContent { fn compose(&ReadContext) -> View }` says **what** (`content/mod.rs:52`). `entry_view` picks the content per `Entry`; `label` gives the Courrier line.
+- Title counter `x/y` = rank / count within the entry's series among delivered mail (`series`, `counter` in `content/mod.rs`): one Lettre series (village, Sam, voisins, Marcel, sous la porte), one each for Carte postale, Archives, Recette. Gazette has none (dated title).
 - `ReadContext` (`content/mod.rs:44`) = everything content may read: Lettres, `Progress`, clock, reading hour, riddle input. Content never fetches.
 - Static: `Written` (correspondents, archives, creepy, recipes), `VillageLetter`. Dynamic: `Gazette`, `Postcard` read weather **frozen at delivery** from `progress.json` (`gazette_weather`, `postcard_weather`): an old Gazette keeps its own week.
 - Village Lettre texts in `letters.rs` (`DEFAULT_LETTERS`), overridable by `<config>/weathr/lettres.txt` (`load`, `:482`): `=== N | Sender` blocks replace letter N or append N+1.

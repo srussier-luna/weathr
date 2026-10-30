@@ -60,17 +60,16 @@ pub fn text(content: impl Into<String>) -> Line {
     Line::Text(content.into())
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum Series {
     Letter,
     Postcard,
     Archive,
     Recipe,
-    Gazette,
 }
 
-fn series(entry: Entry) -> Series {
-    match entry {
+fn series(entry: Entry) -> Option<Series> {
+    Some(match entry {
         Entry::Main(_)
         | Entry::Sam(_)
         | Entry::Neighbours(_)
@@ -79,13 +78,12 @@ fn series(entry: Entry) -> Series {
         Entry::Postcard(_) => Series::Postcard,
         Entry::Archive(_) => Series::Archive,
         Entry::Recipe(_) => Series::Recipe,
-        Entry::Gazette(_) => Series::Gazette,
-    }
+        Entry::Gazette(_) => return None,
+    })
 }
 
-fn counter(delivered: &[(usize, Entry)], index: usize, entry: Entry) -> String {
-    let kind = series(entry);
-    let same_kind = |(_, other): &&(usize, Entry)| series(*other) == kind;
+fn counter(delivered: &[(usize, Entry)], index: usize, kind: Series) -> String {
+    let same_kind = |(_, other): &&(usize, Entry)| series(*other) == Some(kind);
     let number = delivered[..=index].iter().filter(same_kind).count();
     let total = delivered.iter().filter(same_kind).count();
     format!("{number}/{total}")
@@ -93,7 +91,10 @@ fn counter(delivered: &[(usize, Entry)], index: usize, entry: Entry) -> String {
 
 pub fn entry_view(delivered: &[(usize, Entry)], index: usize, ctx: &ReadContext) -> Option<View> {
     let &(day, entry) = delivered.get(index)?;
-    Some(content_for(day, entry, counter(delivered, index, entry)).compose(ctx))
+    let title_counter = series(entry)
+        .map(|kind| counter(delivered, index, kind))
+        .unwrap_or_default();
+    Some(content_for(day, entry, title_counter).compose(ctx))
 }
 
 fn content_for(day: usize, entry: Entry, counter: String) -> Box<dyn MailContent> {

@@ -1,6 +1,6 @@
 ---
 issue: 71
-status: to-test
+status: to-close
 wiki: [[mail]]
 note: "dans le decompte de lettre la gazette est compter il fat les enlever du decompte. exemple lettre 4/7 gazette lettre 5/7 aujourd'hui apres gazette on a 6/8 au lie de 5/7"
 created: 2026-10-30
@@ -41,6 +41,14 @@ created: 2026-10-30
 - Proof: `cargo fmt -- --check && cargo clippy -- -D warnings -A clippy::double_must_use && cargo test` green.
 
 ## Review
+
+### validation — clean (3 rounds, autofix)
+
+- 🟡 [elegance] `content/mod.rs` `Series::Gazette` only fed a discarded counter → `series` returns `Option<Series>`, Gazette = `None`. fixed
+- 🟡 [elegance] `as_ref() == Some(&kind)` → `Series` derives `Copy`, `== Some(kind)`. fixed
+- 🟡 [style] binding shadowed fn `counter` → renamed `title_counter`. fixed
+- Golden fixture byte-identical after fixes. Branch re-merged with sprint (brings #19); gate green after merge.
+- No screenshots: CLI/TUI, `wa-screenshot` not run.
 
 ## Verification
 
