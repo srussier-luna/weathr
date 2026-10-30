@@ -1,10 +1,13 @@
-use serde::Deserialize;
+mod writer;
+
+use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use toml_edit::ser::ValueSerializer;
 
 use crate::error::ConfigError;
-use crate::weather::types::WeatherUnits;
+use crate::weather::types::{PrecipitationUnit, TemperatureUnit, WeatherUnits, WindSpeedUnit};
 
 pub const ENV_LATITUDE: &str = "WEATHR_LATITUDE";
 pub const ENV_LONGITUDE: &str = "WEATHR_LONGITUDE";
@@ -94,7 +97,47 @@ impl Default for Location {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Setting {
+    Temperature(TemperatureUnit),
+    WindSpeed(WindSpeedUnit),
+    Precipitation(PrecipitationUnit),
+    MailHour(u32),
+    HideHud(bool),
+}
+
+impl Setting {
+    fn keys(self) -> &'static [&'static str] {
+        match self {
+            Self::Temperature(_) => &["units", "temperature"],
+            Self::WindSpeed(_) => &["units", "wind_speed"],
+            Self::Precipitation(_) => &["units", "precipitation"],
+            Self::MailHour(_) => &["courrier", "heure"],
+            Self::HideHud(_) => &["hide_hud"],
+        }
+    }
+
+    fn value(self) -> Result<toml_edit::Value, ConfigError> {
+        let serializer = ValueSerializer::new();
+        Ok(match self {
+            Self::Temperature(unit) => unit.serialize(serializer)?,
+            Self::WindSpeed(unit) => unit.serialize(serializer)?,
+            Self::Precipitation(unit) => unit.serialize(serializer)?,
+            Self::MailHour(hour) => i64::from(hour).into(),
+            Self::HideHud(hide) => hide.into(),
+        })
+    }
+}
+
 impl Config {
+    pub fn save(setting: Setting) -> Result<(), ConfigError> {
+        Self::save_to_path(&Self::get_config_path()?, setting)
+    }
+
+    pub fn save_to_path(path: &Path, setting: Setting) -> Result<(), ConfigError> {
+        writer::write_value(path, setting.keys(), setting.value()?)
+    }
+
     pub fn load() -> Result<Self, ConfigError> {
         let config_path = Self::get_config_path()?;
 
@@ -717,5 +760,28 @@ auto = false
 
         let config: Config = toml::from_str("").unwrap();
         assert_eq!(config.mail.hour, 9);
+    }
+
+    #[test]
+    fn test_saved_settings_load_back() {
+        let dir = std::env::temp_dir().join(format!("weathr_test_settings_{}", std::process::id()));
+        let path = dir.join("config.toml");
+        fs::remove_dir_all(&dir).ok();
+        for setting in [
+            Setting::Temperature(TemperatureUnit::Fahrenheit),
+            Setting::WindSpeed(WindSpeedUnit::Kn),
+            Setting::Precipitation(PrecipitationUnit::Inch),
+            Setting::MailHour(23),
+            Setting::HideHud(true),
+        ] {
+            Config::save_to_path(&path, setting).unwrap();
+        }
+        let config = Config::load_from_path(&path).unwrap();
+        fs::remove_dir_all(&dir).ok();
+        assert_eq!(config.units.temperature, TemperatureUnit::Fahrenheit);
+        assert_eq!(config.units.wind_speed, WindSpeedUnit::Kn);
+        assert_eq!(config.units.precipitation, PrecipitationUnit::Inch);
+        assert_eq!(config.mail.hour, 23);
+        assert!(config.hide_hud);
     }
 }

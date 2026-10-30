@@ -153,6 +153,22 @@ pub enum ConfigError {
 
     #[error("invalid value for ${name} (expected a float, got {value:?})")]
     InvalidEnvVar { name: &'static str, value: String },
+
+    #[error("failed to write config file at {path}")]
+    WriteError {
+        path: String,
+        #[source]
+        source: io::Error,
+    },
+
+    #[error("invalid TOML syntax in config file")]
+    EditError(#[from] toml_edit::TomlError),
+
+    #[error("cannot write {0} in config file: its parent is not a table")]
+    NotATable(String),
+
+    #[error("failed to serialize setting")]
+    SerializeError(#[from] toml_edit::ser::Error),
 }
 
 impl ConfigError {
@@ -166,6 +182,10 @@ impl ConfigError {
             ConfigError::InvalidLongitude(_) => "InvalidLongitude",
             ConfigError::InvalidMailHour(_) => "InvalidMailHour",
             ConfigError::InvalidEnvVar { .. } => "InvalidEnvVar",
+            ConfigError::WriteError { .. } => "WriteError",
+            ConfigError::EditError(_) => "EditError",
+            ConfigError::NotATable(_) => "NotATable",
+            ConfigError::SerializeError(_) => "SerializeError",
         }
     }
 }
