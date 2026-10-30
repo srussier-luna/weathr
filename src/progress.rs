@@ -42,6 +42,8 @@ pub struct Progress {
     pub paused_days: BTreeMap<usize, u32>,
     #[serde(default)]
     pub pause_checked_on: Option<String>,
+    #[serde(default)]
+    pub postman_note_day: Option<usize>,
     #[serde(skip)]
     in_memory: bool,
 }
@@ -152,6 +154,7 @@ mod tests {
             serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":37}"#).unwrap();
         assert!(progress.paused_days.is_empty());
         assert_eq!(progress.pause_checked_date(), None);
+        assert_eq!(progress.postman_note_day, None);
     }
 
     #[test]

@@ -17,6 +17,7 @@ const BOTTLE_FOOTER: &str = "[Echap] fermer";
 const BADGE_CARD_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const HELP_FOOTER: &str = "[h] ou [Echap] fermer";
 const NOTES_FOOTER: &str = "[Entrée] ou [Echap] fermer";
+const POSTMAN_NOTE_FOOTER: &str = "[c] suivante  [Echap] fermer";
 const SCROLL_HINT: &str = "[↑] [↓] défiler";
 const HELP_KEY_WIDTH: usize = 10;
 const NOTES_BULLET: &str = "- ";
@@ -65,14 +66,29 @@ pub fn index_view(
     }
 }
 
+fn full_box_note() -> Vec<Line> {
+    let mut note: Vec<Line> = FULL_BOX_NOTE.into_iter().map(text).collect();
+    note.extend([Line::Blank, text(POSTMAN_SIGNATURE)]);
+    note
+}
+
+pub fn postman_note_view() -> View {
+    View {
+        title: String::new(),
+        lines: full_box_note(),
+        footer: POSTMAN_NOTE_FOOTER.to_string(),
+        frame: Frame::Notice,
+    }
+}
+
 pub fn full_box_index_view(
     read_entries: &[(usize, Entry)],
     selected: usize,
     rows: usize,
     context: &ReadContext,
 ) -> View {
-    let mut note: Vec<Line> = FULL_BOX_NOTE.into_iter().map(text).collect();
-    note.extend([Line::Blank, text(POSTMAN_SIGNATURE), Line::Rule]);
+    let mut note = full_box_note();
+    note.push(Line::Rule);
     let mut view = index_view(
         read_entries,
         selected,
@@ -436,6 +452,19 @@ mod tests {
         assert!(
             full.contains(&plain[plain.find("pre: >").unwrap()..plain.find("footer").unwrap()])
         );
+    }
+
+    #[test]
+    fn test_postman_note_has_its_own_frame() {
+        let note = postman_note_view();
+        assert_eq!(note.frame, Frame::Notice);
+        assert!(render(&note).contains(
+            "text: Ta boîte est pleine.\n\
+             text: Je garde le reste à la poste\n\
+             text: et je te l'apporte dès qu'il y a de la place.\n\
+             blank\n\
+             text: — Le Facteur\n"
+        ));
     }
 
     fn centered(view: &View) -> Vec<&str> {

@@ -21,7 +21,8 @@ created: 2026-10-26
 - Paused real days persist in `progress.json` (new `#[serde(default)]` field). Old saves load with no pause.
 - Out of the pause (real time, as today): weather, Fêtes, Perséides/Géminides, streak and other Fidélité Badges.
 - No Facteur visit while the box is full (nothing to deliver).
-- **Facteur note**: while the box is full, a note signed by the Facteur sits at the top of the Courrier. Not a Lettre: doesn't count in the 7, no Badge, gone once a slot frees.
+- **Facteur note**: delivered like a Lettre when the box becomes full — mailbox flag, `c` opens it first, own double-line frame (`Frame::Notice`). Once opened for that pause, it stays only on top of the Courrier until a slot frees. Every new pause (box full again) re-delivers it, even while catching up day by day (user's call). Doesn't count in the 7.
+- **Secret Badge « Grandes vacances »** (`summer_holidays`, hint « boîte aux lettres pleine », suitcase icon): first time the Facteur note is opened.
   ```
   Ta boîte est pleine.
   Je garde le reste à la poste
@@ -40,7 +41,10 @@ created: 2026-10-26
 - [ ] Read 1 Lettre, next `courrier.heure`: Jour de jeu 8, Lettre 8 delivered, still 7 unread (test).
 - [ ] After a pause, the next Gazette falls on a real Monday; skipped weeks have none (test).
 - [ ] A save with `letters_read: 37` and no pause field opens on the same Lettre as before (test on a fixture save).
-- [ ] Box full: Courrier (`l`) shows the Facteur note on top; it disappears once a Lettre is read and the next day comes.
+- [ ] Box full: mailbox flag up, `c` opens the Facteur note first, in a double-line frame (╔═╗), before any Lettre.
+- [ ] Note opened: `c` goes to the Lettres; the note stays only on top of the Courrier (`l`) until a slot frees.
+- [ ] Box full again (new pause): the note is delivered again.
+- [ ] First note opened: secret Badge « Grandes vacances » earned, once.
 - [ ] Box full: the Facteur doesn't come to the mailbox.
 - [ ] 6 unread village Lettres + 3 Gazettes: no pause, no Facteur note.
 
@@ -57,10 +61,21 @@ created: 2026-10-26
 - Forced modes `--demo` / `--simulate` / `--night` also run the walk (same real save and clock); only `--day` skips it.
 - Proof: `cargo fmt -- --check && cargo clippy -- -D warnings -A clippy::double_must_use && cargo test` green (287 tests). Golden fixture tests unchanged and green.
 
+- Round 1 (feedback): `Overlay::PostmanNote` + `next_mail` / `is_postman_note_waiting` (`src/app.rs`), `postman_note_view` + shared `full_box_note` (`src/views.rs`), `Frame::Notice` double-line + char-width fix (`src/overlay.rs`), Badge `summer_holidays` (`src/badges.rs`), `postman_note_day` `#[serde(default)]` (`src/progress.rs`). Proof: fmt ✅ · clippy ✅ (except provider.rs:23) · 291 tests ✅.
+
 ## Review
 
 ## Verification
 
+round 1: manual validation — not run by agent.
+
 manual validation — not run by agent
 
 ## Feedback
+
+### Round 1 — 2026-10-30
+
+- Asked: « pas vu : le Courrier (l) affiche en haut la note du Facteur. Il faut que la note soit dans la boîte aux lettres, on ne va pas souvent voir l et on ne regarde pas souvent la barre du haut non plus. La note doit avoir un cadre différent des lettres. » + Badge secret « Grandes vacances ».
+- Triage: adjustment (note delivery, frame, once per pause) + Badge added at the user's request.
+- Changed: note delivered via `c` first, double-line frame, re-delivered each new pause (asked: kept even while catching up), Badge on first opening. Implementer.
+- Review: deferred → /wa-validate. Verify: manual, not run by agent.

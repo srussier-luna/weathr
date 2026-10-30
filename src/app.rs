@@ -196,6 +196,34 @@ fn is_box_full(clock: &StoryClock, timeline: &Timeline, day: usize, letters_read
     !clock.is_frozen() && pause::is_box_full(timeline, day, letters_read)
 }
 
+fn is_postman_note_waiting(is_box_full: bool, note_day: Option<usize>, day: usize) -> bool {
+    is_box_full && note_day != Some(day)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum MailStep {
+    PostmanNote,
+    Letter(usize),
+    Close,
+}
+
+fn next_mail(
+    overlay: Option<Overlay>,
+    available: usize,
+    letters_read: usize,
+    is_note_waiting: bool,
+) -> Option<MailStep> {
+    if available == 0 {
+        return None;
+    }
+    Some(match overlay {
+        Some(Overlay::Letter(index)) if index + 1 < available => MailStep::Letter(index + 1),
+        Some(Overlay::Letter(_)) => MailStep::Close,
+        _ if is_note_waiting => MailStep::PostmanNote,
+        _ => MailStep::Letter(letters_read.min(available - 1)),
+    })
+}
+
 fn generate_offline_weather(rng: &mut impl rand::Rng) -> WeatherData {
     use rand::RngExt;
 
@@ -296,6 +324,7 @@ enum Overlay {
     Index(usize),
     NewBadge(&'static Badge),
     Notes(usize),
+    PostmanNote,
     Welcome(Step),
 }
 
@@ -701,20 +730,29 @@ impl App {
     }
 
     fn press_mail(&mut self) {
-        let available = self.available_letters();
-        if available == 0 {
-            return;
+        let is_note_waiting = is_postman_note_waiting(
+            self.is_box_full(),
+            self.progress.postman_note_day,
+            self.timeline_day,
+        );
+        match next_mail(
+            self.overlay,
+            self.available_letters(),
+            self.progress.letters_read,
+            is_note_waiting,
+        ) {
+            Some(MailStep::PostmanNote) => self.open_postman_note(),
+            Some(MailStep::Letter(index)) => self.open_letter(index),
+            Some(MailStep::Close) => self.overlay = None,
+            None => {}
         }
+    }
 
-        let index = match self.overlay {
-            Some(Overlay::Letter(index)) if index + 1 < available => index + 1,
-            Some(Overlay::Letter(_)) => {
-                self.overlay = None;
-                return;
-            }
-            _ => self.progress.letters_read.min(available - 1),
-        };
-        self.open_letter(index);
+    fn open_postman_note(&mut self) {
+        self.overlay = Some(Overlay::PostmanNote);
+        self.progress.postman_note_day = Some(self.timeline_day);
+        self.progress.save();
+        self.award(vec!["summer_holidays"]);
     }
 
     fn browse_letters(&mut self, step: isize) {
@@ -778,6 +816,7 @@ impl App {
             }
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
             Some(Overlay::NewBadge(badge)) => views::badge_card_view(badge),
+            Some(Overlay::PostmanNote) => views::postman_note_view(),
             Some(Overlay::Notes(first)) => views::notes_view(
                 &self.release_notes,
                 first,
@@ -1055,7 +1094,9 @@ impl App {
 
     fn press_enter(&mut self) {
         match self.overlay {
-            Some(Overlay::NewBadge(_) | Overlay::Notes(_)) => self.overlay = None,
+            Some(Overlay::NewBadge(_) | Overlay::Notes(_) | Overlay::PostmanNote) => {
+                self.overlay = None
+            }
             _ => self.reread_selected(),
         }
     }
@@ -1672,6 +1713,63 @@ mod tests {
         assert!(is_box_full(&clock(), &timeline, 7, 0));
         assert!(!is_box_full(&clock(), &timeline, 7, 1));
         assert!(!is_box_full(&clock(), &timeline, 6, 0));
+    }
+
+    #[test]
+    fn test_full_box_opens_the_postman_note_before_any_letter() {
+        let timeline = timeline_on(7);
+        let is_full = is_box_full(&clock(), &timeline, 7, 0);
+        let available = timeline.delivered_by(7);
+        let waiting = is_postman_note_waiting(is_full, None, 7);
+
+        assert!(waiting);
+        assert_eq!(
+            next_mail(None, available, 0, waiting),
+            Some(MailStep::PostmanNote)
+        );
+        assert_eq!(
+            next_mail(Some(Overlay::Index(0)), available, 0, waiting),
+            Some(MailStep::PostmanNote)
+        );
+        assert_eq!(
+            next_mail(Some(Overlay::PostmanNote), available, 0, false),
+            Some(MailStep::Letter(0))
+        );
+    }
+
+    #[test]
+    fn test_opened_postman_note_comes_back_only_with_a_new_pause() {
+        let timeline = timeline_on(7);
+        let available = timeline.delivered_by(7);
+        let is_full = is_box_full(&clock(), &timeline, 7, 0);
+        let waiting = is_postman_note_waiting(is_full, Some(7), 7);
+
+        assert!(!waiting);
+        assert_eq!(
+            next_mail(None, available, 0, waiting),
+            Some(MailStep::Letter(0))
+        );
+        assert!(!is_postman_note_waiting(
+            is_box_full(&clock(), &timeline, 7, 1),
+            None,
+            7
+        ));
+        assert!(is_postman_note_waiting(
+            is_box_full(&clock(), &timeline_on(8), 8, 1),
+            Some(7),
+            8
+        ));
+    }
+
+    #[test]
+    fn test_postman_note_badge_is_earned_once() {
+        let mut earned = BTreeSet::new();
+        let first = earn(&mut earned, vec!["summer_holidays"]);
+        assert_eq!(
+            first.iter().map(|badge| badge.id).collect::<Vec<_>>(),
+            ["summer_holidays"]
+        );
+        assert!(earn(&mut earned, vec!["summer_holidays"]).is_empty());
     }
 
     #[test]
