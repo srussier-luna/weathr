@@ -1,6 +1,6 @@
 ---
 issue: 71
-status: todo
+status: to-test
 wiki: [[mail]]
 note: "dans le decompte de lettre la gazette est compter il fat les enlever du decompte. exemple lettre 4/7 gazette lettre 5/7 aujourd'hui apres gazette on a 6/8 au lie de 5/7"
 created: 2026-10-30
@@ -33,8 +33,17 @@ created: 2026-10-30
 
 ## Implementation
 
+- Branch brought up to date with `sprint/timeline-histoire` (merge, brings #43).
+- `src/story/content/mod.rs`: private `Series` (Letter, Postcard, Archive, Recipe, Gazette) + `series(Entry)`; `entry_view(delivered: &[(usize, Entry)], index, ctx) -> Option<View>` counts rank and total within the entry's series. Gazette still shows no counter. `Entry`, `Timeline`, `content::label` unchanged.
+- `src/app.rs`: Letter overlay passes `timeline.first_mail(available_letters())`; an index past `available` renders nothing (was a `9/8`-style title; unreachable through navigation).
+- `src/story/testdata/save_37_golden.txt`: regenerated, only `title:` counters change (e.g. Lettre 10/101 → 9/84, Archives 47/101 → 1/5, Recette 54/101 → 1/1, Carte postale 71/101 → 1/3).
+- Tests: `test_gazette_does_not_bump_the_lettre_counter`, `test_correspondents_continue_the_lettre_series`, `test_postcards_archives_and_recipes_count_on_their_own`.
+- Proof: `cargo fmt -- --check && cargo clippy -- -D warnings -A clippy::double_must_use && cargo test` green.
+
 ## Review
 
 ## Verification
+
+manual validation — not run by agent
 
 ## Feedback
