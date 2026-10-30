@@ -1,6 +1,6 @@
 ---
 issue: 17
-status: todo
+status: to-test
 wiki: [[animation]], [[mail]]
 note: Fête de la musique : notes ♪ qui sortent de la maison le 21 juin
 created: 2026-10-30
@@ -30,8 +30,25 @@ created: 2026-10-30
 
 ## Implementation
 
+- `src/holiday.rs` : `Holiday.is_music_day` (21 juin), `Holiday::music_day()`, test `test_music_day`.
+- `src/animation/music.rs` (nouveau) : `MusicNotes`, 10 notes ♪ ♫ au plus, 15 % de chance par frame, montée 0,06 rang/frame, ondulation ±1,5 colonne, couleurs rose, or, cyan, vert clair. Les notes s'effacent en atteignant l'avant-toit (`~~~`).
+- `src/scene/house.rs` : `House::windows()` (chaque `[`…`]` des murs, 8 petite maison, 19 grande), `House::eave_row()`, 2 tests.
+- `src/animation_manager.rs` : notes dessinées dans `render_garden` après la couronne de l'Épiphanie.
+- `src/badges.rs` : Badge `music_day` « Fête de la musique » après Géminides (41 Badges) ; `src/app.rs` : attribué comme Noël.
+- `src/main.rs` : `--music` ; `src/demo.rs` : scène « Fête de la musique ».
+- Hors demande : `weathr --music` ajouté au bloc « Fêtes » du README.
+- Build : `cargo build`, `cargo fmt --check`, `cargo test` verts. Clippy : seule l'erreur connue #79.
+
 ## Review
 
 ## Verification
+
+Captures pty, HOME jetable (jamais le vrai) :
+- ✅ `--music` jour, `--music --night`, `--music --night --simulate rain` : notes aux fenêtres.
+- ✅ Grande maison (200×45) : notes sur les rangées de fenêtres.
+- ✅ `--demo` : `DEMO 34/37 Fête de la musique`.
+- ✅ `Holiday::on` vrai le 21 juin, faux le 20 et le 22 (test).
+- ✅ Album : 41 Badges comptés.
+- ⚠️ Badge gagné un vrai 21 juin : non vu (modes forcés sans Badges), câblé comme Noël.
 
 ## Feedback

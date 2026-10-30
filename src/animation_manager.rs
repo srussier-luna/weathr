@@ -24,6 +24,7 @@ use crate::animation::{
     leaves::FallingLeaves,
     lore::{Lore, Unlocks},
     moon::MoonSystem,
+    music::MusicNotes,
     new_year::NewYearBanner,
     owl::Owl,
     postman::Postman,
@@ -94,6 +95,7 @@ pub struct AnimationManager {
     squirrel: Squirrel,
     postman: Postman,
     halloween: Halloween,
+    music_notes: MusicNotes,
     spring: Spring,
     new_year_banner: NewYearBanner,
     rainbow: Rainbow,
@@ -144,6 +146,7 @@ impl AnimationManager {
             squirrel: Squirrel::new(),
             postman: Postman::new(),
             halloween: Halloween::new(),
+            music_notes: MusicNotes::new(),
             spring: Spring::new(),
             new_year_banner: NewYearBanner::new(),
             rainbow: Rainbow,
@@ -448,6 +451,11 @@ impl AnimationManager {
 
         if holiday.is_epiphany {
             epiphany::render_crown(renderer, &layout)?;
+        }
+
+        if holiday.is_music_day {
+            self.music_notes.update(&layout.house, &mut rng);
+            self.music_notes.render(renderer, &layout)?;
         }
 
         self.creepy.update(conditions, &unlocks, &mut rng);
