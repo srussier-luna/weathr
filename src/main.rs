@@ -16,6 +16,7 @@ mod release_notes;
 mod remote_weather;
 mod render;
 mod scene;
+mod settings;
 mod story;
 mod updater;
 mod views;

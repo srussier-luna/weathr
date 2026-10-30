@@ -133,6 +133,11 @@ impl AppState {
         }
     }
 
+    pub fn set_units(&mut self, units: WeatherUnits) {
+        self.units = units;
+        self.weather_info_needs_update = true;
+    }
+
     pub fn set_demo_label(&mut self, label: Option<String>) {
         self.demo_label = label;
         self.weather_info_needs_update = true;
@@ -559,5 +564,22 @@ mod tests {
         assert!(app.weather_info_needs_update);
         app.update_cached_info();
         assert!(app.cached_weather_info.contains(" | Jour 8 | "));
+    }
+
+    #[test]
+    fn test_units_change_redraws_the_bar() {
+        let mut app = create_app_state(0.0, 0.0);
+        app.update_cached_info();
+        assert!(app.cached_weather_info.contains("20.0°C"));
+
+        app.set_units(WeatherUnits {
+            temperature: TemperatureUnit::Fahrenheit,
+            wind_speed: WindSpeedUnit::Ms,
+            precipitation: PrecipitationUnit::Inch,
+        });
+        app.update_cached_info();
+        assert!(app.cached_weather_info.contains("68.0°F"));
+        assert!(app.cached_weather_info.contains("Wind: 10.0m/s"));
+        assert!(app.cached_weather_info.contains("Precip: 0.0in"));
     }
 }
