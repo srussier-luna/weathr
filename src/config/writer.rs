@@ -6,6 +6,10 @@ use toml_edit::{DocumentMut, Item, Table, TableLike, Value};
 use crate::error::ConfigError;
 
 pub fn write_value(path: &Path, keys: &[&str], value: Value) -> Result<(), ConfigError> {
+    write_values(path, &[(keys, Some(value))])
+}
+
+pub fn write_values(path: &Path, values: &[(&[&str], Option<Value>)]) -> Result<(), ConfigError> {
     let content = match fs::read_to_string(path) {
         Ok(content) => content,
         Err(error) if error.kind() == io::ErrorKind::NotFound => String::new(),
@@ -17,7 +21,9 @@ pub fn write_value(path: &Path, keys: &[&str], value: Value) -> Result<(), Confi
         }
     };
     let mut document = content.parse::<DocumentMut>()?;
-    set(document.as_table_mut(), keys, value)?;
+    for (keys, value) in values {
+        set(document.as_table_mut(), keys, value.clone())?;
+    }
 
     let write_error = |source| ConfigError::WriteError {
         path: path.display().to_string(),
@@ -29,10 +35,14 @@ pub fn write_value(path: &Path, keys: &[&str], value: Value) -> Result<(), Confi
     fs::write(path, document.to_string()).map_err(write_error)
 }
 
-fn set(table: &mut dyn TableLike, keys: &[&str], value: Value) -> Result<(), ConfigError> {
+fn set(table: &mut dyn TableLike, keys: &[&str], value: Option<Value>) -> Result<(), ConfigError> {
     match keys {
         [] => Ok(()),
         [key] => {
+            let Some(value) = value else {
+                table.remove(key);
+                return Ok(());
+            };
             match table.get_mut(key) {
                 Some(Item::Value(old)) => {
                     let decor = old.decor().clone();
@@ -135,6 +145,27 @@ mod tests {
             written,
             "units = { temperature = \"celsius\", precipitation = \"inch\" }\n"
         );
+    }
+
+    #[test]
+    fn test_writes_several_values_and_removes_absent_ones() {
+        let original = "[location]\nlatitude = 1.0 # ici\ncity = \"Minsk\"\nauto = true\n";
+        let path = temp_path("several");
+        let dir = path.parent().unwrap().to_path_buf();
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(&path, original).unwrap();
+        write_values(
+            &path,
+            &[
+                (&["location", "latitude"], Some(45.5.into())),
+                (&["location", "city"], None),
+                (&["location", "auto"], Some(false.into())),
+            ],
+        )
+        .unwrap();
+        let written = fs::read_to_string(&path).unwrap();
+        fs::remove_dir_all(&dir).ok();
+        assert_eq!(written, "[location]\nlatitude = 45.5 # ici\nauto = false\n");
     }
 
     #[test]

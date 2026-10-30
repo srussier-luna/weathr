@@ -3,7 +3,7 @@ use crate::badges::Badge;
 use crate::overlay::{self, Frame, Line, View};
 use crate::progress::Progress;
 use crate::release_notes::Section;
-use crate::settings::{ROWS, Row, Settings};
+use crate::settings::{CitySearch, ROWS, Row, Settings, Status};
 use crate::story::Entry;
 use crate::story::content::chronicles::{
     BOTTLE_MESSAGES, CHEST_SOUVENIRS, DRAWINGS, OBJECTS, RECIPES,
@@ -20,6 +20,8 @@ const BADGE_CARD_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const HELP_FOOTER: &str = "[h] ou [Echap] fermer";
 const SETTINGS_FOOTER: &str = "[↑] [↓] choisir  [<] [>] changer  [s] ou [Echap] fermer";
 const SETTINGS_LABEL_WIDTH: usize = 18;
+const CITY_SEARCH_FOOTER: &str = "[Entrée] chercher  [Echap] retour";
+const CITY_RESULTS_FOOTER: &str = "[↑] [↓] choisir  [Entrée] valider  [Echap] retour";
 const NOTES_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const POSTMAN_NOTE_FOOTER: &str = "[c] suivante  [Echap] fermer";
 const SCROLL_HINT: &str = "[↑] [↓] défiler";
@@ -246,6 +248,50 @@ fn settings_row(settings: &Settings, row: Row) -> (&'static str, String) {
             }
             .to_string(),
         ),
+        Row::City => ("Ville", settings.city.clone()),
+        Row::AutoLocation => (
+            "Position auto",
+            if settings.is_locating {
+                "…"
+            } else if settings.auto_location {
+                "oui"
+            } else {
+                "non"
+            }
+            .to_string(),
+        ),
+    }
+}
+
+pub fn city_search_view(search: &CitySearch) -> View {
+    let mut lines = vec![Line::Preformatted(format!("> {}_", search.query))];
+    let answer: Vec<Line> = match &search.status {
+        Status::Typing => Vec::new(),
+        Status::Searching(_) => vec![text("Recherche…")],
+        Status::Found(places, selected) => places
+            .iter()
+            .enumerate()
+            .map(|(index, place)| {
+                let pointer = if index == *selected { ">" } else { " " };
+                Line::Preformatted(format!("{pointer} {}", place.label))
+            })
+            .collect(),
+        Status::NotFound => vec![text("Aucune ville trouvée")],
+        Status::NoConnection => vec![text("Pas de connexion")],
+    };
+    if !answer.is_empty() {
+        lines.push(Line::Blank);
+        lines.extend(answer);
+    }
+    let footer = match search.status {
+        Status::Found(..) => CITY_RESULTS_FOOTER,
+        _ => CITY_SEARCH_FOOTER,
+    };
+    View {
+        title: "Ville".to_string(),
+        lines,
+        footer: footer.to_string(),
+        frame: Frame::Plain,
     }
 }
 
@@ -681,6 +727,9 @@ mod tests {
             units: crate::weather::WeatherUnits::default(),
             mail_hour: 7,
             hide_hud: true,
+            city: "Lyon".to_string(),
+            auto_location: false,
+            is_locating: false,
         };
         let view = settings_view(&settings, 3, false);
         let lines = overlay::lay_out(&view.lines, 60);
@@ -688,6 +737,8 @@ mod tests {
         assert!(lines[0].starts_with("  Température") && lines[0].ends_with("°C"));
         assert!(lines[3].starts_with("> Heure du Facteur") && lines[3].ends_with("< 7 h >"));
         assert!(lines[4].ends_with("masquée"));
+        assert!(lines[5].starts_with("  Ville") && lines[5].ends_with("Lyon"));
+        assert!(lines[6].starts_with("  Position auto") && lines[6].ends_with("non"));
 
         let view = settings_view(&settings, 0, true);
         let lines = overlay::lay_out(&view.lines, 60);
@@ -695,5 +746,44 @@ mod tests {
             lines.last().unwrap(),
             "Nouvelle heure du Facteur dès demain."
         );
+    }
+
+    #[test]
+    fn test_city_search_lists_results_under_the_query() {
+        use crate::geolocation::{GeoLocation, Place};
+        let place = |label: &str| Place {
+            label: label.to_string(),
+            location: GeoLocation {
+                latitude: 45.76,
+                longitude: 4.83,
+                city: Some("Lyon".to_string()),
+            },
+        };
+        let mut search = CitySearch {
+            query: "Lyon".to_string(),
+            status: Status::Found(
+                vec![place("Lyon, Rhône, France"), place("Lyon, Mississippi")],
+                1,
+            ),
+        };
+        let view = city_search_view(&search);
+        assert_eq!(
+            overlay::lay_out(&view.lines, 60),
+            [
+                "> Lyon_",
+                "",
+                "  Lyon, Rhône, France",
+                "> Lyon, Mississippi"
+            ]
+        );
+        assert_eq!(view.footer, CITY_RESULTS_FOOTER);
+
+        search.status = Status::NotFound;
+        let view = city_search_view(&search);
+        assert_eq!(
+            overlay::lay_out(&view.lines, 60),
+            ["> Lyon_", "", "Aucune ville trouvée"]
+        );
+        assert_eq!(view.footer, CITY_SEARCH_FOOTER);
     }
 }

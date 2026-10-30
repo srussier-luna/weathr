@@ -1,3 +1,7 @@
+mod city;
+
+pub use city::{CitySearch, Status};
+
 use crate::config::Setting;
 use crate::weather::WeatherUnits;
 use crate::weather::types::{PrecipitationUnit, TemperatureUnit, WindSpeedUnit};
@@ -19,26 +23,33 @@ pub enum Row {
     Precipitation,
     MailHour,
     Hud,
+    City,
+    AutoLocation,
 }
 
-pub const ROWS: [Row; 5] = [
+pub const ROWS: [Row; 7] = [
     Row::Temperature,
     Row::WindSpeed,
     Row::Precipitation,
     Row::MailHour,
     Row::Hud,
+    Row::City,
+    Row::AutoLocation,
 ];
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct Settings {
     pub units: WeatherUnits,
     pub mail_hour: u32,
     pub hide_hud: bool,
+    pub city: String,
+    pub auto_location: bool,
+    pub is_locating: bool,
 }
 
 impl Settings {
-    pub fn stepped(&self, row: Row, step: isize) -> Setting {
-        match row {
+    pub fn stepped(&self, row: Row, step: isize) -> Option<Setting> {
+        Some(match row {
             Row::Temperature => {
                 Setting::Temperature(cycle(&TEMPERATURES, self.units.temperature, step))
             }
@@ -50,7 +61,8 @@ impl Settings {
                 Setting::MailHour((self.mail_hour as isize + step).rem_euclid(HOURS_PER_DAY) as u32)
             }
             Row::Hud => Setting::HideHud(!self.hide_hud),
-        }
+            Row::City | Row::AutoLocation => return None,
+        })
     }
 
     pub fn apply(&mut self, setting: Setting) {
@@ -81,6 +93,9 @@ mod tests {
             units: WeatherUnits::default(),
             mail_hour: 9,
             hide_hud: false,
+            city: "Lyon".to_string(),
+            auto_location: false,
+            is_locating: false,
         }
     }
 
@@ -89,19 +104,19 @@ mod tests {
         let settings = settings();
         assert_eq!(
             settings.stepped(Row::Temperature, 1),
-            Setting::Temperature(TemperatureUnit::Fahrenheit)
+            Some(Setting::Temperature(TemperatureUnit::Fahrenheit))
         );
         assert_eq!(
             settings.stepped(Row::WindSpeed, 1),
-            Setting::WindSpeed(WindSpeedUnit::Mph)
+            Some(Setting::WindSpeed(WindSpeedUnit::Mph))
         );
         assert_eq!(
             settings.stepped(Row::WindSpeed, -1),
-            Setting::WindSpeed(WindSpeedUnit::Ms)
+            Some(Setting::WindSpeed(WindSpeedUnit::Ms))
         );
         assert_eq!(
             settings.stepped(Row::Precipitation, -1),
-            Setting::Precipitation(PrecipitationUnit::Inch)
+            Some(Setting::Precipitation(PrecipitationUnit::Inch))
         );
     }
 
@@ -109,15 +124,27 @@ mod tests {
     fn test_mail_hour_wraps_around_the_day() {
         let mut settings = settings();
         settings.mail_hour = 23;
-        assert_eq!(settings.stepped(Row::MailHour, 1), Setting::MailHour(0));
+        assert_eq!(
+            settings.stepped(Row::MailHour, 1),
+            Some(Setting::MailHour(0))
+        );
         settings.mail_hour = 0;
-        assert_eq!(settings.stepped(Row::MailHour, -1), Setting::MailHour(23));
+        assert_eq!(
+            settings.stepped(Row::MailHour, -1),
+            Some(Setting::MailHour(23))
+        );
+    }
+
+    #[test]
+    fn test_location_rows_are_not_stepped() {
+        assert_eq!(settings().stepped(Row::City, 1), None);
+        assert_eq!(settings().stepped(Row::AutoLocation, -1), None);
     }
 
     #[test]
     fn test_apply_changes_only_its_setting() {
         let mut settings = settings();
-        settings.apply(settings.stepped(Row::Hud, 1));
+        settings.apply(settings.stepped(Row::Hud, 1).unwrap());
         settings.apply(Setting::Precipitation(PrecipitationUnit::Inch));
         assert!(settings.hide_hud);
         assert_eq!(settings.units.precipitation, PrecipitationUnit::Inch);

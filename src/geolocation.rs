@@ -4,7 +4,11 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 const IPINFO_URL: &str = "https://ipinfo.io/json";
-const NOMINATIM_URL: &str = "https://nominatim.openstreetmap.org/reverse";
+const NOMINATIM_REVERSE_URL: &str = "https://nominatim.openstreetmap.org/reverse";
+const NOMINATIM_SEARCH_URL: &str = "https://nominatim.openstreetmap.org/search";
+const NOMINATIM_TIMEOUT_SECS: u64 = 5;
+const NOMINATIM_CONNECT_TIMEOUT: Duration = Duration::from_secs(3);
+const MAX_CITY_RESULTS: usize = 5;
 const MAX_RETRIES: u32 = 3;
 const INITIAL_RETRY_DELAY_MS: u64 = 500;
 const CORE_LOCATION_CLI: &str = "CoreLocationCLI";
@@ -145,6 +149,10 @@ struct NominatimAddress {
     city: Option<String>,
     town: Option<String>,
     village: Option<String>,
+    state_district: Option<String>,
+    county: Option<String>,
+    state: Option<String>,
+    country: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -166,18 +174,25 @@ pub async fn reverse_geocode(latitude: f64, longitude: f64, language: &str) -> O
 }
 
 async fn fetch_reverse_geocode(latitude: f64, longitude: f64, language: &str) -> Option<String> {
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(5))
-        .connect_timeout(Duration::from_secs(3))
-        .build()
-        .ok()?;
-
     let url = format!(
         "{}?lat={}&lon={}&format=json&zoom=10",
-        NOMINATIM_URL, latitude, longitude
+        NOMINATIM_REVERSE_URL, latitude, longitude
     );
+    let resp = nominatim_get(&url, language).ok()?.send().await.ok()?;
 
-    let mut req = client.get(&url).header(
+    let data: NominatimResponse = resp.json().await.ok()?;
+
+    let addr = data.address?;
+    addr.city.or(addr.town).or(addr.village)
+}
+
+fn nominatim_get(url: &str, language: &str) -> Result<reqwest::RequestBuilder, reqwest::Error> {
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(NOMINATIM_TIMEOUT_SECS))
+        .connect_timeout(NOMINATIM_CONNECT_TIMEOUT)
+        .build()?;
+
+    let mut req = client.get(url).header(
         "User-Agent",
         format!("weathr/{}", env!("CARGO_PKG_VERSION")),
     );
@@ -186,10 +201,159 @@ async fn fetch_reverse_geocode(latitude: f64, longitude: f64, language: &str) ->
         req = req.header("Accept-Language", language);
     }
 
-    let resp = req.send().await.ok()?;
+    Ok(req)
+}
 
-    let data: NominatimResponse = resp.json().await.ok()?;
+pub async fn detect_location_with_city(language: &str) -> Result<GeoLocation, GeolocationError> {
+    let mut location = detect_location().await?;
+    if location.city.is_none() {
+        location.city = reverse_geocode(location.latitude, location.longitude, language).await;
+    }
+    Ok(location)
+}
 
-    let addr = data.address?;
-    addr.city.or(addr.town).or(addr.village)
+#[derive(Debug, Clone)]
+pub struct Place {
+    pub label: String,
+    pub location: GeoLocation,
+}
+
+#[derive(Deserialize, Debug)]
+struct NominatimPlace {
+    lat: String,
+    lon: String,
+    name: String,
+    address: Option<NominatimAddress>,
+}
+
+pub async fn search_cities(query: &str, language: &str) -> Result<Vec<Place>, GeolocationError> {
+    let unreachable = |e| {
+        GeolocationError::Unreachable(NetworkError::from_reqwest(
+            e,
+            NOMINATIM_SEARCH_URL,
+            NOMINATIM_TIMEOUT_SECS,
+        ))
+    };
+    let limit = MAX_CITY_RESULTS.to_string();
+    let url = reqwest::Url::parse_with_params(
+        NOMINATIM_SEARCH_URL,
+        [
+            ("q", query),
+            ("format", "jsonv2"),
+            ("addressdetails", "1"),
+            ("featureType", "city"),
+            ("limit", &limit),
+        ],
+    )
+    .map_err(|e| GeolocationError::ParseError(e.to_string()))?;
+
+    let request = nominatim_get(url.as_str(), language)
+        .map_err(|e| GeolocationError::Unreachable(NetworkError::ClientCreation(e)))?;
+    let results: Vec<NominatimPlace> = request
+        .send()
+        .await
+        .and_then(reqwest::Response::error_for_status)
+        .map_err(unreachable)?
+        .json()
+        .await
+        .map_err(unreachable)?;
+
+    Ok(places_from(results))
+}
+
+fn places_from(results: Vec<NominatimPlace>) -> Vec<Place> {
+    let mut places: Vec<Place> = Vec::new();
+    for result in results {
+        let (Ok(latitude), Ok(longitude)) = (result.lat.parse(), result.lon.parse()) else {
+            continue;
+        };
+        let label = place_label(&result.name, result.address.as_ref());
+        if result.name.is_empty() || places.iter().any(|place| place.label == label) {
+            continue;
+        }
+        places.push(Place {
+            label,
+            location: GeoLocation {
+                latitude,
+                longitude,
+                city: Some(result.name),
+            },
+        });
+    }
+    places.truncate(MAX_CITY_RESULTS);
+    places
+}
+
+fn place_label(name: &str, address: Option<&NominatimAddress>) -> String {
+    let region = address.and_then(|address| {
+        address
+            .state_district
+            .as_deref()
+            .or(address.county.as_deref())
+            .or(address.state.as_deref())
+    });
+    let country = address.and_then(|address| address.country.as_deref());
+    let mut parts = vec![name];
+    parts.extend(region.filter(|region| *region != name));
+    parts.extend(country);
+    parts.join(", ")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const LYON_RESULTS: &str = r#"[
+        {"lat": "45.7578137", "lon": "4.8320114", "name": "Lyon",
+         "address": {"city": "Lyon", "county": "Métropole de Lyon", "state_district": "Rhône",
+                     "state": "Auvergne-Rhône-Alpes", "country": "France"}},
+        {"lat": "45.7600000", "lon": "4.8400000", "name": "Lyon",
+         "address": {"municipality": "Lyon", "county": "Rhône", "state_district": "Rhône",
+                     "state": "Auvergne-Rhône-Alpes", "country": "France"}},
+        {"lat": "34.2120", "lon": "-90.5432", "name": "Lyon",
+         "address": {"village": "Lyon", "county": "Coahoma County", "state": "Mississippi",
+                     "country": "United States"}},
+        {"lat": "not a number", "lon": "0", "name": "Broken", "address": null},
+        {"lat": "48.8566", "lon": "2.3522", "name": "Paris",
+         "address": {"state": "Paris", "country": "France"}}
+    ]"#;
+
+    fn parsed(json: &str) -> Vec<Place> {
+        places_from(serde_json::from_str(json).unwrap())
+    }
+
+    #[test]
+    fn test_places_are_labelled_with_region_and_country() {
+        let places = parsed(LYON_RESULTS);
+        let labels: Vec<&str> = places.iter().map(|place| place.label.as_str()).collect();
+        assert_eq!(
+            labels,
+            [
+                "Lyon, Rhône, France",
+                "Lyon, Coahoma County, United States",
+                "Paris, France"
+            ]
+        );
+        assert_eq!(places[0].location.latitude, 45.7578137);
+        assert_eq!(places[0].location.longitude, 4.8320114);
+        assert_eq!(places[0].location.city.as_deref(), Some("Lyon"));
+    }
+
+    #[test]
+    fn test_no_result_gives_no_place() {
+        assert!(parsed("[]").is_empty());
+    }
+
+    #[test]
+    fn test_places_stop_at_five() {
+        let results: Vec<String> = (0..8)
+            .map(|index| {
+                format!(r#"{{"lat": "1", "lon": "2", "name": "Ville {index}", "address": null}}"#)
+            })
+            .collect();
+        assert_eq!(
+            parsed(&format!("[{}]", results.join(","))).len(),
+            MAX_CITY_RESULTS
+        );
+    }
 }
