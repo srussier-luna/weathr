@@ -41,6 +41,7 @@ Tickets de saison (sprints « Saison N ») : titre et résumé sans spoiler de l
 <!-- - "Your trip has been saved!" → (removed, checkmark) · success -->
 - « Ta première lettre est arrivée. » → « Je viens de te déposer ton courrier. » · onboarding
 - « Lis tout. Certains détails comptent plus qu'ils n'en ont l'air. » → « Lis bien tout. Certains détails comptent plus qu'ils n'en ont l'air ;) » · onboarding
+- « Ta boîte est pleine. Je garde le reste à la poste et je te l'apporte dès qu'il y a de la place. » → « Pendant ton absence, tout le village en a profité pour prendre des vacances ! La rentrée, c'est le 31 octobre. » · pause (jeu de rôle, pas de jargon)
 
 ## The ladder — every string
 

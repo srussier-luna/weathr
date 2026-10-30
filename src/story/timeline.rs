@@ -51,6 +51,23 @@ impl Timeline {
     pub fn mail_at(&self, index: usize) -> Option<(usize, Entry)> {
         self.mail.get(index).copied()
     }
+
+    pub fn unread_village(&self, day: usize, letters_read: usize) -> usize {
+        let is_village = |(_, entry): &&(usize, Entry)| matches!(entry, Entry::Main(_));
+        let delivered = self
+            .mail
+            .iter()
+            .filter(|(delivery, _)| *delivery <= day)
+            .filter(is_village)
+            .count();
+        let read = self
+            .mail
+            .iter()
+            .take(letters_read)
+            .filter(is_village)
+            .count();
+        delivered.saturating_sub(read)
+    }
 }
 
 #[cfg(test)]
@@ -155,6 +172,14 @@ mod tests {
         assert_eq!(day, 12);
         assert_eq!(preview.delivered_by(day), expected);
         assert!(expected > 12);
+    }
+
+    #[test]
+    fn test_unread_village_skips_other_mail() {
+        let timeline = timeline(date(2026, 10, 22), 61);
+        assert_eq!(timeline.unread_village(5, 0), 5);
+        assert_eq!(timeline.unread_village(5, 7), 0);
+        assert_eq!(timeline.unread_village(12, 7), 7);
     }
 
     struct Dummy;
