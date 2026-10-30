@@ -468,32 +468,46 @@ impl AnimationManager {
         self.dog.set_staring(is_staring);
         self.owl.set_staring(is_staring);
 
-        self.owl.update(conditions, &mut rng);
-        self.owl.render(renderer, &layout, conditions, &unlocks)?;
-        self.star_gazing
-            .update(&layout, conditions, self.season, &mut rng);
-        self.star_gazing.render(renderer, &layout)?;
+        if unlocks.owl {
+            self.owl.update(conditions, &mut rng);
+            self.owl.render(renderer, &layout, conditions, &unlocks)?;
+            self.star_gazing
+                .update(&layout, conditions, self.season, &mut rng);
+            self.star_gazing.render(renderer, &layout)?;
+        }
 
-        self.cat.update(&mut rng);
-        self.cat.render(renderer, &layout, conditions, &unlocks)?;
+        if unlocks.cat {
+            self.cat.update(&mut rng);
+            self.cat.render(renderer, &layout, conditions, &unlocks)?;
+        }
 
-        self.dog.update(&layout, conditions, &mut rng);
-        self.dog.render(renderer, &layout, conditions)?;
+        if unlocks.dog {
+            self.dog.update(&layout, conditions, &mut rng);
+            self.dog.render(renderer, &layout, conditions)?;
+        }
 
-        self.duck.update(conditions, &mut rng);
-        self.duck.render(renderer, &layout, conditions, &unlocks)?;
+        if unlocks.duck {
+            self.duck.update(conditions, &mut rng);
+            self.duck.render(renderer, &layout, conditions, &unlocks)?;
+        }
 
-        self.frog.update(conditions, &mut rng);
-        self.frog.render(renderer, &layout, conditions, &unlocks)?;
+        if unlocks.frog {
+            self.frog.update(conditions, &mut rng);
+            self.frog.render(renderer, &layout, conditions, &unlocks)?;
+        }
 
-        self.snail.update(&layout, conditions);
-        self.snail.render(renderer, &layout)?;
+        if unlocks.snail {
+            self.snail.update(&layout, conditions);
+            self.snail.render(renderer, &layout)?;
+        }
 
         self.snowman
             .render(renderer, &layout, conditions, self.snow_cover.is_thick())?;
 
-        self.squirrel.update(&layout, conditions, &mut rng);
-        self.squirrel.render(renderer)?;
+        if unlocks.squirrel {
+            self.squirrel.update(&layout, conditions, &mut rng);
+            self.squirrel.render(renderer)?;
+        }
 
         self.postman.set_april_fools(holiday.is_april_fools);
         self.postman.update(&layout);

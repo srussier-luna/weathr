@@ -80,6 +80,13 @@ impl Choices {
 
 #[derive(Clone, Copy, Default)]
 pub struct Unlocks {
+    pub cat: bool,
+    pub dog: bool,
+    pub owl: bool,
+    pub duck: bool,
+    pub snail: bool,
+    pub squirrel: bool,
+    pub frog: bool,
     pub bench: bool,
     pub cat_bow: bool,
     pub footprints: bool,
@@ -104,6 +111,21 @@ pub struct Unlocks {
     pub found_objects: bool,
     pub bottles: bool,
     pub choices: Choices,
+}
+
+impl Unlocks {
+    pub fn with_every_habitant(self) -> Self {
+        Self {
+            cat: true,
+            dog: true,
+            owl: true,
+            duck: true,
+            snail: true,
+            squirrel: true,
+            frog: true,
+            ..self
+        }
+    }
 }
 
 pub struct Lore {

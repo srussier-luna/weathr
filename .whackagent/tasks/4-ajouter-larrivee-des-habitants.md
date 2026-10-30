@@ -1,6 +1,6 @@
 ---
 issue: 4
-status: todo
+status: to-test
 wiki: [[animation]], [[mail]]
 note: "Slack Salomé/Ben 23/10 : les animaux peuvent arriver petit à petit et pas tous être là dès le premier jour"
 created: 2026-10-23
@@ -31,8 +31,25 @@ created: 2026-10-23
 
 ## Implementation
 
+- `src/story/event.rs` : `Thing::{Cat, Dog, Owl, Duck, Snail, Squirrel, Frog}`.
+- `src/story/sources/village.rs` : 7 arrivées dans `ARRIVALS` (3 Cat, 9 Dog, 12 Owl, 18 Duck, 21 Snail, 27 Squirrel, 30 Frog), Lettre N → Jour de jeu N.
+- `src/animation/lore.rs` : drapeaux `Unlocks` par Habitant, `Unlocks::with_every_habitant()`.
+- `src/app.rs` : `unlocks_on` lit `Timeline::arrived_by` ; `shows_every_habitant` en mode forcé ; `refresh_unlocks()` dès la construction. Tests : `ARRIVAL_DAYS` étendu, jour 1 vide, joueur en retard (jour 41), modes forcés.
+- `src/animation_manager.rs` (`render_garden`) : chaque animal derrière son drapeau ; niche avec Biscuit, `StarGazing` avec Hulotte. Léo intact.
+- Choix : `--day N` prime sur les modes forcés (sinon `--day 12 --night` ne montrerait jamais l'arrivée de Hulotte). Sans `--day`, les modes forcés montrent tous les Habitants.
+- Build : `cargo build`, `cargo fmt --check`, `cargo test` verts. Clippy : seule l'erreur connue #79.
+
 ## Review
 
 ## Verification
+
+Captures pty, HOME jetable (jamais le vrai) :
+- ✅ `--day 1` : aucun Habitant, Léo présent.
+- ✅ `--day 3` Minouche ; `--day 8` sans niche ; `--day 9` niche + Biscuit.
+- ✅ `--day 12 --night` Hulotte ; `--day 11 --night` sans.
+- ✅ `--day 18` sous la pluie Coin-Coin ; `--day 17` sans.
+- ✅ `--day 30` : Gustave, Rainette, Noisette.
+- ✅ `--demo`, `--simulate`, `--night` sans `--day` : tous les Habitants.
+- ✅ Aucune carte « Nouvel habitant ».
 
 ## Feedback
