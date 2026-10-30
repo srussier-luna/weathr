@@ -1,6 +1,6 @@
 ---
 issue: 42
-status: todo
+status: to-test
 wiki: [[updater]], [[weather]], [[architecture]]
 note: "weathr --diagnostic : vérifie git, cargo, le clone, le réseau, les droits et dit quoi corriger"
 created: 2026-10-27
@@ -38,8 +38,24 @@ created: 2026-10-27
 
 ## Implementation
 
+- Nouveau module `src/diagnostic/` : `mod.rs` (`run()`, sondes), `checks.rs` (`Check` / `Status`, fonctions pures + tests), `report.rs` (`render` ✓/✗ + résumé, `problem_count`, tests).
+- `src/main.rs` : flag `--diagnostic`, traité avant `--update`, code de sortie 0 / 1.
+- Helpers de l'updater passés en `pub(crate)` (SOURCE_DIR, is_git_checkout, git_output, is_clean, fetch) ; nouveaux `pending_count` et `config_dir` réutilisés par l'existant. `progress_path` et `FORECAST_URL` en `pub(crate)`.
+- Choix : clone en retard sur l'upstream = ✓ avec « N commit(s) de retard, lance weathr --update », pas ✗.
+- Tests d'écriture : fichier `.weathr-diagnostic` créé puis supprimé ; dossier de config absent → parent existant le plus proche.
+- git absent → clone « impossible à vérifier sans git », fetch ✗.
+- Build : `cargo build`, `cargo fmt --check`, `cargo test` verts. Clippy : seule l'erreur connue #79 (propre avec `-A clippy::double_must_use`).
+
 ## Review
 
 ## Verification
+
+Lancé avec un HOME jetable (jamais le vrai) :
+- ✅ `--help` liste `--diagnostic`.
+- ✅ 8 lignes dans l'ordre, résumé, exit 1 (clone ✗ attendu : worktree non commité).
+- ✅ PATH sans cargo → `✗ cargo introuvable → installe Rust : https://rustup.rs`, les autres continuent, exit 1.
+- ✅ progress.json `{oops` → ✗ avec indication du fichier.
+- ⚠️ Hors ligne simulé par proxy : Open-Meteo ✗ en 5 s ; git fetch (ssh) non affecté, couvert par test unitaire.
+- ⚠️ Installation saine « Tout est en ordre. », exit 0 : non vue de bout en bout (worktree sale), couverte par test.
 
 ## Feedback
