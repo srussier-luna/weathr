@@ -106,44 +106,6 @@ pub struct Unlocks {
     pub choices: Choices,
 }
 
-impl Unlocks {
-    pub fn after_reading(
-        letters_read: usize,
-        strange_letters_read: usize,
-        archives_read: usize,
-        answers: &BTreeMap<String, u8>,
-    ) -> Self {
-        let read = |letter: usize| letters_read >= letter;
-        let strange = |letter: usize| strange_letters_read >= letter;
-        Self {
-            bench: read(4),
-            cat_bow: read(6),
-            footprints: read(8),
-            well: read(13),
-            bone: read(15),
-            key: read(17),
-            treehouse: read(22),
-            owl_friend: read(24),
-            blue_lantern: read(26),
-            garland: read(31),
-            kittens: read(33),
-            x_mark: read(35),
-            balloon: read(40),
-            ducklings: read(42),
-            weather_vane: read(49),
-            bunting: read(58),
-            chest: read(59),
-            wet_footprints: strange(3),
-            silhouette: strange(5),
-            whispering_well: strange(8),
-            staring: strange(11),
-            found_objects: read(45),
-            bottles: archives_read >= 3,
-            choices: Choices::from_answers(answers),
-        }
-    }
-}
-
 pub struct Lore {
     unlocks: Unlocks,
     balloon_x: Option<f32>,

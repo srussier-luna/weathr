@@ -207,6 +207,10 @@ impl AnimationManager {
         self.postman.set_round_hour(hour);
     }
 
+    pub fn set_story_frozen(&mut self, is_frozen: bool) {
+        self.postman.set_story_frozen(is_frozen);
+    }
+
     pub fn set_mail_waiting(&mut self, is_waiting: bool) {
         self.postman.set_mail_waiting(is_waiting);
     }
