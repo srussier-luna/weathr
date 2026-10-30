@@ -1,5 +1,6 @@
 use crate::badges;
 use crate::story::content::WEEKDAYS;
+use crate::weather::WeatherCondition;
 use crate::weather::normalizer::WeatherNormalizer;
 use chrono::{Days, NaiveDate};
 use serde::Deserialize;
@@ -120,6 +121,24 @@ fn describe_week(daily: &Daily) -> Option<String> {
     let rainy = days_where(|day| {
         at(&daily.precipitation_sum, day).is_some_and(|millimeters| millimeters >= RAINY_DAY_MM)
     });
+    let skies: Vec<_> = (0..WEEKDAYS.len()).filter_map(condition).collect();
+    let sunny_days = skies
+        .iter()
+        .filter(|sky| {
+            matches!(
+                sky,
+                WeatherCondition::Clear | WeatherCondition::PartlyCloudy
+            )
+        })
+        .count();
+    let dry_week = (rainy.is_empty() && !skies.is_empty()).then(|| {
+        if sunny_days * 2 > skies.len() {
+            "Semaine ensoleillée, sans pluie."
+        } else {
+            "Semaine nuageuse, sans pluie."
+        }
+        .to_string()
+    });
     let snowy = days_where(|day| {
         at(&daily.snowfall_sum, day).is_some_and(|centimeters| centimeters > 0.0)
             || condition(day).is_some_and(|condition| condition.is_snowing())
@@ -161,7 +180,7 @@ fn describe_week(daily: &Daily) -> Option<String> {
             degrees(minimum)
         )),
         best_day.map(|day| format!("Plus beau jour\u{202F}: {}.", WEEKDAYS[day])),
-        days_line("Pluie", &rainy, None),
+        days_line("Pluie", &rainy, None).or(dry_week),
         days_line("Neige", &snowy, None),
         days_line("⚠ Alerte orage", &stormy, None),
         days_line(
@@ -279,6 +298,55 @@ mod tests {
                  Pluie\u{202F}: lundi, mardi."
             )
         );
+    }
+
+    #[test]
+    fn test_dry_week_recap() {
+        let mut daily = calm_week();
+        daily.precipitation_sum[0] = Some(0.0);
+        daily.precipitation_sum[1] = Some(0.0);
+        daily.weather_code = vec![
+            Some(0),
+            Some(1),
+            Some(2),
+            Some(3),
+            Some(0),
+            Some(1),
+            Some(3),
+        ];
+        assert_eq!(
+            describe_week(&daily).as_deref(),
+            Some(
+                "Prévisions de la semaine\u{202F}: 18 °C au plus, 2 °C au moins.\n\
+                 Plus beau jour\u{202F}: jeudi.\n\
+                 Semaine ensoleillée, sans pluie."
+            )
+        );
+
+        daily.weather_code = vec![
+            Some(3),
+            Some(3),
+            Some(45),
+            Some(0),
+            Some(3),
+            Some(2),
+            Some(3),
+        ];
+        assert_eq!(
+            line(&daily, "Semaine").as_deref(),
+            Some("Semaine nuageuse, sans pluie.")
+        );
+
+        daily.weather_code = vec![Some(0), Some(1), Some(2), Some(3), Some(3), Some(45), None];
+        assert_eq!(
+            line(&daily, "Semaine").as_deref(),
+            Some("Semaine nuageuse, sans pluie.")
+        );
+
+        daily.weather_code = vec![None; 7];
+        assert_eq!(line(&daily, "Semaine"), None);
+
+        assert_eq!(line(&calm_week(), "Semaine"), None);
     }
 
     #[test]

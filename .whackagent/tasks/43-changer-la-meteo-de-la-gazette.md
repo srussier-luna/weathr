@@ -18,6 +18,7 @@ created: 2026-10-29
   - `Prévisions de la semaine : 18 °C au plus, 2 °C au moins.`
   - `Plus beau jour : jeudi.`
   - `Pluie : lundi, mardi.` — rainy day = precipitation ≥ `RAINY_DAY_MM` (existing 1 mm).
+  - No rainy day → `Semaine ensoleillée, sans pluie.` when more than half of the days with a weather code are Clear / PartlyCloudy, else `Semaine nuageuse, sans pluie.` (feedback round 1). No weather code at all → no line.
   - `Neige : samedi.` — only if a snow day (snowfall > 0 or snow weather code).
   - `⚠ Alerte orage : vendredi.` — thunderstorm weather code (95, 96, 99).
   - `⚠ Alerte canicule : mardi (36 °C).` — max ≥ 35 °C.
@@ -38,6 +39,7 @@ created: 2026-10-29
 - [ ] `cargo fmt --check`, `cargo test` green; `cargo clippy -- -D warnings` green except the pre-existing `double_must_use` (`src/weather/provider.rs:23`).
 - [ ] Text test on a fixed week (Mon → Sun): max/min line, `Plus beau jour`, `Pluie : lundi, mardi.`, no `Neige`/alert line when none.
 - [ ] Text test: snow day → `Neige : samedi.`; thunderstorm code → `⚠ Alerte orage : vendredi.`; 36 °C → `⚠ Alerte canicule : mardi (36 °C).`; −12 °C → grand froid line; gusts 85 km/h → vent fort line; thresholds exactly at 35 / −10 / 70 trigger, just below don't.
+- [ ] Dry-week test: sunny dry week → `Semaine ensoleillée, sans pluie.`; grey → `Semaine nuageuse, sans pluie.`; exactly half sunny → nuageuse; no weather code → no line; any rainy day → `Pluie : …` and no recap line.
 - [ ] Best-day test: driest wins; tie → warmest; tie → earliest; an alert day never wins; all days on alert → no `Plus beau jour` line.
 - [ ] Request test: a Gazette of Monday 2026-11-02 asks Open-Meteo for `start_date=2026-11-02&end_date=2026-11-08` with max/min temperature, precipitation, snowfall, weather code, gusts.
 - [ ] Old save with `gazette_weather` « Ta semaine : … » → that Gazette still shows it, unchanged.
@@ -58,6 +60,8 @@ Autopilot 2026-10-29, one implementer, one brick.
 - Notes: alerts compare raw values while the text shows rounded ones (−9.7 shows « −10 °C au moins » with no grand froid alert; 34.6 shows « 35 °C » with no canicule). Temperatures use U+2212, `f64::round`, −0 → « 0 °C ». A day missing values is never best day nor alert. Failed fetch (e.g. Monday out of API range) stores nothing, fallback stays, no retry in the same session.
 - Proof: `cargo build` ✅ · fmt ✅ · clippy ✅ with `--all-targets -A clippy::double_must_use` (pre-existing `src/weather/provider.rs:23`) · `cargo test` ✅ 279 passed.
 
+- Round 1 hunks (feedback): `src/remote_weather.rs` — `skies` / `sunny_days` from `wmo_code_to_condition` (`Clear | PartlyCloudy`), `dry_week` line when no rainy day and at least one code, takes the `Pluie` line's place (`days_line("Pluie", …).or(dry_week)`); test `test_dry_week_recap`.
+
 ## Review
 
 ## Verification
@@ -70,4 +74,18 @@ Runtime, pty 120x40, temp `HOME`, debug binary, save `started_on` 2026-10-19 (we
 - ✅ Offline (dead proxy): « Les prévisions ne sont pas encore arrivées. », nothing stored.
 - ✅ Stored text: U+202F before every colon.
 
+round 1: pty check by agent — Paris 26 octobre « Semaine nuageuse, sans pluie. », Aswan « Semaine ensoleillée, sans pluie. », borders aligned · rest manual validation · run: yours
+
 ## Feedback
+
+### Round 1 — 2026-10-30
+
+- Asked: « si pas de pluie annoncer ajouter une ligne, semaine ensoleiller sans pluie » · « selon le ciel, semaine ensoleillee, ou semaine nuageuse ,sans pluie, un petit recap de la meteo quoi »
+- Triage: adjustment → criteria updated (dry-week recap line).
+- Changes: implementer — `src/remote_weather.rs` (recap line + test).
+- Build: fmt ✅ · clippy `--all-targets -A clippy::double_must_use` ✅ · `cargo test` ✅ 280 passed.
+- Review: deferred → /wa-close.
+- Verify: pty check by agent (Paris nuageuse, Aswan ensoleillée, borders aligned).
+- Notes: Open-Meteo's daily weather code is the day's worst (often 3 = overcast), so real dry weeks will mostly read « nuageuse ». An unknown code maps to `Clear` in the reused normalizer.
+- Rule captured: none.
+
