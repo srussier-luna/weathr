@@ -1,7 +1,6 @@
 mod banner;
 mod progress;
 
-use chrono::Local;
 use progress::InstallProgress;
 use std::env;
 use std::fs;
@@ -13,17 +12,15 @@ use std::thread;
 use std::time::Duration;
 
 const SOURCE_DIR: &str = env!("CARGO_MANIFEST_DIR");
-const CHECK_FILE: &str = "update_check";
 const FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 const LOG_FILE: &str = "update.log";
 const PREFIX: &str = "[weathr]";
 const NEW_VERSION_MESSAGE: &str = "Une nouvelle version est arrivée\u{202F}!";
 
 pub async fn offer_update() {
-    if !io::stdin().is_terminal() || has_checked_today() {
+    if !io::stdin().is_terminal() {
         return;
     }
-    record_check();
 
     let source = Path::new(SOURCE_DIR);
     if !is_git_checkout(source) || !is_clean(source) || !fetch(source).await {
@@ -307,30 +304,6 @@ fn wait_for_enter() {
 
 fn config_path(file: &str) -> Option<PathBuf> {
     dirs::config_dir().map(|dir| dir.join("weathr").join(file))
-}
-
-fn check_path() -> Option<PathBuf> {
-    config_path(CHECK_FILE)
-}
-
-fn today() -> String {
-    Local::now().format("%Y-%m-%d").to_string()
-}
-
-fn has_checked_today() -> bool {
-    check_path()
-        .and_then(|path| fs::read_to_string(path).ok())
-        .is_some_and(|date| date.trim() == today())
-}
-
-fn record_check() {
-    let Some(path) = check_path() else {
-        return;
-    };
-    if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
-    let _ = fs::write(path, today());
 }
 
 #[cfg(test)]
