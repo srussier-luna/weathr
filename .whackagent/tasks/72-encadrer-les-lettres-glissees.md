@@ -1,6 +1,6 @@
 ---
 issue: 72
-status: to-test
+status: to-close
 wiki: [[render]], [[mail]]
 note: donner un cadre different au lettre glisser sous la porte v1.7
 created: 2026-10-30
@@ -42,6 +42,15 @@ created: 2026-10-30
 - Round 2 (feedback) : coupe du coin bas droit sur 4 lignes. `WET_CUT = ["/", " /", "  /"]` selon le nombre de lignes restantes, `edges(row, rows_below)`, bas et gouttes arrêtés à `width - WET_CUT.len() - 1`. La coupe reste à droite de la zone de texte (aucune marge réservée). Lettre de moins de 3 lignes : coupe sur les lignes existantes. Fichier : `src/overlay.rs`.
 
 ## Review
+
+### Round validation — 2026-11-02
+- Scope : diff cumulé `origin/develop...HEAD` (src/overlay.rs, src/story/content/mod.rs, golden).
+- Findings (autofix round 1, tous corrigés) :
+  - 🟡 [correctness] test des largeurs étroites sans vrai titre / pied ni vraie vérification de la coupe → helper `assert_wet_text_clears_the_cut`, vrai contenu sur 23–66, colonne de coupe exacte (`width - 3 + rows_below`, conforme à la maquette).
+  - 🟡 [elegance] calcul de fin du bas dupliqué → `wet_bottom_end`.
+  - 🟡 [elegance] `usize::MAX` comme valeur magique → `Option<usize>`.
+- Hors périmètre (préexistant, tous les cadres) : sous une boîte de 23 colonnes (terminal < 27), `pack` ne coupe pas un mot ou un élément de pied plus large que la zone de texte → débordement sur le bord droit. À traiter à part.
+- LENSES : style ✓ · elegance ✓ · structure ✓ · correctness ✓ — VERDICT : clean.
 
 ## Verification
 

@@ -77,7 +77,7 @@ impl Frame {
         }
     }
 
-    fn edges(self, row: usize, rows_below: usize) -> (u16, &'static str, &'static str) {
+    fn edges(self, row: usize, rows_below: Option<usize>) -> (u16, &'static str, &'static str) {
         match self {
             Self::Plain | Self::Postcard | Self::Folder | Self::Photo | Self::Bubble => {
                 (0, "| ", " |")
@@ -91,7 +91,10 @@ impl Frame {
                     1 => "|~ ",
                     _ => "|  ",
                 },
-                WET_CUT.get(rows_below).copied().unwrap_or("  |"),
+                rows_below
+                    .and_then(|rows| WET_CUT.get(rows))
+                    .copied()
+                    .unwrap_or("  |"),
             ),
             Self::Newspaper => (0, "|| ", " ||"),
             Self::Recipe => (0, "o| ", " |"),
@@ -102,7 +105,7 @@ impl Frame {
     }
 
     fn inner_width(self, box_width: u16) -> usize {
-        let (indent, left, right) = self.edges(0, usize::MAX);
+        let (indent, left, right) = self.edges(0, None);
         usize::from(box_width)
             .saturating_sub(usize::from(indent) + left.chars().count() + right.chars().count())
     }
@@ -143,7 +146,7 @@ impl Frame {
             Self::Parchment => vec![(1, rule('\'', "~", '\'', width.saturating_sub(2)))],
             Self::Wet => {
                 let drops = self.drops(width);
-                let edge = (1..width.saturating_sub(WET_CUT.len() + 1))
+                let edge = (1..wet_bottom_end(width))
                     .map(|column| {
                         if drops.iter().any(|(drop, _)| usize::from(*drop) == column) {
                             ','
@@ -164,7 +167,7 @@ impl Frame {
 
     fn drops(self, width: usize) -> Vec<(u16, &'static str)> {
         match self {
-            Self::Wet => (FIRST_DROP..width.saturating_sub(WET_CUT.len() + 1))
+            Self::Wet => (FIRST_DROP..wet_bottom_end(width))
                 .step_by(DROP_GAP)
                 .zip(DROPS.into_iter().cycle())
                 .map(|(column, drop)| (column as u16, drop))
@@ -345,6 +348,10 @@ fn box_width(renderer: &TerminalRenderer) -> u16 {
     MAX_BOX_WIDTH.min(renderer.get_size().0.saturating_sub(4))
 }
 
+fn wet_bottom_end(width: usize) -> usize {
+    width.saturating_sub(WET_CUT.len() + 1)
+}
+
 fn rule(left: char, fill: &str, right: char, width: usize) -> String {
     format!("{left}{}{right}", fill.repeat(width.saturating_sub(2)))
 }
@@ -415,7 +422,7 @@ fn frame_rows(
     let mut rows: Vec<Vec<Piece>> = rule_rows(frame.top(width)).collect();
     let count = body.len();
     rows.extend(body.into_iter().enumerate().map(|(index, (text, color))| {
-        let (indent, left, right) = frame.edges(index, count - index - 1);
+        let (indent, left, right) = frame.edges(index, Some(count - index - 1));
         let edge = frame.color().unwrap_or(color);
         let start = indent + left.chars().count() as u16;
         vec![
@@ -607,23 +614,48 @@ mod tests {
         );
     }
 
+    fn assert_wet_text_clears_the_cut(width: u16, title: &str, body: &str, footer: &str) {
+        let inner = Frame::Wet.inner_width(width);
+        let lines = wrap(body, inner);
+        let rows = frame_rows(Frame::Wet, title, &lines, footer, width);
+        let body_rows = &rows[1..rows.len() - 2];
+        for (index, row) in body_rows.iter().enumerate() {
+            let [(indent, left, _), (start, text, _), (end, right, _)] = row.as_slice() else {
+                panic!("{width}: {row:?}");
+            };
+            assert_eq!(*start, 3, "{width}");
+            assert_eq!(usize::from(*indent) + left.chars().count(), 3, "{width}");
+            let rows_below = body_rows.len() - index - 1;
+            let edge = if rows_below < WET_CUT.len() {
+                usize::from(width) - WET_CUT.len() + rows_below
+            } else {
+                usize::from(width) - 1
+            };
+            assert_eq!(
+                usize::from(*end) + right.chars().count() - 1,
+                edge,
+                "{width}"
+            );
+            assert_eq!(text.chars().count(), inner, "{width}: {text}");
+            let text_end = usize::from(*start) + text.trim_end().chars().count();
+            assert!(text_end <= edge, "{width}: {text}");
+        }
+    }
+
     #[test]
     fn test_wet_frame_keeps_text_in_place_on_narrow_terminals() {
         for width in 12..=MAX_BOX_WIDTH {
-            let inner = Frame::Wet.inner_width(width);
-            let rows = frame_rows(Frame::Wet, "Lettre 5/6", &[], "[c]", width);
-            for row in &rows[1..rows.len() - 2] {
-                let [(indent, left, _), (start, text, _), (end, right, _)] = row.as_slice() else {
-                    panic!("{width}: {row:?}");
-                };
-                assert_eq!(*start, 3, "{width}");
-                assert_eq!(usize::from(*indent) + left.chars().count(), 3, "{width}");
-                assert_eq!(text.chars().count(), inner, "{width}");
-                assert!(usize::from(*end) + right.chars().count() <= usize::from(width));
-                let text_end = usize::from(*start) + text.trim_end().chars().count();
-                let edge = usize::from(*end) + right.chars().count() - 1;
-                assert!(text_end <= edge, "{width}: {text}");
-            }
+            assert_wet_text_clears_the_cut(width, "Lettre 5/6", "", "[c]");
+        }
+        let body = "Je sais que tu lis mes lettres le soir, quand la lampe du salon reste allumée.";
+        let footer = "[c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer";
+        for width in 23..=MAX_BOX_WIDTH {
+            assert_wet_text_clears_the_cut(
+                width,
+                "Lettre 12/26 (glissée sous la porte)",
+                body,
+                footer,
+            );
         }
     }
 
