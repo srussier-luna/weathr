@@ -104,7 +104,7 @@ fn content_for(day: usize, entry: Entry, counter: String) -> Box<dyn MailContent
             format!("Lettre {counter} (glissée sous la porte)"),
             CREEPY_LETTERS[index],
             CREEPY_SENDER,
-            Frame::Torn,
+            Frame::Wet,
         )),
         Entry::Sam(index) => Box::new(Written::new(
             format!("Lettre {counter}"),
@@ -320,7 +320,7 @@ mod tests {
     }
 
     #[test]
-    fn test_letter_slipped_under_the_door_comes_on_torn_paper() {
+    fn test_letter_slipped_under_the_door_comes_on_wet_paper() {
         let save = SavedGame::load();
         let context = save.context(12);
         let delivered = [
@@ -340,7 +340,7 @@ mod tests {
                 Frame::Parchment,
                 Frame::Parchment,
                 Frame::Parchment,
-                Frame::Torn,
+                Frame::Wet,
             ]
         );
     }

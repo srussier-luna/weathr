@@ -12,8 +12,11 @@ const BADGES_FOOTER: &str = "[b] ou [Echap] fermer";
 const FOOTER_GAP: &str = "  ";
 const FOLDER_TAB: &str = "/  Archives  \\";
 const STAMP: &str = "[~]";
-const TORN_TOP: &str = "_/\\__/\\/\\___/\\_";
-const TORN_BOTTOM: &str = "\\/^\\_/\\/\\^^\\/";
+const WET_STAIN: &str = "~~~~";
+const WET_TITLE_INDENT: &str = "  ";
+const FIRST_DROP: usize = 4;
+const DROP_GAP: usize = 7;
+const DROPS: [&str; 2] = ["'", "."];
 const MAX_BUBBLE_WIDTH: u16 = 40;
 const BUBBLE_GAP: &str = ". .";
 const BUBBLE_TAIL: &str = "V";
@@ -33,7 +36,7 @@ pub enum Line {
 pub enum Frame {
     Plain,
     Parchment,
-    Torn,
+    Wet,
     Newspaper,
     Postcard,
     Folder,
@@ -50,7 +53,7 @@ impl Frame {
         let (r, g, b) = match self {
             Self::Plain | Self::Bubble | Self::Notice => return None,
             Self::Parchment => (222, 196, 140),
-            Self::Torn => (150, 95, 95),
+            Self::Wet => (150, 200, 235),
             Self::Newspaper => (205, 205, 195),
             Self::Postcard => (190, 170, 235),
             Self::Folder => (230, 160, 80),
@@ -73,20 +76,22 @@ impl Frame {
         }
     }
 
-    fn edges(self, row: usize) -> (u16, &'static str, &'static str) {
+    fn edges(self, row: usize, last: bool) -> (u16, &'static str, &'static str) {
         match self {
             Self::Plain | Self::Postcard | Self::Folder | Self::Photo | Self::Bubble => {
                 (0, "| ", " |")
             }
             Self::Parchment if row % 2 == 0 => (0, "(  ", "  )"),
             Self::Parchment => (1, ") ", " ("),
-            Self::Torn => match row % 5 {
-                0 => (0, "|  ", "  |"),
-                1 => (1, "> ", " <"),
-                2 => (0, "|  ", "  \\"),
-                3 => (1, "/ ", "  |"),
-                _ => (0, "|  ", " <"),
-            },
+            Self::Wet => (
+                0,
+                match row {
+                    0 => "(~~",
+                    1 => "|~ ",
+                    _ => "|  ",
+                },
+                if last { " /" } else { "  |" },
+            ),
             Self::Newspaper => (0, "|| ", " ||"),
             Self::Recipe => (0, "o| ", " |"),
             Self::Waves => (0, "  ", "  "),
@@ -96,7 +101,7 @@ impl Frame {
     }
 
     fn inner_width(self, box_width: u16) -> usize {
-        let (indent, left, right) = self.edges(0);
+        let (indent, left, right) = self.edges(0, false);
         usize::from(box_width)
             .saturating_sub(usize::from(indent) + left.chars().count() + right.chars().count())
     }
@@ -105,7 +110,13 @@ impl Frame {
         match self {
             Self::Plain | Self::Postcard => vec![(0, rule('+', "-", '+', width))],
             Self::Parchment => vec![(1, rule('.', "~", '.', width.saturating_sub(2)))],
-            Self::Torn => vec![(0, TORN_TOP.chars().cycle().take(width).collect())],
+            Self::Wet => vec![(
+                0,
+                format!(
+                    "+{WET_STAIN}{}+",
+                    "-".repeat(width.saturating_sub(WET_STAIN.len() + 2))
+                ),
+            )],
             Self::Newspaper => vec![(0, "=".repeat(width))],
             Self::Folder => vec![
                 (1, "_".repeat(FOLDER_TAB.len() - 2)),
@@ -129,7 +140,19 @@ impl Frame {
     fn bottom(self, width: usize) -> Vec<(u16, String)> {
         match self {
             Self::Parchment => vec![(1, rule('\'', "~", '\'', width.saturating_sub(2)))],
-            Self::Torn => vec![(0, TORN_BOTTOM.chars().cycle().take(width).collect())],
+            Self::Wet => {
+                let drops = self.drops(width);
+                let edge = (1..width.saturating_sub(2))
+                    .map(|column| {
+                        if drops.iter().any(|(drop, _)| usize::from(*drop) == column) {
+                            ','
+                        } else {
+                            '-'
+                        }
+                    })
+                    .collect::<String>();
+                vec![(0, format!("+{edge}'"))]
+            }
             Self::Folder => vec![(0, rule('|', "_", '|', width))],
             Self::Photo => vec![(0, rule('\\', "-", '/', width))],
             Self::Bubble => vec![(0, rule('\'', "-", '\'', width))],
@@ -138,8 +161,31 @@ impl Frame {
         }
     }
 
+    fn drops(self, width: usize) -> Vec<(u16, &'static str)> {
+        match self {
+            Self::Wet => (FIRST_DROP..width.saturating_sub(2))
+                .step_by(DROP_GAP)
+                .zip(DROPS.into_iter().cycle())
+                .map(|(column, drop)| (column as u16, drop))
+                .collect(),
+            _ => Vec::new(),
+        }
+    }
+
     fn title_lines(self, title: &str, inner: usize) -> Vec<String> {
         match self {
+            Self::Wet => {
+                let width = inner.saturating_sub(WET_TITLE_INDENT.len());
+                let lines = wrap(title, width);
+                if lines.iter().all(|line| line.chars().count() <= width) {
+                    lines
+                        .into_iter()
+                        .map(|line| format!("{WET_TITLE_INDENT}{line}"))
+                        .collect()
+                } else {
+                    wrap(title, inner)
+                }
+            }
             Self::Newspaper => center(title, inner),
             Self::Postcard => {
                 let width = inner.saturating_sub(STAMP.len() + 1);
@@ -366,8 +412,9 @@ fn frame_rows(
     );
 
     let mut rows: Vec<Vec<Piece>> = rule_rows(frame.top(width)).collect();
+    let last = body.len().saturating_sub(1);
     rows.extend(body.into_iter().enumerate().map(|(index, (text, color))| {
-        let (indent, left, right) = frame.edges(index);
+        let (indent, left, right) = frame.edges(index, index == last);
         let edge = frame.color().unwrap_or(color);
         let start = indent + left.chars().count() as u16;
         vec![
@@ -377,6 +424,15 @@ fn frame_rows(
         ]
     }));
     rows.extend(rule_rows(frame.bottom(width)));
+    let drops = frame.drops(width);
+    if !drops.is_empty() {
+        rows.push(
+            drops
+                .into_iter()
+                .map(|(column, drop)| (column, drop.to_string(), border))
+                .collect(),
+        );
+    }
     rows
 }
 
@@ -467,7 +523,7 @@ mod tests {
     const FRAMES: [Frame; 12] = [
         Frame::Plain,
         Frame::Parchment,
-        Frame::Torn,
+        Frame::Wet,
         Frame::Newspaper,
         Frame::Postcard,
         Frame::Folder,
@@ -533,32 +589,36 @@ mod tests {
     }
 
     #[test]
-    fn test_torn_frame_has_ragged_edges() {
-        let rows = draw(Frame::Torn, "Lettre 5/6", &["Je te vois."], "[c]", 20);
+    fn test_wet_frame_has_a_stain_a_cut_corner_and_drops() {
+        let rows = draw(Frame::Wet, "Lettre 5/6", &["Je te vois."], "[c]", 20);
         assert_eq!(
             rows,
             [
-                "_/\\__/\\/\\___/\\__/\\__",
-                "|  Lettre 5/6      |",
-                " >                <",
-                "|  Je te vois.     \\",
-                " /                 |",
-                "|  [c]            <",
-                "\\/^\\_/\\/\\^^\\/\\/^\\_/\\",
+                "+~~~~--------------+",
+                "(~~  Lettre 5/6    |",
+                "|~                 |",
+                "|  Je te vois.     |",
+                "|                  |",
+                "|  [c]            /",
+                "+---,------,------'",
+                "    '      .",
             ]
         );
     }
 
     #[test]
-    fn test_torn_frame_keeps_text_in_place_on_narrow_terminals() {
+    fn test_wet_frame_keeps_text_in_place_on_narrow_terminals() {
         for width in 12..=MAX_BOX_WIDTH {
-            let inner = Frame::Torn.inner_width(width);
-            for row in frame_rows(Frame::Torn, "Lettre 5/6", &[], "[c]", width) {
-                if let [(indent, left, _), (start, text, _), _] = row.as_slice() {
-                    assert_eq!(*start, 3, "{width}");
-                    assert_eq!(usize::from(*indent) + left.chars().count(), 3, "{width}");
-                    assert_eq!(text.chars().count(), inner, "{width}");
-                }
+            let inner = Frame::Wet.inner_width(width);
+            let rows = frame_rows(Frame::Wet, "Lettre 5/6", &[], "[c]", width);
+            for row in &rows[1..rows.len() - 2] {
+                let [(indent, left, _), (start, text, _), (end, right, _)] = row.as_slice() else {
+                    panic!("{width}: {row:?}");
+                };
+                assert_eq!(*start, 3, "{width}");
+                assert_eq!(usize::from(*indent) + left.chars().count(), 3, "{width}");
+                assert_eq!(text.chars().count(), inner, "{width}");
+                assert!(usize::from(*end) + right.chars().count() <= usize::from(width));
             }
         }
     }

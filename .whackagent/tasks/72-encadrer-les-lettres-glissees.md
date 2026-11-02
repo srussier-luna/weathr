@@ -9,13 +9,23 @@ created: 2026-10-30
 ## Context / Decisions
 
 - Lettres glissées sous la porte = `Entry::Creepy` (le voisin du n°13), aujourd'hui en `Frame::Parchment` comme les autres Lettres.
-- Nouveau cadre `Frame` dans `src/overlay.rs` : papier déchiré, bords irréguliers façon feuille arrachée.
-- Couleur sombre gris-rouge, bien distincte du parchemin.
+- Nouveau cadre `Frame` dans `src/overlay.rs` : feuille mouillée, cadre carré, tache d'eau dans le coin haut gauche, coin bas droit coupé en diagonale, gouttes sous le bas (retour #72 round 1 : le papier déchiré était trop chaotique).
+- Couleur bleu clair (effet mouillé), bien distincte du parchemin.
 - `Entry::Creepy` utilise ce cadre dans `content_for` (`src/story/content/mod.rs`). Titre et compteur inchangés.
 
 ## Acceptance criteria
 
-- Ouvrir une Lettre glissée sous la porte → cadre aux bords déchirés, gris-rouge.
+- Ouvrir une Lettre glissée sous la porte → feuille mouillée bleu clair : cadre carré, tache d'eau `~` dans le coin haut gauche, coin bas droit coupé en diagonale, gouttes sous le bord du bas. Maquette (largeur 20) :
+  ```
+  +~~~~--------------+
+  (~~  Lettre 5/6    |
+  |~                 |
+  |  Je te vois.     |
+  |                  |
+  |  [c]            /
+  +---,------,------'
+      '      .
+  ```
 - Ouvrir une Lettre du village, de Sam ou des Voisins → toujours le cadre parchemin.
 - Le texte reste entier et lisible dans le nouveau cadre, terminal étroit compris.
 - Test unitaire : la vue d'une `Entry::Creepy` porte le nouveau cadre.
@@ -28,6 +38,8 @@ created: 2026-10-30
 - Tests : `test_torn_frame_has_ragged_edges`, `test_torn_frame_keeps_text_in_place_on_narrow_terminals` (largeurs 12 à 66), `test_letter_slipped_under_the_door_comes_on_torn_paper`, `Frame::Torn` ajouté à `FRAMES`.
 - Build : `cargo build`, `cargo fmt --check`, `cargo test` verts. Clippy : seule l'erreur connue `double_must_use` (#79).
 
+- Round 1 (feedback) : `Frame::Torn` → `Frame::Wet`, bleu clair Rgb (150, 200, 235) ; haut `+~~~~---+` (tache fixe), bord gauche `(~~` puis `|~` puis `|`, coin bas droit `/` sur la dernière ligne, bas terminé par `'` avec `,` en colonne 4 puis tous les 7, gouttes `'` / `.` dessinées une à une sous le cadre (`Frame::drops`, `edges(row, last)`). Titre décalé de 2 espaces comme la maquette, repli sur le retour à la ligne normal si la boîte est trop étroite. Constantes `WET_STAIN`, `WET_TITLE_INDENT`, `FIRST_DROP`, `DROP_GAP`, `DROPS`. Golden : `frame: Torn` → `frame: Wet` (26 lignes). Fichiers : `src/overlay.rs`, `src/story/content/mod.rs`, `src/story/testdata/save_37_golden.txt`.
+
 ## Review
 
 ## Verification
@@ -35,3 +47,12 @@ created: 2026-10-30
 - Application non lancée (Lettre glissée = partie avancée) : preuve par tests de rendu (`frame_rows`, lignes exactes). Validation manuelle à faire.
 
 ## Feedback
+
+### Round 1 — 2026-11-02
+- Asked : « le cadre est trop cahotic c'est moche, remet un truc un peu plus carre, avec le coin bas droit coupe en diagonal » + « plus effet feuille mouille, et change aussi la couleur, effet mouille bleu claire » ; maquette « Tache d'eau » choisie.
+- Triage : adjustment → critère d'acceptation mis à jour.
+- Changes : cadre `Frame::Wet` (implementer), voir `## Implementation`.
+- Build : `cargo build`, `cargo fmt --check`, `cargo test` verts ; clippy : seule l'erreur connue #79.
+- Review : deferred (→ /wa-validate).
+- Verify : rendu exact à 20 colonnes = maquette, largeurs 12–66 testées ; round 1 : manual validation — not run by agent.
+- Rule captured : aucune.
