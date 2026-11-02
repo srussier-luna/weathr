@@ -17,6 +17,7 @@ const WET_TITLE_INDENT: &str = "  ";
 const FIRST_DROP: usize = 4;
 const DROP_GAP: usize = 7;
 const DROPS: [&str; 2] = ["'", "."];
+const WET_CUT: [&str; 3] = ["/", " /", "  /"];
 const MAX_BUBBLE_WIDTH: u16 = 40;
 const BUBBLE_GAP: &str = ". .";
 const BUBBLE_TAIL: &str = "V";
@@ -76,7 +77,7 @@ impl Frame {
         }
     }
 
-    fn edges(self, row: usize, last: bool) -> (u16, &'static str, &'static str) {
+    fn edges(self, row: usize, rows_below: usize) -> (u16, &'static str, &'static str) {
         match self {
             Self::Plain | Self::Postcard | Self::Folder | Self::Photo | Self::Bubble => {
                 (0, "| ", " |")
@@ -90,7 +91,7 @@ impl Frame {
                     1 => "|~ ",
                     _ => "|  ",
                 },
-                if last { " /" } else { "  |" },
+                WET_CUT.get(rows_below).copied().unwrap_or("  |"),
             ),
             Self::Newspaper => (0, "|| ", " ||"),
             Self::Recipe => (0, "o| ", " |"),
@@ -101,7 +102,7 @@ impl Frame {
     }
 
     fn inner_width(self, box_width: u16) -> usize {
-        let (indent, left, right) = self.edges(0, false);
+        let (indent, left, right) = self.edges(0, usize::MAX);
         usize::from(box_width)
             .saturating_sub(usize::from(indent) + left.chars().count() + right.chars().count())
     }
@@ -142,7 +143,7 @@ impl Frame {
             Self::Parchment => vec![(1, rule('\'', "~", '\'', width.saturating_sub(2)))],
             Self::Wet => {
                 let drops = self.drops(width);
-                let edge = (1..width.saturating_sub(2))
+                let edge = (1..width.saturating_sub(WET_CUT.len() + 1))
                     .map(|column| {
                         if drops.iter().any(|(drop, _)| usize::from(*drop) == column) {
                             ','
@@ -163,7 +164,7 @@ impl Frame {
 
     fn drops(self, width: usize) -> Vec<(u16, &'static str)> {
         match self {
-            Self::Wet => (FIRST_DROP..width.saturating_sub(2))
+            Self::Wet => (FIRST_DROP..width.saturating_sub(WET_CUT.len() + 1))
                 .step_by(DROP_GAP)
                 .zip(DROPS.into_iter().cycle())
                 .map(|(column, drop)| (column as u16, drop))
@@ -412,9 +413,9 @@ fn frame_rows(
     );
 
     let mut rows: Vec<Vec<Piece>> = rule_rows(frame.top(width)).collect();
-    let last = body.len().saturating_sub(1);
+    let count = body.len();
     rows.extend(body.into_iter().enumerate().map(|(index, (text, color))| {
-        let (indent, left, right) = frame.edges(index, index == last);
+        let (indent, left, right) = frame.edges(index, count - index - 1);
         let edge = frame.color().unwrap_or(color);
         let start = indent + left.chars().count() as u16;
         vec![
@@ -597,10 +598,10 @@ mod tests {
                 "+~~~~--------------+",
                 "(~~  Lettre 5/6    |",
                 "|~                 |",
-                "|  Je te vois.     |",
-                "|                  |",
-                "|  [c]            /",
-                "+---,------,------'",
+                "|  Je te vois.     /",
+                "|                 /",
+                "|  [c]           /",
+                "+---,------,----'",
                 "    '      .",
             ]
         );
@@ -619,8 +620,17 @@ mod tests {
                 assert_eq!(usize::from(*indent) + left.chars().count(), 3, "{width}");
                 assert_eq!(text.chars().count(), inner, "{width}");
                 assert!(usize::from(*end) + right.chars().count() <= usize::from(width));
+                let text_end = usize::from(*start) + text.trim_end().chars().count();
+                let edge = usize::from(*end) + right.chars().count() - 1;
+                assert!(text_end <= edge, "{width}: {text}");
             }
         }
+    }
+
+    #[test]
+    fn test_wet_frame_cuts_short_letters_over_the_rows_they_have() {
+        let rows = draw(Frame::Wet, "", &[], "", 12);
+        assert_eq!(rows, ["+~~~~------+", "(~~      /", "+---,---'", "    '"]);
     }
 
     #[test]
