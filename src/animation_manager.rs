@@ -453,11 +453,6 @@ impl AnimationManager {
             epiphany::render_crown(renderer, &layout)?;
         }
 
-        if holiday.is_music_day {
-            self.music_notes.update(&layout.house, &mut rng);
-            self.music_notes.render(renderer, &layout)?;
-        }
-
         self.creepy.update(conditions, &unlocks, &mut rng);
         self.creepy
             .render(renderer, &layout, conditions, &unlocks)?;
@@ -509,6 +504,24 @@ impl AnimationManager {
 
         self.kid.update(&layout, conditions, &mut rng);
         self.kid.render(renderer, &layout, conditions)?;
+
+        let singers: Vec<(u16, u16)> = [
+            Some(self.cat.head(&layout, conditions)),
+            Some(self.dog.head(&layout, conditions)),
+            self.owl.head(&layout, conditions),
+            self.duck.head(&layout, conditions),
+            self.frog.head(&layout, conditions),
+            self.snail.head(&layout),
+            self.squirrel.head(),
+            self.kid.head(&layout, conditions),
+            self.postman.rider_head(&layout),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        self.music_notes
+            .update(holiday, &layout, &singers, &mut rng);
+        self.music_notes.render(renderer)?;
 
         if holiday.is_halloween {
             self.halloween.render_spirits(renderer, &layout)?;
