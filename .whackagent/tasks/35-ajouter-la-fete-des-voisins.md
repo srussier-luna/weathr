@@ -10,6 +10,7 @@ created: 2026-10-30
 
 - Fête des voisins = dernier vendredi de mai, calculé chaque année (29 mai 2026, 28 mai 2027). Le cas rare du premier vendredi de juin n'est pas géré.
 - Toute la journée, jour et nuit, par tous les temps.
+- Guirlande de fanions : fil droit tendu sous l'avant-toit, du bord gauche du toit jusqu'au bord droit de l'écran, triangles ▼ de couleurs alternées (retour round 1).
 - Nouveau flag `Holiday` dans `src/holiday.rs`, calculé par `Holiday::on`.
 - Une table dressée devant la maison, sur l'herbe, entre la maison et la rivière. Les animaux du jardin ne changent pas.
 - Voisins à table : Rose, Paulo, Odile, Léo, Gaston, un sprite chacun de part et d'autre de la table.
@@ -24,7 +25,8 @@ created: 2026-10-30
 ## Acceptance criteria
 
 - Date simulée au dernier vendredi de mai → une table dressée devant la maison, de jour comme de nuit.
-- Jeudi et samedi autour de cette date → aucune table.
+- Ce jour-là → une guirlande droite de triangles ▼ de couleurs alternées part du bord gauche du toit, sous l'avant-toit, et va sans interruption jusqu'au bord droit de l'écran.
+- Jeudi et samedi autour de cette date → aucune table, aucune guirlande.
 - Sous la pluie → la table et les Voisins sont toujours là.
 - Joueur qui n'a reçu que la Lettre de Rose → seule Rose est à table (plus Gaston, s'il a déjà écrit).
 - Joueur qui a reçu les Lettres des 5 Voisins → Rose, Paulo, Odile, Léo et Gaston sont à table.
@@ -46,6 +48,7 @@ created: 2026-10-30
 - `src/badges.rs` : Badge `neighbours_party` « Fête des voisins » ; `src/main.rs` : `--neighbours` ; `src/demo.rs` : scène après Pâques.
 - Choix : expéditeurs jamais comparés à l'exécution (fichier de Lettres modifiable), seulement en test. Jeanne n'a pas de place.
 - Build : `cargo build`, `cargo fmt --check`, `cargo test` verts. Clippy : seule l'erreur connue #79.
+- Round 1 (feedback) : guirlande de fanions. `src/scene/bunting.rs` (nouveau) : `pieces()` pure (rien hors fête), fil `-` gris de la fin de l'avant-toit à `width-1`, rangée de `▼` une ligne sous l'avant-toit, tous les 2 colonnes, du bord gauche du toit à `width-1`, couleurs Red / Yellow / Cyan / Green / Magenta ; `render()` ; 2 tests. `src/scene/house.rs` : `House::eave()` (rangée + colonnes `~`). `src/scene/mod.rs` : dessinée juste après la maison, avant les décorations (Arbre, sapin, clôture, boîte aux lettres, table et animaux passent devant). Pas de rangée libre sous l'avant-toit : les fanions chevauchent la rangée haute des fenêtres, espacés de 2.
 
 ## Review
 
@@ -62,3 +65,12 @@ Captures pty, HOME jetable (jamais le vrai) :
 - ⚠️ Avant le jour 16, Léo qui joue peut passer devant la table.
 
 ## Feedback
+
+### Round 1 — 2026-11-03
+- Asked : « ajoute une guirlande colorée de triangles du bord gauche du toit de la maison qui ne s'arrête pas et va jusqu'au bout de l'écran à droite » ; choix : droite, sous l'avant-toit.
+- Triage : adjustment → critère d'acceptation ajouté.
+- Changes : voir `## Implementation` round 1 (implementer).
+- Build : `cargo build`, `cargo fmt --check`, `cargo test` verts ; clippy : seule l'erreur connue #79.
+- Review : deferred (→ /wa-validate).
+- Verify : captures `--neighbours` 80×24, 121×40, 200×45, nuit : guirlande continue du toit au bord droit ; jour normal : rien. Pluie de nuit non capturée (outil bloqué). Round 1 : manual validation — not run by agent.
+- Rule captured : aucune.

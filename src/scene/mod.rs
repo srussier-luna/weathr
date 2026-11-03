@@ -1,3 +1,4 @@
+pub mod bunting;
 pub mod decorations;
 pub mod ground;
 pub mod house;
@@ -89,6 +90,7 @@ impl WorldScene {
         // Render House
         self.house
             .render(renderer, house_x, house_y, conditions.is_day)?;
+        bunting::render(renderer, holiday, &self.house, house_x, house_y, self.width)?;
 
         // Render Decorations
         self.decorations.render(
