@@ -33,7 +33,7 @@ const PALETTE: [Color; 4] = [
 const MAX_NOTES: usize = 16;
 const SPAWN_CHANCE: f32 = 0.15;
 const SING_CHANCE: f32 = 0.01;
-const HEAD_RISE: f32 = 4.0;
+const RISE_ROWS: f32 = 4.0;
 const RISE_SPEED: f32 = 0.06;
 const WOBBLE_AMPLITUDE: f32 = 1.5;
 const WOBBLE_SPEED: f32 = 0.18;
@@ -91,30 +91,39 @@ impl MusicNotes {
             return;
         }
 
-        for note in &mut self.notes {
-            note.y -= RISE_SPEED;
-            note.phase = (note.phase + WOBBLE_SPEED) % TAU;
-        }
-        self.notes.retain(|note| note.y >= note.top);
+        self.rise();
 
         if rng.random::<f32>() < SPAWN_CHANCE {
-            let roof_line = layout.house_y + layout.house.eave_row() + 1;
-            if let Some(&(x, y)) = layout.house.windows().choose(rng) {
-                self.play(
-                    layout.house_x + x,
-                    layout.house_y + y,
-                    roof_line as f32,
-                    rng,
-                );
+            if let Some(&window) = layout.house.windows().choose(rng) {
+                self.play_window(layout, window, rng);
             }
         }
 
         for &(x, head_y) in singers {
             if head_y > 0 && rng.random::<f32>() < SING_CHANCE {
                 let y = head_y - 1;
-                self.play(x, y, (y as f32 - HEAD_RISE + 1.0).max(0.0), rng);
+                self.play(x, y, rise_top(y), rng);
             }
         }
+    }
+
+    fn rise(&mut self) {
+        for note in &mut self.notes {
+            note.y -= RISE_SPEED;
+            note.phase = (note.phase + WOBBLE_SPEED) % TAU;
+        }
+        self.notes.retain(|note| note.y >= note.top);
+    }
+
+    fn play_window(&mut self, layout: &GardenLayout, (x, y): (u16, u16), rng: &mut impl Rng) {
+        let roof_line = layout.house_y + layout.house.eave_row() + 1;
+        let y = layout.house_y + y;
+        let top = if y > roof_line {
+            roof_line as f32
+        } else {
+            rise_top(y)
+        };
+        self.play(layout.house_x + x, y, top, rng);
     }
 
     fn play(&mut self, x: u16, y: u16, top: f32, rng: &mut impl Rng) {
@@ -126,8 +135,8 @@ impl MusicNotes {
             y: y as f32,
             top,
             phase: 0.0,
-            glyph: *GLYPHS.choose(rng).unwrap_or(&GLYPHS[0]),
-            color: *PALETTE.choose(rng).unwrap_or(&PALETTE[0]),
+            glyph: GLYPHS[rng.random_range(0..GLYPHS.len())],
+            color: PALETTE[rng.random_range(0..PALETTE.len())],
         });
     }
 
@@ -143,6 +152,10 @@ impl MusicNotes {
     }
 }
 
+fn rise_top(y: u16) -> f32 {
+    (y as f32 - RISE_ROWS + 1.0).max(0.0)
+}
+
 impl Default for MusicNotes {
     fn default() -> Self {
         Self::new()
@@ -155,13 +168,10 @@ pub struct SkyNotes {
 
 impl SkyNotes {
     pub const HEIGHT: u16 = SKY_NOTES.len() as u16;
+    pub const WIDTH: u16 = SKY_NOTES[0].len() as u16;
 
     pub fn new() -> Self {
         Self { frame: 0 }
-    }
-
-    pub fn width() -> u16 {
-        SKY_NOTES.iter().map(|line| line.len()).max().unwrap_or(0) as u16
     }
 
     pub fn shows(holiday: &Holiday, horizon_y: u16) -> bool {
@@ -235,7 +245,7 @@ mod tests {
     }
 
     #[test]
-    fn test_notes_rise_from_windows_and_stay_under_the_roof() {
+    fn test_notes_rise_from_windows_up_to_a_few_rows_above_the_eave() {
         for layout in [GardenLayout::new(80, 24), GardenLayout::new(200, 40)] {
             let house = layout.house;
             let window_xs: Vec<f32> = house
@@ -251,9 +261,24 @@ mod tests {
                 for note in &music.notes {
                     assert!(window_xs.contains(&note.origin_x));
                     assert!((note.x() - note.origin_x).abs() <= WOBBLE_AMPLITUDE);
-                    assert!(note.y as u16 > layout.house_y + house.eave_row());
+                    assert!(note.y > (layout.house_y + house.eave_row()) as f32 - RISE_ROWS);
                     assert!(note.y <= (layout.house_y + lowest_window) as f32);
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn test_every_window_note_stays_on_screen_for_a_while() {
+        for layout in [GardenLayout::new(80, 24), GardenLayout::new(200, 40)] {
+            let mut rng = StdRng::seed_from_u64(21);
+            for window in layout.house.windows() {
+                let mut music = MusicNotes::new();
+                music.play_window(&layout, window, &mut rng);
+                for _ in 0..12 {
+                    music.rise();
+                }
+                assert_eq!(music.notes.len(), 1, "window {window:?}");
             }
         }
     }
@@ -289,9 +314,13 @@ mod tests {
         let mut music = MusicNotes::new();
         for _ in 0..600 {
             music.update(&Holiday::music_day(), &layout, &[SINGER], &mut rng);
-            for note in music.notes.iter().filter(|note| note.origin_x == 70.0) {
+            for note in music
+                .notes
+                .iter()
+                .filter(|note| note.origin_x == SINGER.0 as f32)
+            {
                 assert!(note.y < SINGER.1 as f32);
-                assert!(note.y > (SINGER.1 - 1) as f32 - HEAD_RISE);
+                assert!(note.y > (SINGER.1 - 1) as f32 - RISE_ROWS);
             }
         }
     }
@@ -321,7 +350,12 @@ mod tests {
     #[test]
     fn test_sky_notes_are_twelve_lines_tall() {
         assert_eq!(SkyNotes::HEIGHT, 12);
-        assert_eq!(SkyNotes::width(), 27);
+        assert_eq!(SkyNotes::WIDTH, 27);
+        assert!(
+            SKY_NOTES
+                .iter()
+                .all(|line| line.len() <= SkyNotes::WIDTH as usize)
+        );
         assert!(SKY_NOTES.iter().all(|line| line.trim_end() == *line));
     }
 

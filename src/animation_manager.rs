@@ -1,4 +1,4 @@
-use crate::animation::sun_path::day_progress;
+use crate::animation::sun_path::{day_progress, on_sun_path};
 use crate::animation::{
     AnimationController,
     airplanes::AirplaneSystem,
@@ -52,7 +52,6 @@ use std::io;
 use std::time::{Duration, Instant};
 
 const FRAME_DELAY: Duration = Duration::from_millis(500);
-const SUN_MARGIN: u16 = 2;
 const SUN_LOWEST_ABOVE_HORIZON: u16 = 5;
 const TWILIGHT: f64 = 0.12;
 const TWILIGHT_SUN: Color = Color::Rgb {
@@ -110,16 +109,6 @@ pub struct AnimationManager {
     animation_controller: AnimationController,
     last_frame_time: Instant,
     show_leaves: bool,
-}
-
-fn on_sun_path(progress: f64, width: u16, lowest: u16, term_width: u16) -> (u16, u16) {
-    let top = CloudBank::TOP;
-    let lowest = lowest.max(top);
-    let travel = term_width.saturating_sub(width + 2 * SUN_MARGIN) as f64;
-    let x = SUN_MARGIN + (progress * travel) as u16;
-    let height = (std::f64::consts::PI * progress).sin();
-    let y = top + ((1.0 - height) * (lowest - top) as f64) as u16;
-    (x, y)
 }
 
 impl AnimationManager {
@@ -413,7 +402,7 @@ impl AnimationManager {
         term_width: u16,
         horizon_y: u16,
     ) -> io::Result<()> {
-        let width = SkyNotes::width();
+        let width = SkyNotes::WIDTH;
         let lowest = horizon_y.saturating_sub(SkyNotes::HEIGHT);
         let (x, y) = if is_day {
             match day_progress(
@@ -640,25 +629,6 @@ impl AnimationManager {
         {
             self.animation_controller.next_frame(&self.sunny_animation);
             self.last_frame_time = Instant::now();
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_sky_notes_stay_above_the_horizon_on_the_sun_path() {
-        for (term_width, horizon_y) in [(80, 17), (120, 30), (200, 38)] {
-            let lowest = horizon_y - SkyNotes::HEIGHT;
-            for step in 0..=20 {
-                let progress = step as f64 / 20.0;
-                let (x, y) = on_sun_path(progress, SkyNotes::width(), lowest, term_width);
-                assert!(y >= CloudBank::TOP);
-                assert!(y + SkyNotes::HEIGHT <= horizon_y);
-                assert!(x + SkyNotes::width() <= term_width);
-            }
         }
     }
 }

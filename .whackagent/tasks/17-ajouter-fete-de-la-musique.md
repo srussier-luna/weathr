@@ -1,6 +1,6 @@
 ---
 issue: 17
-status: to-test
+status: to-close
 wiki: [[animation]], [[mail]]
 note: Fête de la musique : notes ♪ qui sortent de la maison le 21 juin
 created: 2026-10-30
@@ -10,7 +10,7 @@ created: 2026-10-30
 
 - Fête de la musique = le 21 juin seulement, toute la journée, jour et nuit (comme le poisson d'avril ou la galette).
 - Nouveau flag `Holiday.is_music_day` dans `src/holiday.rs`, calculé par `Holiday::on`.
-- Animation : notes ♪ ♫ qui sortent des fenêtres de la maison, montent en ondulant, disparaissent sous le toit. Plusieurs à la fois.
+- Animation : notes ♪ ♫ qui sortent des fenêtres de la maison, montent en ondulant, disparaissent sous le toit (fenêtres collées à l'avant-toit : quelques rangs au-dessus). Plusieurs à la fois.
 - Petite et grande maison : les notes partent des fenêtres présentes dans le sprite affiché.
 - Les Habitants visibles, Léo et le Facteur chantent aussi : de temps en temps une note ♪ ou ♫ monte au-dessus de leur tête, mêmes couleurs que les notes des fenêtres (retour round 1).
 - Météo sans effet : notes par tous les temps (la musique joue dedans).
@@ -38,7 +38,7 @@ created: 2026-10-30
 ## Implementation
 
 - `src/holiday.rs` : `Holiday.is_music_day` (21 juin), `Holiday::music_day()`, test `test_music_day`.
-- `src/animation/music.rs` (nouveau) : `MusicNotes`, 10 notes ♪ ♫ au plus, 15 % de chance par frame, montée 0,06 rang/frame, ondulation ±1,5 colonne, couleurs rose, or, cyan, vert clair. Les notes s'effacent en atteignant l'avant-toit (`~~~`).
+- `src/animation/music.rs` (nouveau) : `MusicNotes`, 10 notes ♪ ♫ au plus, 15 % de chance par frame, montée 0,06 rang/frame, ondulation ±1,5 colonne, couleurs rose, or, cyan, vert clair. Les notes s'effacent en atteignant l'avant-toit (`~~~`) ; celles des fenêtres collées à l'avant-toit montent jusqu'à `rise_top(y)` (`RISE_ROWS`, comme les têtes).
 - `src/scene/house.rs` : `House::windows()` (chaque `[`…`]` des murs, 8 petite maison, 19 grande), `House::eave_row()`, 2 tests.
 - `src/animation_manager.rs` : notes dessinées dans `render_garden` après la couronne de l'Épiphanie.
 - `src/badges.rs` : Badge `music_day` « Fête de la musique » après Géminides (41 Badges) ; `src/app.rs` : attribué comme Noël.
@@ -51,6 +51,18 @@ created: 2026-10-30
 - Round 2 (feedback) : dessin de notes à la place du soleil et de la lune le 21 juin (et `--music`). `src/animation/music.rs` : `SKY_NOTES` (12 lignes × 27 colonnes, une croche + deux doubles croches, traits droits, têtes alignées), `SkyNotes` (`HEIGHT`, `width()`, `update()`, `render()` via `garden::draw`, `shows(holiday, horizon_y)`), couleur qui tourne dans `PALETTE` toutes les `COLOR_STEP_FRAMES = 90` frames (~3 s). `src/animation_manager.rs` : course du soleil extraite dans `on_sun_path` ; le jour, dessin sur la course du soleil avec sa vraie taille, la nuit à `MoonSystem::position()` (nouveau, `src/animation/moon.rs`), lune et soleil non dessinés ; dessiné après le banc de nuages, par tous les temps. Sans course du soleil (`day_progress` = None) : centré en haut du ciel. Ciel < 12 lignes → soleil / lune habituels. 5 tests.
 
 ## Review
+
+### Round validation — 2026-11-03
+- Scope : diff cumulé `origin/develop...HEAD` (2 rounds de feedback compris) + correctifs (src/animation/{music,sun_path}.rs, src/animation_manager.rs).
+- Findings (autofix, 2 tours, tous corrigés) :
+  - 🟠 [correctness] notes des fenêtres collées à l'avant-toit effacées après une frame (5/8 petite maison, 8/19 grande) → elles montent jusqu'à `rise_top(y)` ; `play_window`, `rise()` ; test `test_every_window_note_stays_on_screen_for_a_while`.
+  - 🟡 [structure] `on_sun_path` entre struct et impl → `src/animation/sun_path.rs` avec `SUN_MARGIN` et son test.
+  - 🟡 [elegance] repli inutile `choose().unwrap_or` → `random_range(0..LEN)`.
+  - 🟡 [elegance] `width()` recalculée → `SkyNotes::WIDTH`.
+  - 🟡 [style] littéral `70.0` → `SINGER.0 as f32`.
+  - 🟡 [structure] `HEAD_RISE` sert aussi aux fenêtres → `RISE_ROWS`.
+- Preuve : `cargo build`, `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use`, `cargo test --bin weathr` (242) verts.
+- LENSES : style ✓ · elegance ✓ · structure ✓ · correctness ✓ — VERDICT : clean.
 
 ## Verification
 
