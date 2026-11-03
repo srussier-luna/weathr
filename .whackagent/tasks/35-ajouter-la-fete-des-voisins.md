@@ -25,7 +25,7 @@ created: 2026-10-30
 ## Acceptance criteria
 
 - Date simulée au dernier vendredi de mai → une table dressée devant la maison, de jour comme de nuit.
-- Ce jour-là → une guirlande droite de triangles ▼ de couleurs alternées part du bord gauche du toit, sous l'avant-toit, et va sans interruption jusqu'au bord droit de l'écran.
+- Ce jour-là → une guirlande droite de triangles ▼ de couleurs alternées, sur la ligne de l'avant-toit, part du bord gauche du toit et va sans interruption jusqu'au bord droit de l'écran ; entre les triangles, `~` au-dessus de la maison puis `-` au-delà (retour round 2).
 - Jeudi et samedi autour de cette date → aucune table, aucune guirlande.
 - Sous la pluie → la table et les Voisins sont toujours là.
 - Joueur qui n'a reçu que la Lettre de Rose → seule Rose est à table (plus Gaston, s'il a déjà écrit).
@@ -49,6 +49,7 @@ created: 2026-10-30
 - Choix : expéditeurs jamais comparés à l'exécution (fichier de Lettres modifiable), seulement en test. Jeanne n'a pas de place.
 - Build : `cargo build`, `cargo fmt --check`, `cargo test` verts. Clippy : seule l'erreur connue #79.
 - Round 1 (feedback) : guirlande de fanions. `src/scene/bunting.rs` (nouveau) : `pieces()` pure (rien hors fête), fil `-` gris de la fin de l'avant-toit à `width-1`, rangée de `▼` une ligne sous l'avant-toit, tous les 2 colonnes, du bord gauche du toit à `width-1`, couleurs Red / Yellow / Cyan / Green / Magenta ; `render()` ; 2 tests. `src/scene/house.rs` : `House::eave()` (rangée + colonnes `~`). `src/scene/mod.rs` : dessinée juste après la maison, avant les décorations (Arbre, sapin, clôture, boîte aux lettres, table et animaux passent devant). Pas de rangée libre sous l'avant-toit : les fanions chevauchent la rangée haute des fenêtres, espacés de 2.
+- Round 2 (feedback) : guirlande remontée sur la ligne de l'avant-toit. `src/scene/bunting.rs` : `▼` sur la rangée de l'avant-toit ; au-dessus de la maison, les `~` de l'avant-toit restent entre les fanions ; au-delà, le fil `-` saute les colonnes des fanions. Rangée des fenêtres du haut de nouveau libre. Test réécrit (80×24, 121×40, 200×50).
 
 ## Review
 
@@ -65,6 +66,15 @@ Captures pty, HOME jetable (jamais le vrai) :
 - ⚠️ Avant le jour 16, Léo qui joue peut passer devant la table.
 
 ## Feedback
+
+### Round 2 — 2026-11-03
+- Asked : « releve la guirlande d'une ligne et met les ~ et les - entre les triangles ».
+- Triage : adjustment → critère mis à jour.
+- Changes : voir `## Implementation` round 2 (implementer), `src/scene/bunting.rs` seul.
+- Build : `cargo build`, `cargo fmt --check`, `cargo test` verts ; clippy : seule l'erreur connue #79.
+- Review : deferred (→ /wa-validate).
+- Verify : captures 121×40 et 200×45 : `~▼~▼…-▼-▼` sur la rangée de l'avant-toit jusqu'au bord droit, fenêtres du haut visibles. Round 2 : manual validation — not run by agent.
+- Rule captured : aucune.
 
 ### Round 1 — 2026-11-03
 - Asked : « ajoute une guirlande colorée de triangles du bord gauche du toit de la maison qui ne s'arrête pas et va jusqu'au bout de l'écran à droite » ; choix : droite, sous l'avant-toit.
