@@ -1,6 +1,6 @@
 ---
 issue: 35
-status: to-test
+status: to-close
 wiki: [[animation]], [[mail]]
 note: fin mai : table dehors, les Voisins réunis au jardin
 created: 2026-10-30
@@ -52,6 +52,14 @@ created: 2026-10-30
 - Round 2 (feedback) : guirlande remontée sur la ligne de l'avant-toit. `src/scene/bunting.rs` : `▼` sur la rangée de l'avant-toit ; au-dessus de la maison, les `~` de l'avant-toit restent entre les fanions ; au-delà, le fil `-` saute les colonnes des fanions. Rangée des fenêtres du haut de nouveau libre. Test réécrit (80×24, 121×40, 200×50).
 
 ## Review
+
+### Round validation — 2026-11-03
+- Scope : diff cumulé `origin/develop...HEAD` après fusion de develop (#4, #17 : conflits « ajout au même endroit », les deux Fêtes gardées, `BADGES` 41 → 42).
+- Findings (autofix round 1, tous corrigés) :
+  - 🟡 [style] ligne vide manquante entre `neighbours` et `music` dans `Cli` (reste de fusion) → ajoutée.
+  - 🟡 [elegance] `House::eave()` recopiait la recherche de `eave_row()` → construit sur `eave_row()`.
+  - 🟡 [style] commentaire `// 18 chars right of house` sur une ligne touchée → retiré.
+- LENSES : style ✓ · elegance ✓ · structure ✓ · correctness ✓ — VERDICT : clean.
 
 ## Verification
 

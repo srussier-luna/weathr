@@ -109,7 +109,7 @@ impl Decorations {
         if config.width > 120 {
             let (pine_lines, pine_color) = self.get_pine_tree(config.is_day);
             let pine_height = pine_lines.len() as u16;
-            let pine_x = config.house_x + config.house_width + PINE_OFFSET; // 18 chars right of house
+            let pine_x = config.house_x + config.house_width + PINE_OFFSET;
             let pine_y = config.horizon_y.saturating_sub(pine_height);
 
             if pine_x + PINE_WIDTH < config.width {

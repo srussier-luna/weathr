@@ -86,6 +86,7 @@ struct Cli {
 
     #[arg(long, help = "Simulate the neighbours' party (table in the garden)")]
     neighbours: bool,
+
     #[arg(long, help = "Simulate June 21st Music Day (notes from the windows)")]
     music: bool,
 

@@ -191,15 +191,11 @@ impl House {
     }
 
     pub fn eave(&self) -> (u16, Range<u16>) {
-        let row = self
-            .row_kinds()
-            .iter()
-            .position(|kind| matches!(kind, RowKind::Eave))
-            .unwrap_or_default();
-        let line = self.get_ascii()[row];
+        let row = self.eave_row();
+        let line = self.get_ascii()[row as usize];
         let start = line.find('~').unwrap_or_default();
         let end = line.rfind('~').map_or(start, |last| last + 1);
-        (row as u16, start as u16..end as u16)
+        (row, start as u16..end as u16)
     }
 
     pub fn porch_rail_row(&self) -> u16 {
