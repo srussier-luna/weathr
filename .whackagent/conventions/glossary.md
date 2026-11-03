@@ -20,6 +20,7 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 |---|---|---|---|---|
 | Lettre | courrier | Message | `Entry` | courrier daté d'un habitant, livré par le Facteur |
 | Carte postale | carte | | `City` | de Sam en voyage, une ville par carte |
+| Ville | | | `location.city` | ville du joueur, détectée ou choisie dans les Réglages ; météo et Barre du haut |
 | Gazette | journal | | | chaque lundi : prévisions de la semaine, rumeurs, annonces, Énigme |
 | Alerte météo | vigilance | | | ligne ⚠ de la Gazette : canicule, grand froid, vent fort, orage ; calculée sur les prévisions |
 | Énigme | devinette | | `Riddle` | question de la Gazette, réponse touche `e` |

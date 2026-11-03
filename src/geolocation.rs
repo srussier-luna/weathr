@@ -387,8 +387,8 @@ mod tests {
     #[tokio::test]
     async fn test_reverse_geocode_waits_one_second_after_a_search() {
         let started = Instant::now();
-        nominatim_get(NOMINATIM_SEARCH_URL, "fr").await.unwrap();
-        nominatim_get(NOMINATIM_REVERSE_URL, "fr").await.unwrap();
+        let _ = nominatim_get(NOMINATIM_SEARCH_URL, "fr").await.unwrap();
+        let _ = nominatim_get(NOMINATIM_REVERSE_URL, "fr").await.unwrap();
         assert!(started.elapsed() >= NOMINATIM_INTERVAL);
     }
 }

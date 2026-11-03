@@ -1,6 +1,6 @@
 ---
 issue: 82
-status: to-test
+status: to-close
 wiki: [[weather]], [[render]]
 note: Changer la ville météo depuis l'écran Réglages (#38) : recherche par nom, choix parmi les homonymes. Sorti du périmètre de #38.
 created: 2026-10-30
@@ -36,10 +36,26 @@ created: 2026-10-30
 - `src/app.rs` : boucle météo dans `spawn_weather`, relancée avec la nouvelle position (et l'alerte pluie) ; recherche non bloquante lue à chaque frame ; `handle_city_key`, `toggle_auto_location`, `move_to`. `src/app_state.rs` : `set_location`. `src/views.rs` : lignes Ville / Position auto, `city_search_view`, test.
 - Erreur de recherche (réseau, HTTP, JSON) → « Pas de connexion » ; liste vide → « Aucune ville trouvée » ; texte gardé.
 - Position auto « non » écrit la position courante avec auto = false ; « oui » écrit la position détectée avec auto = true ; détection ratée → « Pas de connexion », rien ne change.
-- La Barre du haut n'affiche le nom de ville qu'avec `location.display = "city"` ou `"mixed"` (comportement existant, non forcé).
+- Choisir une ville écrit aussi `location.display = "city"` (`Config::save_city`) et l'applique aussitôt (`AppState::set_location_display`) : la Barre du haut montre le nom même si elle était en coordonnées (décision utilisateur·rice, validation). « Position auto » sur oui ne touche pas `display`.
 - Build : `cargo build`, `cargo fmt --check`, `cargo test` verts. Clippy : seule l'erreur connue #79.
 
 ## Review
+
+### Round validation — 2026-11-03
+- Scope : diff depuis le point d'empilement (#38) + correctifs ; #82 regroupé en un commit et rebasé sur le nouveau #38 (conflits de `src/app.rs` résolus, comportements des deux tâches gardés).
+- Findings (autofix, 3 tours + 1 choisi, tous corrigés) :
+  - 🟠 [correctness] `Entrée` répété dépassait 1 requête/s Nominatim → limite commune dans `nominatim_get` (recherche + nom de ville d'une position).
+  - 🟡 [correctness] Barre du haut en coordonnées après le choix d'une ville → `display = "city"` écrit et appliqué (décision utilisateur·rice).
+  - 🟡 [correctness] commentaire perdu quand `city` est retiré (y compris dernière clé de table) → reporté sur la clé / l'en-tête suivant.
+  - 🟡 [correctness] anciennes boucles météo / pluie survivantes → `select!` sur `sender.closed()`.
+  - 🟡 [correctness] « Position auto » sur non relançait météo et pluie → enregistrement seul.
+  - 🟡 [correctness] recherche ou détection annulée continuait → `settings::send_unless_cancelled<T>`.
+  - 🟡 [style] `\u{a0}` → `\u{202F}` ; « Pas de connexion » via `push_toast` ; `Status` → `SearchStatus` ; délais en `Duration` ; `let _ =` sur deux `RequestBuilder` de test.
+  - 🟡 [elegance] deux bool pour trois états → `AutoLocation { Off, Locating, On }`.
+  - 🟡 [structure] `receive_location_search` séparé en `receive_city_search` / `receive_location_detection` ; `send_unless_cancelled` dans `settings/mod.rs`.
+  - 🟡 [style] « Ville » absente du glossaire → ligne Concepts (validée par l'utilisateur·rice).
+- Preuve : `cargo build`, `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use`, `cargo test --bin weathr` (272) verts.
+- LENSES : style ✓ · elegance ✓ · structure ✓ · correctness ✓ — VERDICT : clean.
 
 ## Verification
 

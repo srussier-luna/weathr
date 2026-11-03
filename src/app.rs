@@ -1317,11 +1317,9 @@ impl App {
         }
         let language = self.city_name_language.clone();
         let (sender, receiver) = oneshot::channel();
-        tokio::spawn(async move {
-            sender
-                .send(geolocation::detect_location_with_city(&language).await)
-                .ok();
-        });
+        tokio::spawn(settings::send_unless_cancelled(sender, async move {
+            geolocation::detect_location_with_city(&language).await
+        }));
         self.location_detection = Some(receiver);
     }
 
@@ -1350,7 +1348,7 @@ impl App {
                 self.save_location(&location, true);
                 self.move_to(location);
             }
-            Err(_) => self.toasts.push_back("Pas de connexion".to_string()),
+            Err(_) => push_toast(&mut self.toasts, "Pas de connexion"),
         }
     }
 

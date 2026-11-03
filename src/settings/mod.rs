@@ -1,10 +1,11 @@
 mod city;
 
-pub use city::{CitySearch, SearchStatus, send_unless_cancelled};
+pub use city::{CitySearch, SearchStatus};
 
 use crate::config::Setting;
 use crate::weather::WeatherUnits;
 use crate::weather::types::{PrecipitationUnit, TemperatureUnit, WindSpeedUnit};
+use tokio::sync::oneshot;
 
 const TEMPERATURES: [TemperatureUnit; 2] = [TemperatureUnit::Celsius, TemperatureUnit::Fahrenheit];
 const WIND_SPEEDS: [WindSpeedUnit; 4] = [
@@ -90,6 +91,19 @@ fn cycle<T: Copy + PartialEq>(options: &[T], current: T, step: isize) -> T {
     options[(index as isize + step).rem_euclid(options.len() as isize) as usize]
 }
 
+pub async fn send_unless_cancelled<T>(
+    mut sender: oneshot::Sender<T>,
+    work: impl Future<Output = T>,
+) {
+    tokio::select! {
+        biased;
+        () = sender.closed() => {}
+        result = work => {
+            sender.send(result).ok();
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -155,5 +169,30 @@ mod tests {
         assert_eq!(settings.units.precipitation, PrecipitationUnit::Inch);
         assert_eq!(settings.units.temperature, TemperatureUnit::Celsius);
         assert_eq!(settings.mail_hour, 9);
+    }
+
+    #[tokio::test]
+    async fn test_cancelled_work_sends_nothing() {
+        let (sender, receiver) = oneshot::channel::<u32>();
+        drop(receiver);
+        let mut worked = false;
+        send_unless_cancelled(sender, async {
+            worked = true;
+            1
+        })
+        .await;
+        assert!(!worked);
+
+        let (sender, receiver) = oneshot::channel::<u32>();
+        let waiting = tokio::spawn(send_unless_cancelled(sender, std::future::pending()));
+        drop(receiver);
+        tokio::time::timeout(std::time::Duration::from_secs(1), waiting)
+            .await
+            .unwrap()
+            .unwrap();
+
+        let (sender, mut receiver) = oneshot::channel();
+        send_unless_cancelled(sender, async { 1 }).await;
+        assert_eq!(receiver.try_recv(), Ok(1));
     }
 }

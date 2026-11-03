@@ -72,19 +72,6 @@ impl CitySearch {
     }
 }
 
-pub async fn send_unless_cancelled(
-    mut sender: oneshot::Sender<SearchResult>,
-    search: impl Future<Output = SearchResult>,
-) {
-    tokio::select! {
-        biased;
-        () = sender.closed() => {}
-        result = search => {
-            sender.send(result).ok();
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -155,30 +142,5 @@ mod tests {
         let mut search = CitySearch::default();
         search.type_char(' ');
         assert_eq!(search.query_to_search(), None);
-    }
-
-    #[tokio::test]
-    async fn test_cancelled_search_sends_nothing() {
-        let (sender, receiver) = oneshot::channel();
-        drop(receiver);
-        let mut searched = false;
-        send_unless_cancelled(sender, async {
-            searched = true;
-            Ok(Vec::new())
-        })
-        .await;
-        assert!(!searched);
-
-        let (sender, receiver) = oneshot::channel();
-        let waiting = tokio::spawn(send_unless_cancelled(sender, std::future::pending()));
-        drop(receiver);
-        tokio::time::timeout(std::time::Duration::from_secs(1), waiting)
-            .await
-            .unwrap()
-            .unwrap();
-
-        let (sender, mut receiver) = oneshot::channel();
-        send_unless_cancelled(sender, async { Ok(vec![place("Lyon, Rhône, France")]) }).await;
-        assert_eq!(receiver.try_recv().unwrap().unwrap().len(), 1);
     }
 }
