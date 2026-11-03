@@ -1,6 +1,6 @@
 ---
 issue: 4
-status: to-test
+status: to-close
 wiki: [[animation]], [[mail]]
 note: "Slack Salomé/Ben 23/10 : les animaux peuvent arriver petit à petit et pas tous être là dès le premier jour"
 created: 2026-10-23
@@ -40,6 +40,14 @@ created: 2026-10-23
 - Build : `cargo build`, `cargo fmt --check`, `cargo test` verts. Clippy : seule l'erreur connue #79.
 
 ## Review
+
+### Round validation — 2026-11-03
+- Scope : diff cumulé `origin/develop...HEAD` (src/story/event.rs, src/story/sources/village.rs, src/animation/lore.rs, src/app.rs, src/animation_manager.rs), develop (#5) déjà fusionné.
+- Findings (autofix round 1, tous corrigés, `src/app.rs` seul) :
+  - 🟡 [elegance] `(is_simulated || simulation.night)` recalculé → `let is_forced` réutilisé.
+  - 🟡 [correctness] décision « mode forcé sans `--day` » non testée → fn pure `shows_every_habitant(is_forced, day)` + `test_forced_mode_shows_every_habitant_unless_day_is_set` ; ancien test renommé `test_every_habitant_leaves_objects_locked`.
+  - 🟡 [style] Habitants hors ordre dans `ARRIVAL_DAYS` et `shows` → rangés par jour comme `ARRIVALS`.
+- LENSES : style ✓ · elegance ✓ · structure ✓ · correctness ✓ — VERDICT : clean.
 
 ## Verification
 

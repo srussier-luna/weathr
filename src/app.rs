@@ -223,6 +223,10 @@ fn story_today(clock: &StoryClock) -> usize {
     clock.day_on(Local::now().naive_local())
 }
 
+fn shows_every_habitant(is_forced: bool, day: Option<NonZeroU16>) -> bool {
+    is_forced && day.is_none()
+}
+
 fn build_timeline(village_count: usize, clock: &StoryClock, today: usize) -> Timeline {
     Timeline::new(&sources::registered(village_count), clock, today)
 }
@@ -500,6 +504,7 @@ impl App {
         let timeline = build_timeline(letters.len(), &clock, timeline_day);
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
 
+        let is_forced = is_simulated || simulation.night;
         let mut app = Self {
             state,
             animations,
@@ -514,7 +519,7 @@ impl App {
             timeline,
             overlay: opening_overlay(shows_welcome, !release_notes.is_empty()),
             release_notes,
-            is_simulated: is_simulated || simulation.night,
+            is_simulated: is_forced,
             awards_badges: simulation.day.is_none(),
             toasts: VecDeque::new(),
             toast_until: None,
@@ -529,7 +534,7 @@ impl App {
             pending_requests: BTreeSet::new(),
             frame_count: 0,
             timeline_day,
-            shows_every_habitant: (is_simulated || simulation.night) && simulation.day.is_none(),
+            shows_every_habitant: shows_every_habitant(is_forced, simulation.day),
         };
         app.refresh_unlocks();
         app.refresh_tree_growth();
@@ -1606,21 +1611,21 @@ mod tests {
 
     const ARRIVAL_DAYS: [(Thing, usize); 30] = [
         (Thing::Cat, 3),
-        (Thing::Dog, 9),
-        (Thing::Owl, 12),
-        (Thing::Duck, 18),
-        (Thing::Snail, 21),
-        (Thing::Squirrel, 27),
-        (Thing::Frog, 30),
         (Thing::Bench, 4),
         (Thing::CatBow, 6),
         (Thing::Footprints, 8),
+        (Thing::Dog, 9),
+        (Thing::Owl, 12),
         (Thing::Well, 13),
         (Thing::Bone, 15),
         (Thing::Key, 17),
+        (Thing::Duck, 18),
+        (Thing::Snail, 21),
         (Thing::Treehouse, 22),
         (Thing::OwlFriend, 24),
         (Thing::BlueLantern, 26),
+        (Thing::Squirrel, 27),
+        (Thing::Frog, 30),
         (Thing::Garland, 31),
         (Thing::Kittens, 33),
         (Thing::XMark, 35),
@@ -1640,21 +1645,21 @@ mod tests {
     fn shows(unlocks: &Unlocks, thing: Thing) -> bool {
         match thing {
             Thing::Cat => unlocks.cat,
-            Thing::Dog => unlocks.dog,
-            Thing::Owl => unlocks.owl,
-            Thing::Duck => unlocks.duck,
-            Thing::Snail => unlocks.snail,
-            Thing::Squirrel => unlocks.squirrel,
-            Thing::Frog => unlocks.frog,
             Thing::Bench => unlocks.bench,
             Thing::CatBow => unlocks.cat_bow,
             Thing::Footprints => unlocks.footprints,
+            Thing::Dog => unlocks.dog,
+            Thing::Owl => unlocks.owl,
             Thing::Well => unlocks.well,
             Thing::Bone => unlocks.bone,
             Thing::Key => unlocks.key,
+            Thing::Duck => unlocks.duck,
+            Thing::Snail => unlocks.snail,
             Thing::Treehouse => unlocks.treehouse,
             Thing::OwlFriend => unlocks.owl_friend,
             Thing::BlueLantern => unlocks.blue_lantern,
+            Thing::Squirrel => unlocks.squirrel,
+            Thing::Frog => unlocks.frog,
             Thing::Garland => unlocks.garland,
             Thing::Kittens => unlocks.kittens,
             Thing::XMark => unlocks.x_mark,
@@ -1740,7 +1745,14 @@ mod tests {
     }
 
     #[test]
-    fn test_forced_modes_show_every_habitant_only() {
+    fn test_forced_mode_shows_every_habitant_unless_day_is_set() {
+        assert!(shows_every_habitant(true, None));
+        assert!(!shows_every_habitant(true, NonZeroU16::new(5)));
+        assert!(!shows_every_habitant(false, None));
+    }
+
+    #[test]
+    fn test_every_habitant_leaves_objects_locked() {
         let unlocks = unlocks_on_day(1).with_every_habitant();
         assert!(HABITANTS.iter().all(|&habitant| shows(&unlocks, habitant)));
         assert!(!unlocks.bench);
