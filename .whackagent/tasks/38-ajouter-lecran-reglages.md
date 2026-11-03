@@ -1,7 +1,7 @@
 ---
 issue: 38
 status: to-close
-wiki: [[render]], [[architecture]], [[weather]]
+wiki: [[render]], [[architecture]], [[weather]], [[mail]], [[animation]]
 note: Écran Réglages : ville, unités, heure du Facteur, barre du haut modifiables dans le jeu, sans éditer config.toml
 created: 2026-10-30
 ---
