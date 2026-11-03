@@ -40,27 +40,53 @@ pub fn inch_to_mm(inch: f64) -> f64 {
     inch * 25.4
 }
 
-pub fn format_temperature(celsius: f64, unit: TemperatureUnit) -> (f64, &'static str) {
+pub fn temperature_symbol(unit: TemperatureUnit) -> &'static str {
     match unit {
-        TemperatureUnit::Celsius => (celsius, "°C"),
-        TemperatureUnit::Fahrenheit => (celsius_to_fahrenheit(celsius), "°F"),
+        TemperatureUnit::Celsius => "°C",
+        TemperatureUnit::Fahrenheit => "°F",
     }
+}
+
+pub fn wind_speed_symbol(unit: WindSpeedUnit) -> &'static str {
+    match unit {
+        WindSpeedUnit::Ms => "m/s",
+        WindSpeedUnit::Kmh => "km/h",
+        WindSpeedUnit::Mph => "mph",
+        WindSpeedUnit::Kn => "kn",
+    }
+}
+
+pub fn precipitation_symbol(unit: PrecipitationUnit) -> &'static str {
+    match unit {
+        PrecipitationUnit::Mm => "mm",
+        PrecipitationUnit::Inch => "in",
+    }
+}
+
+pub fn format_temperature(celsius: f64, unit: TemperatureUnit) -> (f64, &'static str) {
+    let value = match unit {
+        TemperatureUnit::Celsius => celsius,
+        TemperatureUnit::Fahrenheit => celsius_to_fahrenheit(celsius),
+    };
+    (value, temperature_symbol(unit))
 }
 
 pub fn format_wind_speed(ms: f64, unit: WindSpeedUnit) -> (f64, &'static str) {
-    match unit {
-        WindSpeedUnit::Ms => (ms, "m/s"),
-        WindSpeedUnit::Kmh => (ms_to_kmh(ms), "km/h"),
-        WindSpeedUnit::Mph => (ms_to_mph(ms), "mph"),
-        WindSpeedUnit::Kn => (ms_to_kn(ms), "kn"),
-    }
+    let value = match unit {
+        WindSpeedUnit::Ms => ms,
+        WindSpeedUnit::Kmh => ms_to_kmh(ms),
+        WindSpeedUnit::Mph => ms_to_mph(ms),
+        WindSpeedUnit::Kn => ms_to_kn(ms),
+    };
+    (value, wind_speed_symbol(unit))
 }
 
 pub fn format_precipitation(mm: f64, unit: PrecipitationUnit) -> (f64, &'static str) {
-    match unit {
-        PrecipitationUnit::Mm => (mm, "mm"),
-        PrecipitationUnit::Inch => (mm_to_inch(mm), "in"),
-    }
+    let value = match unit {
+        PrecipitationUnit::Mm => mm,
+        PrecipitationUnit::Inch => mm_to_inch(mm),
+    };
+    (value, precipitation_symbol(unit))
 }
 
 pub fn normalize_temperature(value: f64, unit: TemperatureUnit) -> f64 {

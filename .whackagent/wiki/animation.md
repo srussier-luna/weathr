@@ -57,7 +57,7 @@ Demo has `Perséides` and `Géminides` scenes. `StarGazing` (constellations) use
 
 ## Facteur — `src/animation/postman.rs`
 
-Rides in to **arrive at mailbox exactly at `courrier.heure`**: departure time back-computed from distance + speed (`due_round`). Shows mailbox flag when Lettre unread. Rings bell if player chose. 1 April (`Holiday::is_april_fools`): pink paper fish `><>` on his back while out, and on the mailbox all day (hidden while he stands in front).
+Rides in to **arrive at mailbox exactly at `courrier.heure`**: departure time back-computed from distance + speed (`due_round`). Hour pushed each frame by `refresh_progress` from `StoryClock::mail_hour_on(today)` → hour changed in Réglages rides from tomorrow ([[mail]]). Shows mailbox flag when Lettre unread. Rings bell if player chose. 1 April (`Holiday::is_april_fools`): pink paper fish `><>` on his back while out, and on the mailbox all day (hidden while he stands in front).
 
 Accueil visit (see [[mail]]): `visit` → `Arriving` (2.5 s ride) → `Staying` at mailbox, no labels, daily round can't start. `leave` rides off when the Accueil ends (last `Entrée` or `Échap`); still off-screen → just stays hidden. `head` = bubble anchor. No mailbox (narrow terminal) → never visible.
 

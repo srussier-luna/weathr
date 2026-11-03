@@ -1,6 +1,6 @@
 use crate::holiday::Holiday;
 use crate::render::TerminalRenderer;
-use crate::scene::tree::Tree;
+use crate::scene::tree::{Growth, Tree};
 use crossterm::style::Color;
 use std::io;
 
@@ -23,9 +23,9 @@ pub struct GardenPlan {
 }
 
 impl GardenPlan {
-    pub fn new(house_x: u16, horizon_y: u16) -> Self {
+    pub fn new(house_x: u16, horizon_y: u16, growth: Growth) -> Self {
         Self {
-            tree: Tree::fit(house_x, horizon_y),
+            tree: Tree::grown(house_x, horizon_y, growth),
             mailbox_x: house_x.checked_sub(MAILBOX_WIDTH),
         }
     }
@@ -42,6 +42,7 @@ pub struct DecorationRenderConfig {
     pub is_day: bool,
     pub is_snowing: bool,
     pub holiday: Holiday,
+    pub tree_growth: Growth,
 }
 
 impl Decorations {
@@ -54,7 +55,7 @@ impl Decorations {
         renderer: &mut TerminalRenderer,
         config: &DecorationRenderConfig,
     ) -> io::Result<()> {
-        let plan = GardenPlan::new(config.house_x, config.horizon_y);
+        let plan = GardenPlan::new(config.house_x, config.horizon_y, config.tree_growth);
 
         // Render Tree (Left of house)
         if let Some(tree) = plan.tree {

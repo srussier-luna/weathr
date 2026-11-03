@@ -44,6 +44,7 @@ Assumes binary built from local clone of this fork.
 | `--day <N>` | preview the story on Jour de jeu N (1–65535) in a fresh in-memory game, real save untouched, see [[mail]] |
 | `--completions <shell>` | print completions, exit |
 | `--update` | update now, exit |
+| `--diagnostic` | check the install (git, cargo, source clone, Open-Meteo + git fetch, config dir, progress.json, binary dir), print one `✓`/`✗` line each with a fix hint, exit 0 if all ✓ else 1; no TUI |
 
 Any simulation flag marks session simulated: weather/Fête Badges and rain
 alerts off (see [[mail]], [[weather]]).
@@ -62,3 +63,9 @@ alerts off (see [[mail]], [[weather]]).
 - `--ff-only`: local commits on branch → pull fails, no merge.
 - Prompt writes to plain stdout; all output here happens before TUI
   takes alternate screen.
+
+## Diagnostic — `src/diagnostic/`
+
+- `mod.rs` runs the probes (network ones with 5 s timeouts, in parallel), `checks.rs` turns probe results into `Check { status, label, detail/hint }` (pure, tested), `report.rs` renders lines + summary « Tout est en ordre. » / « <n> problème(s) à corriger. ».
+- Reuses updater helpers (`SOURCE_DIR`, `is_git_checkout`, `is_clean`, fetch, `pending_count`, `config_dir`, `tool_version`); clone behind upstream = ✓ with « lance weathr --update ».
+- Write checks use a unique probe file `.weathr-diagnostic-<pid>`, created then removed; directory not owned by the user → `sudo chown -R` hint.
