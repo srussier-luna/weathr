@@ -8,7 +8,7 @@ Two clocks: real time + real weather drive scenery only ([[animation]]); **Jour 
 
 - `StoryClock` (`src/story/clock.rs:6`) = `Progress` start date + `courrier.heure`. `day_on(now)` → Jour de jeu (1 = start day, rolls over at mail hour, never below 1); `date_of(day)` → calendar date. New day's mail appears at that hour, synced with Facteur arrival.
 - **Heure du Facteur changed** in Réglages (#38): `StoryClock::change_mail_hour` (`src/story/clock.rs:78`) stores new hour at once, but today keeps old one: `mail_hour_on(date)` (`:71`) gives previous hour before effective date (= tomorrow). Why: day's round never replayed nor skipped, Jour de jeu never goes back (tested every 15 min over 3 days). Back to today's hour → pending change dropped.
-- Effective date + old hour saved as `Progress::mail_hour_change` (`MailHourChange { on, previous_hour }`, `src/progress.rs:15`), read back by `story_clock` (`src/app.rs:215`) → relaunch same day keeps old hour. Facteur ride follows `mail_hour_on(today)` too ([[animation]]). Hand edit of `config.toml` → applies at relaunch, no next-day wait. Screen + save flow: [[architecture]].
+- Effective date + old hour saved as `Progress::mail_hour_change` (`MailHourChange { on, previous_hour }`, `src/progress.rs:15`), read back by `story_clock` (`src/app.rs:216`) → relaunch same day keeps old hour. Facteur ride follows `mail_hour_on(today)` too ([[animation]]). Hand edit of `config.toml` → applies at relaunch, no next-day wait. Screen + save flow: [[architecture]].
 - `--day N` (`StoryClock::frozen`, `src/story/clock.rs:36`): start = today − (N−1), `day_on` always N. Game on `Progress::in_memory` (`save()` no-op, real save never loaded), `letters::read()` (never writes `lettres.txt`), `Launch::Suppressed`, Badges never awarded, Facteur never rides. Barre du haut shows `Jour N` like any day.
 - `Entry` (`src/story/event.rs:2`) = every mail kind: `Main` (village Lettre), `Sam`, `Neighbours`, `Marcel` (recurring correspondents), `Archive`, `Gazette`, `Recipe`, `Postcard`, `Creepy` (n°13 neighbour). `Beat { day, event }`, `StoryEvent::Mail(Entry)` or `StoryEvent::Arrival(Thing)` (Apparition, sorts after mail on the same day).
 - Sources (`src/story/sources/`): one file per mail kind, each `impl StorySource { fn beats(clock, today) }`. `sources::registered` (`mod.rs:16`) lists them. **New mail kind = one source file + one registration line** (+ content). Sources declare Apparitions next to the Lettre that explains them (`village.rs` `ARRIVALS`, creepy, archives Bouteilles). Gazette every Monday, recipe each 1st of month — via `clock.date_of`. Carte postale every 7 days from day 40.
@@ -61,7 +61,7 @@ Once per player, fresh **and** existing saves: `welcome_seen` in `progress.json`
 
 `c` next Lettre (Lettre) · `←/→` browse · `l` Courrier · `a` Album · `b` Badges ·
 `h` Aide · `s` Réglages · `r` pick up · `e` Énigme · `1`/`2` answer · `Esc` close.
-Rendering: [[render]]. Overlay state: `Overlay` enum in `src/app.rs:332`.
+Rendering: [[render]]. Overlay state: `Overlay` enum in `src/app.rs:354`.
 
 ## Gotchas
 
