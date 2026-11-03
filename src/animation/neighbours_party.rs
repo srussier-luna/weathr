@@ -173,9 +173,10 @@ fn render_guest(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::scene::tree::Growth;
 
     fn placed(width: u16, height: u16) -> (GardenLayout, River, u16) {
-        let layout = GardenLayout::new(width, height);
+        let layout = GardenLayout::new(width, height, Growth::Full);
         let river = River::new(width, layout.horizon_y);
         let x = party_x(&layout, &river).unwrap();
         (layout, river, x)

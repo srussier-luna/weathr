@@ -46,6 +46,7 @@ use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
 use crate::scene::house::House;
 use crate::scene::river::River;
+use crate::scene::tree::Growth;
 use crate::weather::{FogIntensity, RainIntensity, SnowIntensity, WeatherConditions};
 use crossterm::style::Color;
 use std::io;
@@ -106,6 +107,7 @@ pub struct AnimationManager {
     star_gazing: StarGazing,
     guests: Vec<Neighbour>,
     season: Season,
+    tree_growth: Growth,
     animation_controller: AnimationController,
     last_frame_time: Instant,
     show_leaves: bool,
@@ -157,6 +159,7 @@ impl AnimationManager {
             star_gazing: StarGazing::new(),
             guests: Vec::new(),
             season: Season::default(),
+            tree_growth: Growth::default(),
             animation_controller: AnimationController::new(),
             last_frame_time: Instant::now(),
             show_leaves,
@@ -182,6 +185,14 @@ impl AnimationManager {
 
     pub fn set_season(&mut self, season: Season) {
         self.season = season;
+    }
+
+    pub fn set_tree_growth(&mut self, growth: Growth) {
+        self.tree_growth = growth;
+    }
+
+    fn garden_layout(&self, term_width: u16, term_height: u16) -> GardenLayout {
+        GardenLayout::new(term_width, term_height, self.tree_growth)
     }
 
     pub fn set_unlocks(&mut self, unlocks: Unlocks) {
@@ -232,12 +243,12 @@ impl AnimationManager {
 
     pub fn is_postman_arriving(&self, term_width: u16, term_height: u16) -> bool {
         self.postman
-            .is_arriving(&GardenLayout::new(term_width, term_height))
+            .is_arriving(&self.garden_layout(term_width, term_height))
     }
 
     pub fn postman_head(&self, term_width: u16, term_height: u16) -> Option<(u16, u16)> {
         self.postman
-            .head(&GardenLayout::new(term_width, term_height))
+            .head(&self.garden_layout(term_width, term_height))
     }
 
     pub fn sightings(&self, conditions: &WeatherConditions) -> Sightings {
@@ -432,7 +443,7 @@ impl AnimationManager {
         term_height: u16,
         mut rng: &mut impl rand::Rng,
     ) -> io::Result<()> {
-        let layout = GardenLayout::new(term_width, term_height);
+        let layout = self.garden_layout(term_width, term_height);
 
         self.snow_cover.update(conditions.is_snowing);
         self.snow_cover.render(renderer, &layout)?;

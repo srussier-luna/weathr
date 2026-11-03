@@ -14,6 +14,7 @@ use crate::release_notes::{self, Section};
 use crate::remote_weather::{self, Reply, Request};
 use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
+use crate::scene::tree::Growth;
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
@@ -547,6 +548,7 @@ impl App {
             timeline_day,
         };
         app.animations.set_guests(app.guests());
+        app.refresh_tree_growth();
         app.refresh_timeline();
         app
     }
@@ -968,7 +970,22 @@ impl App {
             self.timeline = build_timeline(self.letters.len(), &self.clock, today);
             self.timeline_day = today;
             self.refresh_unlocks();
+            self.refresh_tree_growth();
         }
+    }
+
+    fn tree_growth(&self) -> Growth {
+        if self.is_simulated {
+            Growth::Full
+        } else {
+            Growth::on_day(self.timeline_day)
+        }
+    }
+
+    fn refresh_tree_growth(&mut self) {
+        let growth = self.tree_growth();
+        self.scene.set_tree_growth(growth);
+        self.animations.set_tree_growth(growth);
     }
 
     fn request_remote_weather(&mut self) {
