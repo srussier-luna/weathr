@@ -160,6 +160,28 @@ impl House {
         }
     }
 
+    pub fn eave_row(&self) -> u16 {
+        self.row_kinds()
+            .iter()
+            .position(|kind| matches!(kind, RowKind::Eave))
+            .unwrap_or_default() as u16
+    }
+
+    pub fn windows(&self) -> Vec<(u16, u16)> {
+        self.get_ascii()
+            .iter()
+            .zip(self.row_kinds())
+            .enumerate()
+            .filter(|(_, (_, kind))| matches!(kind, RowKind::Wall))
+            .flat_map(|(row, (line, _))| {
+                line.match_indices('[').filter_map(move |(start, _)| {
+                    let end = start + line[start..].find(']')?;
+                    Some((((start + end) / 2) as u16, row as u16))
+                })
+            })
+            .collect()
+    }
+
     pub fn peak(&self) -> (u16, u16) {
         match self.size {
             HouseSize::Small => (17, 3),
@@ -306,5 +328,42 @@ fn window_color(is_day: bool, row: usize, column: usize, minutes_since_evening: 
         Color::Yellow
     } else {
         Color::DarkGrey
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_small_house_windows() {
+        let house = House::for_terminal(80, 24);
+        assert_eq!(house.eave_row(), 7);
+        assert_eq!(
+            house.windows(),
+            vec![
+                (8, 8),
+                (12, 8),
+                (17, 8),
+                (22, 8),
+                (26, 8),
+                (8, 10),
+                (12, 10),
+                (24, 10),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_large_house_windows_sit_in_the_walls() {
+        let house = House::for_terminal(200, 40);
+        let ascii = house.get_ascii();
+        assert_eq!(house.eave_row(), 7);
+        assert_eq!(house.windows().len(), 19);
+        for (x, y) in house.windows() {
+            assert!(y > house.eave_row());
+            let row = ascii[y as usize];
+            assert!(matches!(&row[x as usize..=x as usize], "[" | "_"));
+        }
     }
 }

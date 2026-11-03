@@ -176,3 +176,4 @@ Inside autopilot: never ask (nobody watching) — freeze task, log open question
   - `vX.Y` (`v1.6`…) = exactly that release.
 - `/wa-task` grill: always ask which version the task targets (`vX` or `vX.Y`), then put that label on the issue (create it if missing). Every open task carries one.
 - Never merge into `develop` a PR whose label targets a release not being prepared: `vX` waits for the first `X.y` release, `vX.Y` for `X.Y`.
+- Glossary and wiki: always write every glossary row (`+` / `~`) and every wiki page a task brings, at grill, close or wiki sync. Never ask for them.
