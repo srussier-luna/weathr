@@ -58,6 +58,13 @@ fn unlocks_on(timeline: &Timeline, day: usize, answers: &BTreeMap<String, u8>) -
     let arrived: Vec<Thing> = timeline.arrived_by(day).collect();
     let has_arrived = |thing: Thing| arrived.contains(&thing);
     Unlocks {
+        cat: has_arrived(Thing::Cat),
+        dog: has_arrived(Thing::Dog),
+        owl: has_arrived(Thing::Owl),
+        duck: has_arrived(Thing::Duck),
+        snail: has_arrived(Thing::Snail),
+        squirrel: has_arrived(Thing::Squirrel),
+        frog: has_arrived(Thing::Frog),
         bench: has_arrived(Thing::Bench),
         cat_bow: has_arrived(Thing::CatBow),
         footprints: has_arrived(Thing::Footprints),
@@ -224,6 +231,10 @@ fn story_clock(progress: &Progress, mail_hour: u32) -> StoryClock {
 
 fn story_today(clock: &StoryClock) -> usize {
     clock.day_on(Local::now().naive_local())
+}
+
+fn shows_every_habitant(is_forced: bool, day: Option<NonZeroU16>) -> bool {
+    is_forced && day.is_none()
 }
 
 fn build_timeline(village_count: usize, clock: &StoryClock, today: usize) -> Timeline {
@@ -425,6 +436,7 @@ pub struct App {
     city_name_language: String,
     city_search: Option<CitySearch>,
     location_detection: Option<oneshot::Receiver<Result<GeoLocation, GeolocationError>>>,
+    shows_every_habitant: bool,
 }
 
 impl App {
@@ -517,8 +529,8 @@ impl App {
         let timeline_day = story_today(&clock);
         let timeline = build_timeline(letters.len(), &clock, timeline_day);
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
-        animations.set_unlocks(unlocks_on(&timeline, timeline_day, &progress.answers));
 
+        let is_forced = is_simulated || simulation.night;
         let mut app = Self {
             state,
             animations,
@@ -533,7 +545,7 @@ impl App {
             timeline,
             overlay: opening_overlay(shows_welcome, !release_notes.is_empty()),
             release_notes,
-            is_simulated: is_simulated || simulation.night,
+            is_simulated: is_forced,
             awards_badges: simulation.day.is_none(),
             toasts: VecDeque::new(),
             toast_until: None,
@@ -553,7 +565,9 @@ impl App {
             city_name_language: config.location.city_name_language.clone(),
             city_search: None,
             location_detection: None,
+            shows_every_habitant: shows_every_habitant(is_forced, simulation.day),
         };
+        app.refresh_unlocks();
         app.refresh_tree_growth();
         app.refresh_timeline();
         app
@@ -643,6 +657,7 @@ impl App {
                 (holiday.is_halloween, "halloween"),
                 (holiday.new_year.is_some(), "new_year"),
                 (holiday.is_easter, "easter"),
+                (holiday.is_music_day, "music_day"),
                 (self.state.shows_rainbow(), "rainbow"),
                 (sightings.postman, "postman"),
                 (sightings.snowman, "snowman"),
@@ -708,7 +723,12 @@ impl App {
     }
 
     fn unlocks(&self) -> Unlocks {
-        unlocks_on(&self.timeline, self.timeline_day, &self.progress.answers)
+        let unlocks = unlocks_on(&self.timeline, self.timeline_day, &self.progress.answers);
+        if self.shows_every_habitant {
+            unlocks.with_every_habitant()
+        } else {
+            unlocks
+        }
     }
 
     fn refresh_unlocks(&mut self) {
@@ -1841,16 +1861,23 @@ mod tests {
         }
     }
 
-    const ARRIVAL_DAYS: [(Thing, usize); 23] = [
+    const ARRIVAL_DAYS: [(Thing, usize); 30] = [
+        (Thing::Cat, 3),
         (Thing::Bench, 4),
         (Thing::CatBow, 6),
         (Thing::Footprints, 8),
+        (Thing::Dog, 9),
+        (Thing::Owl, 12),
         (Thing::Well, 13),
         (Thing::Bone, 15),
         (Thing::Key, 17),
+        (Thing::Duck, 18),
+        (Thing::Snail, 21),
         (Thing::Treehouse, 22),
         (Thing::OwlFriend, 24),
         (Thing::BlueLantern, 26),
+        (Thing::Squirrel, 27),
+        (Thing::Frog, 30),
         (Thing::Garland, 31),
         (Thing::Kittens, 33),
         (Thing::XMark, 35),
@@ -1869,15 +1896,22 @@ mod tests {
 
     fn shows(unlocks: &Unlocks, thing: Thing) -> bool {
         match thing {
+            Thing::Cat => unlocks.cat,
             Thing::Bench => unlocks.bench,
             Thing::CatBow => unlocks.cat_bow,
             Thing::Footprints => unlocks.footprints,
+            Thing::Dog => unlocks.dog,
+            Thing::Owl => unlocks.owl,
             Thing::Well => unlocks.well,
             Thing::Bone => unlocks.bone,
             Thing::Key => unlocks.key,
+            Thing::Duck => unlocks.duck,
+            Thing::Snail => unlocks.snail,
             Thing::Treehouse => unlocks.treehouse,
             Thing::OwlFriend => unlocks.owl_friend,
             Thing::BlueLantern => unlocks.blue_lantern,
+            Thing::Squirrel => unlocks.squirrel,
+            Thing::Frog => unlocks.frog,
             Thing::Garland => unlocks.garland,
             Thing::Kittens => unlocks.kittens,
             Thing::XMark => unlocks.x_mark,
@@ -1931,10 +1965,49 @@ mod tests {
         }
     }
 
+    const HABITANTS: [Thing; 7] = [
+        Thing::Cat,
+        Thing::Dog,
+        Thing::Owl,
+        Thing::Duck,
+        Thing::Snail,
+        Thing::Squirrel,
+        Thing::Frog,
+    ];
+
     #[test]
     fn test_arrivals_ignore_reading() {
         let unlocks = unlocks_on(&timeline_on(30), 30, &BTreeMap::new());
         assert!(unlocks.bench && unlocks.well && unlocks.treehouse);
+
+        let unlocks = unlocks_on(&timeline_on(10), 10, &BTreeMap::new());
+        assert!(unlocks.cat && unlocks.dog);
+    }
+
+    #[test]
+    fn test_no_habitant_on_first_day() {
+        let unlocks = unlocks_on_day(1);
+        assert!(!HABITANTS.iter().any(|&habitant| shows(&unlocks, habitant)));
+    }
+
+    #[test]
+    fn test_late_player_finds_every_habitant() {
+        let unlocks = unlocks_on_day(41);
+        assert!(HABITANTS.iter().all(|&habitant| shows(&unlocks, habitant)));
+    }
+
+    #[test]
+    fn test_forced_mode_shows_every_habitant_unless_day_is_set() {
+        assert!(shows_every_habitant(true, None));
+        assert!(!shows_every_habitant(true, NonZeroU16::new(5)));
+        assert!(!shows_every_habitant(false, None));
+    }
+
+    #[test]
+    fn test_every_habitant_leaves_objects_locked() {
+        let unlocks = unlocks_on_day(1).with_every_habitant();
+        assert!(HABITANTS.iter().all(|&habitant| shows(&unlocks, habitant)));
+        assert!(!unlocks.bench);
     }
 
     #[test]

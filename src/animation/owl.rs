@@ -1,6 +1,7 @@
 use crate::animation::garden::{self, Blink, Bubble, GardenLayout};
 use crate::animation::lore::Unlocks;
 use crate::render::TerminalRenderer;
+use crate::scene::tree::Tree;
 use crate::weather::WeatherConditions;
 use crossterm::style::Color;
 use rand::prelude::*;
@@ -60,8 +61,7 @@ impl Owl {
             return Ok(());
         }
 
-        let x = tree.center_x() - 2;
-        let y = tree.top_y + (tree.canopy_height / 2).saturating_sub(1);
+        let (x, y) = Self::perch(&tree);
         let is_closed = self.blink.is_closed() && !self.is_staring;
         let (head, eye) = if self.is_staring {
             ("(O,O)", 'O')
@@ -89,6 +89,23 @@ impl Owl {
             garden::draw_solid(renderer, x, y.saturating_sub(2), &["Hou!"], Color::White)?;
         }
         Ok(())
+    }
+
+    pub fn head(
+        &self,
+        layout: &GardenLayout,
+        conditions: &WeatherConditions,
+    ) -> Option<(u16, u16)> {
+        let tree = layout.plan.tree.filter(|_| !conditions.is_day)?;
+        let (x, y) = Self::perch(&tree);
+        Some((x + 2, y))
+    }
+
+    fn perch(tree: &Tree) -> (u16, u16) {
+        (
+            tree.center_x() - 2,
+            tree.top_y + (tree.canopy_height / 2).saturating_sub(1),
+        )
     }
 }
 

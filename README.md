@@ -78,6 +78,7 @@ weathr --simulate snow --night
 # Fêtes
 weathr --christmas
 weathr --fireworks
+weathr --music
 
 # Feuilles qui tombent et rafales
 weathr --simulate clear --leaves

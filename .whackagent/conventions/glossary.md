@@ -26,8 +26,10 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Alerte météo | vigilance | | | ligne ⚠ de la Gazette : canicule, grand froid, vent fort, orage ; calculée sur les prévisions |
 | Énigme | devinette | | `Riddle` | question de la Gazette, réponse touche `e` |
 | Bouteille | message à la mer | | `bottle` | message dérivant sur la rivière |
-| Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret |
-| Fête | jour férié | | `Holiday` | jour spécial qui décore la scène |
+| Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret → [[mail]] |
+| Fête | jour férié | | `Holiday` | jour spécial qui décore la scène → [[animation]] |
+| Fête de la musique | | | `is_music_day` | 21 juin : notes aux fenêtres, chanteurs, Notes du ciel ; Badge dédié → [[animation]] |
+| Notes du ciel | dessin de notes, croches | | `SkyNotes` | croche et deux doubles croches, remplace soleil ou lune → [[animation]] |
 | Facteur | postier | | `Postman` | livre les Lettres à la boîte aux lettres |
 | Heure du Facteur | heure du courrier | | `mail_hour` | heure de la tournée ; changée dans Réglages, effet le lendemain → [[mail]] |
 | Jour de jeu | jour | | `StoryClock` | jour de l'histoire depuis le début, change à `courrier.heure` → [[mail]] |
