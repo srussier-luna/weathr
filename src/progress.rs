@@ -2,12 +2,19 @@ use chrono::{Local, NaiveDate};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
+use std::io;
 use std::path::PathBuf;
 
 pub const DATE_FORMAT: &str = "%Y-%m-%d";
 
 fn parse_date(date: &str) -> Option<NaiveDate> {
     NaiveDate::parse_from_str(date, DATE_FORMAT).ok()
+}
+
+#[derive(Serialize, Deserialize)]
+struct MailHourChange {
+    on: String,
+    previous_hour: u32,
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -44,6 +51,8 @@ pub struct Progress {
     pub pause_checked_on: Option<String>,
     #[serde(default)]
     pub postman_note_day: Option<usize>,
+    #[serde(default)]
+    mail_hour_change: Option<MailHourChange>,
     #[serde(skip)]
     in_memory: bool,
 }
@@ -75,18 +84,17 @@ impl Progress {
     }
 
     pub fn save(&self) {
-        if self.in_memory {
-            return;
-        }
-        let Some(path) = progress_path() else {
-            return;
-        };
+        let _ = self.try_save();
+    }
+
+    pub fn try_save(&self) -> io::Result<()> {
+        let path = progress_path()
+            .filter(|_| !self.in_memory)
+            .ok_or(io::ErrorKind::Unsupported)?;
         if let Some(parent) = path.parent() {
-            let _ = fs::create_dir_all(parent);
+            fs::create_dir_all(parent)?;
         }
-        if let Ok(content) = serde_json::to_string_pretty(self) {
-            let _ = fs::write(path, content);
-        }
+        fs::write(path, serde_json::to_string_pretty(self)?)
     }
 
     pub fn record_visit(&mut self) -> bool {
@@ -123,6 +131,18 @@ impl Progress {
     pub fn mark_pause_checked(&mut self, date: NaiveDate) {
         self.pause_checked_on = Some(date.format(DATE_FORMAT).to_string());
     }
+
+    pub fn previous_mail_hour(&self) -> Option<(NaiveDate, u32)> {
+        let change = self.mail_hour_change.as_ref()?;
+        Some((parse_date(&change.on)?, change.previous_hour))
+    }
+
+    pub fn set_previous_mail_hour(&mut self, previous: Option<(NaiveDate, u32)>) {
+        self.mail_hour_change = previous.map(|(until, previous_hour)| MailHourChange {
+            on: until.format(DATE_FORMAT).to_string(),
+            previous_hour,
+        });
+    }
 }
 
 fn progress_path() -> Option<PathBuf> {
@@ -158,6 +178,26 @@ mod tests {
     }
 
     #[test]
+    fn test_save_without_mail_hour_change_loads_with_no_previous_hour() {
+        let progress: Progress =
+            serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":12}"#).unwrap();
+        assert_eq!(progress.previous_mail_hour(), None);
+    }
+
+    #[test]
+    fn test_previous_mail_hour_round_trips() {
+        let mut progress = Progress::default();
+        let until = NaiveDate::from_ymd_opt(2026, 10, 9).unwrap();
+        progress.set_previous_mail_hour(Some((until, 9)));
+        let saved = serde_json::to_string(&progress).unwrap();
+        let mut loaded: Progress = serde_json::from_str(&saved).unwrap();
+        assert_eq!(loaded.previous_mail_hour(), Some((until, 9)));
+
+        loaded.set_previous_mail_hour(None);
+        assert_eq!(loaded.previous_mail_hour(), None);
+    }
+
+    #[test]
     fn test_pauses_round_trip() {
         let mut progress = Progress::default();
         let date = NaiveDate::from_ymd_opt(2026, 10, 22).unwrap();
@@ -188,5 +228,11 @@ mod tests {
         assert!(progress.answers.is_empty());
         assert!(progress.badges.is_empty());
         assert!(progress.in_memory);
+    }
+
+    #[test]
+    fn test_in_memory_progress_is_never_saved() {
+        let progress = Progress::in_memory(NaiveDate::from_ymd_opt(2026, 10, 19).unwrap());
+        assert!(progress.try_save().is_err());
     }
 }

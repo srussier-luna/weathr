@@ -206,11 +206,19 @@ fn welcome_width(renderer: &TerminalRenderer) -> usize {
     overlay::text_width(renderer, welcome::NOTE_FRAME)
 }
 
+fn push_toast(toasts: &mut VecDeque<String>, message: &str) {
+    if !toasts.iter().any(|toast| toast == message) {
+        toasts.push_back(message.to_string());
+    }
+}
+
 fn story_clock(progress: &Progress, mail_hour: u32) -> StoryClock {
     let start = progress
         .start_date()
         .unwrap_or_else(|| Local::now().date_naive());
-    StoryClock::new(start, mail_hour).with_pauses(progress.paused_days.clone())
+    StoryClock::new(start, mail_hour)
+        .with_pauses(progress.paused_days.clone())
+        .with_previous_mail_hour(progress.previous_mail_hour())
 }
 
 fn story_today(clock: &StoryClock) -> usize {
@@ -367,7 +375,6 @@ pub struct App {
     scene: WorldScene,
     weather_receiver: mpsc::Receiver<Result<WeatherData, WeatherError>>,
     hide_hud: bool,
-    mail_hour: u32,
     simulated_holiday: Option<Holiday>,
     demo: Option<Demo>,
     progress: Progress,
@@ -502,7 +509,6 @@ impl App {
             scene,
             weather_receiver: rx,
             hide_hud: config.hide_hud,
-            mail_hour: config.mail.hour,
             simulated_holiday: simulation.holiday,
             demo,
             progress,
@@ -861,7 +867,7 @@ impl App {
             Some(Overlay::Settings(selected)) => views::settings_view(
                 &self.settings(),
                 selected,
-                self.clock.mail_hour_on(Local::now().date_naive()) != self.mail_hour,
+                self.clock.mail_hour_on(Local::now().date_naive()) != self.clock.mail_hour(),
             ),
             Some(Overlay::Badges) => {
                 return overlay::render_badges(
@@ -1163,7 +1169,7 @@ impl App {
     fn settings(&self) -> Settings {
         Settings {
             units: self.state.units,
-            mail_hour: self.mail_hour,
+            mail_hour: self.clock.mail_hour(),
             hide_hud: self.hide_hud,
         }
     }
@@ -1175,17 +1181,37 @@ impl App {
         let mut settings = self.settings();
         let setting = settings.stepped(settings::ROWS[selected], step);
         settings.apply(setting);
-        if Config::save(setting).is_err() {
-            self.toasts
-                .push_back("Réglage non enregistré\u{a0}: vérifie config.toml".to_string());
-        }
         if let Setting::MailHour(hour) = setting {
-            self.clock
-                .change_mail_hour(hour, Local::now().naive_local());
+            self.change_mail_hour(hour);
+        } else if Config::save(setting).is_err() {
+            self.toast_unsaved_setting();
         }
-        self.mail_hour = settings.mail_hour;
         self.hide_hud = settings.hide_hud;
         self.state.set_units(settings.units);
+    }
+
+    fn change_mail_hour(&mut self, hour: u32) {
+        if self.clock.is_frozen() {
+            return;
+        }
+        let mut clock = self.clock.clone();
+        clock.change_mail_hour(hour, Local::now().naive_local());
+        self.progress
+            .set_previous_mail_hour(clock.previous_mail_hour());
+        if self.progress.try_save().is_ok() && Config::save(Setting::MailHour(hour)).is_ok() {
+            self.clock = clock;
+        } else {
+            self.progress
+                .set_previous_mail_hour(self.clock.previous_mail_hour());
+            self.toast_unsaved_setting();
+        }
+    }
+
+    fn toast_unsaved_setting(&mut self) {
+        push_toast(
+            &mut self.toasts,
+            "Réglage non enregistré\u{202F}: vérifie config.toml",
+        );
     }
 
     fn toggle_album(&mut self) {
@@ -1819,5 +1845,26 @@ mod tests {
         for mail_hour in [0, 23] {
             assert_eq!(story_today(&story_clock(&progress, mail_hour)), 1);
         }
+    }
+
+    #[test]
+    fn test_relaunch_keeps_the_saved_previous_mail_hour() {
+        let mut progress = Progress::default();
+        progress.started_on = Some("2026-10-01".to_string());
+        progress.set_previous_mail_hour(Some((date(2026, 10, 9), 9)));
+        let clock = story_clock(&progress, 11);
+        let at = |day, hour, minute| date(2026, 10, day).and_hms_opt(hour, minute, 0).unwrap();
+        assert_eq!(clock.day_on(at(8, 10, 30)), 8);
+        assert_eq!(clock.day_on(at(9, 10, 59)), 8);
+        assert_eq!(clock.day_on(at(9, 11, 0)), 9);
+    }
+
+    #[test]
+    fn test_identical_toast_is_queued_once() {
+        let mut toasts = VecDeque::new();
+        push_toast(&mut toasts, "A");
+        push_toast(&mut toasts, "B");
+        push_toast(&mut toasts, "A");
+        assert_eq!(toasts, ["A", "B"]);
     }
 }

@@ -1,6 +1,6 @@
 ---
 issue: 38
-status: to-test
+status: to-close
 wiki: [[render]], [[architecture]], [[weather]]
 note: Écran Réglages : ville, unités, heure du Facteur, barre du haut modifiables dans le jeu, sans éditer config.toml
 created: 2026-10-30
@@ -43,13 +43,27 @@ created: 2026-10-30
 - `src/weather/units.rs` : fonctions `*_symbol` ; `src/app_state.rs` : `set_units` + test.
 - `src/views.rs` : `settings_view`, `[s] réglages` dans l'Aide, test.
 - `src/app.rs` : `Overlay::Settings(usize)`, `toggle_settings`, `change_setting`, touches ↑↓ / ←→ / Entrée / s / Échap.
-- `src/error.rs` : erreurs d'écriture de config. `Cargo.toml` : `toml_edit 0.25` (toml_parser / toml_writer montent aussi).
+- `src/error.rs` : erreurs d'écriture de config. `Cargo.toml` : `toml_edit 0.24` (partage toml_datetime, winnow, toml_parser, toml_writer avec `toml 0.9`).
 - Échec d'écriture → réglage appliqué quand même, message « Réglage non enregistré : vérifie config.toml ».
-- Limite : relancer le jeu le jour même applique tout de suite la nouvelle heure du Facteur (config.toml relu au lancement, pas de date d'effet stockée).
+- Heure du Facteur changée dans les Réglages : date d'effet + ancienne heure gardées dans `progress` (`mail_hour_change`), relues par `story_clock()` ; une relance le jour même garde l'ancienne heure, le Jour de jeu ne recule jamais. Sous `--day`, l'heure ne change pas. Une modification à la main de config.toml s'applique dès la relance.
 - L'écran montre les réglages en cours, options de lancement comprises (`--hide-hud`, `--imperial`).
 - Build : `cargo build`, `cargo fmt --check`, `cargo test` verts. Clippy : seule l'erreur connue #79.
 
 ## Review
+
+### Round validation — 2026-11-03
+- Scope : diff cumulé `origin/develop...HEAD` + correctifs (src/app.rs, src/app_state.rs, src/config/{mod,writer}.rs, src/error.rs, src/main.rs, src/settings.rs, src/story/clock.rs, src/progress.rs, src/views.rs, src/weather/units.rs, Cargo.toml, Cargo.lock).
+- Findings (autofix, 2 tours, tous corrigés) :
+  - 🟠 [correctness] relance le même jour : nouvelle heure du Facteur appliquée aussitôt, Jour de jeu pouvant reculer → date d'effet + ancienne heure dans `progress`, relues par `story_clock()`.
+  - 🟡 [correctness] config.toml et progress pouvaient diverger (échec d'écriture, `--day`) → `App::change_mail_hour` : horloge changée seulement si les deux enregistrements réussissent, rien sous `--day`.
+  - 🟡 [correctness] échec d'écriture : un toast par touche → `push_toast` sans doublon.
+  - 🟡 [style] `\u{a0}` avant « : » → `\u{202F}`.
+  - 🟡 [structure] `App.mail_hour` doublait `StoryClock` → lu via `clock.mail_hour()`.
+  - 🟡 [structure] `toml_edit 0.25` doublait `toml_datetime` / `winnow` → `toml_edit 0.24`.
+  - 🟡 [elegance] deux `Option` parallèles → `mail_hour_change: Option<MailHourChange>`.
+  - 🟡 [style] écran Réglages absent du glossaire → ligne Screens `Réglages` / `settings_view` (validée par l'utilisateur·rice).
+- Preuve : `cargo build`, `cargo fmt -- --check`, `cargo clippy -- -D warnings -A clippy::double_must_use`, `cargo test --bin weathr` (246) verts ; `cargo tree -d` sans doublon toml*/winnow.
+- LENSES : style ✓ · elegance ✓ · structure ✓ · correctness ✓ — VERDICT : clean.
 
 ## Verification
 

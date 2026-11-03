@@ -6,7 +6,7 @@ use std::num::NonZeroU16;
 pub struct StoryClock {
     start: NaiveDate,
     mail_hour: u32,
-    next_mail_hour: Option<(NaiveDate, u32)>,
+    previous_mail_hour: Option<(NaiveDate, u32)>,
     frozen_day: Option<usize>,
     pauses: BTreeMap<usize, u32>,
 }
@@ -16,7 +16,7 @@ impl StoryClock {
         Self {
             start,
             mail_hour,
-            next_mail_hour: None,
+            previous_mail_hour: None,
             frozen_day: None,
             pauses: BTreeMap::new(),
         }
@@ -26,12 +26,19 @@ impl StoryClock {
         Self { pauses, ..self }
     }
 
+    pub fn with_previous_mail_hour(self, previous_mail_hour: Option<(NaiveDate, u32)>) -> Self {
+        Self {
+            previous_mail_hour,
+            ..self
+        }
+    }
+
     pub fn frozen(today: NaiveDate, mail_hour: u32, day: NonZeroU16) -> Self {
         let day = day.get();
         Self {
             start: today - Duration::days(i64::from(day) - 1),
             mail_hour,
-            next_mail_hour: None,
+            previous_mail_hour: None,
             frozen_day: Some(usize::from(day)),
             pauses: BTreeMap::new(),
         }
@@ -53,17 +60,26 @@ impl StoryClock {
         *self.pauses.entry(day).or_default() += 1;
     }
 
+    pub fn mail_hour(&self) -> u32 {
+        self.mail_hour
+    }
+
+    pub fn previous_mail_hour(&self) -> Option<(NaiveDate, u32)> {
+        self.previous_mail_hour
+    }
+
     pub fn mail_hour_on(&self, date: NaiveDate) -> u32 {
-        match self.next_mail_hour {
-            Some((from, hour)) if date >= from => hour,
+        match self.previous_mail_hour {
+            Some((until, hour)) if date < until => hour,
             _ => self.mail_hour,
         }
     }
 
     pub fn change_mail_hour(&mut self, hour: u32, now: NaiveDateTime) {
         let today = now.date();
-        self.mail_hour = self.mail_hour_on(today);
-        self.next_mail_hour = (hour != self.mail_hour).then(|| (today + Duration::days(1), hour));
+        let current = self.mail_hour_on(today);
+        self.mail_hour = hour;
+        self.previous_mail_hour = (hour != current).then(|| (today + Duration::days(1), current));
     }
 
     pub fn mail_date(&self, now: NaiveDateTime) -> NaiveDate {
@@ -166,6 +182,42 @@ mod tests {
         clock.change_mail_hour(11, at(10, 12));
         clock.change_mail_hour(11, at(10, 13));
         assert_eq!(clock.mail_hour_on(date(2026, 10, 11)), 11);
+    }
+
+    #[test]
+    fn test_relaunch_keeps_the_old_mail_hour_until_the_next_day() {
+        let at = |day, hour, minute| date(2026, 10, day).and_hms_opt(hour, minute, 0).unwrap();
+        let mut clock = StoryClock::new(date(2026, 10, 1), 9);
+        clock.change_mail_hour(11, at(8, 10, 0));
+        let relaunched = StoryClock::new(clock.start(), clock.mail_hour())
+            .with_previous_mail_hour(clock.previous_mail_hour());
+
+        assert_eq!(relaunched.mail_hour_on(date(2026, 10, 8)), 9);
+        assert_eq!(relaunched.mail_hour_on(date(2026, 10, 9)), 11);
+        assert_eq!(relaunched.day_on(at(8, 10, 30)), 8);
+        assert_eq!(relaunched.day_on(at(9, 10, 59)), 8);
+        assert_eq!(relaunched.day_on(at(9, 11, 0)), 9);
+    }
+
+    #[test]
+    fn test_day_never_goes_back_after_a_mail_hour_change() {
+        let start = date(2026, 10, 1);
+        let changed_at = date(2026, 10, 8).and_hms_opt(10, 0, 0).unwrap();
+        for old in [0, 9, 23] {
+            for new in [0, 6, 11, 23] {
+                let mut clock = StoryClock::new(start, old);
+                let mut day = clock.day_on(changed_at);
+                clock.change_mail_hour(new, changed_at);
+                let relaunched = StoryClock::new(start, clock.mail_hour())
+                    .with_previous_mail_hour(clock.previous_mail_hour());
+                for quarter in 0..3 * 24 * 4 {
+                    let now = changed_at + Duration::minutes(15 * quarter);
+                    let next = relaunched.day_on(now);
+                    assert!(next >= day, "{old} h -> {new} h at {now}");
+                    day = next;
+                }
+            }
+        }
     }
 
     #[test]
