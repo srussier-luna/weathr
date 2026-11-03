@@ -1,7 +1,7 @@
 ---
 issue: 82
 status: to-close
-wiki: [[weather]], [[render]]
+wiki: [[weather]], [[render]], [[architecture]]
 note: Changer la ville météo depuis l'écran Réglages (#38) : recherche par nom, choix parmi les homonymes. Sorti du périmètre de #38.
 created: 2026-10-30
 ---
