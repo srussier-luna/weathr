@@ -3,6 +3,7 @@ use crate::scene::tree::Tree;
 use chrono::{Local, Timelike};
 use crossterm::style::Color;
 use std::io;
+use std::ops::Range;
 
 const WOOD_COLOR: Color = Color::Rgb {
     r: 210,
@@ -187,6 +188,14 @@ impl House {
             HouseSize::Small => (17, 3),
             HouseSize::Large => (26, 1),
         }
+    }
+
+    pub fn eave(&self) -> (u16, Range<u16>) {
+        let row = self.eave_row();
+        let line = self.get_ascii()[row as usize];
+        let start = line.find('~').unwrap_or_default();
+        let end = line.rfind('~').map_or(start, |last| last + 1);
+        (row, start as u16..end as u16)
     }
 
     pub fn porch_rail_row(&self) -> u16 {

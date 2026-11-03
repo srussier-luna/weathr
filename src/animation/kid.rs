@@ -11,12 +11,12 @@ const MIN_X: f32 = 3.0;
 const POND_CLEARANCE: u16 = 4;
 const JUMP_FRAMES: u16 = 12;
 const SPLASH_FRAMES: u16 = 10;
-const SKIN: Color = Color::Rgb {
+pub const SKIN: Color = Color::Rgb {
     r: 255,
     g: 205,
     b: 148,
 };
-const SHIRT: Color = Color::Red;
+pub const SHIRT: Color = Color::Red;
 const PANTS: Color = Color::Rgb {
     r: 80,
     g: 160,

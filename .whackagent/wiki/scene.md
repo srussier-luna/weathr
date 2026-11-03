@@ -15,6 +15,7 @@
 - **River** (`src/scene/river.rs:43`) — flows from summit near pond down to horizon, as list of `Stretch`es. Freezes (`=`) in winter. `is_water` and `stretch(i)` let duck, frog, drifting Bouteilles follow it.
 - **Tree** (`src/scene/tree.rs:35`) — `Tree::fit` picks tallest tree fitting left of house, or none. Seasonal foliage; fir in December/winter, lights + presents at Christmas.
   - Grows with the Jour de jeu (`Growth::on_day`): `Baby` day 1 (height 5, `_||_`), `Third` day 4, `TwoThirds` day 8, `Full` day ≥ 12. `Tree::grown` keeps the young tree centred on the full tree's trunk; `House::x_on` still uses the full size, so the house never moves. App pushes the stage by setter (`set_tree_growth` on scene + animations) at launch and at each rollover; forced modes (`--demo`, `--simulate`, Fêtes, `--night`) always `Full`.
+- **Bunting** (`src/scene/bunting.rs`) — Fête des voisins only: `▼` pennants every 2 columns on the eave row (`House::eave()`), from the roof's left edge to the right screen edge, colours cycling; the eave's own `~` show between pennants over the house, a grey `-` string beyond. Drawn right after the house, before Decorations.
 - **Decorations** (`src/scene/decorations.rs:52`) — fence right of house, mailbox left of tree, extra pine on wide terminals.
 - **GardenPlan** (`src/scene/decorations.rs:20`) — tree + mailbox placement. Embedded in `GardenLayout` (`src/animation/garden.rs:9`) so Facteur stops at mailbox drawn here.
 
