@@ -127,13 +127,24 @@ impl Squirrel {
         };
     }
 
-    pub fn render(&self, renderer: &mut TerminalRenderer) -> io::Result<()> {
-        if self.placed_on.is_none() || matches!(self.phase, Phase::Hiding(_)) {
-            return Ok(());
-        }
+    pub fn head(&self) -> Option<(u16, u16)> {
+        let y = self.top_y()?;
+        let head_column = if self.is_facing_right { 3 } else { 1 };
+        Some((self.x as u16 + head_column, y))
+    }
 
+    fn top_y(&self) -> Option<u16> {
+        if self.placed_on.is_none() || matches!(self.phase, Phase::Hiding(_)) {
+            return None;
+        }
         let hop = matches!(self.phase, Phase::Running(_)) && (self.frame / 4) % 2 == 0;
-        let y = (self.y as u16).saturating_sub(u16::from(hop));
+        Some((self.y as u16).saturating_sub(u16::from(hop)))
+    }
+
+    pub fn render(&self, renderer: &mut TerminalRenderer) -> io::Result<()> {
+        let Some(y) = self.top_y() else {
+            return Ok(());
+        };
         let sprite = if self.is_facing_right {
             &SPRITE_RIGHT
         } else {

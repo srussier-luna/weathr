@@ -51,6 +51,7 @@ pub struct Holiday {
     pub is_easter: bool,
     pub is_epiphany: bool,
     pub is_neighbours_party: bool,
+    pub is_music_day: bool,
     pub meteor_shower: Option<MeteorShower>,
     pub is_winter: bool,
     pub season: Season,
@@ -76,6 +77,7 @@ impl Holiday {
                 .is_some_and(|easter| (date - easter).num_days().abs() <= EASTER_WINDOW_DAYS),
             is_epiphany: month == 1 && day == 6,
             is_neighbours_party: last_friday_of_may(date.year()) == Some(date),
+            is_music_day: month == 6 && day == 21,
             meteor_shower: MeteorShower::on(month, day),
             is_winter: matches!(month, 12 | 1 | 2),
             season: Season::on(month, day),
@@ -130,6 +132,13 @@ impl Holiday {
             is_spring: true,
             is_neighbours_party: true,
             season: Season::Spring,
+            ..Self::default()
+        }
+    }
+
+    pub fn music_day() -> Self {
+        Self {
+            is_music_day: true,
             ..Self::default()
         }
     }
@@ -301,5 +310,13 @@ mod tests {
         assert!(!Holiday::on(date(2027, 5, 27)).is_neighbours_party);
         assert!(!Holiday::on(date(2027, 5, 29)).is_neighbours_party);
         assert!(Holiday::on(date(2026, 5, 29)).is_spring);
+    }
+
+    #[test]
+    fn test_music_day() {
+        assert!(!Holiday::on(date(2027, 6, 20)).is_music_day);
+        assert!(Holiday::on(date(2027, 6, 21)).is_music_day);
+        assert!(!Holiday::on(date(2027, 6, 22)).is_music_day);
+        assert!(!Holiday::on(date(2027, 7, 21)).is_music_day);
     }
 }

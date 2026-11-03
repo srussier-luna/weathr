@@ -17,6 +17,7 @@ mod release_notes;
 mod remote_weather;
 mod render;
 mod scene;
+mod settings;
 mod story;
 mod updater;
 mod views;
@@ -85,6 +86,8 @@ struct Cli {
 
     #[arg(long, help = "Simulate the neighbours' party (table in the garden)")]
     neighbours: bool,
+    #[arg(long, help = "Simulate June 21st Music Day (notes from the windows)")]
+    music: bool,
 
     #[arg(long, help = "Cycle through every weather scene, 1 second each")]
     demo: bool,
@@ -353,6 +356,8 @@ async fn main() -> io::Result<()> {
                 Some(holiday::Holiday::national_day())
             } else if cli.neighbours {
                 Some(holiday::Holiday::neighbours_party())
+            } else if cli.music {
+                Some(holiday::Holiday::music_day())
             } else {
                 None
             },

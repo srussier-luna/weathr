@@ -3,7 +3,7 @@ use crate::animation::neighbours_party::Neighbour;
 use crate::animation_manager::AnimationManager;
 use crate::app_state::AppState;
 use crate::badges::{self, Badge};
-use crate::config::Config;
+use crate::config::{Config, Setting};
 use crate::demo::{Demo, SCENE_DURATION};
 use crate::error::WeatherError;
 use crate::holiday::{Holiday, MeteorShower};
@@ -15,6 +15,7 @@ use crate::remote_weather::{self, Reply, Request};
 use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
 use crate::scene::tree::Growth;
+use crate::settings::{self, Settings};
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
@@ -64,6 +65,13 @@ fn unlocks_on(timeline: &Timeline, day: usize, answers: &BTreeMap<String, u8>) -
     let arrived: Vec<Thing> = timeline.arrived_by(day).collect();
     let has_arrived = |thing: Thing| arrived.contains(&thing);
     Unlocks {
+        cat: has_arrived(Thing::Cat),
+        dog: has_arrived(Thing::Dog),
+        owl: has_arrived(Thing::Owl),
+        duck: has_arrived(Thing::Duck),
+        snail: has_arrived(Thing::Snail),
+        squirrel: has_arrived(Thing::Squirrel),
+        frog: has_arrived(Thing::Frog),
         bench: has_arrived(Thing::Bench),
         cat_bow: has_arrived(Thing::CatBow),
         footprints: has_arrived(Thing::Footprints),
@@ -226,15 +234,27 @@ fn welcome_width(renderer: &TerminalRenderer) -> usize {
     overlay::text_width(renderer, welcome::NOTE_FRAME)
 }
 
+fn push_toast(toasts: &mut VecDeque<String>, message: &str) {
+    if !toasts.iter().any(|toast| toast == message) {
+        toasts.push_back(message.to_string());
+    }
+}
+
 fn story_clock(progress: &Progress, mail_hour: u32) -> StoryClock {
     let start = progress
         .start_date()
         .unwrap_or_else(|| Local::now().date_naive());
-    StoryClock::new(start, mail_hour).with_pauses(progress.paused_days.clone())
+    StoryClock::new(start, mail_hour)
+        .with_pauses(progress.paused_days.clone())
+        .with_previous_mail_hour(progress.previous_mail_hour())
 }
 
 fn story_today(clock: &StoryClock) -> usize {
     clock.day_on(Local::now().naive_local())
+}
+
+fn shows_every_habitant(is_forced: bool, day: Option<NonZeroU16>) -> bool {
+    is_forced && day.is_none()
 }
 
 fn build_timeline(village_count: usize, clock: &StoryClock, today: usize) -> Timeline {
@@ -352,6 +372,7 @@ enum Overlay {
     NoteBadge(&'static Badge),
     Notes(usize),
     PostmanNote,
+    Settings(usize),
     Welcome(Step),
 }
 
@@ -410,6 +431,7 @@ pub struct App {
     pending_requests: BTreeSet<Request>,
     frame_count: u32,
     timeline_day: usize,
+    shows_every_habitant: bool,
 }
 
 impl App {
@@ -513,8 +535,8 @@ impl App {
         let timeline_day = story_today(&clock);
         let timeline = build_timeline(letters.len(), &clock, timeline_day);
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
-        animations.set_unlocks(unlocks_on(&timeline, timeline_day, &progress.answers));
 
+        let is_forced = is_simulated || simulation.night;
         let mut app = Self {
             state,
             animations,
@@ -531,7 +553,7 @@ impl App {
             timeline,
             overlay: opening_overlay(shows_welcome, !release_notes.is_empty()),
             release_notes,
-            is_simulated: is_simulated || simulation.night,
+            is_simulated: is_forced,
             awards_badges: simulation.day.is_none(),
             toasts: VecDeque::new(),
             toast_until: None,
@@ -546,8 +568,9 @@ impl App {
             pending_requests: BTreeSet::new(),
             frame_count: 0,
             timeline_day,
+            shows_every_habitant: shows_every_habitant(is_forced, simulation.day),
         };
-        app.animations.set_guests(app.guests());
+        app.refresh_unlocks();
         app.refresh_tree_growth();
         app.refresh_timeline();
         app
@@ -557,6 +580,8 @@ impl App {
         if self.progress.record_visit() {
             self.progress.save();
         }
+        self.animations
+            .set_mail_hour(self.clock.mail_hour_on(Local::now().date_naive()));
         self.refresh_timeline();
         self.state.set_story_day(self.timeline_day);
         self.request_remote_weather();
@@ -636,6 +661,7 @@ impl App {
                 (holiday.new_year.is_some(), "new_year"),
                 (holiday.is_easter, "easter"),
                 (holiday.is_neighbours_party, "neighbours_party"),
+                (holiday.is_music_day, "music_day"),
                 (self.state.shows_rainbow(), "rainbow"),
                 (sightings.postman, "postman"),
                 (sightings.snowman, "snowman"),
@@ -701,7 +727,12 @@ impl App {
     }
 
     fn unlocks(&self) -> Unlocks {
-        unlocks_on(&self.timeline, self.timeline_day, &self.progress.answers)
+        let unlocks = unlocks_on(&self.timeline, self.timeline_day, &self.progress.answers);
+        if self.shows_every_habitant {
+            unlocks.with_every_habitant()
+        } else {
+            unlocks
+        }
     }
 
     fn guests(&self) -> Vec<Neighbour> {
@@ -886,6 +917,11 @@ impl App {
                 count_read(&self.timeline, &self.progress, |entry| {
                     matches!(entry, Entry::Gazette(_))
                 }) > 0,
+            ),
+            Some(Overlay::Settings(selected)) => views::settings_view(
+                &self.settings(),
+                selected,
+                self.clock.mail_hour_on(Local::now().date_naive()) != self.clock.mail_hour(),
             ),
             Some(Overlay::Badges) => {
                 return overlay::render_badges(
@@ -1129,6 +1165,12 @@ impl App {
                 let last = views::notes_scroll_limit(&self.release_notes, rows, width);
                 self.overlay = Some(Overlay::Notes(first.saturating_add_signed(step).min(last)));
             }
+            Some(Overlay::Settings(selected)) => {
+                let last = settings::ROWS.len() - 1;
+                self.overlay = Some(Overlay::Settings(
+                    selected.saturating_add_signed(step).min(last),
+                ));
+            }
             _ => self.select_in_index(step),
         }
     }
@@ -1159,6 +1201,7 @@ impl App {
                 | Overlay::Notes(_)
                 | Overlay::PostmanNote,
             ) => self.overlay = closed_overlay(self.overlay),
+            Some(Overlay::Settings(_)) => self.change_setting(1),
             _ => self.reread_selected(),
         }
     }
@@ -1168,6 +1211,61 @@ impl App {
             Some(Overlay::Help) => None,
             _ => Some(Overlay::Help),
         };
+    }
+
+    fn toggle_settings(&mut self) {
+        self.overlay = match self.overlay {
+            Some(Overlay::Settings(_)) => None,
+            _ => Some(Overlay::Settings(0)),
+        };
+    }
+
+    fn settings(&self) -> Settings {
+        Settings {
+            units: self.state.units,
+            mail_hour: self.clock.mail_hour(),
+            hide_hud: self.hide_hud,
+        }
+    }
+
+    fn change_setting(&mut self, step: isize) {
+        let Some(Overlay::Settings(selected)) = self.overlay else {
+            return;
+        };
+        let mut settings = self.settings();
+        let setting = settings.stepped(settings::ROWS[selected], step);
+        settings.apply(setting);
+        if let Setting::MailHour(hour) = setting {
+            self.change_mail_hour(hour);
+        } else if Config::save(setting).is_err() {
+            self.toast_unsaved_setting();
+        }
+        self.hide_hud = settings.hide_hud;
+        self.state.set_units(settings.units);
+    }
+
+    fn change_mail_hour(&mut self, hour: u32) {
+        if self.clock.is_frozen() {
+            return;
+        }
+        let mut clock = self.clock.clone();
+        clock.change_mail_hour(hour, Local::now().naive_local());
+        self.progress
+            .set_previous_mail_hour(clock.previous_mail_hour());
+        if self.progress.try_save().is_ok() && Config::save(Setting::MailHour(hour)).is_ok() {
+            self.clock = clock;
+        } else {
+            self.progress
+                .set_previous_mail_hour(self.clock.previous_mail_hour());
+            self.toast_unsaved_setting();
+        }
+    }
+
+    fn toast_unsaved_setting(&mut self) {
+        push_toast(
+            &mut self.toasts,
+            "Réglage non enregistré\u{202F}: vérifie config.toml",
+        );
     }
 
     fn toggle_album(&mut self) {
@@ -1184,6 +1282,7 @@ impl App {
                 self.overlay = Some(Overlay::Album(page.saturating_add_signed(step).min(last)));
             }
             Some(Overlay::Letter(_)) => self.browse_letters(step),
+            Some(Overlay::Settings(_)) => self.change_setting(step),
             _ => {}
         }
     }
@@ -1351,6 +1450,7 @@ impl App {
                             KeyCode::Char('2') => self.answer_letter(2),
                             KeyCode::Char('a') | KeyCode::Char('A') => self.toggle_album(),
                             KeyCode::Char('h') | KeyCode::Char('H') => self.toggle_help(),
+                            KeyCode::Char('s') | KeyCode::Char('S') => self.toggle_settings(),
                             KeyCode::Char('l') | KeyCode::Char('L') => self.toggle_index(),
                             KeyCode::Up => self.scroll(-1, rows, width),
                             KeyCode::Down => self.scroll(1, rows, width),
@@ -1625,16 +1725,23 @@ mod tests {
         }
     }
 
-    const ARRIVAL_DAYS: [(Thing, usize); 23] = [
+    const ARRIVAL_DAYS: [(Thing, usize); 30] = [
+        (Thing::Cat, 3),
         (Thing::Bench, 4),
         (Thing::CatBow, 6),
         (Thing::Footprints, 8),
+        (Thing::Dog, 9),
+        (Thing::Owl, 12),
         (Thing::Well, 13),
         (Thing::Bone, 15),
         (Thing::Key, 17),
+        (Thing::Duck, 18),
+        (Thing::Snail, 21),
         (Thing::Treehouse, 22),
         (Thing::OwlFriend, 24),
         (Thing::BlueLantern, 26),
+        (Thing::Squirrel, 27),
+        (Thing::Frog, 30),
         (Thing::Garland, 31),
         (Thing::Kittens, 33),
         (Thing::XMark, 35),
@@ -1653,15 +1760,22 @@ mod tests {
 
     fn shows(unlocks: &Unlocks, thing: Thing) -> bool {
         match thing {
+            Thing::Cat => unlocks.cat,
             Thing::Bench => unlocks.bench,
             Thing::CatBow => unlocks.cat_bow,
             Thing::Footprints => unlocks.footprints,
+            Thing::Dog => unlocks.dog,
+            Thing::Owl => unlocks.owl,
             Thing::Well => unlocks.well,
             Thing::Bone => unlocks.bone,
             Thing::Key => unlocks.key,
+            Thing::Duck => unlocks.duck,
+            Thing::Snail => unlocks.snail,
             Thing::Treehouse => unlocks.treehouse,
             Thing::OwlFriend => unlocks.owl_friend,
             Thing::BlueLantern => unlocks.blue_lantern,
+            Thing::Squirrel => unlocks.squirrel,
+            Thing::Frog => unlocks.frog,
             Thing::Garland => unlocks.garland,
             Thing::Kittens => unlocks.kittens,
             Thing::XMark => unlocks.x_mark,
@@ -1715,6 +1829,16 @@ mod tests {
         }
     }
 
+    const HABITANTS: [Thing; 7] = [
+        Thing::Cat,
+        Thing::Dog,
+        Thing::Owl,
+        Thing::Duck,
+        Thing::Snail,
+        Thing::Squirrel,
+        Thing::Frog,
+    ];
+
     #[test]
     fn test_first_letters_match_the_default_story() {
         let senders = [
@@ -1761,6 +1885,35 @@ mod tests {
     fn test_arrivals_ignore_reading() {
         let unlocks = unlocks_on(&timeline_on(30), 30, &BTreeMap::new());
         assert!(unlocks.bench && unlocks.well && unlocks.treehouse);
+
+        let unlocks = unlocks_on(&timeline_on(10), 10, &BTreeMap::new());
+        assert!(unlocks.cat && unlocks.dog);
+    }
+
+    #[test]
+    fn test_no_habitant_on_first_day() {
+        let unlocks = unlocks_on_day(1);
+        assert!(!HABITANTS.iter().any(|&habitant| shows(&unlocks, habitant)));
+    }
+
+    #[test]
+    fn test_late_player_finds_every_habitant() {
+        let unlocks = unlocks_on_day(41);
+        assert!(HABITANTS.iter().all(|&habitant| shows(&unlocks, habitant)));
+    }
+
+    #[test]
+    fn test_forced_mode_shows_every_habitant_unless_day_is_set() {
+        assert!(shows_every_habitant(true, None));
+        assert!(!shows_every_habitant(true, NonZeroU16::new(5)));
+        assert!(!shows_every_habitant(false, None));
+    }
+
+    #[test]
+    fn test_every_habitant_leaves_objects_locked() {
+        let unlocks = unlocks_on_day(1).with_every_habitant();
+        assert!(HABITANTS.iter().all(|&habitant| shows(&unlocks, habitant)));
+        assert!(!unlocks.bench);
     }
 
     #[test]
@@ -1841,5 +1994,26 @@ mod tests {
         for mail_hour in [0, 23] {
             assert_eq!(story_today(&story_clock(&progress, mail_hour)), 1);
         }
+    }
+
+    #[test]
+    fn test_relaunch_keeps_the_saved_previous_mail_hour() {
+        let mut progress = Progress::default();
+        progress.started_on = Some("2026-10-01".to_string());
+        progress.set_previous_mail_hour(Some((date(2026, 10, 9), 9)));
+        let clock = story_clock(&progress, 11);
+        let at = |day, hour, minute| date(2026, 10, day).and_hms_opt(hour, minute, 0).unwrap();
+        assert_eq!(clock.day_on(at(8, 10, 30)), 8);
+        assert_eq!(clock.day_on(at(9, 10, 59)), 8);
+        assert_eq!(clock.day_on(at(9, 11, 0)), 9);
+    }
+
+    #[test]
+    fn test_identical_toast_is_queued_once() {
+        let mut toasts = VecDeque::new();
+        push_toast(&mut toasts, "A");
+        push_toast(&mut toasts, "B");
+        push_toast(&mut toasts, "A");
+        assert_eq!(toasts, ["A", "B"]);
     }
 }

@@ -62,6 +62,7 @@ impl Demo {
             ),
             scene(WeatherCondition::Clear, true, Holiday::easter()),
             scene(WeatherCondition::Clear, true, Holiday::neighbours_party()),
+            scene(WeatherCondition::Clear, true, Holiday::music_day()),
             scene(WeatherCondition::Clear, false, Holiday::perseids()),
             scene(WeatherCondition::Clear, false, Holiday::geminids()),
             DemoScene {
@@ -108,6 +109,8 @@ impl Demo {
             " Spring"
         } else if scene.holiday.is_neighbours_party {
             " Fête des voisins"
+        } else if scene.holiday.is_music_day {
+            " Fête de la musique"
         } else if let Some(meteor_shower) = scene.holiday.meteor_shower {
             match meteor_shower {
                 MeteorShower::Perseids => " Perséides",

@@ -74,6 +74,25 @@ impl Duck {
         self.quack.update(0.003, 40, rng.random::<f32>());
     }
 
+    pub fn head(
+        &self,
+        layout: &GardenLayout,
+        conditions: &WeatherConditions,
+    ) -> Option<(u16, u16)> {
+        if !Self::is_visible(conditions) {
+            return None;
+        }
+        let head_column = if self.is_facing_right { 3 } else { 1 };
+        Some((
+            puddle_x(layout.width) + self.offset + head_column,
+            Self::head_y(layout),
+        ))
+    }
+
+    fn head_y(layout: &GardenLayout) -> u16 {
+        layout.horizon_y.saturating_sub(1)
+    }
+
     pub fn render(
         &self,
         renderer: &mut TerminalRenderer,
@@ -94,7 +113,7 @@ impl Duck {
             Color::Grey
         };
         let duck_x = puddle_x + self.offset;
-        let head_y = y.saturating_sub(1);
+        let head_y = Self::head_y(layout);
 
         if self.is_facing_right {
             garden::draw_solid(renderer, duck_x, head_y, &DUCK_RIGHT, body_color)?;
@@ -142,5 +161,23 @@ impl Duck {
 impl Default for Duck {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scene::tree::Growth;
+
+    #[test]
+    fn test_duck_has_no_head_when_dry() {
+        let layout = GardenLayout::new(120, 30, Growth::Full);
+        let duck = Duck::new();
+        let rain = WeatherConditions {
+            is_raining: true,
+            ..WeatherConditions::default()
+        };
+        assert!(duck.head(&layout, &WeatherConditions::default()).is_none());
+        assert!(duck.head(&layout, &rain).is_some());
     }
 }

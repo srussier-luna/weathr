@@ -114,6 +114,16 @@ impl Postman {
             .then_some((mailbox_x + HEAD_COLUMN, layout.horizon_y.saturating_sub(2)))
     }
 
+    pub fn rider_head(&self, layout: &GardenLayout) -> Option<(u16, u16)> {
+        if matches!(self.trip, Trip::Waiting) {
+            return None;
+        }
+        let x = self.x.round() as i32 + HEAD_COLUMN as i32;
+        (0..i32::from(layout.width))
+            .contains(&x)
+            .then_some((x as u16, layout.horizon_y.saturating_sub(2)))
+    }
+
     fn due_round(&self, stop_x: f32, now: NaiveDateTime) -> Option<NaiveDate> {
         if self.is_story_frozen {
             return None;

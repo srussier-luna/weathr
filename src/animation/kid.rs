@@ -109,23 +109,48 @@ impl Kid {
         }
     }
 
+    pub fn head(
+        &self,
+        layout: &GardenLayout,
+        conditions: &WeatherConditions,
+    ) -> Option<(u16, u16)> {
+        if !Self::is_shown(conditions, self.x) {
+            return None;
+        }
+        let x = self.x.round() as u16;
+        let feet_y = self.feet_y(layout);
+        Some(if conditions.is_raining {
+            (x + 1, feet_y.saturating_sub(4))
+        } else {
+            (x, feet_y.saturating_sub(2))
+        })
+    }
+
+    fn is_shown(conditions: &WeatherConditions, x: f32) -> bool {
+        Self::is_visible(conditions) && x >= MIN_X
+    }
+
+    fn feet_y(&self, layout: &GardenLayout) -> u16 {
+        if self.jump > 0 {
+            layout.horizon_y.saturating_sub(1)
+        } else {
+            layout.horizon_y
+        }
+    }
+
     pub fn render(
         &self,
         renderer: &mut TerminalRenderer,
         layout: &GardenLayout,
         conditions: &WeatherConditions,
     ) -> io::Result<()> {
-        if !Self::is_visible(conditions) || self.x < MIN_X {
+        if !Self::is_shown(conditions, self.x) {
             return Ok(());
         }
 
         let x = self.x.round() as u16;
         let ground_y = layout.horizon_y;
-        let feet_y = if self.jump > 0 {
-            ground_y.saturating_sub(1)
-        } else {
-            ground_y
-        };
+        let feet_y = self.feet_y(layout);
         let head_y = feet_y.saturating_sub(2);
         let body_y = feet_y.saturating_sub(1);
         let is_mid_step = self.pause == 0 && (self.frame / 6) % 2 == 1;
@@ -167,5 +192,25 @@ impl Kid {
 impl Default for Kid {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scene::tree::Growth;
+
+    #[test]
+    fn test_kid_has_no_head_at_night() {
+        let layout = GardenLayout::new(120, 30, Growth::Full);
+        let day = WeatherConditions::default();
+        let night = WeatherConditions {
+            is_day: false,
+            ..day
+        };
+        let mut kid = Kid::new();
+        kid.update(&layout, &day, &mut rand::rng());
+        assert!(kid.head(&layout, &day).is_some());
+        assert!(kid.head(&layout, &night).is_none());
     }
 }
