@@ -29,7 +29,6 @@ created: 2026-10-30
 
 ## Implementation
 
-- stacked on: #38 (`wa/38-ajouter-lecran-reglages`).
 - `src/settings.rs` → `src/settings/mod.rs` : `Row::City`, `Row::AutoLocation` (7 lignes), `stepped` → `Option<Setting>`. `src/settings/city.rs` (nouveau) : `CitySearch`, `Status { Typing, Searching, Found, NotFound, NoConnection }`, tests.
 - `src/geolocation.rs` : `search_cities(query, language)` (Nominatim, `featureType=city`, `limit=5`), parseur pur `places_from` + `place_label` (région = state_district, sinon county, sinon state), doublons retirés ; `nominatim_get` partagé avec le reverse geocoding ; `detect_location_with_city` ; `Place`. Tests sur un exemple JSON.
 - `src/config/writer.rs` : `write_values` (None retire la clé) ; `src/config/mod.rs` : `Config::save_location`, test.

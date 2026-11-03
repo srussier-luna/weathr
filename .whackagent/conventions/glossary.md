@@ -62,7 +62,7 @@ One precise screen. Team names, in the discussion language. UI projects only.
 | Fête du miel | scène de fête | | maison de Nadia et Claire, Jours de jeu 119–120 seulement |
 | Lieux | menu des lieux | | menu touche m : Jardin, Potager, Fête du miel disponibles |
 | Accueil | onboarding | `welcome` | Facteur arrive, bulle, note dépliée, bulle de départ ; une fois par joueur |
-| Réglages | | `settings_view` | écran ouvert par `s` : unités, Heure du Facteur, Barre du haut → [[architecture]] |
+| Réglages | | `settings_view` | écran ouvert par `s` : unités, Heure du Facteur, Barre du haut, Ville → [[architecture]] |
 <!-- | Login screen | login page | `LoginView` | email + password, forgot-password link | -->
 
 ## Parts
