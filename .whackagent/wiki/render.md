@@ -21,8 +21,8 @@ How cells reach terminal, how modal screens (Courrier, Lettre, Album, Aide, Badg
 ## Overlays — `src/overlay.rs`
 
 - `View { title, lines, footer, frame }` = single data shape for every modal. `Line` is `Text` (word-wrapped), `Preformatted` (truncated), `Centered`, `Rule` or `Blank`.
-- `Frame` = one look per window, so each kind reads at a glance: parchment (Lettre, `Nouvel habitant`), newspaper (Gazette), stamp (Carte postale), folder tab (Archives), punched card (Recette), waves (Bouteille), photo corners (Album), stars (Badges + Badge card), plain (Aide, Courrier). Each frame has its own color.
-- `render_view` draws the frame centred, max 66 columns; `frame_rows` is the pure layout part (tested). Footers or titles wider than the frame wrap between key groups.
+- `Frame` = one look per window, so each kind reads at a glance: parchment (Lettre, `Nouvel habitant`), wet paper (Lettre glissée sous la porte, `Frame::Wet`: light blue, `~` stain top-left, bottom-right corner cut over 4 rows, drops under the box), newspaper (Gazette), stamp (Carte postale), folder tab (Archives), punched card (Recette), waves (Bouteille), photo corners (Album), stars (Badges + Badge card), plain (Aide, Courrier). Each frame has its own color.
+- `render_view` draws the frame centred, max 66 columns; `frame_rows` is the pure layout part (tested). Footers or titles wider than the frame wrap between key groups. A single word or key group wider than the text area is never split and spills onto the right edge (boxes under 23 columns, terminals under 27).
 - `render_badges` = only special layout (columns grouped by `BadgeKind`, secret badges show `???`).
 - New Badge → centred card (`Overlay::NewBadge`): medal with the Badge's own 3×5 drawing (`Badge.icon`), name, condition for secrets. Queue `pending_badges`, one card per Badge, opens only when no window is open; a card replaced by another window comes back first.
 - Toasts (found object, riddle result) drawn by `App::render_overlays` on row 0, one at a time, 4 s.
