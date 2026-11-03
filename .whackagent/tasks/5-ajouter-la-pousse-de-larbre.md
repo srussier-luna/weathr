@@ -1,6 +1,6 @@
 ---
 issue: 5
-status: to-test
+status: to-close
 wiki: [[scene]], [[animation]]
 note: "Slack Salomé/Ben 23/10 : l'arbre qui pousse au fur et à mesure"
 created: 2026-10-23
@@ -49,6 +49,11 @@ created: 2026-10-23
 - À noter : Hulotte et constellations se posent sur l'Arbre présent sans attendre son arrivée (#4 s'en occupe).
 
 ## Review
+
+### Round validation — 2026-11-03
+- Scope : diff cumulé `origin/develop...HEAD` (src/scene/tree.rs, decorations.rs, scene/mod.rs, animation/garden.rs, animation_manager.rs, squirrel.rs, postman.rs, app.rs).
+- Findings : aucun.
+- LENSES : style ✓ · elegance ✓ · structure ✓ · correctness ✓ — VERDICT : clean.
 
 ## Verification
 
