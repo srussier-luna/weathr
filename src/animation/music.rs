@@ -1,4 +1,5 @@
-use crate::animation::garden::GardenLayout;
+use crate::animation::cloud_bank::CloudBank;
+use crate::animation::garden::{self, GardenLayout};
 use crate::holiday::Holiday;
 use crate::render::TerminalRenderer;
 use crossterm::style::Color;
@@ -36,6 +37,21 @@ const HEAD_RISE: f32 = 4.0;
 const RISE_SPEED: f32 = 0.06;
 const WOBBLE_AMPLITUDE: f32 = 1.5;
 const WOBBLE_SPEED: f32 = 0.18;
+const SKY_NOTES: [&str; 12] = [
+    r"        ###################",
+    r"        ###################",
+    r"        |        |        |",
+    r"        |        ##########",
+    r"        |        ##########",
+    r"        |        |        |",
+    r"        |        |        |",
+    r"        |        |        |",
+    r"    _.-'|    _.-'|    _.-'|",
+    r"  .'    |  .'    |  .'    |",
+    r" (     .' (     .' (     .'",
+    r"  `-.-'    `-.-'    `-.-'",
+];
+const COLOR_STEP_FRAMES: u32 = 90;
 
 struct Note {
     origin_x: f32,
@@ -133,9 +149,48 @@ impl Default for MusicNotes {
     }
 }
 
+pub struct SkyNotes {
+    frame: u32,
+}
+
+impl SkyNotes {
+    pub const HEIGHT: u16 = SKY_NOTES.len() as u16;
+
+    pub fn new() -> Self {
+        Self { frame: 0 }
+    }
+
+    pub fn width() -> u16 {
+        SKY_NOTES.iter().map(|line| line.len()).max().unwrap_or(0) as u16
+    }
+
+    pub fn shows(holiday: &Holiday, horizon_y: u16) -> bool {
+        holiday.is_music_day && horizon_y >= CloudBank::TOP + Self::HEIGHT
+    }
+
+    pub fn update(&mut self) {
+        self.frame = self.frame.wrapping_add(1);
+    }
+
+    fn color(&self) -> Color {
+        PALETTE[(self.frame / COLOR_STEP_FRAMES) as usize % PALETTE.len()]
+    }
+
+    pub fn render(&self, renderer: &mut TerminalRenderer, x: u16, y: u16) -> io::Result<()> {
+        garden::draw(renderer, x, y, &SKY_NOTES, self.color())
+    }
+}
+
+impl Default for SkyNotes {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::scene::WorldScene;
     use rand::rngs::StdRng;
 
     const SINGER: (u16, u16) = (70, 20);
@@ -261,5 +316,55 @@ mod tests {
                 assert!(!sings(&music));
             }
         }
+    }
+
+    #[test]
+    fn test_sky_notes_are_twelve_lines_tall() {
+        assert_eq!(SkyNotes::HEIGHT, 12);
+        assert_eq!(SkyNotes::width(), 27);
+        assert!(SKY_NOTES.iter().all(|line| line.trim_end() == *line));
+    }
+
+    #[test]
+    fn test_sky_notes_only_on_music_day() {
+        let date = |day| chrono::NaiveDate::from_ymd_opt(2027, 6, day).unwrap();
+        assert!(SkyNotes::shows(&Holiday::on(date(21)), 17));
+        assert!(SkyNotes::shows(&Holiday::music_day(), 17));
+        assert!(!SkyNotes::shows(&Holiday::on(date(20)), 17));
+        assert!(!SkyNotes::shows(&Holiday::on(date(22)), 17));
+        assert!(!SkyNotes::shows(&Holiday::default(), 17));
+    }
+
+    #[test]
+    fn test_short_sky_keeps_sun_and_moon() {
+        let lowest_horizon = CloudBank::TOP + SkyNotes::HEIGHT;
+        assert!(SkyNotes::shows(&Holiday::music_day(), lowest_horizon));
+        assert!(!SkyNotes::shows(&Holiday::music_day(), lowest_horizon - 1));
+        assert!(!SkyNotes::shows(
+            &Holiday::music_day(),
+            20 - WorldScene::GROUND_HEIGHT
+        ));
+        assert!(SkyNotes::shows(
+            &Holiday::music_day(),
+            21 - WorldScene::GROUND_HEIGHT
+        ));
+    }
+
+    #[test]
+    fn test_sky_notes_change_color_from_time_to_time() {
+        let mut sky = SkyNotes::new();
+        let mut colors = vec![sky.color()];
+        for frame in 1..=COLOR_STEP_FRAMES * PALETTE.len() as u32 {
+            let before = sky.color();
+            sky.update();
+            if frame % COLOR_STEP_FRAMES == 0 {
+                assert_ne!(sky.color(), before);
+                colors.push(sky.color());
+            } else {
+                assert_eq!(sky.color(), before);
+            }
+        }
+        assert!(PALETTE.iter().all(|color| colors.contains(color)));
+        assert_eq!(colors.last(), colors.first());
     }
 }

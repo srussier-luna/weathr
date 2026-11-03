@@ -24,7 +24,7 @@ use crate::animation::{
     leaves::FallingLeaves,
     lore::{Lore, Unlocks},
     moon::MoonSystem,
-    music::MusicNotes,
+    music::{MusicNotes, SkyNotes},
     new_year::NewYearBanner,
     owl::Owl,
     postman::Postman,
@@ -96,6 +96,7 @@ pub struct AnimationManager {
     postman: Postman,
     halloween: Halloween,
     music_notes: MusicNotes,
+    sky_notes: SkyNotes,
     spring: Spring,
     new_year_banner: NewYearBanner,
     rainbow: Rainbow,
@@ -109,6 +110,16 @@ pub struct AnimationManager {
     animation_controller: AnimationController,
     last_frame_time: Instant,
     show_leaves: bool,
+}
+
+fn on_sun_path(progress: f64, width: u16, lowest: u16, term_width: u16) -> (u16, u16) {
+    let top = CloudBank::TOP;
+    let lowest = lowest.max(top);
+    let travel = term_width.saturating_sub(width + 2 * SUN_MARGIN) as f64;
+    let x = SUN_MARGIN + (progress * travel) as u16;
+    let height = (std::f64::consts::PI * progress).sin();
+    let y = top + ((1.0 - height) * (lowest - top) as f64) as u16;
+    (x, y)
 }
 
 impl AnimationManager {
@@ -147,6 +158,7 @@ impl AnimationManager {
             postman: Postman::new(),
             halloween: Halloween::new(),
             music_notes: MusicNotes::new(),
+            sky_notes: SkyNotes::new(),
             spring: Spring::new(),
             new_year_banner: NewYearBanner::new(),
             rainbow: Rainbow,
@@ -260,6 +272,7 @@ impl AnimationManager {
         // Calculate horizon_y early so it's available for all systems
         let ground_height = WorldScene::GROUND_HEIGHT;
         let horizon_y = term_height.saturating_sub(ground_height);
+        let shows_sky_notes = SkyNotes::shows(&state.holiday, horizon_y);
 
         if !conditions.is_day {
             self.star_system.set_sky(if !conditions.is_clear_sky() {
@@ -272,7 +285,9 @@ impl AnimationManager {
             self.star_system.update(term_width, term_height, &mut rng);
             self.star_system.render(renderer)?;
             self.moon_system.update(term_width, term_height);
-            self.moon_system.render(renderer)?;
+            if !shows_sky_notes {
+                self.moon_system.render(renderer)?;
+            }
 
             if state.should_show_fireflies() {
                 self.firefly_system
@@ -295,7 +310,8 @@ impl AnimationManager {
             self.bird_system.render(renderer)?;
         }
 
-        if state.should_show_sun()
+        if !shows_sky_notes
+            && state.should_show_sun()
             && !conditions.is_raining
             && !conditions.is_thunderstorm
             && !conditions.is_snowing
@@ -343,6 +359,10 @@ impl AnimationManager {
             self.cloud_bank.render(renderer, term_width, conditions)?;
         }
 
+        if shows_sky_notes {
+            self.render_sky_notes(renderer, state, conditions.is_day, term_width, horizon_y)?;
+        }
+
         Ok(())
     }
 
@@ -375,18 +395,41 @@ impl AnimationManager {
             );
         };
 
-        let top = CloudBank::TOP;
-        let lowest = horizon_y.saturating_sub(SUN_LOWEST_ABOVE_HORIZON).max(top);
-        let travel = term_width.saturating_sub(sun_width + 2 * SUN_MARGIN) as f64;
-        let x = SUN_MARGIN + (progress * travel) as u16;
-        let height = (std::f64::consts::PI * progress).sin();
-        let y = top + ((1.0 - height) * (lowest - top) as f64) as u16;
+        let lowest = horizon_y.saturating_sub(SUN_LOWEST_ABOVE_HORIZON);
+        let (x, y) = on_sun_path(progress, sun_width, lowest, term_width);
         let color = if !(TWILIGHT..=1.0 - TWILIGHT).contains(&progress) {
             TWILIGHT_SUN
         } else {
             Color::Yellow
         };
         garden::draw(renderer, x, y, &frame, color)
+    }
+
+    fn render_sky_notes(
+        &mut self,
+        renderer: &mut TerminalRenderer,
+        state: &AppState,
+        is_day: bool,
+        term_width: u16,
+        horizon_y: u16,
+    ) -> io::Result<()> {
+        let width = SkyNotes::width();
+        let lowest = horizon_y.saturating_sub(SkyNotes::HEIGHT);
+        let (x, y) = if is_day {
+            match day_progress(
+                state.location.latitude,
+                state.location.longitude,
+                chrono::Utc::now(),
+            ) {
+                Some(progress) => on_sun_path(progress, width, lowest, term_width),
+                None => (term_width.saturating_sub(width) / 2, CloudBank::TOP),
+            }
+        } else {
+            let (x, y) = self.moon_system.position();
+            (x.min(term_width.saturating_sub(width)), y.min(lowest))
+        };
+        self.sky_notes.update();
+        self.sky_notes.render(renderer, x, y)
     }
 
     pub fn render_chimney_smoke(
@@ -597,6 +640,25 @@ impl AnimationManager {
         {
             self.animation_controller.next_frame(&self.sunny_animation);
             self.last_frame_time = Instant::now();
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sky_notes_stay_above_the_horizon_on_the_sun_path() {
+        for (term_width, horizon_y) in [(80, 17), (120, 30), (200, 38)] {
+            let lowest = horizon_y - SkyNotes::HEIGHT;
+            for step in 0..=20 {
+                let progress = step as f64 / 20.0;
+                let (x, y) = on_sun_path(progress, SkyNotes::width(), lowest, term_width);
+                assert!(y >= CloudBank::TOP);
+                assert!(y + SkyNotes::HEIGHT <= horizon_y);
+                assert!(x + SkyNotes::width() <= term_width);
+            }
         }
     }
 }

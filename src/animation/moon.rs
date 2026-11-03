@@ -27,6 +27,10 @@ impl MoonSystem {
         self.y = (terminal_height / 4).max(2);
     }
 
+    pub fn position(&self) -> (u16, u16) {
+        (self.x, self.y)
+    }
+
     pub fn render(&self, renderer: &mut TerminalRenderer) -> io::Result<()> {
         let step = (self.phase * 8.0).round() as usize % 8;
 
