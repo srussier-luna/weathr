@@ -2,7 +2,7 @@ use crate::animation::lore::{Choices, Unlocks};
 use crate::animation_manager::AnimationManager;
 use crate::app_state::AppState;
 use crate::badges::{self, Badge};
-use crate::config::Config;
+use crate::config::{Config, Setting};
 use crate::demo::{Demo, SCENE_DURATION};
 use crate::error::WeatherError;
 use crate::holiday::{Holiday, MeteorShower};
@@ -14,6 +14,7 @@ use crate::remote_weather::{self, Reply, Request};
 use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
 use crate::scene::tree::Growth;
+use crate::settings::{self, Settings};
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
@@ -212,11 +213,19 @@ fn welcome_width(renderer: &TerminalRenderer) -> usize {
     overlay::text_width(renderer, welcome::NOTE_FRAME)
 }
 
+fn push_toast(toasts: &mut VecDeque<String>, message: &str) {
+    if !toasts.iter().any(|toast| toast == message) {
+        toasts.push_back(message.to_string());
+    }
+}
+
 fn story_clock(progress: &Progress, mail_hour: u32) -> StoryClock {
     let start = progress
         .start_date()
         .unwrap_or_else(|| Local::now().date_naive());
-    StoryClock::new(start, mail_hour).with_pauses(progress.paused_days.clone())
+    StoryClock::new(start, mail_hour)
+        .with_pauses(progress.paused_days.clone())
+        .with_previous_mail_hour(progress.previous_mail_hour())
 }
 
 fn story_today(clock: &StoryClock) -> usize {
@@ -342,6 +351,7 @@ enum Overlay {
     NoteBadge(&'static Badge),
     Notes(usize),
     PostmanNote,
+    Settings(usize),
     Welcome(Step),
 }
 
@@ -546,6 +556,8 @@ impl App {
         if self.progress.record_visit() {
             self.progress.save();
         }
+        self.animations
+            .set_mail_hour(self.clock.mail_hour_on(Local::now().date_naive()));
         self.refresh_timeline();
         self.state.set_story_day(self.timeline_day);
         self.request_remote_weather();
@@ -871,6 +883,11 @@ impl App {
                     matches!(entry, Entry::Gazette(_))
                 }) > 0,
             ),
+            Some(Overlay::Settings(selected)) => views::settings_view(
+                &self.settings(),
+                selected,
+                self.clock.mail_hour_on(Local::now().date_naive()) != self.clock.mail_hour(),
+            ),
             Some(Overlay::Badges) => {
                 return overlay::render_badges(
                     renderer,
@@ -1113,6 +1130,12 @@ impl App {
                 let last = views::notes_scroll_limit(&self.release_notes, rows, width);
                 self.overlay = Some(Overlay::Notes(first.saturating_add_signed(step).min(last)));
             }
+            Some(Overlay::Settings(selected)) => {
+                let last = settings::ROWS.len() - 1;
+                self.overlay = Some(Overlay::Settings(
+                    selected.saturating_add_signed(step).min(last),
+                ));
+            }
             _ => self.select_in_index(step),
         }
     }
@@ -1143,6 +1166,7 @@ impl App {
                 | Overlay::Notes(_)
                 | Overlay::PostmanNote,
             ) => self.overlay = closed_overlay(self.overlay),
+            Some(Overlay::Settings(_)) => self.change_setting(1),
             _ => self.reread_selected(),
         }
     }
@@ -1152,6 +1176,61 @@ impl App {
             Some(Overlay::Help) => None,
             _ => Some(Overlay::Help),
         };
+    }
+
+    fn toggle_settings(&mut self) {
+        self.overlay = match self.overlay {
+            Some(Overlay::Settings(_)) => None,
+            _ => Some(Overlay::Settings(0)),
+        };
+    }
+
+    fn settings(&self) -> Settings {
+        Settings {
+            units: self.state.units,
+            mail_hour: self.clock.mail_hour(),
+            hide_hud: self.hide_hud,
+        }
+    }
+
+    fn change_setting(&mut self, step: isize) {
+        let Some(Overlay::Settings(selected)) = self.overlay else {
+            return;
+        };
+        let mut settings = self.settings();
+        let setting = settings.stepped(settings::ROWS[selected], step);
+        settings.apply(setting);
+        if let Setting::MailHour(hour) = setting {
+            self.change_mail_hour(hour);
+        } else if Config::save(setting).is_err() {
+            self.toast_unsaved_setting();
+        }
+        self.hide_hud = settings.hide_hud;
+        self.state.set_units(settings.units);
+    }
+
+    fn change_mail_hour(&mut self, hour: u32) {
+        if self.clock.is_frozen() {
+            return;
+        }
+        let mut clock = self.clock.clone();
+        clock.change_mail_hour(hour, Local::now().naive_local());
+        self.progress
+            .set_previous_mail_hour(clock.previous_mail_hour());
+        if self.progress.try_save().is_ok() && Config::save(Setting::MailHour(hour)).is_ok() {
+            self.clock = clock;
+        } else {
+            self.progress
+                .set_previous_mail_hour(self.clock.previous_mail_hour());
+            self.toast_unsaved_setting();
+        }
+    }
+
+    fn toast_unsaved_setting(&mut self) {
+        push_toast(
+            &mut self.toasts,
+            "Réglage non enregistré\u{202F}: vérifie config.toml",
+        );
     }
 
     fn toggle_album(&mut self) {
@@ -1168,6 +1247,7 @@ impl App {
                 self.overlay = Some(Overlay::Album(page.saturating_add_signed(step).min(last)));
             }
             Some(Overlay::Letter(_)) => self.browse_letters(step),
+            Some(Overlay::Settings(_)) => self.change_setting(step),
             _ => {}
         }
     }
@@ -1335,6 +1415,7 @@ impl App {
                             KeyCode::Char('2') => self.answer_letter(2),
                             KeyCode::Char('a') | KeyCode::Char('A') => self.toggle_album(),
                             KeyCode::Char('h') | KeyCode::Char('H') => self.toggle_help(),
+                            KeyCode::Char('s') | KeyCode::Char('S') => self.toggle_settings(),
                             KeyCode::Char('l') | KeyCode::Char('L') => self.toggle_index(),
                             KeyCode::Up => self.scroll(-1, rows, width),
                             KeyCode::Down => self.scroll(1, rows, width),
@@ -1836,5 +1917,26 @@ mod tests {
         for mail_hour in [0, 23] {
             assert_eq!(story_today(&story_clock(&progress, mail_hour)), 1);
         }
+    }
+
+    #[test]
+    fn test_relaunch_keeps_the_saved_previous_mail_hour() {
+        let mut progress = Progress::default();
+        progress.started_on = Some("2026-10-01".to_string());
+        progress.set_previous_mail_hour(Some((date(2026, 10, 9), 9)));
+        let clock = story_clock(&progress, 11);
+        let at = |day, hour, minute| date(2026, 10, day).and_hms_opt(hour, minute, 0).unwrap();
+        assert_eq!(clock.day_on(at(8, 10, 30)), 8);
+        assert_eq!(clock.day_on(at(9, 10, 59)), 8);
+        assert_eq!(clock.day_on(at(9, 11, 0)), 9);
+    }
+
+    #[test]
+    fn test_identical_toast_is_queued_once() {
+        let mut toasts = VecDeque::new();
+        push_toast(&mut toasts, "A");
+        push_toast(&mut toasts, "B");
+        push_toast(&mut toasts, "A");
+        assert_eq!(toasts, ["A", "B"]);
     }
 }

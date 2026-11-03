@@ -23,8 +23,12 @@ All network calls go to Open-Meteo (weather), ipinfo.io (IP location), Nominatim
 ### Units invariant
 
 Requests ask Open-Meteo for user units, then `normalize_*`
-(`src/weather/units.rs:66`) converts back so **`WeatherData` always °C, m/s, mm**.
-`format_*` converts again only for HUD. Never store user units in `WeatherData`.
+(`src/weather/units.rs:92`) converts back so **`WeatherData` always °C, m/s, mm**.
+`format_*` converts again only for Barre du haut. Never store user units in `WeatherData`.
+
+- Réglages (#38) change units live: `AppState::set_units` (`src/app_state.rs:136`) sets `weather_info_needs_update` → Barre du haut rebuilt next frame in new units, no refetch ([[render]]).
+- Fetch task keeps launch units (`src/app.rs:454`) until restart. Harmless: requests + `normalize_*` use same units, data stays metric.
+- `*_symbol` (`src/weather/units.rs:43`) = unit labels (`°F`, `km/h`, `in`…), shared by `format_*` and Réglages rows.
 
 ## Location — `src/geolocation.rs`
 
