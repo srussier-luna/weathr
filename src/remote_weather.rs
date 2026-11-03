@@ -7,7 +7,7 @@ use serde::Deserialize;
 use std::time::Duration;
 use tokio::sync::mpsc;
 
-const FORECAST_URL: &str = "https://api.open-meteo.com/v1/forecast";
+pub(crate) const FORECAST_URL: &str = "https://api.open-meteo.com/v1/forecast";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 const RAINY_DAY_MM: f64 = 1.0;
 const HEAT_WAVE_CELSIUS: f64 = 35.0;

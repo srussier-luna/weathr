@@ -145,7 +145,7 @@ impl Progress {
     }
 }
 
-fn progress_path() -> Option<PathBuf> {
+pub(crate) fn progress_path() -> Option<PathBuf> {
     dirs::config_dir().map(|dir| dir.join("weathr").join("progress.json"))
 }
 
