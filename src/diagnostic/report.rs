@@ -29,26 +29,9 @@ fn summary(problems: usize) -> String {
 mod tests {
     use super::*;
 
-    fn ok(name: &'static str, detail: &str) -> Check {
-        Check {
-            name,
-            status: Status::Ok(detail.to_string()),
-        }
-    }
-
-    fn problem(name: &'static str, problem: &str, fix: &str) -> Check {
-        Check {
-            name,
-            status: Status::Problem {
-                problem: problem.to_string(),
-                fix: fix.to_string(),
-            },
-        }
-    }
-
     #[test]
     fn test_all_ok_ends_with_everything_fine() {
-        let checks = [ok("git", "2.43.0"), ok("cargo", "1.82.0")];
+        let checks = [Check::ok("git", "2.43.0"), Check::ok("cargo", "1.82.0")];
         assert_eq!(
             render(&checks),
             "✓ git 2.43.0\n✓ cargo 1.82.0\nTout est en ordre.\n"
@@ -59,13 +42,13 @@ mod tests {
     #[test]
     fn test_problems_show_fix_and_count() {
         let checks = [
-            ok("git", "2.43.0"),
-            problem(
+            Check::ok("git", "2.43.0"),
+            Check::problem(
                 "cargo",
                 "introuvable",
                 "installe Rust\u{202F}: https://rustup.rs",
             ),
-            problem("Open-Meteo", "injoignable", "vérifie ta connexion"),
+            Check::problem("Open-Meteo", "injoignable", "vérifie ta connexion"),
         ];
         assert_eq!(
             render(&checks),

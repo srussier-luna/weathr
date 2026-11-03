@@ -71,10 +71,16 @@ pub(crate) fn is_git_checkout(source: &Path) -> bool {
     source.join(".git").exists()
 }
 
-pub(crate) fn git_output(source: &Path, args: &[&str]) -> Option<String> {
-    let output = Command::new("git")
-        .args(args)
-        .current_dir(source)
+fn git_output(source: &Path, args: &[&str]) -> Option<String> {
+    stdout_of(Command::new("git").args(args).current_dir(source))
+}
+
+pub(crate) fn tool_version(tool: &str) -> Option<String> {
+    stdout_of(Command::new(tool).arg("--version"))
+}
+
+fn stdout_of(command: &mut Command) -> Option<String> {
+    let output = command
         .stdin(Stdio::null())
         .stderr(Stdio::null())
         .output()

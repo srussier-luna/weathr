@@ -1,6 +1,6 @@
 ---
 issue: 42
-status: to-test
+status: to-close
 wiki: [[updater]], [[weather]], [[architecture]]
 note: "weathr --diagnostic : vérifie git, cargo, le clone, le réseau, les droits et dit quoi corriger"
 created: 2026-10-27
@@ -47,6 +47,24 @@ created: 2026-10-27
 - Build : `cargo build`, `cargo fmt --check`, `cargo test` verts. Clippy : seule l'erreur connue #79 (propre avec `-A clippy::double_must_use`).
 
 ## Review
+
+### Round validation — 2026-11-03
+- Scope : diff cumulé `origin/develop...HEAD` + correctifs (src/diagnostic/{mod,checks,report}.rs, src/updater/mod.rs, src/main.rs, src/progress.rs, src/remote_weather.rs).
+- Findings (autofix, 2 tours, tous corrigés) :
+  - 🟠 [correctness] sans git ou sans clone, le fetch conseillait la connexion → `FetchState` (`Fetched` / `Failed` / `GitMissing` / `CloneMissing`), une indication par cause.
+  - 🟡 [correctness] `chmod u+w` inutile sur un dossier qui n'est pas à toi → `DirAccess::NotOwned`, `sudo chown -R` limité au dossier weathr (`mkdir -p` s'il manque).
+  - 🟡 [correctness] binaire introuvable renvoyait vers HOME → indication propre à chaque vérification (`checks::config_dir`, `checks::binary_dir`).
+  - 🟡 [correctness] chemins non quotés dans les commandes proposées → `quoted()`.
+  - 🟡 [correctness] config absente : chmod visait le dossier absent → l'ancêtre testé est affiché.
+  - 🟡 [correctness] sonde restante → faux « lecture seule » → nom unique `.weathr-diagnostic-<pid>`.
+  - 🟡 [structure] `version()` recopiait `git_output` → `stdout_of` partagé, `updater::tool_version` ; `git_output` redevient privé.
+  - 🟡 [structure] indications git/cargo dans mod.rs → `checks::git` / `checks::cargo`.
+  - 🟡 [elegance] `Option<&Path>` + `bool` → enum `DirAccess`.
+  - 🟡 [style] tests de report.rs recopiaient `Check::ok` / `problem` → `pub(super)`, réutilisés.
+  - 🟡 [style] « relie-la » → « fais-lui suivre origin/main » ; « invalide » → « JSON mal formé ».
+- Choix : propriétaire comparé à celui de HOME (`is_owned_by_user`), sans `libc` ni `unsafe` ; métadonnée illisible → indication `chmod`.
+- Preuve : `cargo build`, `cargo fmt -- --check`, `cargo clippy -- -D warnings -A clippy::double_must_use` (erreur connue #79), `cargo test --bin weathr` (243) verts. `tests/weather_client_integration_test.rs` demande le réseau, non relancé.
+- LENSES : style ✓ · elegance ✓ · structure ✓ · correctness ✓ — VERDICT : clean.
 
 ## Verification
 

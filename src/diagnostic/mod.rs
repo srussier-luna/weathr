@@ -4,12 +4,13 @@ mod report;
 use crate::progress::{Progress, progress_path};
 use crate::remote_weather::FORECAST_URL;
 use crate::updater;
-use checks::{Check, CloneState, ProgressFile, Reachability};
+use checks::{Check, CloneState, DirAccess, FetchState, ProgressFile, Reachability};
 use std::env;
 use std::fs::{self, OpenOptions};
 use std::io;
+use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process;
 use std::time::Duration;
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
@@ -23,55 +24,27 @@ pub async fn run() -> bool {
 
 async fn collect() -> Vec<Check> {
     let source = Path::new(updater::SOURCE_DIR);
-    let git = version("git");
-    let cargo = version("cargo");
-    let (reachability, fetched) = tokio::join!(reach_open_meteo(), fetch(source, git.is_some()));
+    let git = updater::tool_version("git");
+    let cargo = updater::tool_version("cargo");
+    let (reachability, fetch_state) =
+        tokio::join!(reach_open_meteo(), fetch(source, git.is_some()));
     let config_dir = updater::config_dir();
     let progress_path = progress_path();
     let binary_dir = binary_dir();
 
     vec![
-        checks::tool(
-            "git",
-            git.as_deref(),
-            "installe git\u{202F}: https://git-scm.com/downloads",
-        ),
-        checks::tool(
-            "cargo",
-            cargo.as_deref(),
-            "installe Rust\u{202F}: https://rustup.rs",
-        ),
+        checks::git(git.as_deref()),
+        checks::cargo(cargo.as_deref()),
         checks::source_clone(source, clone_state(source, git.is_some())),
         checks::open_meteo(reachability),
-        checks::git_fetch(fetched),
-        checks::writable_dir(
-            "dossier de config",
-            config_dir.as_deref(),
-            config_dir.as_deref().is_some_and(is_writable),
-        ),
+        checks::git_fetch(fetch_state),
+        checks::config_dir(dir_access(config_dir.as_deref())),
         checks::progress_file(
             progress_path.as_deref(),
             read_progress(progress_path.as_deref()),
         ),
-        checks::writable_dir(
-            "dossier du binaire",
-            binary_dir.as_deref(),
-            binary_dir.as_deref().is_some_and(is_writable),
-        ),
+        checks::binary_dir(dir_access(binary_dir.as_deref())),
     ]
-}
-
-fn version(tool: &str) -> Option<String> {
-    let output = Command::new(tool)
-        .arg("--version")
-        .stdin(Stdio::null())
-        .stderr(Stdio::null())
-        .output()
-        .ok()?;
-    output
-        .status
-        .success()
-        .then(|| String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
 fn clone_state(source: &Path, git_available: bool) -> CloneState {
@@ -100,8 +73,16 @@ async fn reach_open_meteo() -> Reachability {
     }
 }
 
-async fn fetch(source: &Path, git_available: bool) -> bool {
-    git_available && updater::is_git_checkout(source) && updater::fetch(source).await
+async fn fetch(source: &Path, git_available: bool) -> FetchState {
+    if !updater::is_git_checkout(source) {
+        FetchState::CloneMissing
+    } else if !git_available {
+        FetchState::GitMissing
+    } else if updater::fetch(source).await {
+        FetchState::Fetched
+    } else {
+        FetchState::Failed
+    }
 }
 
 fn read_progress(path: Option<&Path>) -> ProgressFile {
@@ -121,11 +102,27 @@ fn binary_dir() -> Option<PathBuf> {
     executable.parent().map(Path::to_path_buf)
 }
 
-fn is_writable(dir: &Path) -> bool {
-    let Some(existing) = dir.ancestors().find(|ancestor| ancestor.exists()) else {
-        return false;
+fn dir_access(dir: Option<&Path>) -> DirAccess {
+    let Some(dir) = dir else {
+        return DirAccess::Unknown;
     };
-    let probe = existing.join(PROBE_FILE);
+    let Some(existing) = dir.ancestors().find(|ancestor| ancestor.exists()) else {
+        return DirAccess::Unknown;
+    };
+    if can_create_file_in(existing) {
+        DirAccess::Writable(dir.to_path_buf())
+    } else if is_owned_by_user(existing) {
+        DirAccess::ReadOnly(existing.to_path_buf())
+    } else {
+        DirAccess::NotOwned {
+            dir: dir.to_path_buf(),
+            existing: existing.to_path_buf(),
+        }
+    }
+}
+
+fn can_create_file_in(dir: &Path) -> bool {
+    let probe = dir.join(format!("{PROBE_FILE}-{}", process::id()));
     let created = OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -135,4 +132,12 @@ fn is_writable(dir: &Path) -> bool {
         let _ = fs::remove_file(&probe);
     }
     created
+}
+
+fn is_owned_by_user(dir: &Path) -> bool {
+    let owner = |path: &Path| fs::metadata(path).map(|metadata| metadata.uid()).ok();
+    match (owner(dir), dirs::home_dir().as_deref().and_then(owner)) {
+        (Some(dir_owner), Some(user)) => dir_owner == user,
+        _ => true,
+    }
 }
