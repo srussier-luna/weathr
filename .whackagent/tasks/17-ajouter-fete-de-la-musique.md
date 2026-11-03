@@ -1,7 +1,7 @@
 ---
 issue: 17
 status: to-close
-wiki: [[animation]], [[mail]]
+wiki: [[animation]], [[mail]], [[scene]], [[updater]], [[architecture]]
 note: Fête de la musique : notes ♪ qui sortent de la maison le 21 juin
 created: 2026-10-30
 ---

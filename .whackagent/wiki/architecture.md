@@ -42,7 +42,7 @@ tokio task (REFRESH_INTERVAL 300s) → WeatherClient → mpsc(1) → App::run
   → every render_* call reads &WeatherConditions
 ```
 
-`--simulate`, `--night`, `--christmas`, `--fireworks`, `--demo` bypass network entirely (`src/app.rs:236`), also disable weather/fête Badges and rain alerts.
+`--simulate`, `--night`, `--christmas`, `--fireworks`, `--music`, `--demo` bypass network entirely (`src/app.rs:236`), also disable weather/fête Badges and rain alerts.
 
 ## Module map
 

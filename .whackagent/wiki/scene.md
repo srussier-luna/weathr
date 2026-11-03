@@ -10,7 +10,7 @@
 
 ## Pieces
 
-- **House** (`src/scene/house.rs:111`) — `Small` or `Large` ASCII by terminal size (≥170×32 for large). `x_on` centres it, then shifts left to leave room for tree. Exposes anchor points used by other modules: `chimney_offset`, `roof_perch`, `big_window`, `peak`, `porch_*`, `door_x`. Animals and lore position off these. Window lights switch off one by one at night, seeded by row/column (`window_color`, `src/scene/house.rs:298`).
+- **House** (`src/scene/house.rs:111`) — `Small` or `Large` ASCII by terminal size (≥170×32 for large). `x_on` centres it, then shifts left to leave room for tree. Exposes anchor points used by other modules: `chimney_offset`, `roof_perch`, `big_window`, `peak`, `porch_*`, `door_x`. Animals and lore position off these. `windows` (centre of every `[`…`]` on wall rows of the shown sprite: 8 small, 19 large) + `eave_row` (`~~~` row) → Fête de la musique notes ([[animation]]). Window lights switch off one by one at night, seeded by row/column (`window_color`, `src/scene/house.rs:320`).
 - **Mountains** (`src/scene/mountains.rs:23`) — deterministic ridge from width + horizon (no RNG). Snow caps when snowing or winter. River reuses `ridge_tops`.
 - **River** (`src/scene/river.rs:43`) — flows from summit near pond down to horizon, as list of `Stretch`es. Freezes (`=`) in winter. `is_water` and `stretch(i)` let duck, frog, drifting Bouteilles follow it.
 - **Tree** (`src/scene/tree.rs:35`) — `Tree::fit` picks tallest tree fitting left of house, or none. Seasonal foliage; fir in December/winter, lights + presents at Christmas.

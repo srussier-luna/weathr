@@ -36,7 +36,7 @@ Assumes binary built from local clone of this fork.
 | `-s, --simulate <cond>` | fixed weather, no network (missing value prints list) |
 | `-n, --night` | night for simulated scenes |
 | `-l, --leaves` | falling leaves outside autumn |
-| `--christmas`, `--fireworks` | inject Fête (`--fireworks` also forces night) |
+| `--christmas`, `--fireworks`, `--music` | inject Fête (`--fireworks` also forces night; `--music` = Fête de la musique, see [[animation]]) |
 | `--demo` | cycle every scene, see [[animation]] |
 | `--auto-location`, `--hide-location`, `--hide-hud` | override config |
 | `--imperial` / `--metric` | units (mutually exclusive) |
