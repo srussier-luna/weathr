@@ -2,6 +2,7 @@ use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
 use crate::scene::decorations::GardenPlan;
 use crate::scene::house::House;
+use crate::scene::tree::Growth;
 use crossterm::style::Color;
 use std::io;
 
@@ -21,7 +22,7 @@ pub struct GardenLayout {
 }
 
 impl GardenLayout {
-    pub fn new(term_width: u16, term_height: u16) -> Self {
+    pub fn new(term_width: u16, term_height: u16, tree_growth: Growth) -> Self {
         let horizon_y = term_height.saturating_sub(WorldScene::GROUND_HEIGHT);
         let house = House::for_terminal(term_width, term_height);
         let house_x = house.x_on(term_width, horizon_y);
@@ -33,7 +34,7 @@ impl GardenLayout {
             house,
             house_x,
             house_y,
-            plan: GardenPlan::new(house_x, horizon_y),
+            plan: GardenPlan::new(house_x, horizon_y, tree_growth),
         }
     }
 
@@ -187,7 +188,7 @@ mod tests {
 
     #[test]
     fn test_well_fits_left_of_tree_on_wide_terminal() {
-        let layout = GardenLayout::new(200, 40);
+        let layout = GardenLayout::new(200, 40, Growth::Full);
         let tree = layout.plan.tree.unwrap();
         let well_x = layout.well_x().unwrap();
         assert!(well_x + WELL_WIDTH + SLOT_GAP <= tree.x);
@@ -195,13 +196,13 @@ mod tests {
 
     #[test]
     fn test_well_hidden_on_narrow_terminal() {
-        let layout = GardenLayout::new(120, 30);
+        let layout = GardenLayout::new(120, 30, Growth::Full);
         assert_eq!(layout.well_x(), None);
     }
 
     #[test]
     fn test_chest_fits_left_of_well_on_wide_terminal() {
-        let layout = GardenLayout::new(240, 40);
+        let layout = GardenLayout::new(240, 40, Growth::Full);
         let chest_x = layout.chest_x().unwrap();
         let well_x = layout.well_x().unwrap();
         assert_eq!(chest_x + CHEST_WIDTH + CHEST_GAP, well_x);
@@ -209,7 +210,7 @@ mod tests {
 
     #[test]
     fn test_chest_hidden_on_narrow_terminal() {
-        let layout = GardenLayout::new(120, 30);
+        let layout = GardenLayout::new(120, 30, Growth::Full);
         assert_eq!(layout.chest_x(), None);
     }
 
@@ -217,7 +218,7 @@ mod tests {
     fn test_well_fits_without_chest() {
         assert!(
             (120..400)
-                .map(|width| GardenLayout::new(width, 40))
+                .map(|width| GardenLayout::new(width, 40, Growth::Full))
                 .any(|layout| layout.well_x().is_some() && layout.chest_x().is_none())
         );
     }
