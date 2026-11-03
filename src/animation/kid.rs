@@ -198,10 +198,11 @@ impl Default for Kid {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::scene::tree::Growth;
 
     #[test]
     fn test_kid_has_no_head_at_night() {
-        let layout = GardenLayout::new(120, 30);
+        let layout = GardenLayout::new(120, 30, Growth::Full);
         let day = WeatherConditions::default();
         let night = WeatherConditions {
             is_day: false,

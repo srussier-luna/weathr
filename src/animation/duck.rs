@@ -167,10 +167,11 @@ impl Default for Duck {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::scene::tree::Growth;
 
     #[test]
     fn test_duck_has_no_head_when_dry() {
-        let layout = GardenLayout::new(120, 30);
+        let layout = GardenLayout::new(120, 30, Growth::Full);
         let duck = Duck::new();
         let rain = WeatherConditions {
             is_raining: true,

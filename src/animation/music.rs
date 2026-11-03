@@ -201,6 +201,7 @@ impl Default for SkyNotes {
 mod tests {
     use super::*;
     use crate::scene::WorldScene;
+    use crate::scene::tree::Growth;
     use rand::rngs::StdRng;
 
     const SINGER: (u16, u16) = (70, 20);
@@ -230,7 +231,7 @@ mod tests {
 
     #[test]
     fn test_several_notes_play_at_once() {
-        let layout = GardenLayout::new(80, 24);
+        let layout = GardenLayout::new(80, 24, Growth::Full);
         let mut rng = StdRng::seed_from_u64(21);
         let mut music = MusicNotes::new();
         let most = play(
@@ -246,7 +247,10 @@ mod tests {
 
     #[test]
     fn test_notes_rise_from_windows_up_to_a_few_rows_above_the_eave() {
-        for layout in [GardenLayout::new(80, 24), GardenLayout::new(200, 40)] {
+        for layout in [
+            GardenLayout::new(80, 24, Growth::Full),
+            GardenLayout::new(200, 40, Growth::Full),
+        ] {
             let house = layout.house;
             let window_xs: Vec<f32> = house
                 .windows()
@@ -270,7 +274,10 @@ mod tests {
 
     #[test]
     fn test_every_window_note_stays_on_screen_for_a_while() {
-        for layout in [GardenLayout::new(80, 24), GardenLayout::new(200, 40)] {
+        for layout in [
+            GardenLayout::new(80, 24, Growth::Full),
+            GardenLayout::new(200, 40, Growth::Full),
+        ] {
             let mut rng = StdRng::seed_from_u64(21);
             for window in layout.house.windows() {
                 let mut music = MusicNotes::new();
@@ -285,7 +292,7 @@ mod tests {
 
     #[test]
     fn test_singers_only_sing_on_music_day() {
-        let layout = GardenLayout::new(80, 24);
+        let layout = GardenLayout::new(80, 24, Growth::Full);
         let mut rng = StdRng::seed_from_u64(21);
         let mut music = MusicNotes::new();
 
@@ -309,7 +316,7 @@ mod tests {
 
     #[test]
     fn test_notes_rise_a_few_rows_above_the_head() {
-        let layout = GardenLayout::new(80, 24);
+        let layout = GardenLayout::new(80, 24, Growth::Full);
         let mut rng = StdRng::seed_from_u64(21);
         let mut music = MusicNotes::new();
         for _ in 0..600 {
@@ -327,7 +334,7 @@ mod tests {
 
     #[test]
     fn test_hidden_singer_sings_nothing() {
-        let layout = GardenLayout::new(80, 24);
+        let layout = GardenLayout::new(80, 24, Growth::Full);
         let mut rng = StdRng::seed_from_u64(21);
         let mut music = MusicNotes::new();
         play(
