@@ -1,6 +1,6 @@
 ---
 issue: 97
-status: todo
+status: to-test
 wiki: [[animation]], [[mail]]
 note: "jours 14 lettre de 13 des pas du puits a la maison / ils sont a l'ancienne emplacement du puits / verifie tous les dessins de pas pour cahque jours et push ke en hot fix pour faire une 1.6.1 sans note de version utilisateur"
 created: 2026-11-04
@@ -49,8 +49,15 @@ created: 2026-11-04
 
 ## Implementation
 
+- `src/app.rs`: `FOOTPRINT_DAYS = [8]`, `WET_FOOTPRINT_DAYS = [13, 14, 30]`; `unlocks_on` sets `footprints` / `wet_footprints` only when arrived **and** the Jour de jeu is in its list. Renderers unchanged; night gating stays in `creepy.rs`.
+- Tests: `test_footprints_show_only_on_day_8`, `test_wet_footprints_show_only_on_days_13_14_and_30`; `test_every_thing_arrives_on_its_day` still green.
+- `Cargo.toml` / `Cargo.lock`: 1.6.2. `NOUVEAUTES.md` untouched.
+- Proof: `cargo build` ✅, `cargo test` ✅ (2 network tests in `tests/weather_client_integration_test.rs` flaked once, green on rerun, unrelated).
+
 ## Review
 
 ## Verification
+
+manual validation — not run by agent
 
 ## Feedback

@@ -42,6 +42,8 @@ const REMOTE_CHECK_FRAMES: u32 = 300;
 const MAX_ANSWER_LENGTH: usize = 30;
 const REMOTE_CHANNEL_SIZE: usize = 16;
 const OVERLAY_MARGIN_ROWS: u16 = 12;
+const FOOTPRINT_DAYS: [usize; 1] = [8];
+const WET_FOOTPRINT_DAYS: [usize; 3] = [13, 14, 30];
 
 fn count_read(timeline: &Timeline, progress: &Progress, kind: fn(&Entry) -> bool) -> usize {
     timeline
@@ -57,7 +59,7 @@ fn unlocks_on(timeline: &Timeline, day: usize, answers: &BTreeMap<String, u8>) -
     Unlocks {
         bench: has_arrived(Thing::Bench),
         cat_bow: has_arrived(Thing::CatBow),
-        footprints: has_arrived(Thing::Footprints),
+        footprints: has_arrived(Thing::Footprints) && FOOTPRINT_DAYS.contains(&day),
         well: has_arrived(Thing::Well),
         bone: has_arrived(Thing::Bone),
         key: has_arrived(Thing::Key),
@@ -72,7 +74,7 @@ fn unlocks_on(timeline: &Timeline, day: usize, answers: &BTreeMap<String, u8>) -
         weather_vane: has_arrived(Thing::WeatherVane),
         bunting: has_arrived(Thing::Bunting),
         chest: has_arrived(Thing::Chest),
-        wet_footprints: has_arrived(Thing::WetFootprints),
+        wet_footprints: has_arrived(Thing::WetFootprints) && WET_FOOTPRINT_DAYS.contains(&day),
         silhouette: has_arrived(Thing::Silhouette),
         whispering_well: has_arrived(Thing::WhisperingWell),
         staring: has_arrived(Thing::Staring),
@@ -1660,6 +1662,30 @@ mod tests {
                 day - 1
             );
             assert!(shows(&unlocks_on_day(day), thing), "{thing:?} on day {day}");
+        }
+    }
+
+    #[test]
+    fn test_footprints_show_only_on_day_8() {
+        assert!(unlocks_on_day(8).footprints);
+        for day in [7, 9, 14, 61] {
+            assert!(!unlocks_on_day(day).footprints, "footprints on day {day}");
+        }
+    }
+
+    #[test]
+    fn test_wet_footprints_show_only_on_days_13_14_and_30() {
+        for day in [13, 14, 30] {
+            assert!(
+                unlocks_on_day(day).wet_footprints,
+                "wet footprints on day {day}"
+            );
+        }
+        for day in [12, 15, 29, 31] {
+            assert!(
+                !unlocks_on_day(day).wet_footprints,
+                "wet footprints on day {day}"
+            );
         }
     }
 
