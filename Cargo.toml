@@ -1,6 +1,6 @@
 [package]
 name = "weathr"
-version = "1.6.1"
+version = "1.6.2"
 edition = "2024"
 rust-version = "1.85.0"
 license = "GPL-3.0-or-later"

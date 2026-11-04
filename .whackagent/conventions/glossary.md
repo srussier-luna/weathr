@@ -40,6 +40,8 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Arbre | | | `Tree` | grand arbre à gauche de la maison, pousse du jour 1 au jour 12 |
 | Puits | | | `well` | vieux puits réparé, à gauche du grand Arbre |
 | Coffre | | | `chest` | coffre de Jeanne, à gauche du Puits |
+| Traces de boue | pas | | `footprints` | `:` marron de l'Arbre à la porte, Jour de jeu 8 seulement |
+| Traces mouillées | pas | | `wet_footprints` | `.` bleus du Puits à la porte, nuits 13, 14 et 30 |
 | Cabane | | | `treehouse` | cabane de Léo, dans le feuillage de l'Arbre |
 | Perséides | | | | étoiles filantes plus fréquentes la nuit, du 9 au 15 août ; Badge dédié |
 | Géminides | | | | étoiles filantes plus fréquentes la nuit, du 10 au 16 décembre ; Badge dédié |
