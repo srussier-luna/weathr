@@ -1,6 +1,6 @@
 ---
 issue: 97
-status: to-test
+status: to-close
 wiki: [[animation]], [[mail]]
 note: "jours 14 lettre de 13 des pas du puits a la maison / ils sont a l'ancienne emplacement du puits / verifie tous les dessins de pas pour cahque jours et push ke en hot fix pour faire une 1.6.1 sans note de version utilisateur"
 created: 2026-11-04
@@ -55,6 +55,8 @@ created: 2026-11-04
 - Proof: `cargo build` ✅, `cargo test` ✅ (2 network tests in `tests/weather_client_integration_test.rs` flaked once, green on rerun, unrelated).
 
 ## Review
+
+- Round `validation` (diff `origin/main..HEAD`): LENSES style ✓ · elegance ✓ · structure ✓ · correctness ✓ — clean, no autofix.
 
 ## Verification
 

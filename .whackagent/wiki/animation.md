@@ -28,6 +28,7 @@ Demo has `Perséides` and `Géminides` scenes. `StarGazing` (constellations) use
 ## Lore and unlocks — `src/animation/lore.rs`
 
 - `Unlocks` (`src/animation/lore.rs:72`) = flat set of booleans, one per Apparition (`Thing`, `src/story/event.rs:31`) + `choices`. Set from the Timeline's Arrival beats on today's **Jour de jeu**, never from reading: bench on day 4, well on day 13, finds on day 45, Bouteilles with archive 3, creepy events on the n°13 neighbour's Lettre days. See [[mail]].
+- Footprints are not permanent (#97): `unlocks_on` (`src/app.rs`) shows Traces de boue only on Jour de jeu 8 (`FOOTPRINT_DAYS`) and Traces mouillées only on days 13, 14, 30 (`WET_FOOTPRINT_DAYS`, night-only in `Creepy`). Days match the Lettres that mention them.
 - `Choices` (`:38`) maps letter answers (keys `1`/`2`) to visual variants: bow colour, postman bell, owl silent, ducklings count…
 - `App` derives unlocks with `unlocks_on(timeline, day, answers)` (`src/app.rs:53`): on Jour de jeu rollover (`refresh_timeline`) and when an answer changes. Answers only drive `Choices`. Never store unlocks; always derive.
 - `Lore` draws gifted props (bench, well, treehouse, chest, balloon, bunting…). `Creepy` handles n°13 neighbour: wet footprints, silhouette, whispering well, "staring" state freezing cat, dog, owl.
