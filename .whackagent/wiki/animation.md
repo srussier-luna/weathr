@@ -25,6 +25,13 @@ Demo has `Perséides` and `Géminides` scenes. `StarGazing` (constellations) use
 
 `sun_path::day_progress` (`src/animation/sun_path.rs:8`) computes sunrise/sunset from latitude, longitude, date. Sun travels arc across screen, turns orange at twilight. Polar day/night → `None` → centred fallback sprite. `on_sun_path` (`:15`) = the arc itself, for any sprite width and lowest row: x within `SUN_MARGIN` of edges, y from `CloudBank::TOP` down to lowest. Sun and Notes du ciel share it.
 
+## Nuages — `src/animation/clouds.rs`
+
+- `CloudSystem`: Nuages cross sky left → right, speed 0.05–0.15 col/frame, top third of screen. Spawn at `off_screen_x` (-widest line), enter column by column: `visible_part` cuts what is left of col 0 (#104).
+- One colour for all, set each frame in `update` from `cloud_color(condition)`: ciel clair → white, Éclaircies → light grey, Nuageux / Couvert / rest / no weather → dark grey. Weather refresh → all repaint at once, no fade.
+- Overlap: each line drawn from first to last non-space char. Inside opaque (hides cloud, sun behind), leading / trailing spaces transparent: no blank band around a Nuage.
+- Rain / storm / snow: separate cloud bank (`cloud_bank.rs`), not `CloudSystem`.
+
 ## Lore and unlocks — `src/animation/lore.rs`
 
 - `Unlocks` (`src/animation/lore.rs:72`) = flat set of booleans, one per Apparition (`Thing`, `src/story/event.rs:31`) + `choices`. Set from the Timeline's Arrival beats on today's **Jour de jeu**, never from reading: Habitants too (Minouche day 3, Biscuit + doghouse 9, Hulotte 12, Coin-Coin 18, Gustave 21, Noisette 27, Rainette 30: `Unlocks::{cat, dog, owl, duck, snail, squirrel, frog}`, `render_garden` skips a Habitant before its day; StarGazing goes with Hulotte; Léo not gated), bench on day 4, well on day 13, finds on day 45, Bouteilles with archive 3, creepy events on the n°13 neighbour's Lettre days. Forced modes without `--day` (`--demo`, `--simulate`, Fêtes, `--night`) show every Habitant (`Unlocks::with_every_habitant`); `--day N` follows day N. See [[mail]].

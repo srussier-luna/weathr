@@ -6,7 +6,7 @@ use crate::animation::{
     cat::Cat,
     chimney::ChimneySmoke,
     cloud_bank::CloudBank,
-    clouds::CloudSystem,
+    clouds::{self, CloudSystem},
     constellation::StarGazing,
     creepy::Creepy,
     dog::Dog,
@@ -48,7 +48,9 @@ use crate::scene::WorldScene;
 use crate::scene::house::House;
 use crate::scene::river::River;
 use crate::scene::tree::Growth;
-use crate::weather::{FogIntensity, RainIntensity, SnowIntensity, WeatherConditions};
+use crate::weather::{
+    FogIntensity, RainIntensity, SnowIntensity, WeatherCondition, WeatherConditions,
+};
 use crossterm::style::Color;
 use std::io;
 use std::time::{Duration, Instant};
@@ -333,18 +335,14 @@ impl AnimationManager {
         if conditions.is_cloudy
             || (!conditions.is_raining && !conditions.is_thunderstorm && !conditions.is_snowing)
         {
-            let (is_clear, cloud_color) = if let Some(weather) = &state.current_weather {
-                match weather.condition {
-                    crate::weather::WeatherCondition::Clear => (true, Color::White),
-                    crate::weather::WeatherCondition::PartlyCloudy => (false, Color::Grey),
-                    _ => (false, Color::DarkGrey),
-                }
-            } else {
-                (false, Color::DarkGrey)
-            };
+            let condition = state
+                .current_weather
+                .as_ref()
+                .map(|weather| weather.condition);
+            let is_clear = condition == Some(WeatherCondition::Clear);
+            let cloud_color = clouds::cloud_color(condition);
 
             if conditions.is_cloudy || is_clear {
-                self.cloud_system.set_cloud_color(is_clear);
                 self.cloud_system
                     .update(term_width, term_height, is_clear, cloud_color, &mut rng);
                 self.cloud_system.render(renderer)?;
