@@ -1,6 +1,6 @@
 ---
 issue: 108
-status: todo
+status: to-test
 wiki: [[mail]]
 note: badge secret « Vigie du ciel » pour Denis (merci pour le retour #104) : vérifier si le joueur est drichard-luna et lui donner le badge à la 1.7.
 created: 2026-11-05
@@ -28,8 +28,17 @@ created: 2026-11-05
 
 ## Implementation
 
+- `src/badges.rs` : secret `sky_lookout` « Vigie du ciel » (43 badges), const `SKY_LOOKOUT_LOGIN`, `is_sky_lookout(Option<&str>)` (trim + égalité exacte), 4 tests.
+- `src/updater/mod.rs` : `git_user_name()` → `git config user.name` dans `SOURCE_DIR` via `git_output`.
+- `src/app.rs` : champ `is_sky_lookout` calculé une fois dans `App::new`, jalon `sky_lookout` dans `collect_badges`.
+- `git config` hors dépôt lit quand même la config globale ; git absent ou nom non défini → pas de badge.
+- Sous `--day N`, pas de badge (règle `awards_badges` existante).
+- `cargo build` vert · `cargo test` vert · `cargo fmt -- --check` propre.
+
 ## Review
 
 ## Verification
+
+manual validation — not run by agent
 
 ## Feedback

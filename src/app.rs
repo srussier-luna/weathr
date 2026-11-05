@@ -22,6 +22,7 @@ use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
 use crate::story::postman_note::{self, MailStep};
 use crate::story::{Entry, StoryClock, Thing, Timeline, pause, sources};
+use crate::updater;
 use crate::views;
 use crate::weather::{
     OpenMeteoProvider, WeatherClient, WeatherCondition, WeatherData, WeatherLocation, WeatherUnits,
@@ -442,6 +443,7 @@ pub struct App {
     overlay: Option<Overlay>,
     is_simulated: bool,
     awards_badges: bool,
+    is_sky_lookout: bool,
     toasts: VecDeque<String>,
     toast_until: Option<Instant>,
     pending_badges: VecDeque<&'static Badge>,
@@ -573,6 +575,7 @@ impl App {
             release_notes,
             is_simulated: is_forced,
             awards_badges: simulation.day.is_none(),
+            is_sky_lookout: badges::is_sky_lookout(updater::git_user_name().as_deref()),
             toasts: VecDeque::new(),
             toast_until: None,
             pending_badges: VecDeque::new(),
@@ -653,6 +656,7 @@ impl App {
                 "all_objects",
             ),
             (!self.progress.bottles.is_empty(), "first_bottle"),
+            (self.is_sky_lookout, "sky_lookout"),
         ];
         found.extend(
             milestones
