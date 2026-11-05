@@ -1,6 +1,6 @@
 ---
 issue: 108
-status: to-test
+status: to-close
 wiki: [[mail]]
 note: badge secret « Vigie du ciel » pour Denis (merci pour le retour #104) : vérifier si le joueur est drichard-luna et lui donner le badge à la 1.7.
 created: 2026-11-05
@@ -36,6 +36,8 @@ created: 2026-11-05
 - `cargo build` vert · `cargo test` vert · `cargo fmt -- --check` propre.
 
 ## Review
+
+Round validation — 4 lenses ✓ (style, elegance, structure, correctness). ✅ review clean, aucun autofix.
 
 ## Verification
 
