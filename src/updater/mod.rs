@@ -75,6 +75,10 @@ fn git_output(source: &Path, args: &[&str]) -> Option<String> {
     stdout_of(Command::new("git").args(args).current_dir(source))
 }
 
+pub(crate) fn git_user_name() -> Option<String> {
+    git_output(Path::new(SOURCE_DIR), &["config", "user.name"])
+}
+
 pub(crate) fn tool_version(tool: &str) -> Option<String> {
     stdout_of(Command::new(tool).arg("--version"))
 }
