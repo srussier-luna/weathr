@@ -1,6 +1,6 @@
 [package]
 name = "weathr"
-version = "1.6.2"
+version = "1.7.0"
 edition = "2024"
 rust-version = "1.85.0"
 license = "GPL-3.0-or-later"
@@ -35,6 +35,7 @@ rand = "0.10"
 chrono = "0.4"
 thiserror = "2.0"
 clap_complete = "4.5.66"
+toml_edit = { version = "0.24", features = ["serde"] }
 
 [profile.release]
 lto = "thin"

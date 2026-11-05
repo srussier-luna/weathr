@@ -1,10 +1,12 @@
 use crate::animation::lore::{Choices, Unlocks};
+use crate::animation::neighbours_party::Neighbour;
 use crate::animation_manager::AnimationManager;
 use crate::app_state::AppState;
 use crate::badges::{self, Badge};
-use crate::config::Config;
+use crate::config::{Config, LocationDisplay, Setting};
 use crate::demo::{Demo, SCENE_DURATION};
-use crate::error::WeatherError;
+use crate::error::{GeolocationError, WeatherError};
+use crate::geolocation::{self, GeoLocation};
 use crate::holiday::{Holiday, MeteorShower};
 use crate::overlay;
 use crate::progress::Progress;
@@ -13,14 +15,17 @@ use crate::release_notes::{self, Section};
 use crate::remote_weather::{self, Reply, Request};
 use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
+use crate::scene::tree::Growth;
+use crate::settings::{self, AutoLocation, CitySearch, Row, Settings};
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
 use crate::story::postman_note::{self, MailStep};
 use crate::story::{Entry, StoryClock, Thing, Timeline, pause, sources};
+use crate::updater;
 use crate::views;
 use crate::weather::{
-    OpenMeteoProvider, WeatherClient, WeatherCondition, WeatherData, WeatherLocation,
+    OpenMeteoProvider, WeatherClient, WeatherCondition, WeatherData, WeatherLocation, WeatherUnits,
 };
 use crate::welcome::{self, Step};
 use chrono::{Local, NaiveDate, Timelike};
@@ -30,7 +35,7 @@ use std::io;
 use std::num::NonZeroU16;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 
 const REFRESH_INTERVAL: Duration = Duration::from_secs(300);
 const INPUT_POLL_FPS: u64 = 30;
@@ -42,6 +47,13 @@ const REMOTE_CHECK_FRAMES: u32 = 300;
 const MAX_ANSWER_LENGTH: usize = 30;
 const REMOTE_CHANNEL_SIZE: usize = 16;
 const OVERLAY_MARGIN_ROWS: u16 = 12;
+const NEIGHBOUR_FIRST_LETTERS: [(Neighbour, usize); 5] = [
+    (Neighbour::Rose, 1),
+    (Neighbour::Paulo, 4),
+    (Neighbour::Odile, 7),
+    (Neighbour::Gaston, 10),
+    (Neighbour::Leo, 16),
+];
 const FOOTPRINT_DAYS: [usize; 1] = [8];
 const WET_FOOTPRINT_DAYS: [usize; 3] = [13, 14, 30];
 
@@ -57,6 +69,13 @@ fn unlocks_on(timeline: &Timeline, day: usize, answers: &BTreeMap<String, u8>) -
     let arrived: Vec<Thing> = timeline.arrived_by(day).collect();
     let has_arrived = |thing: Thing| arrived.contains(&thing);
     Unlocks {
+        cat: has_arrived(Thing::Cat),
+        dog: has_arrived(Thing::Dog),
+        owl: has_arrived(Thing::Owl),
+        duck: has_arrived(Thing::Duck),
+        snail: has_arrived(Thing::Snail),
+        squirrel: has_arrived(Thing::Squirrel),
+        frog: has_arrived(Thing::Frog),
         bench: has_arrived(Thing::Bench),
         cat_bow: has_arrived(Thing::CatBow),
         footprints: has_arrived(Thing::Footprints) && FOOTPRINT_DAYS.contains(&day),
@@ -82,6 +101,19 @@ fn unlocks_on(timeline: &Timeline, day: usize, answers: &BTreeMap<String, u8>) -
         bottles: has_arrived(Thing::Bottles),
         choices: Choices::from_answers(answers),
     }
+}
+
+fn guests_on(timeline: &Timeline, day: usize) -> Vec<Neighbour> {
+    let delivered = timeline.first_mail(timeline.delivered_by(day));
+    NEIGHBOUR_FIRST_LETTERS
+        .into_iter()
+        .filter(|(_, number)| {
+            delivered
+                .iter()
+                .any(|(_, entry)| *entry == Entry::Main(number - 1))
+        })
+        .map(|(neighbour, _)| neighbour)
+        .collect()
 }
 
 fn earn(earned: &mut BTreeSet<String>, ids: Vec<&'static str>) -> Vec<&'static Badge> {
@@ -206,15 +238,27 @@ fn welcome_width(renderer: &TerminalRenderer) -> usize {
     overlay::text_width(renderer, welcome::NOTE_FRAME)
 }
 
+fn push_toast(toasts: &mut VecDeque<String>, message: &str) {
+    if !toasts.iter().any(|toast| toast == message) {
+        toasts.push_back(message.to_string());
+    }
+}
+
 fn story_clock(progress: &Progress, mail_hour: u32) -> StoryClock {
     let start = progress
         .start_date()
         .unwrap_or_else(|| Local::now().date_naive());
-    StoryClock::new(start, mail_hour).with_pauses(progress.paused_days.clone())
+    StoryClock::new(start, mail_hour)
+        .with_pauses(progress.paused_days.clone())
+        .with_previous_mail_hour(progress.previous_mail_hour())
 }
 
 fn story_today(clock: &StoryClock) -> usize {
     clock.day_on(Local::now().naive_local())
+}
+
+fn shows_every_habitant(is_forced: bool, day: Option<NonZeroU16>) -> bool {
+    is_forced && day.is_none()
 }
 
 fn build_timeline(village_count: usize, clock: &StoryClock, today: usize) -> Timeline {
@@ -228,6 +272,27 @@ fn is_live_box_full(
     letters_read: usize,
 ) -> bool {
     !clock.is_frozen() && pause::is_box_full(timeline, day, letters_read)
+}
+
+fn spawn_weather(
+    sender: mpsc::Sender<Result<WeatherData, WeatherError>>,
+    location: WeatherLocation,
+    units: WeatherUnits,
+) {
+    let provider = Arc::new(OpenMeteoProvider::new());
+    let weather_client = WeatherClient::new(provider, REFRESH_INTERVAL);
+    tokio::spawn(async move {
+        loop {
+            let result = weather_client.get_current_weather(&location, &units).await;
+            if sender.send(result).await.is_err() {
+                break;
+            }
+            tokio::select! {
+                () = tokio::time::sleep(REFRESH_INTERVAL) => {}
+                () = sender.closed() => break,
+            }
+        }
+    });
 }
 
 fn generate_offline_weather(rng: &mut impl rand::Rng) -> WeatherData {
@@ -332,6 +397,7 @@ enum Overlay {
     NoteBadge(&'static Badge),
     Notes(usize),
     PostmanNote,
+    Settings(usize),
     Welcome(Step),
 }
 
@@ -367,6 +433,7 @@ pub struct App {
     weather_receiver: mpsc::Receiver<Result<WeatherData, WeatherError>>,
     hide_hud: bool,
     simulated_holiday: Option<Holiday>,
+    invites_every_neighbour: bool,
     demo: Option<Demo>,
     progress: Progress,
     letters: Vec<Letter>,
@@ -376,6 +443,7 @@ pub struct App {
     overlay: Option<Overlay>,
     is_simulated: bool,
     awards_badges: bool,
+    is_sky_lookout: bool,
     toasts: VecDeque<String>,
     toast_until: Option<Instant>,
     pending_badges: VecDeque<&'static Badge>,
@@ -389,6 +457,12 @@ pub struct App {
     pending_requests: BTreeSet<Request>,
     frame_count: u32,
     timeline_day: usize,
+    fetches_weather: bool,
+    auto_location: bool,
+    city_name_language: String,
+    city_search: Option<CitySearch>,
+    location_detection: Option<oneshot::Receiver<Result<GeoLocation, GeolocationError>>>,
+    shows_every_habitant: bool,
 }
 
 impl App {
@@ -422,6 +496,7 @@ impl App {
         let (tx, rx) = mpsc::channel(1);
 
         let demo = simulation.demo.then(Demo::new);
+        let fetches_weather = demo.is_none() && simulation.condition.is_none();
 
         if let Some(demo) = &demo {
             apply_demo_scene(&mut state, &mut animations, demo);
@@ -440,19 +515,7 @@ impl App {
                 simulated_weather(simulated_condition, !simulation.night),
             );
         } else {
-            let provider = Arc::new(OpenMeteoProvider::new());
-            let weather_client = WeatherClient::new(provider, REFRESH_INTERVAL);
-            let units = config.units;
-
-            tokio::spawn(async move {
-                loop {
-                    let result = weather_client.get_current_weather(&location, &units).await;
-                    if tx.send(result).await.is_err() {
-                        break;
-                    }
-                    tokio::time::sleep(REFRESH_INTERVAL).await;
-                }
-            });
+            spawn_weather(tx, location, config.units);
         }
 
         let launch = if simulation.day.is_some() {
@@ -492,8 +555,8 @@ impl App {
         let timeline_day = story_today(&clock);
         let timeline = build_timeline(letters.len(), &clock, timeline_day);
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
-        animations.set_unlocks(unlocks_on(&timeline, timeline_day, &progress.answers));
 
+        let is_forced = is_simulated || simulation.night;
         let mut app = Self {
             state,
             animations,
@@ -501,6 +564,8 @@ impl App {
             weather_receiver: rx,
             hide_hud: config.hide_hud,
             simulated_holiday: simulation.holiday,
+            invites_every_neighbour: simulation.demo
+                || (simulation.holiday.is_some() && simulation.day.is_none()),
             demo,
             progress,
             letters,
@@ -508,8 +573,9 @@ impl App {
             timeline,
             overlay: opening_overlay(shows_welcome, !release_notes.is_empty()),
             release_notes,
-            is_simulated: is_simulated || simulation.night,
+            is_simulated: is_forced,
             awards_badges: simulation.day.is_none(),
+            is_sky_lookout: badges::is_sky_lookout(updater::git_user_name().as_deref()),
             toasts: VecDeque::new(),
             toast_until: None,
             pending_badges: VecDeque::new(),
@@ -523,7 +589,15 @@ impl App {
             pending_requests: BTreeSet::new(),
             frame_count: 0,
             timeline_day,
+            fetches_weather,
+            auto_location: config.location.auto,
+            city_name_language: config.location.city_name_language.clone(),
+            city_search: None,
+            location_detection: None,
+            shows_every_habitant: shows_every_habitant(is_forced, simulation.day),
         };
+        app.refresh_unlocks();
+        app.refresh_tree_growth();
         app.refresh_timeline();
         app
     }
@@ -532,6 +606,8 @@ impl App {
         if self.progress.record_visit() {
             self.progress.save();
         }
+        self.animations
+            .set_mail_hour(self.clock.mail_hour_on(Local::now().date_naive()));
         self.refresh_timeline();
         self.state.set_story_day(self.timeline_day);
         self.request_remote_weather();
@@ -580,6 +656,7 @@ impl App {
                 "all_objects",
             ),
             (!self.progress.bottles.is_empty(), "first_bottle"),
+            (self.is_sky_lookout, "sky_lookout"),
         ];
         found.extend(
             milestones
@@ -610,6 +687,8 @@ impl App {
                 (holiday.is_halloween, "halloween"),
                 (holiday.new_year.is_some(), "new_year"),
                 (holiday.is_easter, "easter"),
+                (holiday.is_neighbours_party, "neighbours_party"),
+                (holiday.is_music_day, "music_day"),
                 (self.state.shows_rainbow(), "rainbow"),
                 (sightings.postman, "postman"),
                 (sightings.snowman, "snowman"),
@@ -675,11 +754,25 @@ impl App {
     }
 
     fn unlocks(&self) -> Unlocks {
-        unlocks_on(&self.timeline, self.timeline_day, &self.progress.answers)
+        let unlocks = unlocks_on(&self.timeline, self.timeline_day, &self.progress.answers);
+        if self.shows_every_habitant {
+            unlocks.with_every_habitant()
+        } else {
+            unlocks
+        }
+    }
+
+    fn guests(&self) -> Vec<Neighbour> {
+        if self.invites_every_neighbour {
+            Neighbour::ALL.to_vec()
+        } else {
+            guests_on(&self.timeline, self.timeline_day)
+        }
     }
 
     fn refresh_unlocks(&mut self) {
         self.animations.set_unlocks(self.unlocks());
+        self.animations.set_guests(self.guests());
     }
 
     fn is_box_full(&self) -> bool {
@@ -852,6 +945,14 @@ impl App {
                     matches!(entry, Entry::Gazette(_))
                 }) > 0,
             ),
+            Some(Overlay::Settings(selected)) => match &self.city_search {
+                Some(search) => views::city_search_view(search),
+                None => views::settings_view(
+                    &self.settings(),
+                    selected,
+                    self.clock.mail_hour_on(Local::now().date_naive()) != self.clock.mail_hour(),
+                ),
+            },
             Some(Overlay::Badges) => {
                 return overlay::render_badges(
                     renderer,
@@ -935,7 +1036,22 @@ impl App {
             self.timeline = build_timeline(self.letters.len(), &self.clock, today);
             self.timeline_day = today;
             self.refresh_unlocks();
+            self.refresh_tree_growth();
         }
+    }
+
+    fn tree_growth(&self) -> Growth {
+        if self.is_simulated {
+            Growth::Full
+        } else {
+            Growth::on_day(self.timeline_day)
+        }
+    }
+
+    fn refresh_tree_growth(&mut self) {
+        let growth = self.tree_growth();
+        self.scene.set_tree_growth(growth);
+        self.animations.set_tree_growth(growth);
     }
 
     fn request_remote_weather(&mut self) {
@@ -1079,6 +1195,12 @@ impl App {
                 let last = views::notes_scroll_limit(&self.release_notes, rows, width);
                 self.overlay = Some(Overlay::Notes(first.saturating_add_signed(step).min(last)));
             }
+            Some(Overlay::Settings(selected)) => {
+                let last = settings::ROWS.len() - 1;
+                self.overlay = Some(Overlay::Settings(
+                    selected.saturating_add_signed(step).min(last),
+                ));
+            }
             _ => self.select_in_index(step),
         }
     }
@@ -1109,6 +1231,7 @@ impl App {
                 | Overlay::Notes(_)
                 | Overlay::PostmanNote,
             ) => self.overlay = closed_overlay(self.overlay),
+            Some(Overlay::Settings(_)) => self.change_setting(1),
             _ => self.reread_selected(),
         }
     }
@@ -1118,6 +1241,199 @@ impl App {
             Some(Overlay::Help) => None,
             _ => Some(Overlay::Help),
         };
+    }
+
+    fn toggle_settings(&mut self) {
+        self.overlay = match self.overlay {
+            Some(Overlay::Settings(_)) => None,
+            _ => Some(Overlay::Settings(0)),
+        };
+    }
+
+    fn settings(&self) -> Settings {
+        let location = &self.state.location;
+        Settings {
+            units: self.state.units,
+            mail_hour: self.clock.mail_hour(),
+            hide_hud: self.hide_hud,
+            city: self
+                .state
+                .city_name
+                .clone()
+                .unwrap_or_else(|| format!("{:.2}, {:.2}", location.latitude, location.longitude)),
+            auto_location: if self.location_detection.is_some() {
+                AutoLocation::Locating
+            } else if self.auto_location {
+                AutoLocation::On
+            } else {
+                AutoLocation::Off
+            },
+        }
+    }
+
+    fn change_setting(&mut self, step: isize) {
+        let Some(Overlay::Settings(selected)) = self.overlay else {
+            return;
+        };
+        match settings::ROWS[selected] {
+            Row::City => self.city_search = Some(CitySearch::default()),
+            Row::AutoLocation => self.toggle_auto_location(),
+            row => self.step_setting(row, step),
+        }
+    }
+
+    fn step_setting(&mut self, row: Row, step: isize) {
+        let mut settings = self.settings();
+        let Some(setting) = settings.stepped(row, step) else {
+            return;
+        };
+        settings.apply(setting);
+        if let Setting::MailHour(hour) = setting {
+            self.change_mail_hour(hour);
+        } else if Config::save(setting).is_err() {
+            self.toast_unsaved_setting();
+        }
+        self.hide_hud = settings.hide_hud;
+        self.state.set_units(settings.units);
+    }
+
+    fn change_mail_hour(&mut self, hour: u32) {
+        if self.clock.is_frozen() {
+            return;
+        }
+        let mut clock = self.clock.clone();
+        clock.change_mail_hour(hour, Local::now().naive_local());
+        self.progress
+            .set_previous_mail_hour(clock.previous_mail_hour());
+        if self.progress.try_save().is_ok() && Config::save(Setting::MailHour(hour)).is_ok() {
+            self.clock = clock;
+        } else {
+            self.progress
+                .set_previous_mail_hour(self.clock.previous_mail_hour());
+            self.toast_unsaved_setting();
+        }
+    }
+
+    fn toast_unsaved_setting(&mut self) {
+        push_toast(
+            &mut self.toasts,
+            "Réglage non enregistré\u{202F}: vérifie config.toml",
+        );
+    }
+
+    fn handle_city_key(&mut self, code: KeyCode) {
+        let Some(search) = self.city_search.as_mut() else {
+            return;
+        };
+        match code {
+            KeyCode::Char(ch) => search.type_char(ch),
+            KeyCode::Backspace => search.erase(),
+            KeyCode::Up => search.select(-1),
+            KeyCode::Down => search.select(1),
+            KeyCode::Esc => self.city_search = None,
+            KeyCode::Enter => self.submit_city_search(),
+            _ => {}
+        }
+    }
+
+    fn submit_city_search(&mut self) {
+        let Some(search) = self.city_search.as_mut() else {
+            return;
+        };
+        if let Some(place) = search.chosen() {
+            let location = place.location.clone();
+            self.city_search = None;
+            self.auto_location = false;
+            self.location_detection = None;
+            if Config::save_city(&location).is_err() {
+                self.toast_unsaved_setting();
+            }
+            self.state.set_location_display(LocationDisplay::City);
+            self.move_to(location);
+            return;
+        }
+        let Some(query) = search.query_to_search().map(str::to_string) else {
+            return;
+        };
+        let language = self.city_name_language.clone();
+        let (sender, receiver) = oneshot::channel();
+        tokio::spawn(settings::send_unless_cancelled(sender, async move {
+            geolocation::search_cities(&query, &language).await
+        }));
+        search.wait(receiver);
+    }
+
+    fn toggle_auto_location(&mut self) {
+        if self.auto_location || self.location_detection.is_some() {
+            self.auto_location = false;
+            self.location_detection = None;
+            let location = GeoLocation {
+                latitude: self.state.location.latitude,
+                longitude: self.state.location.longitude,
+                city: self.state.city_name.clone(),
+            };
+            self.save_location(&location, false);
+            return;
+        }
+        let language = self.city_name_language.clone();
+        let (sender, receiver) = oneshot::channel();
+        tokio::spawn(settings::send_unless_cancelled(sender, async move {
+            geolocation::detect_location_with_city(&language).await
+        }));
+        self.location_detection = Some(receiver);
+    }
+
+    fn receive_city_search(&mut self) {
+        if let Some(search) = self.city_search.as_mut() {
+            search.receive();
+        }
+    }
+
+    fn receive_location_detection(&mut self) {
+        let Some(receiver) = self.location_detection.as_mut() else {
+            return;
+        };
+        let result = match receiver.try_recv() {
+            Ok(result) => result,
+            Err(oneshot::error::TryRecvError::Empty) => return,
+            Err(oneshot::error::TryRecvError::Closed) => {
+                self.location_detection = None;
+                return;
+            }
+        };
+        self.location_detection = None;
+        match result {
+            Ok(location) => {
+                self.auto_location = true;
+                self.save_location(&location, true);
+                self.move_to(location);
+            }
+            Err(_) => push_toast(&mut self.toasts, "Pas de connexion"),
+        }
+    }
+
+    fn save_location(&mut self, location: &GeoLocation, auto: bool) {
+        if Config::save_location(location, auto).is_err() {
+            self.toast_unsaved_setting();
+        }
+    }
+
+    fn move_to(&mut self, location: GeoLocation) {
+        let weather_location = WeatherLocation {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            elevation: None,
+        };
+        if self.fetches_weather {
+            let (sender, receiver) = mpsc::channel(1);
+            spawn_weather(sender, weather_location, self.state.units);
+            self.weather_receiver = receiver;
+        }
+        if self.rain_receiver.is_some() {
+            self.rain_receiver = Some(rain_alert::spawn(location.latitude, location.longitude));
+            self.rain_alert = None;
+        }
+        self.state.set_location(weather_location, location.city);
     }
 
     fn toggle_album(&mut self) {
@@ -1134,6 +1450,7 @@ impl App {
                 self.overlay = Some(Overlay::Album(page.saturating_add_signed(step).min(last)));
             }
             Some(Overlay::Letter(_)) => self.browse_letters(step),
+            Some(Overlay::Settings(_)) => self.change_setting(step),
             _ => {}
         }
     }
@@ -1246,6 +1563,8 @@ impl App {
             self.update_welcome(term_width, term_height);
             self.update_toasts();
             self.refresh_rain_alert();
+            self.receive_city_search();
+            self.receive_location_detection();
             self.state.update_loading_animation();
             self.state.update_cached_info();
 
@@ -1271,6 +1590,12 @@ impl App {
                             && !key_event.modifiers.contains(KeyModifiers::CONTROL) =>
                     {
                         self.handle_riddle_key(key_event.code);
+                    }
+                    Event::Key(key_event)
+                        if self.city_search.is_some()
+                            && !key_event.modifiers.contains(KeyModifiers::CONTROL) =>
+                    {
+                        self.handle_city_key(key_event.code);
                     }
                     Event::Key(key_event) => {
                         let previous = self.overlay;
@@ -1301,6 +1626,7 @@ impl App {
                             KeyCode::Char('2') => self.answer_letter(2),
                             KeyCode::Char('a') | KeyCode::Char('A') => self.toggle_album(),
                             KeyCode::Char('h') | KeyCode::Char('H') => self.toggle_help(),
+                            KeyCode::Char('s') | KeyCode::Char('S') => self.toggle_settings(),
                             KeyCode::Char('l') | KeyCode::Char('L') => self.toggle_index(),
                             KeyCode::Up => self.scroll(-1, rows, width),
                             KeyCode::Down => self.scroll(1, rows, width),
@@ -1575,16 +1901,23 @@ mod tests {
         }
     }
 
-    const ARRIVAL_DAYS: [(Thing, usize); 23] = [
+    const ARRIVAL_DAYS: [(Thing, usize); 30] = [
+        (Thing::Cat, 3),
         (Thing::Bench, 4),
         (Thing::CatBow, 6),
         (Thing::Footprints, 8),
+        (Thing::Dog, 9),
+        (Thing::Owl, 12),
         (Thing::Well, 13),
         (Thing::Bone, 15),
         (Thing::Key, 17),
+        (Thing::Duck, 18),
+        (Thing::Snail, 21),
         (Thing::Treehouse, 22),
         (Thing::OwlFriend, 24),
         (Thing::BlueLantern, 26),
+        (Thing::Squirrel, 27),
+        (Thing::Frog, 30),
         (Thing::Garland, 31),
         (Thing::Kittens, 33),
         (Thing::XMark, 35),
@@ -1603,15 +1936,22 @@ mod tests {
 
     fn shows(unlocks: &Unlocks, thing: Thing) -> bool {
         match thing {
+            Thing::Cat => unlocks.cat,
             Thing::Bench => unlocks.bench,
             Thing::CatBow => unlocks.cat_bow,
             Thing::Footprints => unlocks.footprints,
+            Thing::Dog => unlocks.dog,
+            Thing::Owl => unlocks.owl,
             Thing::Well => unlocks.well,
             Thing::Bone => unlocks.bone,
             Thing::Key => unlocks.key,
+            Thing::Duck => unlocks.duck,
+            Thing::Snail => unlocks.snail,
             Thing::Treehouse => unlocks.treehouse,
             Thing::OwlFriend => unlocks.owl_friend,
             Thing::BlueLantern => unlocks.blue_lantern,
+            Thing::Squirrel => unlocks.squirrel,
+            Thing::Frog => unlocks.frog,
             Thing::Garland => unlocks.garland,
             Thing::Kittens => unlocks.kittens,
             Thing::XMark => unlocks.x_mark,
@@ -1665,6 +2005,58 @@ mod tests {
         }
     }
 
+    const HABITANTS: [Thing; 7] = [
+        Thing::Cat,
+        Thing::Dog,
+        Thing::Owl,
+        Thing::Duck,
+        Thing::Snail,
+        Thing::Squirrel,
+        Thing::Frog,
+    ];
+
+    #[test]
+    fn test_first_letters_match_the_default_story() {
+        let senders = [
+            (Neighbour::Rose, "Rose, la boulangère"),
+            (Neighbour::Paulo, "Paulo, le pêcheur"),
+            (Neighbour::Odile, "Odile, la maire"),
+            (Neighbour::Leo, "Léo, le petit voisin"),
+            (Neighbour::Gaston, "Gaston, le facteur"),
+        ];
+        let defaults = letters::defaults();
+        for (neighbour, sender) in senders {
+            let first = defaults
+                .iter()
+                .position(|letter| letter.sender == sender)
+                .map(|index| index + 1);
+            let expected = NEIGHBOUR_FIRST_LETTERS
+                .iter()
+                .find(|(written, _)| *written == neighbour)
+                .map(|(_, number)| *number);
+            assert_eq!(first, expected, "{neighbour:?}");
+        }
+    }
+
+    #[test]
+    fn test_guests_come_once_their_first_letter_is_delivered() {
+        let guests = |day| guests_on(&timeline_on(day), day);
+        assert_eq!(guests(1), [Neighbour::Rose]);
+        assert_eq!(guests(3), [Neighbour::Rose]);
+        assert_eq!(
+            guests(15),
+            [
+                Neighbour::Rose,
+                Neighbour::Paulo,
+                Neighbour::Odile,
+                Neighbour::Gaston
+            ]
+        );
+        let everyone = guests(16);
+        assert_eq!(everyone.len(), Neighbour::ALL.len());
+        assert!(Neighbour::ALL.iter().all(|guest| everyone.contains(guest)));
+    }
+
     #[test]
     fn test_footprints_show_only_on_day_8() {
         assert!(unlocks_on_day(8).footprints);
@@ -1693,6 +2085,35 @@ mod tests {
     fn test_arrivals_ignore_reading() {
         let unlocks = unlocks_on(&timeline_on(30), 30, &BTreeMap::new());
         assert!(unlocks.bench && unlocks.well && unlocks.treehouse);
+
+        let unlocks = unlocks_on(&timeline_on(10), 10, &BTreeMap::new());
+        assert!(unlocks.cat && unlocks.dog);
+    }
+
+    #[test]
+    fn test_no_habitant_on_first_day() {
+        let unlocks = unlocks_on_day(1);
+        assert!(!HABITANTS.iter().any(|&habitant| shows(&unlocks, habitant)));
+    }
+
+    #[test]
+    fn test_late_player_finds_every_habitant() {
+        let unlocks = unlocks_on_day(41);
+        assert!(HABITANTS.iter().all(|&habitant| shows(&unlocks, habitant)));
+    }
+
+    #[test]
+    fn test_forced_mode_shows_every_habitant_unless_day_is_set() {
+        assert!(shows_every_habitant(true, None));
+        assert!(!shows_every_habitant(true, NonZeroU16::new(5)));
+        assert!(!shows_every_habitant(false, None));
+    }
+
+    #[test]
+    fn test_every_habitant_leaves_objects_locked() {
+        let unlocks = unlocks_on_day(1).with_every_habitant();
+        assert!(HABITANTS.iter().all(|&habitant| shows(&unlocks, habitant)));
+        assert!(!unlocks.bench);
     }
 
     #[test]
@@ -1773,5 +2194,26 @@ mod tests {
         for mail_hour in [0, 23] {
             assert_eq!(story_today(&story_clock(&progress, mail_hour)), 1);
         }
+    }
+
+    #[test]
+    fn test_relaunch_keeps_the_saved_previous_mail_hour() {
+        let mut progress = Progress::default();
+        progress.started_on = Some("2026-10-01".to_string());
+        progress.set_previous_mail_hour(Some((date(2026, 10, 9), 9)));
+        let clock = story_clock(&progress, 11);
+        let at = |day, hour, minute| date(2026, 10, day).and_hms_opt(hour, minute, 0).unwrap();
+        assert_eq!(clock.day_on(at(8, 10, 30)), 8);
+        assert_eq!(clock.day_on(at(9, 10, 59)), 8);
+        assert_eq!(clock.day_on(at(9, 11, 0)), 9);
+    }
+
+    #[test]
+    fn test_identical_toast_is_queued_once() {
+        let mut toasts = VecDeque::new();
+        push_toast(&mut toasts, "A");
+        push_toast(&mut toasts, "B");
+        push_toast(&mut toasts, "A");
+        assert_eq!(toasts, ["A", "B"]);
     }
 }

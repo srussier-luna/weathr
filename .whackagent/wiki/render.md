@@ -1,6 +1,6 @@
 # Render
 
-How cells reach terminal, how modal screens (Courrier, Lettre, Album, Aide, Badges, Bouteille) drawn on top of scene.
+How cells reach terminal, how modal screens (Courrier, Lettre, Album, Aide, Badges, Bouteille, Réglages) drawn on top of scene.
 
 ## TerminalRenderer — `src/render/mod.rs`
 
@@ -21,11 +21,11 @@ How cells reach terminal, how modal screens (Courrier, Lettre, Album, Aide, Badg
 ## Overlays — `src/overlay.rs`
 
 - `View { title, lines, footer, frame }` = single data shape for every modal. `Line` is `Text` (word-wrapped), `Preformatted` (truncated), `Centered`, `Rule` or `Blank`.
-- `Frame` = one look per window, so each kind reads at a glance: parchment (Lettre, `Nouvel habitant`), newspaper (Gazette), stamp (Carte postale), folder tab (Archives), punched card (Recette), waves (Bouteille), photo corners (Album), stars (Badges + Badge card), plain (Aide, Courrier). Each frame has its own color.
-- `render_view` draws the frame centred, max 66 columns; `frame_rows` is the pure layout part (tested). Footers or titles wider than the frame wrap between key groups.
+- `Frame` = one look per window, so each kind reads at a glance: parchment (Lettre, `Nouvel habitant`), wet paper (Lettre glissée sous la porte, `Frame::Wet`: light blue, `~` stain top-left, bottom-right corner cut over 4 rows, drops under the box), newspaper (Gazette), stamp (Carte postale), folder tab (Archives), punched card (Recette), waves (Bouteille), photo corners (Album), stars (Badges + Badge card), plain (Aide, Courrier, Réglages). Each frame has its own color.
+- `render_view` draws the frame centred, max 66 columns; `frame_rows` is the pure layout part (tested). Footers or titles wider than the frame wrap between key groups. A single word or key group wider than the text area is never split and spills onto the right edge (boxes under 23 columns, terminals under 27).
 - `render_badges` = only special layout (columns grouped by `BadgeKind`, secret badges show `???`).
 - New Badge → centred card (`Overlay::NewBadge`): medal with the Badge's own 3×5 drawing (`Badge.icon`), name, condition for secrets. Queue `pending_badges`, one card per Badge, opens only when no window is open; a card replaced by another window comes back first.
-- Toasts (found object, riddle result) drawn by `App::render_overlays` on row 0, one at a time, 4 s.
+- Toasts (found object, riddle result, unsaved Réglage, failed « Position auto » detection) drawn by `App::render_overlays` on row 0, one at a time, 4 s. Réglages toasts go through `push_toast` (`src/app.rs:210`): same text already queued → skipped, so failing saves give one « Réglage non enregistré : vérifie config.toml » (`toast_unsaved_setting`), not one per key; same for « Pas de connexion ».
 - Speech bubble (`Frame::Bubble`, `render_bubble`): Facteur's Accueil lines, ≤ 40 cols, tail toward his `head`, clamped to screen edges; no mailbox → centred near the bottom, no tail. Layout shared with `render_view` via `lay_out` / `draw_rows`.
 - `wrap` splits on ASCII whitespace only: U+202F before `: ; ! ?` stays glued, French punctuation never starts a line.
 
@@ -38,16 +38,19 @@ Pure functions: story data → `View`. No I/O, no state.
 | Lettre | `entry_view` (`src/views.rs:56`) | dispatch on `Entry` kind; footer changes with Choice / Énigme / input |
 | Courrier | `index_view` (`:114`) | scrolling list of read entries, date + sender |
 | Album | `album_pages` | summary, gifts, answers, objects, chest, Bouteilles, Cartes postales, recipes, drawings |
-| Aide | `help_view` (`:292`) | keys shown only once unlocked (`[e]`, `[r]`) |
+| Aide | `help_view` (`:292`) | keys shown only once unlocked (`[e]`, `[r]`); `[s] réglages` always |
 | Bouteille | `bottle_view` (`:284`) | shown on pickup |
+| Réglages | `settings_view` (`:201`) | key `s`; one `Preformatted` row per `settings::ROWS`, selected one `> label < value >`. `↑`/`↓` row, `←`/`→` or `Entrée` change, `s`/`Échap` close. « Nouvelle heure du Facteur dès demain. » while new hour waits ([[mail]]). « Ville » = name, else `lat, lon` (2 decimals); change key → search box below. « Position auto » = `non` / `…` (detecting) / `oui` from `AutoLocation { Off, Locating, On }` (one enum, not two bools); change key toggles. Flow + save: [[architecture]] |
+| Réglages › Ville | `city_search_view` (`:264`) | drawn instead of Réglages while `App.city_search` set (#82): title « Ville », plain frame. `> texte_` input (60 chars max), `Entrée` → « Recherche… » → up to 5 lines « Lyon, Rhône, France », `>` on picked one; `↑`/`↓` move, `Entrée` choose. « Aucune ville trouvée » / « Pas de connexion » under input, text kept for retry; typing again clears list. `Échap` → Réglages, Ville unchanged. Every key goes to input (`q`, `s` typed, no quit or close), Ctrl combos excepted. State `CitySearch` + `SearchStatus` (`src/settings/city.rs`). Flow: [[weather]] |
 
 `MailContext` (`src/views.rs:36`) bundles view needs: Lettres, `Progress`, start date, night flag, current Énigme input. Content details in [[mail]].
 
 ## HUD
 
-Status line built in `AppState::update_cached_info` (`src/app_state.rs:166`), rebuilt only when setter flags `weather_info_needs_update` or minute changes. Mixes French hints (`Lettre ! [c]`, `Badges x/y [b]`, `Aide [h]`) with English weather labels from upstream.
+Status line built in `AppState::update_cached_info` (`src/app_state.rs:192`), rebuilt only when setter flags `weather_info_needs_update` or minute changes. Mixes French hints (`Lettre ! [c]`, `Badges x/y [b]`, `Aide [h]`) with English weather labels from upstream.
 
-- Starts `HH:MM | Jour N | …`, loading line too. N = Jour de jeu (`AppState::set_story_day`), fed every frame by `refresh_progress` from `timeline_day` ([[mail]]): rolls over at `courrier.heure` without restart. `--hide-hud` hides the whole line.
+- Starts `HH:MM | Jour N | …`, loading line too. N = Jour de jeu (`AppState::set_story_day`), fed every frame by `refresh_progress` from `timeline_day` ([[mail]]): rolls over at `courrier.heure` without restart. `--hide-hud` or Réglages « Barre du haut » → « masquée » hides the whole line (`App.hide_hud`, live).
+- New Ville (#82) → `AppState::set_location` (`src/app_state.rs:136`) flags rebuild → name shown next frame, before new weather lands. Chosen Ville also → `set_location_display(City)` (`:142`): name shown even if Barre du haut was in coordinates. « Position auto » keeps `display` as is ([[weather]]).
 
 ## Gotchas
 

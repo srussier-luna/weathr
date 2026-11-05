@@ -6,8 +6,10 @@ Village story: one Lettre/day, delivered by Facteur, plus Cartes postales, Gazet
 
 Two clocks: real time + real weather drive scenery only ([[animation]]); **Jour de jeu** drives the story. Nothing under `src/story/` reads `Local::now()` or the weather client.
 
-- `StoryClock` (`src/story/clock.rs:4`) = `Progress` start date + `courrier.heure`. `day_on(now)` → Jour de jeu (1 = start day, rolls over at mail hour, never below 1); `date_of(day)` → calendar date. New day's mail appears at that hour, synced with Facteur arrival.
-- `--day N` (`StoryClock::frozen`, `src/story/clock.rs:20`): start = today − (N−1), `day_on` always N. Game on `Progress::in_memory` (`save()` no-op, real save never loaded), `letters::read()` (never writes `lettres.txt`), `Launch::Suppressed`, Badges never awarded, Facteur never rides. Barre du haut shows `Jour N` like any day.
+- `StoryClock` (`src/story/clock.rs:6`) = `Progress` start date + `courrier.heure`. `day_on(now)` → Jour de jeu (1 = start day, rolls over at mail hour, never below 1); `date_of(day)` → calendar date. New day's mail appears at that hour, synced with Facteur arrival.
+- **Heure du Facteur changed** in Réglages (#38): `StoryClock::change_mail_hour` (`src/story/clock.rs:78`) stores new hour at once, but today keeps old one: `mail_hour_on(date)` (`:71`) gives previous hour before effective date (= tomorrow). Why: day's round never replayed nor skipped, Jour de jeu never goes back (tested every 15 min over 3 days). Back to today's hour → pending change dropped.
+- Effective date + old hour saved as `Progress::mail_hour_change` (`MailHourChange { on, previous_hour }`, `src/progress.rs:15`), read back by `story_clock` (`src/app.rs:216`) → relaunch same day keeps old hour. Facteur ride follows `mail_hour_on(today)` too ([[animation]]). Hand edit of `config.toml` → applies at relaunch, no next-day wait. Screen + save flow: [[architecture]].
+- `--day N` (`StoryClock::frozen`, `src/story/clock.rs:36`): start = today − (N−1), `day_on` always N. Game on `Progress::in_memory` (`save()` no-op, real save never loaded), `letters::read()` (never writes `lettres.txt`), `Launch::Suppressed`, Badges never awarded, Facteur never rides. Barre du haut shows `Jour N` like any day.
 - `Entry` (`src/story/event.rs:2`) = every mail kind: `Main` (village Lettre), `Sam`, `Neighbours`, `Marcel` (recurring correspondents), `Archive`, `Gazette`, `Recipe`, `Postcard`, `Creepy` (n°13 neighbour). `Beat { day, event }`, `StoryEvent::Mail(Entry)` or `StoryEvent::Arrival(Thing)` (Apparition, sorts after mail on the same day).
 - Sources (`src/story/sources/`): one file per mail kind, each `impl StorySource { fn beats(clock, today) }`. `sources::registered` (`mod.rs:16`) lists them. **New mail kind = one source file + one registration line** (+ content). Sources declare Apparitions next to the Lettre that explains them (`village.rs` `ARRIVALS`, creepy, archives Bouteilles). Gazette every Monday, recipe each 1st of month — via `clock.date_of`. Carte postale every 7 days from day 40.
 - `Timeline::new(sources, clock, today)` (`src/story/timeline.rs:10`) concatenates beats, sorts by `(day, kind order)`, keeps `mail: Vec<(usize, Entry)>` and `arrivals: Vec<(usize, Thing)>`. `first_mail(n)` borrows the read prefix; `delivered_by(day)`, `mail_at(index)`, `arrived_by(day)`.
@@ -39,11 +41,11 @@ Static French content: correspondents' letters + days, `CITIES` (40 Cartes posta
 
 ## Badges — `src/badges.rs`
 
-`BADGES` (`src/badges.rs:42`): 39 entries, five `BadgeKind`s — Météo, Fêtes, Rares, Fidélité, Secrets. Awarding runs every frame in `App::collect_badges` (`src/app.rs:341`): milestones (streak, letters, riddles, objects, hours) always; weather, Fête, sightings only when **not** simulated and not offline. Shooting stars go through `StarWatch`: during a meteor shower they award `Perséides` or `Géminides` and never count for `Étoile filante` / `Chasseur d'étoiles`. `award` inserts ids into `progress.badges`, queues a Badge card (see [[render]]).
+`BADGES` (`src/badges.rs:72`): 43 entries, five `BadgeKind`s — Météo, Fêtes, Rares, Fidélité, Secrets. Fête Badge = today's `Holiday` flag (Noël, 14 juillet, Halloween, Nouvel An, Pâques, Fête de la musique #17, Fête des voisins #35), won by launching the game that day. Awarding runs every frame in `App::collect_badges` (`src/app.rs:341`): milestones (streak, letters, riddles, objects, hours) always; weather, Fête, sightings only when **not** simulated and not offline. Shooting stars go through `StarWatch`: during a meteor shower they award `Perséides` or `Géminides` and never count for `Étoile filante` / `Chasseur d'étoiles`. Secret « Vigie du ciel » (`sky_lookout`, #108) = thank-you to Denis (#104): `updater::git_user_name()` (`git config user.name` in `SOURCE_DIR`, global config too) read once in `App::new`; exact `drichard-luna` → milestone. Hidden slot for everyone else. `award` inserts ids into `progress.badges`, queues a Badge card (see [[render]]).
 
 ## Progress — `src/progress.rs`
 
-`Progress` (`src/progress.rs:10`) = whole save, JSON in `<config>/weathr/progress.json`: start date, `letters_read`, badges, answers, streak, riddles, found objects, bottles, cached postcard/gazette weather, `notes_seen_on` (release notes, see [[updater]]). All fields `#[serde(default)]` so old saves keep loading — keep so when adding fields. Saved eagerly after each change; write errors ignored.
+`Progress` (`src/progress.rs:21`) = whole save, JSON in `<config>/weathr/progress.json`: start date, `letters_read`, badges, answers, streak, riddles, found objects, bottles, cached postcard/gazette weather, `notes_seen_on` (release notes, see [[updater]]), `mail_hour_change` (pending Heure du Facteur, see Timeline). All fields `#[serde(default)]` so old saves keep loading — keep so when adding fields. Saved eagerly after each change; `save` ignores write errors. `try_save` (`:90`) returns them, for Réglages; in-memory save (`--day`) → always error.
 
 ## Accueil — `src/welcome.rs`
 
@@ -58,8 +60,8 @@ Once per player, fresh **and** existing saves: `welcome_seen` in `progress.json`
 ## Screens and keys
 
 `c` next Lettre (Lettre) · `←/→` browse · `l` Courrier · `a` Album · `b` Badges ·
-`h` Aide · `r` pick up · `e` Énigme · `1`/`2` answer · `Esc` close.
-Rendering: [[render]]. Overlay state: `Overlay` enum in `src/app.rs:167`.
+`h` Aide · `s` Réglages · `r` pick up · `e` Énigme · `1`/`2` answer · `Esc` close.
+Rendering: [[render]]. Overlay state: `Overlay` enum in `src/app.rs:354`.
 
 ## Gotchas
 

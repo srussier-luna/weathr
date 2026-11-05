@@ -1,0 +1,94 @@
+---
+issue: 35
+status: to-close
+wiki: [[animation]], [[mail]]
+note: fin mai : table dehors, les Voisins réunis au jardin
+created: 2026-10-30
+---
+
+## Context / Decisions
+
+- Fête des voisins = dernier vendredi de mai, calculé chaque année (29 mai 2026, 28 mai 2027). Le cas rare du premier vendredi de juin n'est pas géré.
+- Toute la journée, jour et nuit, par tous les temps.
+- Guirlande de fanions : fil droit tendu sous l'avant-toit, du bord gauche du toit jusqu'au bord droit de l'écran, triangles ▼ de couleurs alternées (retour round 1).
+- Nouveau flag `Holiday` dans `src/holiday.rs`, calculé par `Holiday::on`.
+- Une table dressée devant la maison, sur l'herbe, entre la maison et la rivière. Les animaux du jardin ne changent pas.
+- Voisins à table : Rose, Paulo, Odile, Léo, Gaston, un sprite chacun de part et d'autre de la table.
+- Un Voisin vient seulement si sa 1re Lettre est déjà livrée (`timeline.first_mail`, expéditeur de la Lettre).
+- Jeanne (l'encre bleue) ne vient jamais : son identité est un secret.
+- Léo et Gaston réutilisent leurs sprites existants (`kid.rs`, `postman.rs`) si possible.
+- Gaston fait sa tournée à l'heure du courrier comme d'habitude, et il est à table le reste du temps.
+- Badge « Fête des voisins », `BadgeKind::Holiday`, gagné en lançant le jeu ce jour-là.
+- Aperçu : une scène « Fête des voisins » dans `--demo` avec tous les Voisins, et un flag `--neighbours`.
+- Nouveau système dans `src/animation/`, branché dans `AnimationManager`.
+
+## Acceptance criteria
+
+- Date simulée au dernier vendredi de mai → une table dressée devant la maison, de jour comme de nuit.
+- Ce jour-là → une guirlande droite de triangles ▼ de couleurs alternées, sur la ligne de l'avant-toit, part du bord gauche du toit et va sans interruption jusqu'au bord droit de l'écran ; entre les triangles, `~` au-dessus de la maison puis `-` au-delà (retour round 2).
+- Jeudi et samedi autour de cette date → aucune table, aucune guirlande.
+- Sous la pluie → la table et les Voisins sont toujours là.
+- Joueur qui n'a reçu que la Lettre de Rose → seule Rose est à table (plus Gaston, s'il a déjà écrit).
+- Joueur qui a reçu les Lettres des 5 Voisins → Rose, Paulo, Odile, Léo et Gaston sont à table.
+- Jeanne n'est jamais à table.
+- À l'heure du courrier, Gaston fait sa tournée ; le reste du temps il est assis à table.
+- Lancer le jeu ce jour-là → Badge « Fête des voisins » gagné, visible dans l'Album.
+- `weathr --neighbours` → table et Voisins, quelle que soit la date.
+- `weathr --demo` → une scène « Fête des voisins » passe, avec son label dans la Barre du haut.
+- `Holiday::on` : vrai le 29 mai 2026 et le 28 mai 2027, faux les jours voisins (test unitaire).
+
+## Implementation
+
+- `src/holiday.rs` : `is_neighbours_party`, `Holiday::neighbours_party()`, `last_friday_of_may()`, test 29/05/2026 et 28/05/2027 contre les jours voisins.
+- `src/animation/neighbours_party.rs` (nouveau) : `Neighbour` {Rose, Paulo, Odile, Leo, Gaston}, table, bancs, places, `party_x`, rendu, 4 tests.
+- `src/app.rs` : `NEIGHBOUR_FIRST_LETTERS` (Rose 1, Paulo 4, Odile 7, Gaston 10, Léo 16), `guests_on()` depuis la Timeline, `invites_every_neighbour`, Badge après Pâques ; tests (table conforme aux expéditeurs de `letters::defaults()`, invités jours 1 / 3 / 15 / 16).
+- `src/animation_manager.rs` : `set_guests` ; fête dessinée avant le Facteur et Léo ; Gaston absent de table pendant toute sa tournée (`postman.is_on_round()`), Léo marchant masqué quand il est à table.
+- `src/animation/postman.rs` : `is_on_round()` + test, `POSTAL_YELLOW` public ; `src/animation/kid.rs` : `SKIN` / `SHIRT` publics.
+- `src/scene/decorations.rs` : `PINE_OFFSET` / `PINE_WIDTH` en constantes (comportement inchangé).
+- `src/badges.rs` : Badge `neighbours_party` « Fête des voisins » ; `src/main.rs` : `--neighbours` ; `src/demo.rs` : scène après Pâques.
+- Choix : expéditeurs jamais comparés à l'exécution (fichier de Lettres modifiable), seulement en test. Jeanne n'a pas de place.
+- Build : `cargo build`, `cargo fmt --check`, `cargo test` verts. Clippy : seule l'erreur connue #79.
+- Round 1 (feedback) : guirlande de fanions. `src/scene/bunting.rs` (nouveau) : `pieces()` pure (rien hors fête), fil `-` gris de la fin de l'avant-toit à `width-1`, rangée de `▼` une ligne sous l'avant-toit, tous les 2 colonnes, du bord gauche du toit à `width-1`, couleurs Red / Yellow / Cyan / Green / Magenta ; `render()` ; 2 tests. `src/scene/house.rs` : `House::eave()` (rangée + colonnes `~`). `src/scene/mod.rs` : dessinée juste après la maison, avant les décorations (Arbre, sapin, clôture, boîte aux lettres, table et animaux passent devant). Pas de rangée libre sous l'avant-toit : les fanions chevauchent la rangée haute des fenêtres, espacés de 2.
+- Round 2 (feedback) : guirlande remontée sur la ligne de l'avant-toit. `src/scene/bunting.rs` : `▼` sur la rangée de l'avant-toit ; au-dessus de la maison, les `~` de l'avant-toit restent entre les fanions ; au-delà, le fil `-` saute les colonnes des fanions. Rangée des fenêtres du haut de nouveau libre. Test réécrit (80×24, 121×40, 200×50).
+
+## Review
+
+### Round validation — 2026-11-03
+- Scope : diff cumulé `origin/develop...HEAD` après fusion de develop (#4, #17 : conflits « ajout au même endroit », les deux Fêtes gardées, `BADGES` 41 → 42).
+- Findings (autofix round 1, tous corrigés) :
+  - 🟡 [style] ligne vide manquante entre `neighbours` et `music` dans `Cli` (reste de fusion) → ajoutée.
+  - 🟡 [elegance] `House::eave()` recopiait la recherche de `eave_row()` → construit sur `eave_row()`.
+  - 🟡 [style] commentaire `// 18 chars right of house` sur une ligne touchée → retiré.
+- LENSES : style ✓ · elegance ✓ · structure ✓ · correctness ✓ — VERDICT : clean.
+
+## Verification
+
+Captures pty, HOME jetable (jamais le vrai) :
+- ✅ `--neighbours` à 200×45, 121×40, 90×30, 80×24 : table et 5 invités entre maison et rivière, loin de la mare et de la boîte aux lettres.
+- ✅ Nuit + pluie : table et invités présents.
+- ✅ `--neighbours --day 1` : Rose seule ; `--day 12` : Rose, Paulo, Odile, Gaston.
+- ✅ Visite d'accueil (Facteur dehors) : place de Gaston vide.
+- ✅ Jour normal : pas de table.
+- ✅ `--demo` : `DEMO 34/37 Fête des voisins`.
+- ⚠️ Badge un vrai jour de fête : non vu (simulations sans Badges).
+- ⚠️ Avant le jour 16, Léo qui joue peut passer devant la table.
+
+## Feedback
+
+### Round 2 — 2026-11-03
+- Asked : « releve la guirlande d'une ligne et met les ~ et les - entre les triangles ».
+- Triage : adjustment → critère mis à jour.
+- Changes : voir `## Implementation` round 2 (implementer), `src/scene/bunting.rs` seul.
+- Build : `cargo build`, `cargo fmt --check`, `cargo test` verts ; clippy : seule l'erreur connue #79.
+- Review : deferred (→ /wa-validate).
+- Verify : captures 121×40 et 200×45 : `~▼~▼…-▼-▼` sur la rangée de l'avant-toit jusqu'au bord droit, fenêtres du haut visibles. Round 2 : manual validation — not run by agent.
+- Rule captured : aucune.
+
+### Round 1 — 2026-11-03
+- Asked : « ajoute une guirlande colorée de triangles du bord gauche du toit de la maison qui ne s'arrête pas et va jusqu'au bout de l'écran à droite » ; choix : droite, sous l'avant-toit.
+- Triage : adjustment → critère d'acceptation ajouté.
+- Changes : voir `## Implementation` round 1 (implementer).
+- Build : `cargo build`, `cargo fmt --check`, `cargo test` verts ; clippy : seule l'erreur connue #79.
+- Review : deferred (→ /wa-validate).
+- Verify : captures `--neighbours` 80×24, 121×40, 200×45, nuit : guirlande continue du toit au bord droit ; jour normal : rien. Pluie de nuit non capturée (outil bloqué). Round 1 : manual validation — not run by agent.
+- Rule captured : aucune.

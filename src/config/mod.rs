@@ -1,15 +1,19 @@
-use serde::Deserialize;
+mod writer;
+
+use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use toml_edit::ser::ValueSerializer;
 
 use crate::error::ConfigError;
-use crate::weather::types::WeatherUnits;
+use crate::geolocation::GeoLocation;
+use crate::weather::types::{PrecipitationUnit, TemperatureUnit, WeatherUnits, WindSpeedUnit};
 
 pub const ENV_LATITUDE: &str = "WEATHR_LATITUDE";
 pub const ENV_LONGITUDE: &str = "WEATHR_LONGITUDE";
 
-#[derive(Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum LocationDisplay {
     #[default]
@@ -94,7 +98,85 @@ impl Default for Location {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Setting {
+    Temperature(TemperatureUnit),
+    WindSpeed(WindSpeedUnit),
+    Precipitation(PrecipitationUnit),
+    MailHour(u32),
+    HideHud(bool),
+}
+
+impl Setting {
+    fn keys(self) -> &'static [&'static str] {
+        match self {
+            Self::Temperature(_) => &["units", "temperature"],
+            Self::WindSpeed(_) => &["units", "wind_speed"],
+            Self::Precipitation(_) => &["units", "precipitation"],
+            Self::MailHour(_) => &["courrier", "heure"],
+            Self::HideHud(_) => &["hide_hud"],
+        }
+    }
+
+    fn value(self) -> Result<toml_edit::Value, ConfigError> {
+        let serializer = ValueSerializer::new();
+        Ok(match self {
+            Self::Temperature(unit) => unit.serialize(serializer)?,
+            Self::WindSpeed(unit) => unit.serialize(serializer)?,
+            Self::Precipitation(unit) => unit.serialize(serializer)?,
+            Self::MailHour(hour) => i64::from(hour).into(),
+            Self::HideHud(hide) => hide.into(),
+        })
+    }
+}
+
+fn location_values(
+    location: &GeoLocation,
+    auto: bool,
+) -> Vec<(&'static [&'static str], Option<toml_edit::Value>)> {
+    vec![
+        (&["location", "latitude"], Some(location.latitude.into())),
+        (&["location", "longitude"], Some(location.longitude.into())),
+        (
+            &["location", "city"],
+            location.city.as_deref().map(Into::into),
+        ),
+        (&["location", "auto"], Some(auto.into())),
+    ]
+}
+
 impl Config {
+    pub fn save(setting: Setting) -> Result<(), ConfigError> {
+        Self::save_to_path(&Self::get_config_path()?, setting)
+    }
+
+    pub fn save_to_path(path: &Path, setting: Setting) -> Result<(), ConfigError> {
+        writer::write_value(path, setting.keys(), setting.value()?)
+    }
+
+    pub fn save_location(location: &GeoLocation, auto: bool) -> Result<(), ConfigError> {
+        Self::save_location_to_path(&Self::get_config_path()?, location, auto)
+    }
+
+    pub fn save_city(location: &GeoLocation) -> Result<(), ConfigError> {
+        Self::save_city_to_path(&Self::get_config_path()?, location)
+    }
+
+    pub fn save_location_to_path(
+        path: &Path,
+        location: &GeoLocation,
+        auto: bool,
+    ) -> Result<(), ConfigError> {
+        writer::write_values(path, &location_values(location, auto))
+    }
+
+    pub fn save_city_to_path(path: &Path, location: &GeoLocation) -> Result<(), ConfigError> {
+        let display = LocationDisplay::City.serialize(ValueSerializer::new())?;
+        let mut values = location_values(location, false);
+        values.push((&["location", "display"], Some(display)));
+        writer::write_values(path, &values)
+    }
+
     pub fn load() -> Result<Self, ConfigError> {
         let config_path = Self::get_config_path()?;
 
@@ -717,5 +799,82 @@ auto = false
 
         let config: Config = toml::from_str("").unwrap();
         assert_eq!(config.mail.hour, 9);
+    }
+
+    #[test]
+    fn test_saved_settings_load_back() {
+        let dir = std::env::temp_dir().join(format!("weathr_test_settings_{}", std::process::id()));
+        let path = dir.join("config.toml");
+        fs::remove_dir_all(&dir).ok();
+        for setting in [
+            Setting::Temperature(TemperatureUnit::Fahrenheit),
+            Setting::WindSpeed(WindSpeedUnit::Kn),
+            Setting::Precipitation(PrecipitationUnit::Inch),
+            Setting::MailHour(23),
+            Setting::HideHud(true),
+        ] {
+            Config::save_to_path(&path, setting).unwrap();
+        }
+        let config = Config::load_from_path(&path).unwrap();
+        fs::remove_dir_all(&dir).ok();
+        assert_eq!(config.units.temperature, TemperatureUnit::Fahrenheit);
+        assert_eq!(config.units.wind_speed, WindSpeedUnit::Kn);
+        assert_eq!(config.units.precipitation, PrecipitationUnit::Inch);
+        assert_eq!(config.mail.hour, 23);
+        assert!(config.hide_hud);
+    }
+
+    #[test]
+    fn test_saved_location_loads_back() {
+        let dir = std::env::temp_dir().join(format!("weathr_test_location_{}", std::process::id()));
+        let path = dir.join("config.toml");
+        fs::remove_dir_all(&dir).ok();
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(&path, "# Ma ville\n[location]\nauto = true # détection\n").unwrap();
+        let lyon = GeoLocation {
+            latitude: 45.7578137,
+            longitude: 4.8320114,
+            city: Some("Lyon".to_string()),
+        };
+        Config::save_location_to_path(&path, &lyon, false).unwrap();
+        let written = fs::read_to_string(&path).unwrap();
+        let config = Config::load_from_path(&path).unwrap();
+        fs::remove_dir_all(&dir).ok();
+        assert!(written.starts_with("# Ma ville\n[location]\nauto = false # détection\n"));
+        assert_eq!(config.location.latitude, 45.7578137);
+        assert_eq!(config.location.longitude, 4.8320114);
+        assert_eq!(config.location.city.as_deref(), Some("Lyon"));
+        assert!(!config.location.auto);
+    }
+
+    #[test]
+    fn test_chosen_city_is_displayed_by_name() {
+        let dir = std::env::temp_dir().join(format!("weathr_test_city_{}", std::process::id()));
+        let path = dir.join("config.toml");
+        fs::remove_dir_all(&dir).ok();
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(
+            &path,
+            "[location]\n# Affichage\ndisplay = \"coordinates\" # mode\n",
+        )
+        .unwrap();
+        let lyon = GeoLocation {
+            latitude: 45.7578137,
+            longitude: 4.8320114,
+            city: Some("Lyon".to_string()),
+        };
+        Config::save_city_to_path(&path, &lyon).unwrap();
+        let written = fs::read_to_string(&path).unwrap();
+        let config = Config::load_from_path(&path).unwrap();
+        assert!(written.starts_with("[location]\n# Affichage\ndisplay = \"city\" # mode\n"));
+        assert_eq!(config.location.display, LocationDisplay::City);
+        assert_eq!(config.location.city.as_deref(), Some("Lyon"));
+        assert!(!config.location.auto);
+
+        Config::save_location_to_path(&path, &lyon, true).unwrap();
+        let config = Config::load_from_path(&path).unwrap();
+        fs::remove_dir_all(&dir).ok();
+        assert_eq!(config.location.display, LocationDisplay::City);
+        assert!(config.location.auto);
     }
 }

@@ -20,13 +20,19 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 |---|---|---|---|---|
 | Lettre | courrier | Message | `Entry` | courrier daté d'un habitant, livré par le Facteur |
 | Carte postale | carte | | `City` | de Sam en voyage, une ville par carte |
+| Ville | | | `location.city` | ville du joueur, détectée ou choisie dans les Réglages → [[weather]] |
+| Nuage | | | `Cloud` | traverse le ciel de gauche à droite ; blanc ciel clair, gris clair Éclaircies, gris foncé sinon → [[animation]] |
+| Position auto | détection auto | | `location.auto` | Ville détectée seule : CoreLocationCLI, cache, puis IP → [[weather]] |
 | Gazette | journal | | | chaque lundi : prévisions de la semaine, rumeurs, annonces, Énigme |
 | Alerte météo | vigilance | | | ligne ⚠ de la Gazette : canicule, grand froid, vent fort, orage ; calculée sur les prévisions |
 | Énigme | devinette | | `Riddle` | question de la Gazette, réponse touche `e` |
 | Bouteille | message à la mer | | `bottle` | message dérivant sur la rivière |
-| Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret |
-| Fête | jour férié | | `Holiday` | jour spécial qui décore la scène |
+| Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret → [[mail]] |
+| Fête | jour férié | | `Holiday` | jour spécial qui décore la scène → [[animation]] |
+| Fête de la musique | | | `is_music_day` | 21 juin : notes aux fenêtres, chanteurs, Notes du ciel ; Badge dédié → [[animation]] |
+| Notes du ciel | dessin de notes, croches | | `SkyNotes` | croche et deux doubles croches, remplace soleil ou lune → [[animation]] |
 | Facteur | postier | | `Postman` | livre les Lettres à la boîte aux lettres |
+| Heure du Facteur | heure du courrier | | `mail_hour` | heure de la tournée ; changée dans Réglages, effet le lendemain → [[mail]] |
 | Jour de jeu | jour | | `StoryClock` | jour de l'histoire depuis le début, change à `courrier.heure` → [[mail]] |
 | Timeline | | | `Timeline` | événements de l'histoire classés par Jour de jeu |
 | Apparition | déblocage | | `Arrival` | objet ou Habitant qui arrive au jardin un Jour de jeu |
@@ -62,6 +68,7 @@ One precise screen. Team names, in the discussion language. UI projects only.
 | Fête du miel | scène de fête | | maison de Nadia et Claire, Jours de jeu 119–120 seulement |
 | Lieux | menu des lieux | | menu touche m : Jardin, Potager, Fête du miel disponibles |
 | Accueil | onboarding | `welcome` | Facteur arrive, bulle, note dépliée, bulle de départ ; une fois par joueur |
+| Réglages | | `settings_view` | écran ouvert par `s` : unités, Heure du Facteur, Barre du haut, Ville, Position auto → [[architecture]] |
 <!-- | Login screen | login page | `LoginView` | email + password, forgot-password link | -->
 
 ## Parts
@@ -70,7 +77,8 @@ A named piece of UI, reused or talked about on its own. UI projects only.
 
 | Name | Also | Code | On | Means |
 |---|---|---|---|---|
-| Barre du haut | HUD, ligne d'état | `cached_weather_info` | scène | heure, Jour de jeu, Lettre, Badges, aide, météo ; masquée par `--hide-hud` |
+| Barre du haut | HUD, ligne d'état | `cached_weather_info` | scène | heure, Jour de jeu, Lettre, Badges, aide, météo ; masquable (`--hide-hud`, Réglages) → [[render]] |
+| Toast | | `toasts` | scène | texte bref sur la ligne 0, 4 s, un à la fois → [[render]] |
 <!-- | Composer | editor | `ComposerView` | Inbox, Thread | writes or replies to a message | -->
 
 ## Flows
