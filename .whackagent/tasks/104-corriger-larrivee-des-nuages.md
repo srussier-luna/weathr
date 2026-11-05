@@ -1,6 +1,6 @@
 ---
 issue: 104
-status: to-test
+status: to-close
 wiki: [[animation]]
 note: "Retour de Denis (Slack, 05/11) : nuages qui apparaissent d'un coup à gauche, immobiles quelques secondes, parfois blancs avant de passer gris. À corriger en v1.7 avant livraison."
 created: 2026-11-05
@@ -41,12 +41,22 @@ created: 2026-11-05
   - `visible_part(line, x)` (privée) : coupe les espaces avant / après la forme (transparents), décale la colonne d'autant, puis coupe la partie hors écran à gauche par caractère (`x.floor()`). Ligne entièrement hors écran → rien. Les espaces intérieurs restent écrits (opaques).
   - `cloud_color(condition)` (publique) : Clear → blanc, PartlyCloudy → gris clair, le reste et météo inconnue → gris foncé. `set_cloud_color(is_clear)` supprimée ; `update` repeint chaque Nuage avec cette couleur et crée les nouveaux avec la même.
   - 3 tests : rendu à `x` négatif / décimal / hors écran et caractère non ASCII ; couleur identique pour tous les Nuages sur 20 000 frames par condition ; Nuage de devant qui ne cache l'autre qu'à l'intérieur de son contour.
-- `src/animation_manager.rs` : `render_background` passe `clouds::cloud_color(condition)` à `update`.
+- `src/animation_manager.rs` : `render_background` passe `clouds::cloud_color(condition)` à `update` ; `WeatherCondition` importé.
+- Validation : naissance à `off_screen_x` (-ligne la plus large) ; une seule couleur `CloudSystem.color`, réglée dans `update` ; test `test_new_cloud_shows_nothing_on_its_first_frame`.
 - Arrondi de colonne passé de `as i16` à `floor()` : un Nuage ne reste plus deux fois plus longtemps en colonne 0 entre x = -1 et 1.
 - Les Nuages laissent voir le soleil et les autres Nuages autour de leur contour (décision chevauchement).
 - Build : `cargo build`, `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use`, `cargo test --bin weathr` (324) verts.
 
 ## Review
+
+### Round validation — 2026-11-05
+- Scope : diff cumulé `origin/develop...HEAD` + correctifs (src/animation/clouds.rs, src/animation_manager.rs).
+- Findings (autofix, 1 tour, tous corrigés) :
+  - 🟡 [correctness] naissance à -(largeur de la 1re ligne) : formes 2 et 4 montraient « `) » dès la frame 0 → `off_screen_x` (ligne la plus large).
+  - 🟡 [elegance] couleur gardée par Nuage alors que toujours identique → un seul `CloudSystem.color`.
+  - 🟡 [style] `crate::weather::WeatherCondition` en chemin complet → importé.
+- Preuve : `cargo build`, `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use`, `cargo test --bin weathr` (325) verts ; pty 120×40 Nuageux / Éclaircies : première frame visible = colonne 0 seulement, couleurs constantes.
+- LENSES : style ✓ · elegance ✓ · structure ✓ · correctness ✓ — VERDICT : clean.
 
 ## Verification
 

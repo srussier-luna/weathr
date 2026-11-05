@@ -48,7 +48,9 @@ use crate::scene::WorldScene;
 use crate::scene::house::House;
 use crate::scene::river::River;
 use crate::scene::tree::Growth;
-use crate::weather::{FogIntensity, RainIntensity, SnowIntensity, WeatherConditions};
+use crate::weather::{
+    FogIntensity, RainIntensity, SnowIntensity, WeatherCondition, WeatherConditions,
+};
 use crossterm::style::Color;
 use std::io;
 use std::time::{Duration, Instant};
@@ -337,7 +339,7 @@ impl AnimationManager {
                 .current_weather
                 .as_ref()
                 .map(|weather| weather.condition);
-            let is_clear = condition == Some(crate::weather::WeatherCondition::Clear);
+            let is_clear = condition == Some(WeatherCondition::Clear);
             let cloud_color = clouds::cloud_color(condition);
 
             if conditions.is_cloudy || is_clear {

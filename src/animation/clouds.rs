@@ -12,11 +12,11 @@ struct Cloud {
     y: f32,
     speed: f32,
     shape: Vec<String>,
-    color: Color,
 }
 
 pub struct CloudSystem {
     clouds: Vec<Cloud>,
+    color: Color,
     terminal_width: u16,
     terminal_height: u16,
 }
@@ -42,6 +42,14 @@ fn visible_part(line: &str, x: f32) -> Option<(u16, &str)> {
         .map(|(start, _)| (0, &outline[start..]))
 }
 
+fn off_screen_x(shape: &[String]) -> f32 {
+    -(shape
+        .iter()
+        .map(|line| line.chars().count())
+        .max()
+        .unwrap_or(0) as f32)
+}
+
 impl CloudSystem {
     pub fn new(terminal_width: u16, terminal_height: u16) -> Self {
         let mut rng = rand::rng();
@@ -56,25 +64,19 @@ impl CloudSystem {
                 terminal_width,
                 terminal_height,
                 true,
-                Color::White,
                 &mut rng,
             ));
         }
 
         Self {
             clouds,
+            color: cloud_color(None),
             terminal_width,
             terminal_height,
         }
     }
 
-    fn create_random_cloud(
-        width: u16,
-        height: u16,
-        random_x: bool,
-        color: Color,
-        rng: &mut impl Rng,
-    ) -> Cloud {
+    fn create_random_cloud(width: u16, height: u16, random_x: bool, rng: &mut impl Rng) -> Cloud {
         let shapes = CLOUD_SHAPES.get_or_init(Self::create_cloud_shapes);
 
         let shape_idx = (rng.random::<u32>() as usize) % shapes.len();
@@ -86,18 +88,12 @@ impl CloudSystem {
         let x = if random_x {
             (rng.random::<u16>() % width) as f32
         } else {
-            -(shape[0].len() as f32)
+            off_screen_x(&shape)
         };
 
         let speed = 0.05 + (rng.random::<f32>() * 0.1);
 
-        Cloud {
-            x,
-            y,
-            speed,
-            shape,
-            color,
-        }
+        Cloud { x, y, speed, shape }
     }
 
     fn create_cloud_shapes() -> Vec<Vec<String>> {
@@ -139,10 +135,10 @@ impl CloudSystem {
     ) {
         self.terminal_width = terminal_width;
         self.terminal_height = terminal_height;
+        self.color = cloud_color;
 
         for cloud in &mut self.clouds {
             cloud.x += cloud.speed;
-            cloud.color = cloud_color;
         }
 
         self.clouds.retain(|c| c.x < terminal_width as f32);
@@ -160,7 +156,6 @@ impl CloudSystem {
                 terminal_width,
                 terminal_height,
                 false,
-                cloud_color,
                 rng,
             ));
         }
@@ -175,7 +170,7 @@ impl CloudSystem {
                     && y < self.terminal_height as i16
                     && let Some((x, visible)) = visible_part(line, cloud.x)
                 {
-                    renderer.render_line_colored(x, y as u16, visible, cloud.color)?;
+                    renderer.render_line_colored(x, y as u16, visible, self.color)?;
                 }
             }
         }
@@ -204,6 +199,15 @@ mod tests {
         assert_eq!(visible_part("   (  )   ", 2.0), Some((5, "(  )")));
         assert_eq!(visible_part("   (  )   ", -4.0), Some((0, "  )")));
         assert_eq!(visible_part("   (  )   ", -7.0), None);
+    }
+
+    #[test]
+    fn test_new_cloud_shows_nothing_on_its_first_frame() {
+        for shape in CloudSystem::create_cloud_shapes() {
+            let x = off_screen_x(&shape);
+
+            assert!(shape.iter().all(|line| visible_part(line, x).is_none()));
+        }
     }
 
     fn paint(row: &mut [char], line: &str, x: f32) {
@@ -248,7 +252,7 @@ mod tests {
 
             for _ in 0..FRAMES {
                 clouds.update(WIDTH, HEIGHT, is_clear, cloud_color(condition), &mut rng);
-                assert!(clouds.clouds.iter().all(|cloud| cloud.color == expected));
+                assert_eq!(clouds.color, expected);
                 saw_newborn |= clouds.clouds.iter().any(|cloud| cloud.x < 0.0);
             }
 
