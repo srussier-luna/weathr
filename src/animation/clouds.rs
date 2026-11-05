@@ -1,4 +1,5 @@
 use crate::render::TerminalRenderer;
+use crate::weather::WeatherCondition;
 use crossterm::style::Color;
 use rand::prelude::*;
 use std::io;
@@ -20,18 +21,25 @@ pub struct CloudSystem {
     terminal_height: u16,
 }
 
-impl CloudSystem {
-    pub fn set_cloud_color(&mut self, is_clear: bool) {
-        let color = if is_clear {
-            Color::White
-        } else {
-            Color::DarkGrey
-        };
-
-        for cloud in &mut self.clouds {
-            cloud.color = color;
-        }
+pub fn cloud_color(condition: Option<WeatherCondition>) -> Color {
+    match condition {
+        Some(WeatherCondition::Clear) => Color::White,
+        Some(WeatherCondition::PartlyCloudy) => Color::Grey,
+        _ => Color::DarkGrey,
     }
+}
+
+fn visible_part(line: &str, x: f32) -> Option<(u16, &str)> {
+    let outline = line.trim();
+    let leading = line.chars().take_while(|c| c.is_whitespace()).count();
+    let column = x.floor() as i16 + leading as i16;
+    if column >= 0 {
+        return Some((column as u16, outline));
+    }
+    outline
+        .char_indices()
+        .nth(column.unsigned_abs() as usize)
+        .map(|(start, _)| (0, &outline[start..]))
 }
 
 impl CloudSystem {
@@ -134,6 +142,7 @@ impl CloudSystem {
 
         for cloud in &mut self.clouds {
             cloud.x += cloud.speed;
+            cloud.color = cloud_color;
         }
 
         self.clouds.retain(|c| c.x < terminal_width as f32);
@@ -161,18 +170,89 @@ impl CloudSystem {
         for cloud in &self.clouds {
             for (i, line) in cloud.shape.iter().enumerate() {
                 let y = cloud.y as i16 + i as i16;
-                let x = cloud.x as i16;
 
-                if y >= 0 && y < self.terminal_height as i16 {
-                    renderer.render_line_colored(
-                        std::cmp::max(0, x) as u16,
-                        y as u16,
-                        line,
-                        cloud.color,
-                    )?;
+                if y >= 0
+                    && y < self.terminal_height as i16
+                    && let Some((x, visible)) = visible_part(line, cloud.x)
+                {
+                    renderer.render_line_colored(x, y as u16, visible, cloud.color)?;
                 }
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const WIDTH: u16 = 120;
+    const HEIGHT: u16 = 40;
+    const FRAMES: usize = 20_000;
+
+    #[test]
+    fn test_cloud_at_negative_x_shows_only_its_visible_part() {
+        let line = "(___.__)_)";
+
+        assert_eq!(visible_part(line, -4.0), Some((0, ".__)_)")));
+        assert_eq!(visible_part(line, -3.6), Some((0, ".__)_)")));
+        assert_eq!(visible_part(line, -0.5), Some((0, "___.__)_)")));
+        assert_eq!(visible_part(line, 3.2), Some((3, line)));
+        assert_eq!(visible_part(line, -10.0), None);
+        assert_eq!(visible_part("é.--.", -1.0), Some((0, ".--.")));
+        assert_eq!(visible_part("   (  )   ", 2.0), Some((5, "(  )")));
+        assert_eq!(visible_part("   (  )   ", -4.0), Some((0, "  )")));
+        assert_eq!(visible_part("   (  )   ", -7.0), None);
+    }
+
+    fn paint(row: &mut [char], line: &str, x: f32) {
+        if let Some((column, part)) = visible_part(line, x) {
+            for (offset, ch) in part.chars().enumerate() {
+                row[usize::from(column) + offset] = ch;
+            }
+        }
+    }
+
+    #[test]
+    fn test_front_cloud_hides_the_back_one_only_inside_its_outline() {
+        let mut row = vec![' '; 30];
+
+        paint(&mut row, "(___.__)_)", 10.0);
+        paint(&mut row, "   (  )   ", 5.0);
+        paint(&mut row, "  .--.  ", 16.0);
+
+        assert_eq!(
+            row.iter().collect::<String>().trim_end(),
+            "        (  )__.__).--."
+        );
+    }
+
+    #[test]
+    fn test_new_cloud_has_the_color_of_the_clouds_already_there() {
+        let skies = [
+            (None, Color::DarkGrey),
+            (Some(WeatherCondition::Clear), Color::White),
+            (Some(WeatherCondition::PartlyCloudy), Color::Grey),
+            (Some(WeatherCondition::Cloudy), Color::DarkGrey),
+            (Some(WeatherCondition::Overcast), Color::DarkGrey),
+        ];
+
+        for (condition, expected) in skies {
+            assert_eq!(cloud_color(condition), expected);
+
+            let is_clear = condition == Some(WeatherCondition::Clear);
+            let mut rng = StdRng::seed_from_u64(104);
+            let mut clouds = CloudSystem::new(WIDTH, HEIGHT);
+            let mut saw_newborn = false;
+
+            for _ in 0..FRAMES {
+                clouds.update(WIDTH, HEIGHT, is_clear, cloud_color(condition), &mut rng);
+                assert!(clouds.clouds.iter().all(|cloud| cloud.color == expected));
+                saw_newborn |= clouds.clouds.iter().any(|cloud| cloud.x < 0.0);
+            }
+
+            assert!(saw_newborn);
+        }
     }
 }
