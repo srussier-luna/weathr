@@ -3,7 +3,7 @@ use super::gazette::{INPUT_FOOTER, typed_answer};
 use super::text;
 use crate::overlay::{Frame, Line, View};
 
-pub const TRAIL_START_DAY: usize = 45;
+pub const TRAIL_START_DAY: usize = 42;
 const ALLUSION_EVERY: usize = 3;
 const TAROT_CARD_TITLE: &str = "L'Arcane sans numéro";
 const TAROT_CARD_TEXT: &str = "Une carte usée, violette, tiède comme une main. Un voyageur y marche vers le bord d'une falaise, un baluchon sur l'épaule, sans regarder ses pieds. Au dos, d'une écriture tremblée\u{202F}:";
@@ -86,11 +86,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_second_rumor_starts_on_day_45() {
-        assert_eq!(second_rumor(44, 6, false), None);
+    fn test_second_rumor_starts_on_day_42() {
+        assert_eq!(second_rumor(41, 6, false), None);
         assert_eq!(second_rumor(1, 0, true), None);
-        assert_eq!(second_rumor(45, 6, false), Some(MYSTERY_RUMORS[0]));
-        assert_eq!(second_rumor(46, 7, false), Some(MYSTERY_RUMORS[1]));
+        assert_eq!(second_rumor(42, 6, false), Some(MYSTERY_RUMORS[0]));
+        assert_eq!(second_rumor(43, 7, false), Some(MYSTERY_RUMORS[1]));
     }
 
     #[test]
@@ -114,16 +114,16 @@ mod tests {
     }
 
     #[test]
-    fn test_one_letter_out_of_three_alludes_from_day_45() {
+    fn test_one_letter_out_of_three_alludes_from_day_42() {
         let alluding: Vec<usize> = (1..=60)
             .filter(|day| mystery_allusion(*day, false).is_some())
             .collect();
-        assert_eq!(alluding, [45, 48, 51, 54, 57, 60]);
+        assert_eq!(alluding, [42, 45, 48, 51, 54, 57, 60]);
     }
 
     #[test]
     fn test_allusions_cycle_through_the_list() {
-        let allusions: Vec<_> = (45..45 + 3 * 7)
+        let allusions: Vec<_> = (42..42 + 3 * 7)
             .filter_map(|day| mystery_allusion(day, false))
             .collect();
         assert_eq!(allusions[..6], MYSTERY_ALLUSIONS);

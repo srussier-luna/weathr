@@ -85,10 +85,10 @@ mod tests {
     }
 
     #[test]
-    fn test_card_waits_for_day_45() {
+    fn test_card_waits_for_day_42() {
         assert!(!appears(at(20, 0, 30), 1));
-        assert!(!appears(at(20, 0, 30), 44));
-        assert!(appears(at(20, 0, 30), 45));
+        assert!(!appears(at(20, 0, 30), 41));
+        assert!(appears(at(20, 0, 30), 42));
     }
 
     #[test]

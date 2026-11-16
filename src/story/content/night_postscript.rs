@@ -69,7 +69,7 @@ mod tests {
     }
 
     #[test]
-    fn test_village_letter_from_day_45_alludes_until_the_unlock() {
+    fn test_village_letter_from_day_42_alludes_until_the_unlock() {
         let letters = letters::defaults();
         let progress = Progress::default();
         let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 10, 1).unwrap(), 9);
@@ -95,13 +95,13 @@ mod tests {
                 .iter()
                 .position(|line| matches!(line, Line::Text(text) if text == expected))
         };
-        let allusion = mystery_allusion(45, false).unwrap();
+        let allusion = mystery_allusion(42, false).unwrap();
 
-        let view = compose(44, false);
-        let night = NIGHT_POSTSCRIPTS[44 % NIGHT_POSTSCRIPTS.len()];
+        let view = compose(41, false);
+        let night = NIGHT_POSTSCRIPTS[41 % NIGHT_POSTSCRIPTS.len()];
         assert!(position(&view, allusion).unwrap() < position(&view, night).unwrap());
-        assert!(!has_line(&compose(43, false), allusion));
-        assert!(!has_line(&compose(44, true), allusion));
+        assert!(!has_line(&compose(40, false), allusion));
+        assert!(!has_line(&compose(41, true), allusion));
     }
 
     #[test]

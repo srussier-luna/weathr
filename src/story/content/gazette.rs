@@ -129,7 +129,7 @@ mod tests {
     }
 
     #[test]
-    fn test_gazette_carries_a_second_echo_from_day_45() {
+    fn test_gazette_carries_a_second_echo_from_day_42() {
         let progress = Progress::default();
         let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 10, 22).unwrap(), 9);
         let gazette = Gazette::new(6, 47);
@@ -152,13 +152,13 @@ mod tests {
             }
         };
 
-        assert!(compose(44, false).contains(&echoes(None)));
-        let mystery = second_rumor(46, 6, false);
+        assert!(compose(41, false).contains(&echoes(None)));
+        let mystery = second_rumor(42, 6, false);
         assert!(mystery.is_some());
-        assert!(compose(46, false).contains(&echoes(mystery)));
-        let arcane = second_rumor(46, 6, true);
+        assert!(compose(42, false).contains(&echoes(mystery)));
+        let arcane = second_rumor(42, 6, true);
         assert_ne!(arcane, mystery);
-        assert!(compose(46, true).contains(&echoes(arcane)));
+        assert!(compose(42, true).contains(&echoes(arcane)));
     }
 
     #[test]
