@@ -1,3 +1,4 @@
+use crate::animation::garden;
 use crate::holiday::Holiday;
 use crate::render::TerminalRenderer;
 use crate::scene::tree::{Growth, Tree};
@@ -17,6 +18,22 @@ const MAILBOX_NIGHT: Color = Color::Rgb {
     g: 120,
     b: 0,
 };
+const MAILBOX: [&str; 3] = [" .--. ", "|____|", "  ||  "];
+const VIOLET_MAILBOX: [&str; 2] = [".-.", "|_|"];
+const VIOLET_MAILBOX_OFFSET: u16 = 2;
+pub const VIOLET_MAILBOX_WIDTH: u16 = 3;
+pub const ARCANE_VIOLET: Color = Color::Rgb {
+    r: 180,
+    g: 90,
+    b: 255,
+};
+
+pub fn violet_mailbox_at(mailbox_x: u16, horizon_y: u16) -> (u16, u16) {
+    (
+        mailbox_x + VIOLET_MAILBOX_OFFSET,
+        horizon_y.saturating_sub((MAILBOX.len() + VIOLET_MAILBOX.len()) as u16),
+    )
+}
 
 #[derive(Clone, Copy)]
 pub struct GardenPlan {
@@ -45,6 +62,7 @@ pub struct DecorationRenderConfig {
     pub is_snowing: bool,
     pub holiday: Holiday,
     pub tree_growth: Growth,
+    pub has_violet_mailbox: bool,
 }
 
 impl Decorations {
@@ -103,6 +121,10 @@ impl Decorations {
                     }
                 }
             }
+            if config.has_violet_mailbox {
+                let (x, y) = violet_mailbox_at(mailbox_x, config.horizon_y);
+                garden::draw(renderer, x, y, &VIOLET_MAILBOX, ARCANE_VIOLET)?;
+            }
         }
 
         // Render Second Tree (Right of house, only if terminal is wide enough)
@@ -141,7 +163,7 @@ impl Decorations {
 
     fn get_mailbox(&self, is_day: bool) -> (Vec<&'static str>, Color) {
         (
-            vec![" .--. ", "|____|", "  ||  "],
+            MAILBOX.to_vec(),
             if is_day { MAILBOX_DAY } else { MAILBOX_NIGHT },
         )
     }

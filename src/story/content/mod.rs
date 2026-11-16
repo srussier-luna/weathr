@@ -1,3 +1,4 @@
+pub mod arcanes;
 pub mod chronicles;
 mod gazette;
 pub mod letters;
@@ -10,6 +11,7 @@ use super::clock::StoryClock;
 use super::event::Entry;
 use crate::overlay::{Frame, Line, View};
 use crate::progress::Progress;
+use arcanes::Arcane;
 use chronicles::{
     ARCHIVES, CITIES, MARCEL_LETTERS, MARCEL_SENDER, NEIGHBOURS_LETTERS, NEIGHBOURS_SENDER,
     RECIPES, SAM_LETTERS, SAM_SENDER,
@@ -78,7 +80,7 @@ fn series(entry: Entry) -> Option<Series> {
         Entry::Postcard(_) => Series::Postcard,
         Entry::Archive(_) => Series::Archive,
         Entry::Recipe(_) => Series::Recipe,
-        Entry::Gazette(_) => return None,
+        Entry::Gazette(_) | Entry::Arcane(_) => return None,
     })
 }
 
@@ -95,6 +97,10 @@ pub fn entry_view(delivered: &[(usize, Entry)], index: usize, ctx: &ReadContext)
         .map(|kind| counter(delivered, index, kind))
         .unwrap_or_default();
     Some(content_for(day, entry, title_counter).compose(ctx))
+}
+
+pub fn arcane_view(number: usize, ctx: &ReadContext) -> View {
+    Arcane::new(number).compose(ctx)
 }
 
 fn content_for(day: usize, entry: Entry, counter: String) -> Box<dyn MailContent> {
@@ -144,6 +150,7 @@ fn content_for(day: usize, entry: Entry, counter: String) -> Box<dyn MailContent
                 Frame::Recipe,
             ))
         }
+        Entry::Arcane(number) => Box::new(Arcane::new(number)),
     }
 }
 
@@ -158,6 +165,7 @@ pub fn label(entry: Entry, ctx: &ReadContext) -> String {
         Entry::Recipe(month) => format!("Recette du mois : {}", RECIPES[month].0),
         Entry::Postcard(index) => format!("Carte postale : {}", CITIES[index % CITIES.len()].name),
         Entry::Creepy(_) => CREEPY_SENDER.to_string(),
+        Entry::Arcane(number) => arcanes::title(number),
     }
 }
 
@@ -249,8 +257,9 @@ pub(crate) mod save_golden {
 
 #[cfg(test)]
 mod tests {
-    use super::entry_view;
+    use super::arcanes::SAMPLE_NUMBER;
     use super::save_golden::{SavedGame, entries_fixture, render};
+    use super::{arcane_view, entry_view, label};
     use crate::overlay::Frame;
     use crate::story::Entry;
 
@@ -365,5 +374,21 @@ mod tests {
         assert!(titles[4].starts_with("Recette du mois 1/2 : "));
         assert!(titles[7].starts_with("Archives de la mairie 3/3 : "));
         assert!(titles[9].starts_with("Carte postale 3/3 : "));
+    }
+
+    #[test]
+    fn test_arcanes_keep_their_own_number_out_of_the_lettre_counter() {
+        let titles = titles(&[Entry::Main(0), Entry::Arcane(SAMPLE_NUMBER), Entry::Main(1)]);
+        assert_eq!(titles, ["Lettre 1/2", "Arcane n° 0", "Lettre 2/2"]);
+    }
+
+    #[test]
+    fn test_sample_arcane_comes_in_the_starry_night_frame() {
+        let save = SavedGame::load();
+        let context = save.context(21);
+        let view = arcane_view(SAMPLE_NUMBER, &context);
+        assert_eq!(view.title, "Arcane n° 0");
+        assert_eq!(view.frame, Frame::StarryNight);
+        assert_eq!(label(Entry::Arcane(3), &context), "Arcane n° 3");
     }
 }

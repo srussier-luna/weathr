@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 pub const DATE_FORMAT: &str = "%Y-%m-%d";
 
-fn parse_date(date: &str) -> Option<NaiveDate> {
+pub fn parse_date(date: &str) -> Option<NaiveDate> {
     NaiveDate::parse_from_str(date, DATE_FORMAT).ok()
 }
 
@@ -53,6 +53,14 @@ pub struct Progress {
     pub postman_note_day: Option<usize>,
     #[serde(default)]
     mail_hour_change: Option<MailHourChange>,
+    #[serde(default)]
+    pub arcanes_unlocked_on: Option<String>,
+    #[serde(default)]
+    pub arcanes_received_on: Vec<String>,
+    #[serde(default)]
+    pub arcanes_read: usize,
+    #[serde(default)]
+    pub arcanes_passed_on: Option<String>,
     #[serde(skip)]
     in_memory: bool,
 }

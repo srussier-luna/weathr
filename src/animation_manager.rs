@@ -2,6 +2,7 @@ use crate::animation::sun_path::{day_progress, on_sun_path};
 use crate::animation::{
     AnimationController,
     airplanes::AirplaneSystem,
+    arcane::{ArcaneRound, ArcanoPostman},
     birds::BirdSystem,
     cat::Cat,
     chimney::ChimneySmoke,
@@ -97,6 +98,7 @@ pub struct AnimationManager {
     snail: Snail,
     squirrel: Squirrel,
     postman: Postman,
+    arcano_postman: ArcanoPostman,
     halloween: Halloween,
     music_notes: MusicNotes,
     sky_notes: SkyNotes,
@@ -151,6 +153,7 @@ impl AnimationManager {
             snail: Snail::new(),
             squirrel: Squirrel::new(),
             postman: Postman::new(),
+            arcano_postman: ArcanoPostman::new(),
             halloween: Halloween::new(),
             music_notes: MusicNotes::new(),
             sky_notes: SkyNotes::new(),
@@ -237,6 +240,10 @@ impl AnimationManager {
 
     pub fn set_mail_waiting(&mut self, is_waiting: bool) {
         self.postman.set_mail_waiting(is_waiting);
+    }
+
+    pub fn set_arcane_round(&mut self, round: Option<ArcaneRound>) {
+        self.arcano_postman.set_round(round);
     }
 
     pub fn postman_visit(&mut self) {
@@ -575,6 +582,8 @@ impl AnimationManager {
         self.postman.set_april_fools(holiday.is_april_fools);
         self.postman.update(&layout);
         self.postman.render(renderer, &layout)?;
+        self.arcano_postman.update(&layout);
+        self.arcano_postman.render(renderer, &layout)?;
 
         if !is_leo_at_table {
             self.kid.update(&layout, conditions, &mut rng);

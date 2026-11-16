@@ -18,6 +18,7 @@ const FIRST_DROP: usize = 4;
 const DROP_GAP: usize = 7;
 const DROPS: [&str; 2] = ["'", "."];
 const WET_CUT: [&str; 3] = ["/", " /", "  /"];
+const STARRY_NIGHT: &str = ".:*~*:.";
 const MAX_BUBBLE_WIDTH: u16 = 40;
 const BUBBLE_GAP: &str = ". .";
 const BUBBLE_TAIL: &str = "V";
@@ -47,6 +48,7 @@ pub enum Frame {
     Stars,
     Bubble,
     Notice,
+    StarryNight,
 }
 
 impl Frame {
@@ -62,6 +64,7 @@ impl Frame {
             Self::Waves => (100, 180, 225),
             Self::Photo => (150, 210, 150),
             Self::Stars => (255, 210, 90),
+            Self::StarryNight => (180, 90, 255),
         };
         Some(Color::Rgb { r, g, b })
     }
@@ -73,6 +76,7 @@ impl Frame {
     fn fit(self, width: u16) -> u16 {
         match self {
             Self::Stars if width % 2 == 0 => width.saturating_sub(1),
+            Self::StarryNight => width - width % STARRY_NIGHT.len() as u16,
             _ => width,
         }
     }
@@ -101,6 +105,7 @@ impl Frame {
             Self::Waves => (0, "  ", "  "),
             Self::Stars => (0, "* ", " *"),
             Self::Notice => (0, "║ ", " ║"),
+            Self::StarryNight => (0, ") ", " ("),
         }
     }
 
@@ -138,6 +143,7 @@ impl Frame {
             Self::Stars => vec![(0, "*~".chars().cycle().take(width).collect())],
             Self::Bubble => vec![(0, rule('.', "-", '.', width))],
             Self::Notice => vec![(0, rule('╔', "═", '╗', width))],
+            Self::StarryNight => vec![(0, STARRY_NIGHT.chars().cycle().take(width).collect())],
         }
     }
 
@@ -528,7 +534,7 @@ mod tests {
         }
     }
 
-    const FRAMES: [Frame; 12] = [
+    const FRAMES: [Frame; 13] = [
         Frame::Plain,
         Frame::Parchment,
         Frame::Wet,
@@ -541,6 +547,7 @@ mod tests {
         Frame::Stars,
         Frame::Bubble,
         Frame::Notice,
+        Frame::StarryNight,
     ];
 
     fn draw(frame: Frame, title: &str, lines: &[&str], footer: &str, width: u16) -> Vec<String> {
@@ -703,6 +710,17 @@ mod tests {
         assert_eq!(notice[0], "╔══════════╗");
         assert_eq!(notice[1], "║ Pleine.  ║");
         assert_eq!(notice.last().unwrap(), "╚══════════╝");
+
+        let arcane = draw(
+            Frame::StarryNight,
+            "Arcane n° 1",
+            &[],
+            "",
+            Frame::StarryNight.fit(24),
+        );
+        assert_eq!(arcane[0], ".:*~*:..:*~*:..:*~*:.");
+        assert_eq!(arcane[1], ") Arcane n° 1       (");
+        assert_eq!(arcane.last().unwrap(), ".:*~*:..:*~*:..:*~*:.");
     }
 
     #[test]
