@@ -23,6 +23,31 @@ created: 2026-11-16
   3. **Énigme** : réponse tapée avec `e` (même saisie que l'Énigme de la Gazette). La bonne réponse débloque le secret ; une mauvaise ne change rien. La saisie reste partagée : la réponse est comparée à l'Énigme de la semaine et à celle de la carte.
 - Déblocage → date enregistrée (champ de #114) : l'Arcano-Facteur commence à passer dès le soir même. La première apparition en cinématique est une tâche à part (#117).
 - **Textes** (rumeurs floues et après déblocage, allusions, texte de la carte, énigme et sa réponse) écrits ensemble : l'utilisateur·rice donne les grandes lignes, Claude rédige, l'utilisateur·rice relit avant le code. Listes courtes, qui tournent en boucle.
+- **Textes validés par l'utilisateur·rice (16/11)** — à reprendre tels quels :
+  - Rumeurs floues (Gazette, Jour ≥ 45, avant déblocage, en boucle) :
+    1. On raconte qu'une lueur violette a traversé le ciel au-dessus du lavoir, bien après minuit.
+    2. Le boulanger jure avoir vu un vieil homme assis… dans les airs. Il dit qu'il ne boit que de l'eau.
+    3. Quelqu'un aurait laissé une carte sur le banc du square. Personne n'a osé la retourner.
+    4. Les chats du village fixent tous le même coin de ciel, les nuits sans lune.
+    5. Une voix très vieille, très douce, fredonne parfois vers minuit, du côté de chez toi.
+    6. Certaines nuits, il manquerait une étoile. Elle ne serait jamais loin.
+  - Rumeurs après déblocage (en boucle) :
+    1. Certains soirs, un balai passe au-dessus des toits. Il ne vole jamais au hasard.
+    2. Une petite boîte violette est apparue chez quelqu'un. Une seule personne sait l'ouvrir.
+    3. Les anciens parlent d'un facteur qui ne livre que le soir. Ils baissent la voix en le disant.
+    4. Il y aurait 22 cartes en tout. Qui lit la dernière connaît la fin, dit-on.
+  - Allusions (fin d'une Lettre du village sur 3, en boucle) :
+    1. P.-S. : Tu n'as rien vu passer cette nuit ? J'ai cru… non, rien.
+    2. P.-S. : Ma grand-mère disait qu'à minuit, le jardin garde ce qu'on y perd.
+    3. P.-S. : Drôle de lumière violette hier soir. Sûrement l'orage.
+    4. P.-S. : Les cartes trouvées la nuit ne se ramassent pas par hasard, paraît-il.
+    5. P.-S. : Si tu entends un froissement de paille au-dessus du toit, ne te retourne pas trop vite.
+    6. P.-S. : Quelqu'un rôde après minuit. Pas méchant, je crois. Juste… très ancien.
+  - Carte de tarot, titre « L'Arcane sans numéro » :
+    - Texte : Une carte usée, violette, tiède comme une main. Un voyageur y marche vers le bord d'une falaise, un baluchon sur l'épaule, sans regarder ses pieds. Au dos, d'une écriture tremblée :
+    - Énigme : « Je n'ai pas de numéro, pourtant je commence tout. Je marche sans savoir où, et c'est pour ça qu'on me suit. Qui suis-je ? »
+    - Réponses acceptées (majuscules et accents ignorés) : « le mat », « mat », « le fou », « fou ».
+  - Typographie du projet à appliquer au code (`\u{202F}` avant `: ! ?` et dans « »).
 - `--day N` : montre rumeurs et allusions du jour N, ne débloque rien dans la sauvegarde. Étape minuit testée par tests unitaires (pas d'option d'heure).
 - Pas de Badge, rien dans l'Aide : le secret reste secret.
 - Lignes de glossaire ajoutées avec cette tâche : Carte de tarot, Personnage mystérieux.
