@@ -60,7 +60,9 @@ created: 2026-11-16
 - À partir du Jour 42 et avant le déblocage → une Lettre du village sur 3 porte une allusion au personnage.
 - Jour ≥ 42, jeu ouvert à 0 h 30 → une Carte de tarot violette apparaît au jardin et reste tant qu'elle n'est pas ramassée ; à 1 h 30 un autre jour sans carte → rien.
 - `r` près de la carte → elle s'ouvre avec son énigme.
-- `e` + bonne réponse → secret débloqué, l'Arcano-Facteur passe le soir même ; mauvaise réponse → rien ne change.
+- `r` près de la carte : un « R » violet sous `[*]` l'indique tant qu'elle est dans l'herbe (retour round 2).
+- `e` + bonne réponse → la carte affiche « La carte se met à chauffer de plus en plus dans ta main. Quelque chose s'est ouvert, quelque part ! » puis « Ce soir, vers {h} h, lève les yeux au-dessus de ta boîte aux lettres. » ({h} = heure du Facteur + 12 h) ; secret débloqué, l'Arcano-Facteur passe le soir même.
+- Mauvaise réponse → « La carte reste froide. », saisie toujours ouverte, rien ne change.
 - Après le déblocage → plus d'allusion dans les Lettres ; la deuxième rumeur parle de l'Arcano-Facteur et des Arcanes.
 - Ancienne sauvegarde → se charge, piste non commencée.
 - Tests unitaires : seuil du Jour 42, une Lettre sur 3, fenêtre de minuit, carte unique, déblocage par la bonne réponse.
@@ -80,6 +82,8 @@ created: 2026-11-16
 
 - Round 1 (feedback) : `TRAIL_START_DAY` 45 → 42 (rumeur, allusions, Carte de tarot) ; allusions aux Jours 42, 45, 48… (la 7e reprend la 1re) ; tests renommés jour 42 avec le bord jour 41 ; golden régénéré (+12 / −8 : allusions décalées d'un cran, rumeurs inchangées). 376 tests verts.
 
+- Round 2 (feedback) : « R » violet sous la carte (`src/animation/tarot_card.rs`) ; résultat dans la carte (`tarot_card_view(riddle_input, passage_hour, is_cold)`, `ArcanePost::first_passage_hour`, `answer_feedback` → `Toast` / `ColdCard` / `WarmCard`, `is_tarot_card_cold`) : pas de toast pour une réponse sur la carte, la Gazette garde les siens ; lignes de réussite gardées à la réouverture. 4 tests, 380 verts.
+
 ## Review
 
 ## Verification
@@ -89,12 +93,22 @@ created: 2026-11-16
 
 - Round 1 : manual validation — not run by agent (run: yours).
 
+- Round 2 : manual validation — not run by agent (run: yours). Capture pty de l'implémenteur : « R » sous la carte ; « bateleur » → « La carte reste froide. » ; « le fou » → deux lignes avec « vers 21 h », Boîte violette au jardin ; aucun toast.
+
 ## Feedback
 
 ### Round 1 — 2026-11-16
 - Asked : « update : l'indice arrive au jour 42 pas 45 » ; précision demandée (toute la piste ou les indices seuls) → « pas de préférence » : un seul seuil pour toute la piste (recommandé).
 - Triage : adjustment → critères passés au Jour 42.
 - Changes : seuil 42, tests, golden (implementer).
+- Review : deferred (→ /wa-validate).
+- Verify : manual validation — not run by agent.
+- Rule captured : aucune.
+
+### Round 2 — 2026-11-16
+- Asked : « il faut ajouter un R en dessous de la carte sinon on comprend pas ce qu'il faut faire » ; « quand je réponds à l'énigme de l'Arcane 0 rien ne m'indique que j'ai réussi ou non » ; texte de réussite donné par l'utilisateur·rice + « ajouter une indication pour la prochaine étape ».
+- Triage : adjustment (indice « R ») + defect (pas de retour à la réponse) → critères mis à jour.
+- Changes : voir `## Implementation` round 2 (implementer).
 - Review : deferred (→ /wa-validate).
 - Verify : manual validation — not run by agent.
 - Rule captured : aucune.

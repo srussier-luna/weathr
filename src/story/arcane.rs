@@ -95,6 +95,10 @@ impl ArcanePost {
         self.unlocked_on.is_some()
     }
 
+    pub fn first_passage_hour(&self, clock: &StoryClock) -> Option<u32> {
+        self.unlocked_on.map(|date| passage_hour(clock, date))
+    }
+
     pub fn unlock(&mut self, today: NaiveDate) -> bool {
         let is_locked = self.unlocked_on.is_none();
         if is_locked {

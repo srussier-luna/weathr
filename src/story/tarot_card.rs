@@ -60,7 +60,9 @@ impl TarotCard {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::overlay::Line;
     use crate::story::clock::StoryClock;
+    use crate::story::content::secret_trail::tarot_card_view;
 
     fn at(day: u32, hour: u32, minute: u32) -> NaiveDateTime {
         NaiveDate::from_ymd_opt(2026, 11, day)
@@ -197,6 +199,20 @@ mod tests {
         );
         assert!(!arcanes.pass(&clock, evening(20)));
         assert!(arcanes.pass(&clock, evening(21)));
+    }
+
+    #[test]
+    fn test_right_answer_names_the_evening_hour_on_the_card() {
+        let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(), 8);
+        let mut arcanes = locked();
+        assert_eq!(arcanes.first_passage_hour(&clock), None);
+        assert!(TarotCard::Picked.answer("mat", &mut arcanes, evening(0).date()));
+        let view = tarot_card_view(None, arcanes.first_passage_hour(&clock), false);
+        assert!(view.lines.iter().any(|line| matches!(
+            line,
+            Line::Text(text)
+                if text == "Ce soir, vers 20 h, lève les yeux au-dessus de ta boîte aux lettres."
+        )));
     }
 
     #[test]

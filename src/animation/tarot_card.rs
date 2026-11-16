@@ -3,7 +3,7 @@ use crate::render::TerminalRenderer;
 use crate::scene::decorations::ARCANE_VIOLET;
 use std::io;
 
-const CARD: [&str; 1] = ["[*]"];
+const CARD: [&str; 2] = ["[*]", " R "];
 const CARD_WIDTH: u16 = 3;
 
 fn card_x(layout: &GardenLayout) -> u16 {

@@ -13,6 +13,8 @@ pub const TAROT_RIDDLE: Riddle = Riddle {
 };
 const TAROT_RIDDLE_FOOTER: &str = "[e] répondre à l'énigme  [Echap] fermer";
 const TAROT_CARD_FOOTER: &str = "[Echap] fermer";
+const TAROT_CARD_WARM: &str = "La carte se met à chauffer de plus en plus dans ta main. Quelque chose s'est ouvert, quelque part\u{202F}!";
+const TAROT_CARD_COLD: &str = "La carte reste froide.";
 
 const MYSTERY_RUMORS: [&str; 6] = [
     "On raconte qu'une lueur violette a traversé le ciel au-dessus du lavoir, bien après minuit.",
@@ -59,16 +61,28 @@ pub fn mystery_allusion(letter_day: usize, is_unlocked: bool) -> Option<&'static
         .then(|| MYSTERY_ALLUSIONS[since_start / ALLUSION_EVERY % MYSTERY_ALLUSIONS.len()])
 }
 
-pub fn tarot_card_view(riddle_input: Option<&str>, is_solved: bool) -> View {
+pub fn tarot_card_view(
+    riddle_input: Option<&str>,
+    passage_hour: Option<u32>,
+    is_cold: bool,
+) -> View {
     let mut lines = vec![
         text(TAROT_CARD_TEXT),
         Line::Blank,
         text(TAROT_RIDDLE.question),
     ];
-    let footer = if is_solved {
+    let footer = if let Some(hour) = passage_hour {
+        lines.extend([
+            Line::Blank,
+            text(TAROT_CARD_WARM),
+            text(format!(
+                "Ce soir, vers {hour} h, lève les yeux au-dessus de ta boîte aux lettres."
+            )),
+        ]);
         TAROT_CARD_FOOTER
     } else if let Some(input) = riddle_input {
         lines.extend([Line::Blank, typed_answer(input)]);
+        lines.extend(is_cold.then(|| text(TAROT_CARD_COLD)));
         INPUT_FOOTER
     } else {
         TAROT_RIDDLE_FOOTER
@@ -132,7 +146,7 @@ mod tests {
 
     #[test]
     fn test_tarot_card_opens_on_its_riddle() {
-        let view = tarot_card_view(None, false);
+        let view = tarot_card_view(None, None, false);
         assert_eq!(view.title, "L'Arcane sans numéro");
         assert_eq!(view.frame, Frame::StarryNight);
         assert!(
@@ -143,15 +157,51 @@ mod tests {
         );
         assert_eq!(view.footer, TAROT_RIDDLE_FOOTER);
 
-        let typing = tarot_card_view(Some("le m"), false);
+        let typing = tarot_card_view(Some("le m"), None, false);
         assert!(
             matches!(typing.lines.last(), Some(Line::Text(text)) if text == "Ta réponse : le m_")
         );
         assert_eq!(typing.footer, INPUT_FOOTER);
+    }
 
-        let solved = tarot_card_view(None, true);
-        assert_eq!(solved.lines.len(), 3);
-        assert_eq!(solved.footer, TAROT_CARD_FOOTER);
+    fn texts(view: &View) -> Vec<&str> {
+        view.lines
+            .iter()
+            .filter_map(|line| match line {
+                Line::Text(text) => Some(text.as_str()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_wrong_answer_leaves_the_card_cold_and_the_input_open() {
+        let view = tarot_card_view(Some(""), None, true);
+        assert_eq!(
+            texts(&view)[2..],
+            ["Ta réponse : _", "La carte reste froide."]
+        );
+        assert_eq!(view.footer, INPUT_FOOTER);
+
+        let typing_again = tarot_card_view(Some("l"), None, false);
+        assert!(!texts(&typing_again).contains(&TAROT_CARD_COLD));
+    }
+
+    #[test]
+    fn test_right_answer_warms_the_card_and_names_the_evening_hour() {
+        let view = tarot_card_view(None, Some(20), false);
+        assert_eq!(
+            texts(&view)[2..],
+            [
+                "La carte se met à chauffer de plus en plus dans ta main. Quelque chose s'est ouvert, quelque part\u{202F}!",
+                "Ce soir, vers 20 h, lève les yeux au-dessus de ta boîte aux lettres.",
+            ]
+        );
+        assert_eq!(view.footer, TAROT_CARD_FOOTER);
+        assert_eq!(
+            texts(&tarot_card_view(Some("fou"), Some(20), false)),
+            texts(&view)
+        );
     }
 
     #[test]
