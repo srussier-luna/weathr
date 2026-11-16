@@ -33,6 +33,7 @@ impl MailContent for NightPostscript {
 #[cfg(test)]
 mod tests {
     use super::super::letters;
+    use super::super::secret_trail::mystery_allusion;
     use super::*;
     use crate::overlay::Line;
     use crate::progress::Progress;
@@ -56,13 +57,51 @@ mod tests {
                 progress: &progress,
                 clock: &clock,
                 reading_hour,
+                reading_day: 3,
+                is_secret_unlocked: false,
                 riddle_input: None,
             };
-            NightPostscript::new(VillageLetter::new(2, "3/10".to_string())).compose(&ctx)
+            NightPostscript::new(VillageLetter::new(2, 3, "3/10".to_string())).compose(&ctx)
         };
 
         assert!(has_line(&compose_at(23), NIGHT_POSTSCRIPTS[2]));
         assert!(!has_line(&compose_at(14), NIGHT_POSTSCRIPTS[2]));
+    }
+
+    #[test]
+    fn test_village_letter_from_day_45_alludes_until_the_unlock() {
+        let letters = letters::defaults();
+        let progress = Progress::default();
+        let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 10, 1).unwrap(), 9);
+        let compose = |main: usize, is_secret_unlocked| {
+            let ctx = ReadContext {
+                letters: &letters,
+                progress: &progress,
+                clock: &clock,
+                reading_hour: 23,
+                reading_day: 50,
+                is_secret_unlocked,
+                riddle_input: None,
+            };
+            NightPostscript::new(VillageLetter::new(
+                main,
+                main + 1,
+                format!("{}/60", main + 1),
+            ))
+            .compose(&ctx)
+        };
+        let position = |view: &View, expected: &str| {
+            view.lines
+                .iter()
+                .position(|line| matches!(line, Line::Text(text) if text == expected))
+        };
+        let allusion = mystery_allusion(45, false).unwrap();
+
+        let view = compose(44, false);
+        let night = NIGHT_POSTSCRIPTS[44 % NIGHT_POSTSCRIPTS.len()];
+        assert!(position(&view, allusion).unwrap() < position(&view, night).unwrap());
+        assert!(!has_line(&compose(43, false), allusion));
+        assert!(!has_line(&compose(44, true), allusion));
     }
 
     #[test]

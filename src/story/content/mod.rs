@@ -4,6 +4,7 @@ mod gazette;
 pub mod letters;
 mod night_postscript;
 mod postcard;
+pub mod secret_trail;
 mod village;
 mod written;
 
@@ -51,6 +52,8 @@ pub struct ReadContext<'a> {
     pub progress: &'a Progress,
     pub clock: &'a StoryClock,
     pub reading_hour: u32,
+    pub reading_day: usize,
+    pub is_secret_unlocked: bool,
     pub riddle_input: Option<&'a str>,
 }
 
@@ -105,7 +108,7 @@ pub fn arcane_view(number: usize, ctx: &ReadContext) -> View {
 
 fn content_for(day: usize, entry: Entry, counter: String) -> Box<dyn MailContent> {
     match entry {
-        Entry::Main(main) => Box::new(NightPostscript::new(VillageLetter::new(main, counter))),
+        Entry::Main(main) => Box::new(NightPostscript::new(VillageLetter::new(main, day, counter))),
         Entry::Creepy(index) => Box::new(Written::new(
             format!("Lettre {counter} (glissée sous la porte)"),
             CREEPY_LETTERS[index],
@@ -195,6 +198,7 @@ pub(crate) mod save_golden {
         pub clock: StoryClock,
         pub timeline: Timeline,
         pub available: usize,
+        pub today: usize,
     }
 
     impl SavedGame {
@@ -216,6 +220,7 @@ pub(crate) mod save_golden {
                 clock,
                 timeline,
                 available,
+                today,
             }
         }
 
@@ -225,6 +230,8 @@ pub(crate) mod save_golden {
                 progress: &self.progress,
                 clock: &self.clock,
                 reading_hour,
+                reading_day: self.today,
+                is_secret_unlocked: self.progress.arcanes_unlocked_on.is_some(),
                 riddle_input: None,
             }
         }

@@ -38,6 +38,7 @@ pub mod squirrel;
 pub mod stars;
 pub mod sun_path;
 pub mod sunny;
+pub mod tarot_card;
 pub mod thunderstorm;
 
 use crate::render::TerminalRenderer;

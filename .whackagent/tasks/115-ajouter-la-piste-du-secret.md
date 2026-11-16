@@ -1,6 +1,6 @@
 ---
 issue: 115
-status: todo
+status: to-test
 wiki: [[mail]], [[animation]]
 note: "Découpé de #113 (parapluie « Ajouter un secret »), sprint « Le secret ». Débloque l'Arcano-Facteur de #114."
 created: 2026-11-16
@@ -68,8 +68,21 @@ created: 2026-11-16
 
 ## Implementation
 
+- stacked on: wa/114-ajouter-le-passage-du-soir @ cccf6d3
+- `src/story/content/secret_trail.rs` : textes validés mot pour mot (`\u{202F}`) ; `second_rumor(reading_day, week, is_unlocked)`, `mystery_allusion(letter_day, is_unlocked)`, listes en boucle.
+- `ReadContext` : `reading_day`, `is_secret_unlocked`. Gazette : deuxième rumeur sous « Les échos » (Jour de jeu de lecture, pour que `--day 46` la montre ; une ancienne Gazette relue après le Jour 45 la porte aussi). Allusion : Jour de la Lettre (Lettres du village à partir du Jour 45, une sur trois), avant le P.-S. de nuit si les deux s'appliquent. Verrouillé ou non : lu au moment de la lecture.
+- `src/story/tarot_card.rs` : `TarotCard { Hidden, InGrass, Picked }`, `appear(now, day, is_unlocked)` (0 h–0 h 59, Jour ≥ 45, une fois, jamais une fois débloqué), `pick_up`, `is_riddle_open`, `answer` (`chronicles::is_right_answer`) ; `Progress.tarot_card_appeared` / `tarot_card_picked` (`#[serde(default)]`).
+- `src/animation/tarot_card.rs` : `[*]` violet sur la ligne d'herbe, au milieu de la maison, jour et nuit jusqu'au ramassage.
+- `app.rs` : `Overlay::TarotCard` (`tarot_card_view`, cadre Nuit étoilée) ; `r` ramasse d'abord la carte ; `e` : Gazette ouverte avec Énigme non résolue → comme avant, sinon carte ramassée non résolue → ouvre la carte avec la saisie (seul accès, pas d'entrée au Courrier) ; réponse comparée à la carte puis à l'Énigme de la semaine ; toasts existants.
+- `ArcanePost::unlock(today)` : date de déblocage sauvegardée, l'Arcano-Facteur passe le soir même (règles de #114). `--day N` : en mémoire, jamais écrit.
+- `src/story/testdata/save_37_golden.txt` régénéré : +32 lignes (deuxième rumeur, allusions), rien d'autre.
+- Build : `cargo fmt -- --check`, clippy (`--all-targets -D warnings -A clippy::double_must_use`), `cargo test --bin weathr` (374) verts.
+
 ## Review
 
 ## Verification
+
+- Round 1 : manual validation — not run by agent (run: yours).
+- Contrôle de mise en page (implémenteur, pty 80×24 et 130×40, faketime, HOME jetable, pas une preuve) : 01 h 30 pas de carte ; 00 h 30 carte affichée et sauvegardée, encore là après relance ; `r` → « L'Arcane sans numéro » ; « bateleur » → rien ; « Le Fou » → débloqué ; 21 h → Arcano-Facteur et Boîte violette ; `--day 46` un lundi → deuxième rumeur et allusion, rien d'écrit.
 
 ## Feedback

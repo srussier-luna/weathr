@@ -61,6 +61,10 @@ pub struct Progress {
     pub arcanes_read: usize,
     #[serde(default)]
     pub arcanes_passed_on: Option<String>,
+    #[serde(default)]
+    pub tarot_card_appeared: bool,
+    #[serde(default)]
+    pub tarot_card_picked: bool,
     #[serde(skip)]
     in_memory: bool,
 }

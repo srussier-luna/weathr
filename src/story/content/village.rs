@@ -1,5 +1,6 @@
 use super::chronicles::DRAWINGS;
 use super::letters::{choice_for, echo_for};
+use super::secret_trail::mystery_allusion;
 use super::{LETTER_FOOTER, ReadContext, text};
 use crate::overlay::{Frame, Line, View};
 
@@ -7,12 +8,13 @@ const QUESTION_FOOTER: &str = "[1] [2] répondre  [c] suivante  [<] [>]  [Echap]
 
 pub struct VillageLetter {
     main: usize,
+    day: usize,
     counter: String,
 }
 
 impl VillageLetter {
-    pub fn new(main: usize, counter: String) -> Self {
-        Self { main, counter }
+    pub fn new(main: usize, day: usize, counter: String) -> Self {
+        Self { main, day, counter }
     }
 
     pub fn main(&self) -> usize {
@@ -46,7 +48,10 @@ impl VillageLetter {
         if let Some(echo) = echo_for(number, answers) {
             lines.extend([Line::Blank, text(echo)]);
         }
-        if let Some(postscript) = postscript {
+        let postscripts = mystery_allusion(self.day, ctx.is_secret_unlocked)
+            .into_iter()
+            .chain(postscript);
+        for postscript in postscripts {
             lines.extend([Line::Blank, text(postscript)]);
         }
         lines.extend([Line::Blank, text(format!("— {}", letter.sender))]);

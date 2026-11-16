@@ -95,6 +95,14 @@ impl ArcanePost {
         self.unlocked_on.is_some()
     }
 
+    pub fn unlock(&mut self, today: NaiveDate) -> bool {
+        let is_locked = self.unlocked_on.is_none();
+        if is_locked {
+            self.unlocked_on = Some(today);
+        }
+        is_locked
+    }
+
     fn is_unlocked_on(&self, date: NaiveDate) -> bool {
         self.unlocked_on
             .is_some_and(|unlocked_on| unlocked_on <= date)

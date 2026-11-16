@@ -22,6 +22,7 @@ use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, 
 use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
 use crate::story::postman_note::{self, MailStep};
+use crate::story::tarot_card::TarotCard;
 use crate::story::{Entry, StoryClock, Thing, Timeline, pause, sources};
 use crate::updater;
 use crate::views;
@@ -413,6 +414,7 @@ enum Overlay {
     Notes(usize),
     PostmanNote,
     Settings(usize),
+    TarotCard,
     Welcome(Step),
 }
 
@@ -452,6 +454,7 @@ pub struct App {
     demo: Option<Demo>,
     progress: Progress,
     arcanes: ArcanePost,
+    tarot_card: TarotCard,
     letters: Vec<Letter>,
     clock: StoryClock,
     timeline: Timeline,
@@ -559,6 +562,7 @@ impl App {
         } else {
             ArcanePost::saved(&progress)
         };
+        let tarot_card = TarotCard::saved(&progress);
         let release_notes = notes_on_launch(&mut progress, release_notes::load(), launch);
         let shows_welcome = welcome_on_launch(&progress, launch);
         if shows_welcome {
@@ -586,6 +590,7 @@ impl App {
             demo,
             progress,
             arcanes,
+            tarot_card,
             letters,
             clock,
             timeline,
@@ -628,6 +633,7 @@ impl App {
             .set_mail_hour(self.clock.mail_hour_on(Local::now().date_naive()));
         self.refresh_timeline();
         self.refresh_arcanes();
+        self.refresh_tarot_card();
         self.state.set_story_day(self.timeline_day);
         self.request_remote_weather();
         self.receive_remote_weather();
@@ -671,6 +677,23 @@ impl App {
         if self.arcanes.write_to(&mut self.progress) {
             self.progress.save();
         }
+    }
+
+    fn refresh_tarot_card(&mut self) {
+        let now = Local::now().naive_local();
+        if self
+            .tarot_card
+            .appear(now, self.timeline_day, self.arcanes.is_unlocked())
+        {
+            self.save_tarot_card();
+        }
+        self.animations
+            .set_tarot_card(self.tarot_card == TarotCard::InGrass);
+    }
+
+    fn save_tarot_card(&mut self) {
+        self.tarot_card.write_to(&mut self.progress);
+        self.progress.save();
     }
 
     fn collect_badges(&mut self) {
@@ -963,6 +986,10 @@ impl App {
                 pages.swap_remove(page)
             }
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
+            Some(Overlay::TarotCard) => content::secret_trail::tarot_card_view(
+                self.riddle_input.as_deref(),
+                self.arcanes.is_unlocked(),
+            ),
             Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => {
                 views::badge_card_view(badge)
             }
@@ -1044,6 +1071,8 @@ impl App {
             progress: &self.progress,
             clock: &self.clock,
             reading_hour: Local::now().hour(),
+            reading_day: self.timeline_day,
+            is_secret_unlocked: self.arcanes.is_unlocked(),
             riddle_input: self.riddle_input.as_deref(),
         }
     }
@@ -1160,6 +1189,12 @@ impl App {
     }
 
     fn pick_up(&mut self) {
+        if self.tarot_card.pick_up() {
+            self.save_tarot_card();
+            self.overlay = Some(Overlay::TarotCard);
+            return;
+        }
+
         if self.animations.take_object()
             && let Some(index) =
                 (0..OBJECTS.len()).find(|index| !self.progress.found_objects.contains(index))
@@ -1190,10 +1225,24 @@ impl App {
         }
     }
 
+    fn latest_gazette_week(&self) -> Option<usize> {
+        self.timeline
+            .first_mail(self.available_letters())
+            .iter()
+            .rev()
+            .find_map(|(_, entry)| match entry {
+                Entry::Gazette(week) => Some(*week),
+                _ => None,
+            })
+    }
+
     fn start_riddle(&mut self) {
         if let Some(week) = self.gazette_week()
             && !self.progress.riddles_solved.contains(&week)
         {
+            self.riddle_input = Some(String::new());
+        } else if self.tarot_card.is_riddle_open(&self.arcanes) {
+            self.overlay = Some(Overlay::TarotCard);
             self.riddle_input = Some(String::new());
         }
     }
@@ -1214,17 +1263,32 @@ impl App {
     }
 
     fn submit_riddle(&mut self) {
-        let (Some(week), Some(input)) = (self.gazette_week(), self.riddle_input.take()) else {
+        let Some(input) = self.riddle_input.take() else {
             return;
         };
-        if chronicles::is_right_answer(&RIDDLES[week % RIDDLES.len()], &input) {
+        let week = self
+            .gazette_week()
+            .or_else(|| self.latest_gazette_week())
+            .filter(|week| !self.progress.riddles_solved.contains(week));
+        let today = Local::now().date_naive();
+        let is_right = if self.tarot_card.answer(&input, &mut self.arcanes, today) {
+            self.save_arcanes();
+            true
+        } else if let Some(week) = week
+            && chronicles::is_right_answer(&RIDDLES[week % RIDDLES.len()], &input)
+        {
             self.progress.riddles_solved.insert(week);
             self.progress.save();
-            self.toasts.push_back("* Bonne réponse ! *".to_string());
+            true
         } else {
-            self.toasts
-                .push_back("* Ce n'est pas ça… essaie encore. *".to_string());
-        }
+            false
+        };
+        let toast = if is_right {
+            "* Bonne réponse ! *"
+        } else {
+            "* Ce n'est pas ça… essaie encore. *"
+        };
+        self.toasts.push_back(toast.to_string());
     }
 
     fn toggle_index(&mut self) {
