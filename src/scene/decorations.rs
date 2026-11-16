@@ -19,9 +19,9 @@ const MAILBOX_NIGHT: Color = Color::Rgb {
     b: 0,
 };
 const MAILBOX: [&str; 3] = [" .--. ", "|____|", "  ||  "];
-const VIOLET_MAILBOX: [&str; 2] = [".-.", "|_|"];
-const VIOLET_MAILBOX_OFFSET: u16 = 2;
-pub const VIOLET_MAILBOX_WIDTH: u16 = 3;
+const VIOLET_MAILBOX: [&str; 2] = [".--.", "|__|"];
+pub const VIOLET_MAILBOX_WIDTH: u16 = VIOLET_MAILBOX[1].len() as u16;
+const VIOLET_MAILBOX_OFFSET: u16 = (MAILBOX[1].len() as u16 - VIOLET_MAILBOX_WIDTH) / 2;
 pub const ARCANE_VIOLET: Color = Color::Rgb {
     r: 180,
     g: 90,
@@ -183,5 +183,24 @@ impl Decorations {
                 Color::Rgb { r: 0, g: 50, b: 0 }
             },
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_violet_mailbox_sits_centred_on_the_yellow_one() {
+        let (mailbox_x, horizon_y) = (10, 20);
+        let (x, y) = violet_mailbox_at(mailbox_x, horizon_y);
+        assert_eq!(
+            2 * x + VIOLET_MAILBOX_WIDTH,
+            2 * mailbox_x + MAILBOX[1].len() as u16
+        );
+        assert_eq!(
+            y + VIOLET_MAILBOX.len() as u16,
+            horizon_y - MAILBOX.len() as u16
+        );
     }
 }

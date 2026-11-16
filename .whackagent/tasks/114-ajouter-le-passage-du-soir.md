@@ -64,12 +64,23 @@ created: 2026-11-16
 - Barre du haut inchangée : une Arcane en attente n'affiche pas « Lettre ! », seul le drapeau turquoise le dit.
 - Build : `cargo build`, `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use`, `cargo test --bin weathr` (353) verts.
 
+- Round 1 (feedback) : `launch_for(simulation, has_save, is_quiet)` dans `src/app.rs` — `--arcane` lance sans Accueil ni Notes (comme `--day`), même sans save ; Boîte violette 4 de large (`.--.` / `|__|`), centrée sur le corps de la boîte jaune (`VIOLET_MAILBOX_WIDTH`), drapeau, étincelles et arrêt du mage suivent. Tests `test_arcane_preview_keeps_the_welcome_off_the_mage_even_without_a_save`, `test_violet_mailbox_sits_centred_on_the_yellow_one`. 355 tests verts.
+
 ## Review
 
 ## Verification
 
 - Round 1 : manual validation — not run by agent (run: yours).
 - Contrôle de mise en page (implémenteur, pty 80×24 et 130×40, HOME jetable, pas une preuve) : Boîte violette seulement avec `--arcane` ; vers 21 h le mage s'arrête, invoque, repart ; drapeau turquoise ensuite ; `c` → « Arcane n° 0 » cadre Nuit étoilée, drapeau baissé ; jeu normal sans boîte ni mage ; save non touchée.
-- Pour voir le vol : lancer à l'heure du Facteur + 12 h, ex. `faketime -f '@2026-11-20 20:59:56' weathr-test --arcane --night`.
+- Pour voir le vol : lancer à l'heure du Facteur + 12 h, binaire lancé directement (faketime ne traverse pas le script zsh `weathr-test`, macOS retire DYLD_*) : `HOME=~/.weathr-test faketime -f '@2026-11-20 20:59:50' ~/Repos/.wa-worktrees/test/target/release/weathr --arcane --night`.
+- Round 1 : manual validation — not run by agent (run: yours). Capture pty (release, HOME neuf, 100×30, faketime 20:59:50) : arrivée par la gauche à 20:59:59, arrêt au-dessus de la Boîte violette à 21:00 avec baguette et étincelles, départ à droite avec drapeau turquoise levé, sortie à 16 s.
 
 ## Feedback
+
+### Round 1 — 2026-11-16
+- Asked : « faketime -f '@2026-11-20 20:59:56' weathr-test --arcane --night ne fonctionne pas, le mage ne passe pas, la boîte violette n'est pas assez centrée ».
+- Triage : defect (le mage invisible) + adjustment (centrage). Causes : `faketime` ne traverse pas le script `weathr-test` (SIP) → le jeu tournait à l'heure réelle ; sur un HOME neuf, la bulle de l'Accueil cachait le mage.
+- Changes : `--arcane` sans Accueil ; Boîte violette centrée (implementer).
+- Review : deferred (→ /wa-validate).
+- Verify : manual validation — not run by agent ; capture pty de l'implémenteur.
+- Rule captured : aucune.

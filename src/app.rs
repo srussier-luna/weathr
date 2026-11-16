@@ -193,6 +193,18 @@ fn notes_on_launch(
     }
 }
 
+fn launch_for(simulation: &SimulationOptions, has_save: bool, is_quiet: bool) -> Launch {
+    if simulation.day.is_some() || simulation.arcane {
+        Launch::Suppressed
+    } else if !has_save {
+        Launch::Fresh
+    } else if is_quiet {
+        Launch::Suppressed
+    } else {
+        Launch::Normal
+    }
+}
+
 fn welcome_on_launch(progress: &Progress, launch: Launch) -> bool {
     !progress.welcome_seen && !matches!(launch, Launch::Suppressed)
 }
@@ -522,15 +534,11 @@ impl App {
             spawn_weather(tx, location, config.units);
         }
 
-        let launch = if simulation.day.is_some() {
-            Launch::Suppressed
-        } else if !Progress::exists() {
-            Launch::Fresh
-        } else if is_simulated || simulation.night || config.silent {
-            Launch::Suppressed
-        } else {
-            Launch::Normal
-        };
+        let launch = launch_for(
+            &simulation,
+            Progress::exists(),
+            is_simulated || simulation.night || config.silent,
+        );
         let (mut progress, letters, clock) = match simulation.day {
             Some(day) => {
                 let clock = StoryClock::frozen(Local::now().date_naive(), config.mail.hour, day);
@@ -1835,6 +1843,25 @@ mod tests {
         progress.welcome_seen = true;
         assert!(!welcome_on_launch(&progress, Launch::Fresh));
         assert!(!welcome_on_launch(&progress, Launch::Normal));
+    }
+
+    #[test]
+    fn test_arcane_preview_keeps_the_welcome_off_the_mage_even_without_a_save() {
+        let night = |arcane| SimulationOptions {
+            condition: None,
+            night: true,
+            holiday: None,
+            demo: false,
+            day: None,
+            arcane,
+        };
+        let fresh = Progress::default();
+        let first_launch = launch_for(&night(false), false, true);
+        let first_arcane_launch = launch_for(&night(true), false, true);
+        let arcane_launch = launch_for(&night(true), true, false);
+        assert!(welcome_on_launch(&fresh, first_launch));
+        assert!(!welcome_on_launch(&fresh, first_arcane_launch));
+        assert!(!welcome_on_launch(&fresh, arcane_launch));
     }
 
     #[test]
