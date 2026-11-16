@@ -1,4 +1,5 @@
 pub mod airplanes;
+pub mod arcane;
 pub mod birds;
 pub mod cat;
 pub mod chimney;

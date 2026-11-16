@@ -17,6 +17,7 @@ use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
 use crate::scene::tree::Growth;
 use crate::settings::{self, AutoLocation, CitySearch, Row, Settings};
+use crate::story::arcane::{self, ArcanePost};
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
@@ -189,6 +190,18 @@ fn notes_on_launch(
         }
         Launch::Suppressed => Vec::new(),
         Launch::Normal => release_notes::unseen(sections, progress.notes_seen_date()),
+    }
+}
+
+fn launch_for(simulation: &SimulationOptions, has_save: bool, is_quiet: bool) -> Launch {
+    if simulation.day.is_some() || simulation.arcane {
+        Launch::Suppressed
+    } else if !has_save {
+        Launch::Fresh
+    } else if is_quiet {
+        Launch::Suppressed
+    } else {
+        Launch::Normal
     }
 }
 
@@ -383,11 +396,13 @@ pub struct SimulationOptions {
     pub holiday: Option<Holiday>,
     pub demo: bool,
     pub day: Option<NonZeroU16>,
+    pub arcane: bool,
 }
 
 #[derive(Clone, Copy)]
 enum Overlay {
     Letter(usize),
+    Arcane(usize),
     Badges,
     Album(usize),
     Bottle(usize),
@@ -436,6 +451,7 @@ pub struct App {
     invites_every_neighbour: bool,
     demo: Option<Demo>,
     progress: Progress,
+    arcanes: ArcanePost,
     letters: Vec<Letter>,
     clock: StoryClock,
     timeline: Timeline,
@@ -518,15 +534,11 @@ impl App {
             spawn_weather(tx, location, config.units);
         }
 
-        let launch = if simulation.day.is_some() {
-            Launch::Suppressed
-        } else if !Progress::exists() {
-            Launch::Fresh
-        } else if is_simulated || simulation.night || config.silent {
-            Launch::Suppressed
-        } else {
-            Launch::Normal
-        };
+        let launch = launch_for(
+            &simulation,
+            Progress::exists(),
+            is_simulated || simulation.night || config.silent,
+        );
         let (mut progress, letters, clock) = match simulation.day {
             Some(day) => {
                 let clock = StoryClock::frozen(Local::now().date_naive(), config.mail.hour, day);
@@ -541,6 +553,11 @@ impl App {
                 let clock = story_clock(&progress, config.mail.hour);
                 (progress, letters::load(), clock)
             }
+        };
+        let arcanes = if simulation.arcane {
+            ArcanePost::sample(Local::now().date_naive())
+        } else {
+            ArcanePost::saved(&progress)
         };
         let release_notes = notes_on_launch(&mut progress, release_notes::load(), launch);
         let shows_welcome = welcome_on_launch(&progress, launch);
@@ -568,6 +585,7 @@ impl App {
                 || (simulation.holiday.is_some() && simulation.day.is_none()),
             demo,
             progress,
+            arcanes,
             letters,
             clock,
             timeline,
@@ -609,6 +627,7 @@ impl App {
         self.animations
             .set_mail_hour(self.clock.mail_hour_on(Local::now().date_naive()));
         self.refresh_timeline();
+        self.refresh_arcanes();
         self.state.set_story_day(self.timeline_day);
         self.request_remote_weather();
         self.receive_remote_weather();
@@ -636,6 +655,22 @@ impl App {
             .count();
         self.state
             .set_progress_summary(is_mail_waiting, earned, badges::BADGES.len());
+    }
+
+    fn refresh_arcanes(&mut self) {
+        let now = Local::now().naive_local();
+        if self.arcanes.pass(&self.clock, now) {
+            self.save_arcanes();
+        }
+        self.scene.set_violet_mailbox(self.arcanes.is_unlocked());
+        self.animations
+            .set_arcane_round(self.arcanes.round(&self.clock, now));
+    }
+
+    fn save_arcanes(&mut self) {
+        if self.arcanes.write_to(&mut self.progress) {
+            self.progress.save();
+        }
     }
 
     fn collect_badges(&mut self) {
@@ -837,6 +872,10 @@ impl App {
         );
         let open_letter = match self.overlay {
             Some(Overlay::Letter(index)) => Some(index),
+            Some(Overlay::Arcane(_)) => {
+                self.overlay = None;
+                return;
+            }
             _ => None,
         };
         match postman_note::next_mail(
@@ -844,9 +883,11 @@ impl App {
             self.available_letters(),
             self.progress.letters_read,
             is_note_waiting,
+            self.arcanes.waiting(),
         ) {
             Some(MailStep::PostmanNote) => self.open_postman_note(),
             Some(MailStep::Letter(index)) => self.open_letter(index),
+            Some(MailStep::Arcane(number)) => self.open_arcane(number),
             Some(MailStep::Close) => self.overlay = None,
             None => {}
         }
@@ -880,6 +921,13 @@ impl App {
         }
     }
 
+    fn open_arcane(&mut self, number: usize) {
+        self.overlay = Some(Overlay::Arcane(number));
+        if self.arcanes.mark_read(number) {
+            self.save_arcanes();
+        }
+    }
+
     fn update_toasts(&mut self) {
         let now = Instant::now();
         if self.toast_until.is_some_and(|until| now >= until) {
@@ -908,6 +956,7 @@ impl App {
                 };
                 view
             }
+            Some(Overlay::Arcane(number)) => content::arcane_view(number, &self.read_context()),
             Some(Overlay::Album(page)) => {
                 let mut pages = self.album_pages();
                 let page = page.min(pages.len().saturating_sub(1));
@@ -926,9 +975,10 @@ impl App {
             ),
             Some(Overlay::Index(selected)) => {
                 let rows = overlay_rows(renderer.get_size().1);
+                let courrier = self.courrier();
                 if self.is_box_full() {
                     views::full_box_index_view(
-                        self.read_entries(),
+                        &courrier,
                         selected,
                         rows,
                         overlay::text_width(renderer, views::INDEX_FRAME),
@@ -936,7 +986,7 @@ impl App {
                         self.back_to_school(),
                     )
                 } else {
-                    views::index_view(self.read_entries(), selected, rows, &self.read_context())
+                    views::index_view(&courrier, selected, rows, &self.read_context())
                 }
             }
             Some(Overlay::Help) => views::help_view(
@@ -1001,6 +1051,10 @@ impl App {
     fn read_entries(&self) -> &[(usize, Entry)] {
         self.timeline
             .first_mail(self.progress.letters_read.min(self.available_letters()))
+    }
+
+    fn courrier(&self) -> Vec<(usize, Entry)> {
+        self.arcanes.courrier(self.read_entries(), &self.clock)
     }
 
     fn album_pages(&self) -> Vec<overlay::View> {
@@ -1176,13 +1230,13 @@ impl App {
     fn toggle_index(&mut self) {
         self.overlay = match self.overlay {
             Some(Overlay::Index(_)) => None,
-            _ => Some(Overlay::Index(self.read_entries().len().saturating_sub(1))),
+            _ => Some(Overlay::Index(self.courrier().len().saturating_sub(1))),
         };
     }
 
     fn select_in_index(&mut self, step: isize) {
         if let Some(Overlay::Index(selected)) = self.overlay {
-            let last = self.read_entries().len().saturating_sub(1);
+            let last = self.courrier().len().saturating_sub(1);
             self.overlay = Some(Overlay::Index(
                 selected.saturating_add_signed(step).min(last),
             ));
@@ -1216,10 +1270,13 @@ impl App {
     }
 
     fn reread_selected(&mut self) {
-        if let Some(Overlay::Index(selected)) = self.overlay
-            && selected < self.read_entries().len()
-        {
-            self.open_letter(selected);
+        let Some(Overlay::Index(selected)) = self.overlay else {
+            return;
+        };
+        match arcane::reopened(&self.courrier(), selected) {
+            Some(MailStep::Letter(index)) => self.open_letter(index),
+            Some(MailStep::Arcane(number)) => self.open_arcane(number),
+            _ => {}
         }
     }
 
@@ -1786,6 +1843,25 @@ mod tests {
         progress.welcome_seen = true;
         assert!(!welcome_on_launch(&progress, Launch::Fresh));
         assert!(!welcome_on_launch(&progress, Launch::Normal));
+    }
+
+    #[test]
+    fn test_arcane_preview_keeps_the_welcome_off_the_mage_even_without_a_save() {
+        let night = |arcane| SimulationOptions {
+            condition: None,
+            night: true,
+            holiday: None,
+            demo: false,
+            day: None,
+            arcane,
+        };
+        let fresh = Progress::default();
+        let first_launch = launch_for(&night(false), false, true);
+        let first_arcane_launch = launch_for(&night(true), false, true);
+        let arcane_launch = launch_for(&night(true), true, false);
+        assert!(welcome_on_launch(&fresh, first_launch));
+        assert!(!welcome_on_launch(&fresh, first_arcane_launch));
+        assert!(!welcome_on_launch(&fresh, arcane_launch));
     }
 
     #[test]

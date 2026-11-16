@@ -34,6 +34,8 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Fête de la musique | | | `is_music_day` | 21 juin : notes aux fenêtres, chanteurs, Notes du ciel ; Badge dédié → [[animation]] |
 | Notes du ciel | dessin de notes, croches | | `SkyNotes` | croche et deux doubles croches, remplace soleil ou lune → [[animation]] |
 | Facteur | postier | | `Postman` | livre les Lettres à la boîte aux lettres |
+| Arcano-Facteur | | second Facteur | `ArcanoPostman` | vieux mage violet sur un balai, vole 12 h après le Facteur et fait apparaître les Arcanes par magie → [[animation]] |
+| Arcane | | | `Entry::Arcane` | Lettre de l'Arcano-Facteur, numérotée à part, cadre Nuit étoilée → [[mail]] |
 | Heure du Facteur | heure du courrier | | `mail_hour` | heure de la tournée ; changée dans Réglages, effet le lendemain → [[mail]] |
 | Jour de jeu | jour | | `StoryClock` | jour de l'histoire depuis le début, change à `courrier.heure` → [[mail]] |
 | Timeline | | | `Timeline` | événements de l'histoire classés par Jour de jeu |
@@ -80,6 +82,8 @@ A named piece of UI, reused or talked about on its own. UI projects only.
 | Name | Also | Code | On | Means |
 |---|---|---|---|---|
 | Barre du haut | HUD, ligne d'état | `cached_weather_info` | scène | heure, Jour de jeu, Lettre, Badges, aide, météo ; masquable (`--hide-hud`, Réglages) → [[render]] |
+| Boîte violette | | `violet_mailbox` | jardin | mini boîte au-dessus de la boîte jaune, drapeau turquoise quand une Arcane attend |
+| Nuit étoilée | | `Frame::StarryNight` | Courrier | cadre violet électrique des Arcanes : `.:*~*:.` en haut et en bas, bords `)` `(` |
 | Toast | | `toasts` | scène | texte bref sur la ligne 0, 4 s, un à la fois → [[render]] |
 <!-- | Composer | editor | `ComposerView` | Inbox, Thread | writes or replies to a message | -->
 

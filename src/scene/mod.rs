@@ -16,6 +16,7 @@ pub struct WorldScene {
     ground: ground::Ground,
     decorations: decorations::Decorations,
     tree_growth: tree::Growth,
+    has_violet_mailbox: bool,
     width: u16,
     height: u16,
 }
@@ -33,6 +34,7 @@ impl WorldScene {
             ground,
             decorations,
             tree_growth: tree::Growth::default(),
+            has_violet_mailbox: false,
             width,
             height,
         }
@@ -46,6 +48,10 @@ impl WorldScene {
 
     pub fn set_tree_growth(&mut self, growth: tree::Growth) {
         self.tree_growth = growth;
+    }
+
+    pub fn set_violet_mailbox(&mut self, is_shown: bool) {
+        self.has_violet_mailbox = is_shown;
     }
 
     pub fn render(
@@ -104,6 +110,7 @@ impl WorldScene {
                 is_snowing: conditions.is_snowing,
                 holiday: *holiday,
                 tree_growth: self.tree_growth,
+                has_violet_mailbox: self.has_violet_mailbox,
             },
         )?;
 

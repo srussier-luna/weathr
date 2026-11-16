@@ -1,3 +1,4 @@
+pub mod arcane;
 pub mod clock;
 pub mod content;
 pub mod event;

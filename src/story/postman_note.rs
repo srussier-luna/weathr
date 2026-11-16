@@ -2,6 +2,7 @@
 pub enum MailStep {
     PostmanNote,
     Letter(usize),
+    Arcane(usize),
     Close,
 }
 
@@ -14,16 +15,17 @@ pub fn next_mail(
     available: usize,
     letters_read: usize,
     is_note_waiting: bool,
+    waiting_arcane: Option<usize>,
 ) -> Option<MailStep> {
-    if available == 0 {
-        return None;
+    let arcane_or = |step| Some(waiting_arcane.map_or(step, MailStep::Arcane));
+    match open_letter {
+        Some(index) if index + 1 < available => Some(MailStep::Letter(index + 1)),
+        Some(_) => arcane_or(MailStep::Close),
+        None if available == 0 => waiting_arcane.map(MailStep::Arcane),
+        None if is_note_waiting => Some(MailStep::PostmanNote),
+        None if letters_read < available => Some(MailStep::Letter(letters_read)),
+        None => arcane_or(MailStep::Letter(available - 1)),
     }
-    Some(match open_letter {
-        Some(index) if index + 1 < available => MailStep::Letter(index + 1),
-        Some(_) => MailStep::Close,
-        None if is_note_waiting => MailStep::PostmanNote,
-        None => MailStep::Letter(letters_read.min(available - 1)),
-    })
 }
 
 #[cfg(test)]
@@ -47,19 +49,19 @@ mod tests {
 
         assert!(waiting);
         assert_eq!(
-            next_mail(None, available, 0, waiting),
+            next_mail(None, available, 0, waiting, None),
             Some(MailStep::PostmanNote)
         );
         assert_eq!(
-            next_mail(None, available, 0, false),
+            next_mail(None, available, 0, false, None),
             Some(MailStep::Letter(0))
         );
         assert_eq!(
-            next_mail(Some(0), available, 0, waiting),
+            next_mail(Some(0), available, 0, waiting, None),
             Some(MailStep::Letter(1))
         );
         assert_eq!(
-            next_mail(Some(available - 1), available, 0, waiting),
+            next_mail(Some(available - 1), available, 0, waiting, None),
             Some(MailStep::Close)
         );
     }
@@ -72,7 +74,7 @@ mod tests {
 
         assert!(!waiting);
         assert_eq!(
-            next_mail(None, available, 0, waiting),
+            next_mail(None, available, 0, waiting, None),
             Some(MailStep::Letter(0))
         );
         assert!(!is_postman_note_waiting(
@@ -89,6 +91,34 @@ mod tests {
 
     #[test]
     fn test_empty_courrier_opens_nothing() {
-        assert_eq!(next_mail(None, 0, 0, true), None);
+        assert_eq!(next_mail(None, 0, 0, true, None), None);
+    }
+
+    #[test]
+    fn test_waiting_arcane_comes_after_the_unread_letters() {
+        assert_eq!(
+            next_mail(None, 5, 3, false, Some(1)),
+            Some(MailStep::Letter(3))
+        );
+        assert_eq!(
+            next_mail(Some(3), 5, 4, false, Some(1)),
+            Some(MailStep::Letter(4))
+        );
+        assert_eq!(
+            next_mail(Some(4), 5, 5, false, Some(1)),
+            Some(MailStep::Arcane(1))
+        );
+        assert_eq!(
+            next_mail(None, 5, 5, false, Some(1)),
+            Some(MailStep::Arcane(1))
+        );
+        assert_eq!(
+            next_mail(None, 5, 5, false, None),
+            Some(MailStep::Letter(4))
+        );
+        assert_eq!(
+            next_mail(None, 5, 3, true, Some(1)),
+            Some(MailStep::PostmanNote)
+        );
     }
 }
