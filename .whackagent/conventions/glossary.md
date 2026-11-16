@@ -32,7 +32,7 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Fête de la musique | | | `is_music_day` | 21 juin : notes aux fenêtres, chanteurs, Notes du ciel ; Badge dédié → [[animation]] |
 | Notes du ciel | dessin de notes, croches | | `SkyNotes` | croche et deux doubles croches, remplace soleil ou lune → [[animation]] |
 | Facteur | postier | | `Postman` | livre les Lettres à la boîte aux lettres |
-| Arcano-Facteur | | second Facteur | | vélo violet électrique, passe 12 h après le Facteur une fois le secret trouvé → [[animation]] |
+| Arcano-Facteur | | second Facteur | | vieux mage violet sur un balai, vole 12 h après le Facteur et fait apparaître les Arcanes par magie → [[animation]] |
 | Arcane | | | | Lettre de l'Arcano-Facteur, numérotée à part, cadre Nuit étoilée → [[mail]] |
 | Heure du Facteur | heure du courrier | | `mail_hour` | heure de la tournée ; changée dans Réglages, effet le lendemain → [[mail]] |
 | Jour de jeu | jour | | `StoryClock` | jour de l'histoire depuis le début, change à `courrier.heure` → [[mail]] |

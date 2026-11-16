@@ -11,8 +11,9 @@ created: 2026-11-16
 > Spoiler : ce fichier décrit le secret. Ticket, PR et commits restent vagues (« passage du soir », « secret »).
 
 - **Arcano-Facteur** : second Facteur, débloqué par la piste du secret (#115). Avant le déblocage : absent, rien ne change.
-  - Même dessin que le Facteur, vélo **violet électrique** (bien lisible sur fond noir, ex. RGB 180, 90, 255) au lieu du jaune postal.
+  - Pas la forme du Facteur (retour utilisateur·rice) : un **vieux mage violet sur un balai**, qui vole dans le ciel. Violet électrique, bien lisible sur fond noir (ex. RGB 180, 90, 255). Dessin à valider au test.
   - Passe chaque jour à l'heure du Facteur du jour + 12 h (`clock.mail_hour_on(today)`, ex. 9 h → 21 h).
+  - Passage : il arrive en volant, **s'arrête en l'air au-dessus de la Boîte violette sans descendre**, fait une **invocation magique** (étincelles), l'Arcane apparaît dans la boîte, puis il repart en volant. Jour sans Arcane à déposer : il traverse le ciel sans s'arrêter.
   - Après la dernière Arcane : continue de passer chaque soir, sans Lettre.
 - **Boîte violette** : dès le déblocage, mini boîte aux lettres violette au-dessus de la boîte jaune (`src/scene/decorations.rs`), avec son propre drapeau **bleu turquoise** levé quand une Arcane attend. Reste pour toujours.
 - **Arcane** : Lettre de l'Arcano-Facteur.
@@ -27,7 +28,7 @@ created: 2026-11-16
 - **Sauvegarde** (`Progress`, `#[serde(default)]`) : date de déblocage, nombre d'Arcanes reçues, nombre lues, date de la dernière livraison. Ancienne sauvegarde → secret non débloqué.
 - **Textes** : les Arcanes viennent de #116 (écrites à deux). Tant que la liste est vide, aucune Arcane n'arrive.
 - **Test** : option cachée `--arcane` (absente de `--help`, clap `hide`), comme `--music` : débloque sans toucher à la sauvegarde et fournit une Arcane d'exemple (« Arcane n° 0 », texte de démonstration) visible seulement sous cette option. `--night` pour le voir passer de nuit.
-- Où : `src/animation/postman.rs` (deuxième instance, couleur et heure), `src/scene/decorations.rs` (boîte violette + drapeau), nouvelle source dans `src/story/sources/` (heure de livraison propre, pas l'heure du Facteur), `src/overlay.rs` (`Frame` Nuit étoilée), `src/progress.rs`, `src/main.rs` (flag).
+- Où : nouvelle animation par feature (`src/animation/`, ex. `arcane.rs` : mage, vol, invocation, heure), réutilise l'horloge du Facteur (`src/animation/postman.rs`) sans copier son dessin, `src/scene/decorations.rs` (boîte violette + drapeau), nouvelle source dans `src/story/sources/` (heure de livraison propre, pas l'heure du Facteur), `src/overlay.rs` (`Frame` Nuit étoilée), `src/progress.rs`, `src/main.rs` (flag).
 - Pas de Badge, rien dans l'Aide (`h`) : le secret reste secret.
 - Lignes de glossaire ajoutées avec cette tâche : Arcano-Facteur, Arcane, Boîte violette.
 - Hors périmètre : la piste qui débloque (#115), le texte des Arcanes (#116), choix du nombre d'Arcanes.
@@ -35,7 +36,8 @@ created: 2026-11-16
 ## Acceptance criteria
 
 - Partie normale, secret non débloqué → ni Arcano-Facteur, ni Boîte violette ; Lettres et numérotation inchangées.
-- `weathr --arcane` → Boîte violette au-dessus de la boîte jaune ; l'Arcano-Facteur passe à l'heure du Facteur + 12 h sur un vélo violet électrique.
+- `weathr --arcane` → Boîte violette au-dessus de la boîte jaune ; à l'heure du Facteur + 12 h, un vieux mage violet sur un balai arrive en volant, s'arrête en l'air au-dessus de la Boîte violette, fait une invocation magique, puis repart en volant.
+- Jour sans Arcane à déposer (en attente ou plus de texte) → il traverse le ciel sans s'arrêter.
 - `weathr --arcane`, après son passage → drapeau turquoise levé ; `c` → « Arcane n° 0 » dans la liste, cadre Nuit étoilée violet ; la lire → drapeau baissé.
 - `weathr --help` → `--arcane` n'apparaît pas.
 - Tests unitaires du rythme (secret débloqué, Facteur à 9 h) :
