@@ -1,5 +1,5 @@
 use crate::animation::lore::Unlocks;
-use crate::badges::Badge;
+use crate::badges::{self, Badge};
 use crate::overlay::{self, Frame, Line, View};
 use crate::progress::Progress;
 use crate::release_notes::Section;
@@ -9,7 +9,9 @@ use crate::story::content::chronicles::{
     BOTTLE_MESSAGES, CHEST_SOUVENIRS, DRAWINGS, OBJECTS, RECIPES,
 };
 use crate::story::content::letters::CHOICES;
+use crate::story::content::neighbours_note::{self, NeighboursNote};
 use crate::story::content::{self, MONTHS, ReadContext, postcard_lines, postcard_title, text};
+use crate::story::punishment::Punishment;
 use crate::weather::units::{precipitation_symbol, temperature_symbol, wind_speed_symbol};
 use chrono::{Datelike, NaiveDate};
 use std::path::Path;
@@ -26,6 +28,7 @@ const CITY_RESULTS_FOOTER: &str = "[↑] [↓] choisir  [Entrée] valider  [Echa
 const NOTES_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const POSTMAN_NOTE_FOOTER: &str = "[c] suivante  [Echap] fermer";
 const BACKUP_FOOTER: &str = "[Entrée] ou [Echap] fermer";
+const NEIGHBOURS_NOTE_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const SCROLL_HINT: &str = "[↑] [↓] défiler";
 const HELP_KEY_WIDTH: usize = 10;
 const NOTES_BULLET: &str = "- ";
@@ -122,6 +125,27 @@ pub fn restored_view() -> View {
         "Ta progression n'a pas pu être lue. Ta partie reprend à la dernière sauvegarde."
             .to_string(),
     )
+}
+
+pub fn neighbours_note_view(note: NeighboursNote) -> View {
+    let mut lines = Vec::new();
+    if note == NeighboursNote::Announcement(Punishment::Cheater)
+        && let Some(cheater) = badges::find(badges::CHEATER)
+    {
+        lines.extend(medal(cheater.icon).into_iter().map(Line::Centered));
+        lines.push(Line::Blank);
+    }
+    lines.extend([
+        text(note.text()),
+        Line::Blank,
+        text(neighbours_note::SIGNATURE),
+    ]);
+    View {
+        title: String::new(),
+        lines,
+        footer: NEIGHBOURS_NOTE_FOOTER.to_string(),
+        frame: Frame::Roofs,
+    }
 }
 
 pub fn full_box_index_view(
@@ -558,7 +582,6 @@ pub fn album_pages(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::badges;
     use crate::story::content::save_golden::{SavedGame, courrier_fixture, render};
 
     #[test]
@@ -618,6 +641,40 @@ mod tests {
              blank\n\
              text: — Le Facteur\n"
         )));
+    }
+
+    #[test]
+    fn test_neighbours_note_is_signed_in_its_own_frame() {
+        let announcement =
+            neighbours_note_view(NeighboursNote::Announcement(Punishment::MailBan(3)));
+        let disappointed = neighbours_note_view(NeighboursNote::Disappointed(0));
+        for note in [&announcement, &disappointed] {
+            assert_eq!(note.frame, Frame::Roofs);
+            assert!(render(note).contains(&format!(
+                "blank\ntext: {}\nfooter: {NEIGHBOURS_NOTE_FOOTER}\n",
+                neighbours_note::SIGNATURE
+            )));
+        }
+        assert!(render(&announcement).contains("3 jours"));
+    }
+
+    #[test]
+    fn test_cheater_announcement_shows_the_badge_medal() {
+        let medal_lines = |note| {
+            neighbours_note_view(note)
+                .lines
+                .iter()
+                .filter(|line| matches!(line, Line::Centered(_)))
+                .count()
+        };
+        assert_eq!(
+            medal_lines(NeighboursNote::Announcement(Punishment::Cheater)),
+            5
+        );
+        assert_eq!(
+            medal_lines(NeighboursNote::Announcement(Punishment::BareVillage)),
+            0
+        );
     }
 
     #[test]

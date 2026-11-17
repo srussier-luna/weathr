@@ -115,14 +115,22 @@ pub struct Unlocks {
 
 impl Unlocks {
     pub fn with_every_habitant(self) -> Self {
+        self.with_habitants(true)
+    }
+
+    pub fn without_habitants(self) -> Self {
+        self.with_habitants(false)
+    }
+
+    fn with_habitants(self, are_home: bool) -> Self {
         Self {
-            cat: true,
-            dog: true,
-            owl: true,
-            duck: true,
-            snail: true,
-            squirrel: true,
-            frog: true,
+            cat: are_home,
+            dog: are_home,
+            owl: are_home,
+            duck: are_home,
+            snail: are_home,
+            squirrel: are_home,
+            frog: are_home,
             ..self
         }
     }

@@ -1,6 +1,7 @@
 pub mod chronicles;
 mod gazette;
 pub mod letters;
+pub mod neighbours_note;
 mod night_postscript;
 mod postcard;
 mod village;
