@@ -2,7 +2,7 @@ use crate::animation::sun_path::{day_progress, on_sun_path};
 use crate::animation::{
     AnimationController,
     airplanes::AirplaneSystem,
-    arcane::{ArcaneRound, ArcanoPostman},
+    arcane::{ArcanoPostman, Round},
     birds::BirdSystem,
     cat::Cat,
     chimney::ChimneySmoke,
@@ -242,7 +242,7 @@ impl AnimationManager {
         self.postman.set_mail_waiting(is_waiting);
     }
 
-    pub fn set_arcane_round(&mut self, round: Option<ArcaneRound>) {
+    pub fn set_arcane_round(&mut self, round: Option<Round>) {
         self.arcano_postman.set_round(round);
     }
 

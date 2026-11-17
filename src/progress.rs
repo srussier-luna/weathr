@@ -7,8 +7,12 @@ use std::path::PathBuf;
 
 pub const DATE_FORMAT: &str = "%Y-%m-%d";
 
-pub fn parse_date(date: &str) -> Option<NaiveDate> {
+fn parse_date(date: &str) -> Option<NaiveDate> {
     NaiveDate::parse_from_str(date, DATE_FORMAT).ok()
+}
+
+fn format_date(date: NaiveDate) -> String {
+    date.format(DATE_FORMAT).to_string()
 }
 
 #[derive(Serialize, Deserialize)]
@@ -54,13 +58,13 @@ pub struct Progress {
     #[serde(default)]
     mail_hour_change: Option<MailHourChange>,
     #[serde(default)]
-    pub arcanes_unlocked_on: Option<String>,
+    arcanes_unlocked_on: Option<String>,
     #[serde(default)]
-    pub arcanes_received_on: Vec<String>,
+    arcanes_received_on: Vec<String>,
     #[serde(default)]
     pub arcanes_read: usize,
     #[serde(default)]
-    pub arcanes_passed_on: Option<String>,
+    arcanes_passed_on: Option<String>,
     #[serde(skip)]
     in_memory: bool,
 }
@@ -151,6 +155,33 @@ impl Progress {
             previous_hour,
         });
     }
+
+    pub fn arcanes_unlocked_date(&self) -> Option<NaiveDate> {
+        self.arcanes_unlocked_on.as_deref().and_then(parse_date)
+    }
+
+    pub fn set_arcanes_unlocked_date(&mut self, date: Option<NaiveDate>) {
+        self.arcanes_unlocked_on = date.map(format_date);
+    }
+
+    pub fn arcanes_received_dates(&self) -> Vec<NaiveDate> {
+        self.arcanes_received_on
+            .iter()
+            .filter_map(|date| parse_date(date))
+            .collect()
+    }
+
+    pub fn set_arcanes_received_dates(&mut self, dates: &[NaiveDate]) {
+        self.arcanes_received_on = dates.iter().copied().map(format_date).collect();
+    }
+
+    pub fn arcanes_passed_date(&self) -> Option<NaiveDate> {
+        self.arcanes_passed_on.as_deref().and_then(parse_date)
+    }
+
+    pub fn set_arcanes_passed_date(&mut self, date: Option<NaiveDate>) {
+        self.arcanes_passed_on = date.map(format_date);
+    }
 }
 
 pub(crate) fn progress_path() -> Option<PathBuf> {
@@ -190,6 +221,26 @@ mod tests {
         let progress: Progress =
             serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":12}"#).unwrap();
         assert_eq!(progress.previous_mail_hour(), None);
+    }
+
+    #[test]
+    fn test_arcane_dates_round_trip_and_start_empty() {
+        let mut progress: Progress =
+            serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":12}"#).unwrap();
+        assert_eq!(progress.arcanes_unlocked_date(), None);
+        assert!(progress.arcanes_received_dates().is_empty());
+        assert_eq!(progress.arcanes_passed_date(), None);
+
+        let friday = NaiveDate::from_ymd_opt(2026, 11, 20).unwrap();
+        let monday = NaiveDate::from_ymd_opt(2026, 11, 23).unwrap();
+        progress.set_arcanes_unlocked_date(Some(friday));
+        progress.set_arcanes_received_dates(&[friday, monday]);
+        progress.set_arcanes_passed_date(Some(monday));
+        let saved = serde_json::to_string(&progress).unwrap();
+        let loaded: Progress = serde_json::from_str(&saved).unwrap();
+        assert_eq!(loaded.arcanes_unlocked_date(), Some(friday));
+        assert_eq!(loaded.arcanes_received_dates(), [friday, monday]);
+        assert_eq!(loaded.arcanes_passed_date(), Some(monday));
     }
 
     #[test]

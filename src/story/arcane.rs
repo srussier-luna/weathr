@@ -2,30 +2,40 @@ use super::clock::StoryClock;
 use super::content::arcanes::{ARCANES, FIRST_NUMBER, SAMPLE_NUMBER};
 use super::event::Entry;
 use super::postman_note::MailStep;
-use crate::animation::arcane::{ArcaneRound, Delivery};
-use crate::progress::{DATE_FORMAT, Progress, parse_date};
-use chrono::{Duration, NaiveDate, NaiveDateTime, Timelike};
+use crate::progress::Progress;
+use chrono::{Duration, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 
 const HOURS_AFTER_MAIL: u32 = 12;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Delivery {
+    Nothing,
+    Due,
+    Done,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ArcaneRound {
+    pub hour: u32,
+    pub delivery: Delivery,
+    pub is_arcane_waiting: bool,
+}
 
 fn passage_hour(clock: &StoryClock, date: NaiveDate) -> u32 {
     (clock.mail_hour_on(date) + HOURS_AFTER_MAIL) % 24
 }
 
+fn passage_at(clock: &StoryClock, date: NaiveDate) -> NaiveDateTime {
+    date.and_time(NaiveTime::MIN) + Duration::hours(i64::from(passage_hour(clock, date)))
+}
+
 fn nearest_passage(clock: &StoryClock, now: NaiveDateTime) -> NaiveDate {
     let today = now.date();
-    let distance = |date: NaiveDate| {
-        date.and_hms_opt(passage_hour(clock, date), 0, 0)
-            .map_or(Duration::MAX, |passage| (passage - now).abs())
-    };
+    let distance = |date: NaiveDate| (passage_at(clock, date) - now).abs();
     today
         .succ_opt()
         .filter(|tomorrow| distance(*tomorrow) < distance(today))
         .unwrap_or(today)
-}
-
-fn format_date(date: NaiveDate) -> String {
-    date.format(DATE_FORMAT).to_string()
 }
 
 pub fn reopened(courrier: &[(usize, Entry)], selected: usize) -> Option<MailStep> {
@@ -54,14 +64,10 @@ pub struct ArcanePost {
 impl ArcanePost {
     pub fn saved(progress: &Progress) -> Self {
         Self {
-            unlocked_on: progress.arcanes_unlocked_on.as_deref().and_then(parse_date),
-            received_on: progress
-                .arcanes_received_on
-                .iter()
-                .filter_map(|date| parse_date(date))
-                .collect(),
+            unlocked_on: progress.arcanes_unlocked_date(),
+            received_on: progress.arcanes_received_dates(),
             read: progress.arcanes_read,
-            passed_on: progress.arcanes_passed_on.as_deref().and_then(parse_date),
+            passed_on: progress.arcanes_passed_date(),
             first_number: FIRST_NUMBER,
             count: ARCANES.len(),
             in_memory: false,
@@ -84,10 +90,10 @@ impl ArcanePost {
         if self.in_memory {
             return false;
         }
-        progress.arcanes_unlocked_on = self.unlocked_on.map(format_date);
-        progress.arcanes_received_on = self.received_on.iter().copied().map(format_date).collect();
+        progress.set_arcanes_unlocked_date(self.unlocked_on);
+        progress.set_arcanes_received_dates(&self.received_on);
         progress.arcanes_read = self.read;
-        progress.arcanes_passed_on = self.passed_on.map(format_date);
+        progress.set_arcanes_passed_date(self.passed_on);
         true
     }
 
@@ -145,7 +151,10 @@ impl ArcanePost {
                 .iter()
                 .take(self.read)
                 .zip(self.first_number..)
-                .map(|(date, number)| (clock.day_of(*date), Entry::Arcane(number))),
+                .map(|(date, number)| {
+                    let day = clock.day_of(clock.mail_date(passage_at(clock, *date)));
+                    (day, Entry::Arcane(number))
+                }),
         );
         courrier.sort_by_key(|(day, _)| *day);
         courrier
@@ -309,8 +318,29 @@ mod tests {
         assert_eq!(post.waiting(), Some(SAMPLE_NUMBER));
         let mut progress = Progress::default();
         assert!(!post.write_to(&mut progress));
-        assert_eq!(progress.arcanes_unlocked_on, None);
-        assert!(progress.arcanes_received_on.is_empty());
+        assert_eq!(progress.arcanes_unlocked_date(), None);
+        assert!(progress.arcanes_received_dates().is_empty());
+    }
+
+    #[test]
+    fn test_midnight_arcane_sorts_with_the_mail_day_of_its_passage() {
+        let clock = StoryClock::new(date(1), 12);
+        let mut post = unlocked(1);
+        assert!(post.pass(&clock, at(SATURDAY, 0)));
+        assert!(post.mark_read(1));
+        let letters = [
+            (clock.day_of(date(FRIDAY)), Entry::Main(19)),
+            (clock.day_of(date(SATURDAY)), Entry::Main(20)),
+        ];
+        let entries: Vec<Entry> = post
+            .courrier(&letters, &clock)
+            .iter()
+            .map(|(_, entry)| *entry)
+            .collect();
+        assert_eq!(
+            entries,
+            [Entry::Main(19), Entry::Arcane(1), Entry::Main(20)]
+        );
     }
 
     #[test]

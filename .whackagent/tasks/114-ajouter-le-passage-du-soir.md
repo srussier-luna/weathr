@@ -1,6 +1,6 @@
 ---
 issue: 114
-status: to-test
+status: to-close
 wiki: [[animation]], [[mail]], [[scene]], [[render]]
 note: "Découpé de #113 (parapluie « Ajouter un secret »), sprint « Le secret ». Débloqué par #115, Lettres écrites dans #116."
 created: 2026-11-16
@@ -67,6 +67,16 @@ created: 2026-11-16
 - Round 1 (feedback) : `launch_for(simulation, has_save, is_quiet)` dans `src/app.rs` — `--arcane` lance sans Accueil ni Notes (comme `--day`), même sans save ; Boîte violette 4 de large (`.--.` / `|__|`), centrée sur le corps de la boîte jaune (`VIOLET_MAILBOX_WIDTH`), drapeau, étincelles et arrêt du mage suivent. Tests `test_arcane_preview_keeps_the_welcome_off_the_mage_even_without_a_save`, `test_violet_mailbox_sits_centred_on_the_yellow_one`. 355 tests verts.
 
 ## Review
+
+### Round validation — 2026-11-17
+- Scope : diff cumulé depuis `sprint/le-secret` + correctifs (src/story/arcane.rs, src/animation/arcane.rs, src/animation_manager.rs, src/app.rs, src/progress.rs).
+- Findings (autofix, 2 tours, tous corrigés) :
+  - 🟠 [structure] `story` importait `animation` (`ArcaneRound`, `Delivery`) → types dans `story/arcane.rs` ; le mage (aussi compilé dans le crate lib, sans `story`) reçoit son propre `Round` ; traduction dans `App` (`mage_round`, à côté de `unlocks_on`) ; plus aucune dépendance story ↔ animation ni animation_manager → story.
+  - 🟡 [correctness] Facteur dès 12 h (passage à minuit) : Arcane triée un jour trop tard → jour = `clock.day_of(clock.mail_date(passage_at(..)))` ; test `test_midnight_arcane_sorts_with_the_mail_day_of_its_passage`.
+  - 🟡 [structure] `parse_date` public, dates converties hors `Progress` → privé + accesseurs typés (`arcanes_unlocked_date`, `arcanes_received_dates`, `arcanes_passed_date` et setters), clés JSON inchangées.
+  - 🟡 [elegance] `stops` + `has_dropped` → `Visit { PassesBy, Drops, HasDropped }`.
+- Preuve : `cargo build`, `cargo build --lib`, `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use`, `cargo test --bin weathr` (358) verts ; pty faketime 20:59:55 : mage arrêté, invocation, drapeau turquoise.
+- LENSES : style ✓ · elegance ✓ · structure ✓ · correctness ✓ — VERDICT : clean.
 
 ## Verification
 

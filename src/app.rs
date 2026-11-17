@@ -1,3 +1,4 @@
+use crate::animation::arcane::{Round, Visit};
 use crate::animation::lore::{Choices, Unlocks};
 use crate::animation::neighbours_party::Neighbour;
 use crate::animation_manager::AnimationManager;
@@ -17,7 +18,7 @@ use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
 use crate::scene::tree::Growth;
 use crate::settings::{self, AutoLocation, CitySearch, Row, Settings};
-use crate::story::arcane::{self, ArcanePost};
+use crate::story::arcane::{self, ArcanePost, ArcaneRound, Delivery};
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
@@ -64,6 +65,18 @@ fn count_read(timeline: &Timeline, progress: &Progress, kind: fn(&Entry) -> bool
         .take(progress.letters_read)
         .filter(|(_, entry)| kind(entry))
         .count()
+}
+
+fn mage_round(round: ArcaneRound) -> Round {
+    Round {
+        hour: round.hour,
+        visit: match round.delivery {
+            Delivery::Nothing => Visit::PassesBy,
+            Delivery::Due => Visit::Drops,
+            Delivery::Done => Visit::HasDropped,
+        },
+        is_arcane_waiting: round.is_arcane_waiting,
+    }
 }
 
 fn unlocks_on(timeline: &Timeline, day: usize, answers: &BTreeMap<String, u8>) -> Unlocks {
@@ -664,7 +677,7 @@ impl App {
         }
         self.scene.set_violet_mailbox(self.arcanes.is_unlocked());
         self.animations
-            .set_arcane_round(self.arcanes.round(&self.clock, now));
+            .set_arcane_round(self.arcanes.round(&self.clock, now).map(mage_round));
     }
 
     fn save_arcanes(&mut self) {
@@ -1843,6 +1856,22 @@ mod tests {
         progress.welcome_seen = true;
         assert!(!welcome_on_launch(&progress, Launch::Fresh));
         assert!(!welcome_on_launch(&progress, Launch::Normal));
+    }
+
+    #[test]
+    fn test_mage_round_follows_the_arcane_delivery() {
+        let visit = |delivery| {
+            mage_round(ArcaneRound {
+                hour: 21,
+                delivery,
+                is_arcane_waiting: true,
+            })
+        };
+        assert_eq!(visit(Delivery::Nothing).visit, Visit::PassesBy);
+        assert_eq!(visit(Delivery::Due).visit, Visit::Drops);
+        assert_eq!(visit(Delivery::Done).visit, Visit::HasDropped);
+        assert_eq!(visit(Delivery::Done).hour, 21);
+        assert!(visit(Delivery::Done).is_arcane_waiting);
     }
 
     #[test]
