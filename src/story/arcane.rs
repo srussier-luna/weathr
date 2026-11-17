@@ -1,5 +1,6 @@
 use super::clock::StoryClock;
 use super::content::arcanes::{ARCANES, FIRST_NUMBER, SAMPLE_NUMBER};
+use super::content::secret_trail::NextPassage;
 use super::event::Entry;
 use super::postman_note::MailStep;
 use crate::animation::arcane::{ArcaneRound, Delivery};
@@ -95,8 +96,17 @@ impl ArcanePost {
         self.unlocked_on.is_some()
     }
 
-    pub fn first_passage_hour(&self, clock: &StoryClock) -> Option<u32> {
-        self.unlocked_on.map(|date| passage_hour(clock, date))
+    pub fn next_passage(&self, clock: &StoryClock, now: NaiveDateTime) -> Option<NextPassage> {
+        let today = now.date();
+        let tonight = passage_hour(clock, today);
+        let tomorrow = today
+            .succ_opt()
+            .map_or(tonight, |date| passage_hour(clock, date));
+        self.is_unlocked().then_some(if now.hour() < tonight {
+            NextPassage::Tonight(tonight)
+        } else {
+            NextPassage::Tomorrow(tomorrow)
+        })
     }
 
     pub fn unlock(&mut self, today: NaiveDate) -> bool {

@@ -154,6 +154,13 @@ fn closed_overlay(overlay: Option<Overlay>) -> Option<Overlay> {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Answer {
+    CardSolved,
+    WeekSolved,
+    Wrong,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 enum AnswerFeedback {
     Toast(&'static str),
@@ -161,12 +168,12 @@ enum AnswerFeedback {
     WarmCard,
 }
 
-fn answer_feedback(is_on_card: bool, is_card_solved: bool, is_right: bool) -> AnswerFeedback {
-    match (is_on_card, is_card_solved, is_right) {
-        (true, true, _) => AnswerFeedback::WarmCard,
-        (true, false, false) => AnswerFeedback::ColdCard,
-        (_, _, true) => AnswerFeedback::Toast("* Bonne réponse ! *"),
-        (false, _, false) => AnswerFeedback::Toast("* Ce n'est pas ça… essaie encore. *"),
+fn answer_feedback(answer: Answer, is_on_card: bool) -> AnswerFeedback {
+    match (answer, is_on_card) {
+        (Answer::CardSolved, _) => AnswerFeedback::WarmCard,
+        (Answer::WeekSolved, _) => AnswerFeedback::Toast("* Bonne réponse ! *"),
+        (Answer::Wrong, true) => AnswerFeedback::ColdCard,
+        (Answer::Wrong, false) => AnswerFeedback::Toast("* Ce n'est pas ça… essaie encore. *"),
     }
 }
 
@@ -1006,7 +1013,8 @@ impl App {
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
             Some(Overlay::TarotCard) => content::secret_trail::tarot_card_view(
                 self.riddle_input.as_deref(),
-                self.arcanes.first_passage_hour(&self.clock),
+                self.arcanes
+                    .next_passage(&self.clock, Local::now().naive_local()),
                 self.is_tarot_card_cold,
             ),
             Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => {
@@ -1292,26 +1300,25 @@ impl App {
             .filter(|week| !self.progress.riddles_solved.contains(week));
         let is_on_card = matches!(self.overlay, Some(Overlay::TarotCard));
         let today = Local::now().date_naive();
-        let is_card_solved = self.tarot_card.answer(&input, &mut self.arcanes, today);
-        let is_right = if is_card_solved {
+        let answer = if self.tarot_card.answer(&input, &mut self.arcanes, today) {
             self.save_arcanes();
-            true
+            Answer::CardSolved
         } else if let Some(week) = week
             && chronicles::is_right_answer(&RIDDLES[week % RIDDLES.len()], &input)
         {
             self.progress.riddles_solved.insert(week);
             self.progress.save();
-            true
+            Answer::WeekSolved
         } else {
-            false
+            Answer::Wrong
         };
-        match answer_feedback(is_on_card, is_card_solved, is_right) {
+        match answer_feedback(answer, is_on_card) {
             AnswerFeedback::Toast(message) => self.toasts.push_back(message.to_string()),
             AnswerFeedback::ColdCard => {
                 self.is_tarot_card_cold = true;
                 self.riddle_input = Some(String::new());
             }
-            AnswerFeedback::WarmCard => {}
+            AnswerFeedback::WarmCard => self.overlay = Some(Overlay::TarotCard),
         }
     }
 
@@ -1814,22 +1821,23 @@ mod tests {
     }
 
     #[test]
-    fn test_answer_on_the_card_shows_on_the_card_not_in_a_toast() {
-        assert_eq!(answer_feedback(true, true, true), AnswerFeedback::WarmCard);
+    fn test_card_answer_always_opens_the_warm_card_never_a_toast() {
+        for is_on_card in [true, false] {
+            assert_eq!(
+                answer_feedback(Answer::CardSolved, is_on_card),
+                AnswerFeedback::WarmCard
+            );
+            assert_eq!(
+                answer_feedback(Answer::WeekSolved, is_on_card),
+                AnswerFeedback::Toast("* Bonne réponse ! *")
+            );
+        }
         assert_eq!(
-            answer_feedback(true, false, false),
+            answer_feedback(Answer::Wrong, true),
             AnswerFeedback::ColdCard
         );
         assert_eq!(
-            answer_feedback(true, false, true),
-            AnswerFeedback::Toast("* Bonne réponse ! *")
-        );
-        assert_eq!(
-            answer_feedback(false, true, true),
-            AnswerFeedback::Toast("* Bonne réponse ! *")
-        );
-        assert_eq!(
-            answer_feedback(false, false, false),
+            answer_feedback(Answer::Wrong, false),
             AnswerFeedback::Toast("* Ce n'est pas ça… essaie encore. *")
         );
     }

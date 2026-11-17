@@ -1,6 +1,5 @@
 use super::chronicles::Riddle;
-use super::gazette::{INPUT_FOOTER, typed_answer};
-use super::text;
+use super::{INPUT_FOOTER, text, typed_answer};
 use crate::overlay::{Frame, Line, View};
 
 pub const TRAIL_START_DAY: usize = 42;
@@ -15,6 +14,20 @@ const TAROT_RIDDLE_FOOTER: &str = "[e] répondre à l'énigme  [Echap] fermer";
 const TAROT_CARD_FOOTER: &str = "[Echap] fermer";
 const TAROT_CARD_WARM: &str = "La carte se met à chauffer de plus en plus dans ta main. Quelque chose s'est ouvert, quelque part\u{202F}!";
 const TAROT_CARD_COLD: &str = "La carte reste froide.";
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum NextPassage {
+    Tonight(u32),
+    Tomorrow(u32),
+}
+
+fn evening_line(passage: NextPassage) -> String {
+    let (evening, hour) = match passage {
+        NextPassage::Tonight(hour) => ("Ce soir", hour),
+        NextPassage::Tomorrow(hour) => ("Demain soir", hour),
+    };
+    format!("{evening}, vers {hour} h, lève les yeux au-dessus de ta boîte aux lettres.")
+}
 
 const MYSTERY_RUMORS: [&str; 6] = [
     "On raconte qu'une lueur violette a traversé le ciel au-dessus du lavoir, bien après minuit.",
@@ -63,7 +76,7 @@ pub fn mystery_allusion(letter_day: usize, is_unlocked: bool) -> Option<&'static
 
 pub fn tarot_card_view(
     riddle_input: Option<&str>,
-    passage_hour: Option<u32>,
+    next_passage: Option<NextPassage>,
     is_cold: bool,
 ) -> View {
     let mut lines = vec![
@@ -71,13 +84,11 @@ pub fn tarot_card_view(
         Line::Blank,
         text(TAROT_RIDDLE.question),
     ];
-    let footer = if let Some(hour) = passage_hour {
+    let footer = if let Some(passage) = next_passage {
         lines.extend([
             Line::Blank,
             text(TAROT_CARD_WARM),
-            text(format!(
-                "Ce soir, vers {hour} h, lève les yeux au-dessus de ta boîte aux lettres."
-            )),
+            text(evening_line(passage)),
         ]);
         TAROT_CARD_FOOTER
     } else if let Some(input) = riddle_input {
@@ -189,7 +200,7 @@ mod tests {
 
     #[test]
     fn test_right_answer_warms_the_card_and_names_the_evening_hour() {
-        let view = tarot_card_view(None, Some(20), false);
+        let view = tarot_card_view(None, Some(NextPassage::Tonight(20)), false);
         assert_eq!(
             texts(&view)[2..],
             [
@@ -199,8 +210,21 @@ mod tests {
         );
         assert_eq!(view.footer, TAROT_CARD_FOOTER);
         assert_eq!(
-            texts(&tarot_card_view(Some("fou"), Some(20), false)),
+            texts(&tarot_card_view(
+                Some("fou"),
+                Some(NextPassage::Tonight(20)),
+                false
+            )),
             texts(&view)
+        );
+    }
+
+    #[test]
+    fn test_card_solved_after_the_passage_points_to_tomorrow_evening() {
+        let view = tarot_card_view(None, Some(NextPassage::Tomorrow(21)), false);
+        assert_eq!(
+            texts(&view).last(),
+            Some(&"Demain soir, vers 21 h, lève les yeux au-dessus de ta boîte aux lettres.")
         );
     }
 

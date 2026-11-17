@@ -1,15 +1,10 @@
 use super::chronicles::{ADS, RIDDLES, RUMORS};
 use super::secret_trail::second_rumor;
-use super::{LETTER_FOOTER, MONTHS, MailContent, ReadContext, text};
+use super::{INPUT_FOOTER, LETTER_FOOTER, MONTHS, MailContent, ReadContext, text, typed_answer};
 use crate::overlay::{Frame, Line, View};
 use chrono::Datelike;
 
 const RIDDLE_FOOTER: &str = "[e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]";
-pub(super) const INPUT_FOOTER: &str = "Tape ta réponse puis [Entrée]  [Echap] annuler";
-
-pub(super) fn typed_answer(input: &str) -> Line {
-    text(format!("Ta réponse : {input}_"))
-}
 
 pub struct Gazette {
     week: usize,

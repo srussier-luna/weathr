@@ -28,6 +28,7 @@ pub use night_postscript::is_night_hour;
 pub use postcard::{postcard_lines, postcard_title};
 
 const LETTER_FOOTER: &str = "[c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer";
+const INPUT_FOOTER: &str = "Tape ta réponse puis [Entrée]  [Echap] annuler";
 pub const MONTHS: [&str; 12] = [
     "janvier",
     "février",
@@ -63,6 +64,10 @@ pub trait MailContent {
 
 pub fn text(content: impl Into<String>) -> Line {
     Line::Text(content.into())
+}
+
+fn typed_answer(input: &str) -> Line {
+    text(format!("Ta réponse : {input}_"))
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]

@@ -62,7 +62,7 @@ mod tests {
     use super::*;
     use crate::overlay::Line;
     use crate::story::clock::StoryClock;
-    use crate::story::content::secret_trail::tarot_card_view;
+    use crate::story::content::secret_trail::{NextPassage, tarot_card_view};
 
     fn at(day: u32, hour: u32, minute: u32) -> NaiveDateTime {
         NaiveDate::from_ymd_opt(2026, 11, day)
@@ -138,7 +138,7 @@ mod tests {
         ArcanePost::saved(&Progress::default())
     }
 
-    fn evening(hour: u32) -> NaiveDateTime {
+    fn at_hour(hour: u32) -> NaiveDateTime {
         at(20, hour, 0)
     }
 
@@ -155,7 +155,7 @@ mod tests {
         ] {
             let mut arcanes = locked();
             assert!(
-                TarotCard::Picked.answer(attempt, &mut arcanes, evening(0).date()),
+                TarotCard::Picked.answer(attempt, &mut arcanes, at_hour(0).date()),
                 "{attempt}"
             );
             assert!(arcanes.is_unlocked());
@@ -166,7 +166,7 @@ mod tests {
     fn test_wrong_answer_changes_nothing() {
         let mut arcanes = locked();
         for attempt in ["", "le bateleur", "matin", "la folle", "secret"] {
-            assert!(!TarotCard::Picked.answer(attempt, &mut arcanes, evening(0).date()));
+            assert!(!TarotCard::Picked.answer(attempt, &mut arcanes, at_hour(0).date()));
         }
         assert_eq!(arcanes, locked());
         assert!(TarotCard::Picked.is_riddle_open(&arcanes));
@@ -177,7 +177,7 @@ mod tests {
         for card in [TarotCard::Hidden, TarotCard::InGrass] {
             let mut arcanes = locked();
             assert!(!card.is_riddle_open(&arcanes));
-            assert!(!card.answer("le mat", &mut arcanes, evening(0).date()));
+            assert!(!card.answer("le mat", &mut arcanes, at_hour(0).date()));
             assert!(!arcanes.is_unlocked());
         }
     }
@@ -186,40 +186,74 @@ mod tests {
     fn test_right_answer_brings_the_arcano_postman_that_same_evening() {
         let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(), 9);
         let mut arcanes = locked();
-        assert!(TarotCard::Picked.answer("le fou", &mut arcanes, evening(0).date()));
+        assert!(TarotCard::Picked.answer("le fou", &mut arcanes, at_hour(0).date()));
         assert!(!TarotCard::Picked.is_riddle_open(&arcanes));
-        assert!(!TarotCard::Picked.answer("le fou", &mut arcanes, evening(0).date()));
+        assert!(!TarotCard::Picked.answer("le fou", &mut arcanes, at_hour(0).date()));
 
         let mut progress = Progress::default();
         assert!(arcanes.write_to(&mut progress));
         assert_eq!(progress.arcanes_unlocked_on.as_deref(), Some("2026-11-20"));
         assert_eq!(
-            arcanes.round(&clock, evening(20)).map(|round| round.hour),
+            arcanes.round(&clock, at_hour(20)).map(|round| round.hour),
             Some(21)
         );
-        assert!(!arcanes.pass(&clock, evening(20)));
-        assert!(arcanes.pass(&clock, evening(21)));
+        assert!(!arcanes.pass(&clock, at_hour(20)));
+        assert!(arcanes.pass(&clock, at_hour(21)));
+    }
+
+    fn shows_line(
+        arcanes: &ArcanePost,
+        clock: &StoryClock,
+        now: NaiveDateTime,
+        expected: &str,
+    ) -> bool {
+        let view = tarot_card_view(None, arcanes.next_passage(clock, now), false);
+        view.lines
+            .iter()
+            .any(|line| matches!(line, Line::Text(text) if text == expected))
     }
 
     #[test]
     fn test_right_answer_names_the_evening_hour_on_the_card() {
         let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(), 8);
         let mut arcanes = locked();
-        assert_eq!(arcanes.first_passage_hour(&clock), None);
-        assert!(TarotCard::Picked.answer("mat", &mut arcanes, evening(0).date()));
-        let view = tarot_card_view(None, arcanes.first_passage_hour(&clock), false);
-        assert!(view.lines.iter().any(|line| matches!(
-            line,
-            Line::Text(text)
-                if text == "Ce soir, vers 20 h, lève les yeux au-dessus de ta boîte aux lettres."
-        )));
+        assert_eq!(arcanes.next_passage(&clock, at_hour(0)), None);
+        assert!(TarotCard::Picked.answer("mat", &mut arcanes, at_hour(0).date()));
+        assert!(shows_line(
+            &arcanes,
+            &clock,
+            at_hour(0),
+            "Ce soir, vers 20 h, lève les yeux au-dessus de ta boîte aux lettres."
+        ));
+    }
+
+    #[test]
+    fn test_card_solved_after_the_passage_announces_tomorrow_evening() {
+        let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(), 9);
+        let mut arcanes = locked();
+        assert!(TarotCard::Picked.answer("le fou", &mut arcanes, at_hour(22).date()));
+        assert_eq!(
+            arcanes.next_passage(&clock, at_hour(22)),
+            Some(NextPassage::Tomorrow(21))
+        );
+        assert!(arcanes.pass(&clock, at_hour(22)));
+        assert!(shows_line(
+            &arcanes,
+            &clock,
+            at_hour(22),
+            "Demain soir, vers 21 h, lève les yeux au-dessus de ta boîte aux lettres."
+        ));
+        assert_eq!(
+            arcanes.next_passage(&clock, at(21, 20, 0)),
+            Some(NextPassage::Tonight(21))
+        );
     }
 
     #[test]
     fn test_forced_day_never_saves_the_unlock() {
         let mut progress = Progress::in_memory(NaiveDate::from_ymd_opt(2026, 10, 6).unwrap());
         let mut arcanes = ArcanePost::saved(&progress);
-        assert!(TarotCard::Picked.answer("mat", &mut arcanes, evening(0).date()));
+        assert!(TarotCard::Picked.answer("mat", &mut arcanes, at_hour(0).date()));
         assert!(arcanes.write_to(&mut progress));
         assert!(progress.try_save().is_err());
     }
