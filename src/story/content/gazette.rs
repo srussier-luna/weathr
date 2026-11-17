@@ -1,10 +1,10 @@
 use super::chronicles::{ADS, RIDDLES, RUMORS};
-use super::{LETTER_FOOTER, MONTHS, MailContent, ReadContext, text};
+use super::secret_trail::second_rumor;
+use super::{INPUT_FOOTER, LETTER_FOOTER, MONTHS, MailContent, ReadContext, text, typed_answer};
 use crate::overlay::{Frame, Line, View};
 use chrono::Datelike;
 
 const RIDDLE_FOOTER: &str = "[e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]";
-const INPUT_FOOTER: &str = "Tape ta réponse puis [Entrée]  [Echap] annuler";
 
 pub struct Gazette {
     week: usize,
@@ -32,6 +32,9 @@ impl MailContent for Gazette {
         lines.extend([
             Line::Blank,
             text(format!("Les échos : {}", RUMORS[week % RUMORS.len()])),
+        ]);
+        lines.extend(second_rumor(ctx.reading_day, week, ctx.is_secret_unlocked).map(text));
+        lines.extend([
             Line::Blank,
             text(format!(
                 "Petite annonce : {}",
@@ -45,7 +48,7 @@ impl MailContent for Gazette {
             lines.push(text("Bravo, énigme résolue !"));
             LETTER_FOOTER
         } else if let Some(input) = ctx.riddle_input {
-            lines.push(text(format!("Ta réponse : {input}_")));
+            lines.push(typed_answer(input));
             INPUT_FOOTER
         } else {
             RIDDLE_FOOTER
@@ -97,6 +100,8 @@ mod tests {
                 progress,
                 clock: &clock,
                 reading_hour: 10,
+                reading_day: 30,
+                is_secret_unlocked: false,
                 riddle_input: None,
             })
         };
@@ -119,6 +124,39 @@ mod tests {
     }
 
     #[test]
+    fn test_gazette_carries_a_second_echo_from_day_42() {
+        let progress = Progress::default();
+        let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 10, 22).unwrap(), 9);
+        let gazette = Gazette::new(6, 47);
+        let compose = |reading_day, is_secret_unlocked| {
+            render(&gazette.compose(&ReadContext {
+                letters: &[],
+                progress: &progress,
+                clock: &clock,
+                reading_hour: 10,
+                reading_day,
+                is_secret_unlocked,
+                riddle_input: None,
+            }))
+        };
+        let echoes = |second: Option<&str>| {
+            let first = format!("text: Les échos : {}\n", RUMORS[6]);
+            match second {
+                Some(second) => format!("{first}text: {second}\nblank\n"),
+                None => format!("{first}blank\n"),
+            }
+        };
+
+        assert!(compose(41, false).contains(&echoes(None)));
+        let mystery = second_rumor(42, 6, false);
+        assert!(mystery.is_some());
+        assert!(compose(42, false).contains(&echoes(mystery)));
+        let arcane = second_rumor(42, 6, true);
+        assert_ne!(arcane, mystery);
+        assert!(compose(42, true).contains(&echoes(arcane)));
+    }
+
+    #[test]
     fn test_gazette_shows_forecast_lines_once_fetched() {
         let mut progress = Progress::default();
         let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 10, 22).unwrap(), 9);
@@ -129,6 +167,8 @@ mod tests {
                 progress,
                 clock: &clock,
                 reading_hour: 10,
+                reading_day: 30,
+                is_secret_unlocked: false,
                 riddle_input: None,
             }))
         };

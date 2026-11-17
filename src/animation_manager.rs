@@ -40,6 +40,7 @@ use crate::animation::{
     squirrel::Squirrel,
     stars::{ShootingStarSky, StarSystem},
     sunny::SunnyAnimation,
+    tarot_card,
     thunderstorm::ThunderstormSystem,
 };
 use crate::app_state::AppState;
@@ -110,6 +111,7 @@ pub struct AnimationManager {
     gust: Gust,
     creepy: Creepy,
     finds: Finds,
+    has_tarot_card: bool,
     star_gazing: StarGazing,
     guests: Vec<Neighbour>,
     season: Season,
@@ -165,6 +167,7 @@ impl AnimationManager {
             gust: Gust::new(),
             creepy: Creepy::new(),
             finds: Finds::new(),
+            has_tarot_card: false,
             star_gazing: StarGazing::new(),
             guests: Vec::new(),
             season: Season::default(),
@@ -228,6 +231,10 @@ impl AnimationManager {
 
     pub fn take_bottle(&mut self) -> bool {
         self.finds.take_bottle(&mut rand::rng())
+    }
+
+    pub fn set_tarot_card(&mut self, is_in_grass: bool) {
+        self.has_tarot_card = is_in_grass;
     }
 
     pub fn set_mail_hour(&mut self, hour: u32) {
@@ -520,6 +527,9 @@ impl AnimationManager {
             &mut rng,
         );
         self.finds.render(renderer, &layout, &river)?;
+        if self.has_tarot_card {
+            tarot_card::render(renderer, &layout)?;
+        }
 
         let is_staring = self.creepy.is_staring();
         self.cat.set_staring(is_staring);

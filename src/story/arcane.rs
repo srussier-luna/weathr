@@ -21,6 +21,12 @@ pub struct ArcaneRound {
     pub is_arcane_waiting: bool,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum NextPassage {
+    Tonight(u32),
+    Tomorrow(u32),
+}
+
 fn passage_hour(clock: &StoryClock, date: NaiveDate) -> u32 {
     (clock.mail_hour_on(date) + HOURS_AFTER_MAIL) % 24
 }
@@ -99,6 +105,31 @@ impl ArcanePost {
 
     pub fn is_unlocked(&self) -> bool {
         self.unlocked_on.is_some()
+    }
+
+    pub fn next_passage(&self, clock: &StoryClock, now: NaiveDateTime) -> Option<NextPassage> {
+        let today = now.date();
+        let tonight = passage_hour(clock, today);
+        let tomorrow = today
+            .succ_opt()
+            .map_or(tonight, |date| passage_hour(clock, date));
+        self.is_unlocked().then_some(if now.hour() < tonight {
+            NextPassage::Tonight(tonight)
+        } else {
+            NextPassage::Tomorrow(tomorrow)
+        })
+    }
+
+    pub fn unlock(&mut self, clock: &StoryClock, now: NaiveDateTime) -> bool {
+        let today = now.date();
+        let is_locked = self.unlocked_on.is_none();
+        if is_locked {
+            self.unlocked_on = Some(today);
+            if now.hour() >= passage_hour(clock, today) {
+                self.passed_on = Some(today);
+            }
+        }
+        is_locked
     }
 
     fn is_unlocked_on(&self, date: NaiveDate) -> bool {
@@ -211,6 +242,33 @@ mod tests {
 
     fn open(post: &mut ArcanePost, day: u32, hour: u32) {
         post.pass(&clock(), at(day, hour));
+    }
+
+    fn locked(count: usize) -> ArcanePost {
+        ArcanePost {
+            unlocked_on: None,
+            ..unlocked(count)
+        }
+    }
+
+    #[test]
+    fn test_unlock_before_the_passage_brings_an_arcane_that_evening() {
+        let mut post = locked(3);
+        assert!(post.unlock(&clock(), at(FRIDAY, 0)));
+        open(&mut post, FRIDAY, 21);
+        assert_eq!(post.received_on, [date(FRIDAY)]);
+    }
+
+    #[test]
+    fn test_unlock_after_the_passage_waits_for_the_next_evening() {
+        let mut post = locked(3);
+        assert!(post.unlock(&clock(), at(FRIDAY, 22)));
+        assert!(!post.pass(&clock(), at(FRIDAY, 22)));
+        assert!(!post.pass(&clock(), at(FRIDAY, 23)));
+        assert!(post.received_on.is_empty());
+        assert!(!post.pass(&clock(), at(SATURDAY, 20)));
+        open(&mut post, SATURDAY, 21);
+        assert_eq!(post.received_on, [date(SATURDAY)]);
     }
 
     #[test]

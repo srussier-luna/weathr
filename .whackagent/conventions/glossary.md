@@ -21,6 +21,8 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Lettre | courrier | Message | `Entry` | courrier daté d'un habitant, livré par le Facteur |
 | Carte postale | carte | | `City` | de Sam en voyage, une ville par carte |
 | Ville | | | `location.city` | ville du joueur, détectée ou choisie dans les Réglages → [[weather]] |
+| Carte de tarot | Arcane sans numéro | | `TarotCard` | carte violette du secret : apparaît au jardin après minuit, porte l'énigme qui débloque l'Arcano-Facteur → [[mail]] |
+| Personnage mystérieux | | | `MYSTERY_RUMORS`, `mystery_allusion` | sujet des rumeurs et allusions du secret avant son déblocage → [[mail]] |
 | Nuage | | | `Cloud` | traverse le ciel de gauche à droite ; blanc ciel clair, gris clair Éclaircies, gris foncé sinon → [[animation]] |
 | Position auto | détection auto | | `location.auto` | Ville détectée seule : CoreLocationCLI, cache, puis IP → [[weather]] |
 | Gazette | journal | | | chaque lundi : prévisions de la semaine, rumeurs, annonces, Énigme |

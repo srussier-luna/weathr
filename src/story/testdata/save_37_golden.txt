@@ -108,6 +108,7 @@ title: LA GAZETTE · lundi 7 septembre
 text: Ta semaine : soleil et 21 °C.
 blank
 text: Les échos : On dit que Rose prépare un croissant au chocolat… et à la noisette.
+text: On raconte qu'une lueur violette a traversé le ciel au-dessus du lavoir, bien après minuit.
 blank
 text: Petite annonce : Échange recette de tarte contre secret de pêche. Écrire à Paulo.
 rule
@@ -218,6 +219,7 @@ title: LA GAZETTE · lundi 14 septembre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Gaston aurait été vu en train de parler à sa sacoche. Il dément.
+text: Le boulanger jure avoir vu un vieil homme assis… dans les airs. Il dit qu'il ne boit que de l'eau.
 blank
 text: Petite annonce : Donne cartes anciennes. Certaines mènent quelque part.
 rule
@@ -323,6 +325,7 @@ title: LA GAZETTE · lundi 21 septembre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Le canard de la mare a été élu « canard le plus bavard » du canton.
+text: Quelqu'un aurait laissé une carte sur le banc du square. Personne n'a osé la retourner.
 blank
 text: Petite annonce : Cherche fanfare pour la fête. Une trompette suffira.
 rule
@@ -429,6 +432,7 @@ title: LA GAZETTE · lundi 28 septembre
 text: Ta semaine : pluie.
 blank
 text: Les échos : Quelqu'un a repeint la boîte aux lettres de la mairie en rose. Enquête en cours.
+text: Les chats du village fixent tous le même coin de ciel, les nuits sans lune.
 blank
 text: Petite annonce : Perdu : noisettes, quantité inconnue. Contacter Noisette, grand arbre.
 rule
@@ -544,6 +548,7 @@ title: LA GAZETTE · lundi 5 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Paulo a pêché une botte. Il la garde « pour la paire ».
+text: Une voix très vieille, très douce, fredonne parfois vers minuit, du côté de chez toi.
 blank
 text: Petite annonce : Vends parapluie jamais servi. Léo préfère les flaques.
 rule
@@ -634,6 +639,8 @@ frame: Wet
 title: Lettre 64/84
 text: Coin coin ! Des canetons sont nés au bord de la mare. Ils me suivent partout, même sous la pluie. Surtout sous la pluie.
 blank
+text: P.-S. : Tu n'as rien vu passer cette nuit ? J'ai cru… non, rien.
+blank
 text: — Coin-Coin, le canard
 blank
 text: Question : Un dernier œuf n'a pas encore éclos. On l'attend ?
@@ -645,6 +652,7 @@ title: LA GAZETTE · lundi 12 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Les chats du village tiendraient des réunions secrètes sur le toit de l'église.
+text: Certaines nuits, il manquerait une étoile. Elle ne serait jamais loin.
 blank
 text: Petite annonce : Donne bocaux de confiture de mûres, récolte miraculeuse.
 rule
@@ -677,6 +685,8 @@ frame: Parchment
 == entry 78 night false
 title: Lettre 68/84
 text: J'ai retrouvé une noisette ! Ah non, c'est un bouton. Ça compte quand même. Tchic.
+blank
+text: P.-S. : Ma grand-mère disait qu'à minuit, le jardin garde ce qu'on y perd.
 blank
 text: — Noisette, l'écureuil
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -728,6 +738,8 @@ frame: Postcard
 title: Lettre 73/84
 text: Je suis arrivé à la boîte aux lettres ! Il m'a fallu des semaines. Maintenant, je repars vers la mare. À dans un mois.
 blank
+text: P.-S. : Drôle de lumière violette hier soir. Sûrement l'orage.
+blank
 text: — Gustave, l'escargot
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
@@ -743,6 +755,7 @@ title: LA GAZETTE · lundi 19 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Odile cherche un nom pour le chemin qui mène au puits. Les propositions sont ouvertes.
+text: On raconte qu'une lueur violette a traversé le ciel au-dessus du lavoir, bien après minuit.
 blank
 text: Petite annonce : Cours de hululement le jeudi soir. Débutants acceptés.
 rule
@@ -768,6 +781,8 @@ frame: Parchment
 == entry 90 night false
 title: Lettre 77/84
 text: Les canetons veulent apprendre à sauter comme moi. Ils tombent tous dans la mare. C'est normal, c'est une mare.
+blank
+text: P.-S. : Les cartes trouvées la nuit ne se ramassent pas par hasard, paraît-il.
 blank
 text: — Rainette, la grenouille
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -810,6 +825,8 @@ frame: Wet
 title: Lettre 81/84
 text: Mes chatons ont appris à grimper sur la cheminée. Ils disent que, de là-haut, on entend mieux les étoiles. Je fais semblant de ne pas les connaître.
 blank
+text: P.-S. : Si tu entends un froissement de paille au-dessus du toit, ne te retourne pas trop vite.
+blank
 text: — Minouche, la chatte du toit
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
@@ -847,6 +864,7 @@ title: LA GAZETTE · lundi 26 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Léo affirme avoir vu un écureuil faire ses comptes.
+text: Le boulanger jure avoir vu un vieil homme assis… dans les airs. Il dit qu'il ne boit que de l'eau.
 blank
 text: Petite annonce : Perdu clé ancienne. Elle ouvre quelque chose d'important. On ne sait pas quoi.
 rule
@@ -938,6 +956,7 @@ title: LA GAZETTE · lundi 7 septembre
 text: Ta semaine : soleil et 21 °C.
 blank
 text: Les échos : On dit que Rose prépare un croissant au chocolat… et à la noisette.
+text: On raconte qu'une lueur violette a traversé le ciel au-dessus du lavoir, bien après minuit.
 blank
 text: Petite annonce : Échange recette de tarte contre secret de pêche. Écrire à Paulo.
 rule
@@ -1062,6 +1081,7 @@ title: LA GAZETTE · lundi 14 septembre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Gaston aurait été vu en train de parler à sa sacoche. Il dément.
+text: Le boulanger jure avoir vu un vieil homme assis… dans les airs. Il dit qu'il ne boit que de l'eau.
 blank
 text: Petite annonce : Donne cartes anciennes. Certaines mènent quelque part.
 rule
@@ -1181,6 +1201,7 @@ title: LA GAZETTE · lundi 21 septembre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Le canard de la mare a été élu « canard le plus bavard » du canton.
+text: Quelqu'un aurait laissé une carte sur le banc du square. Personne n'a osé la retourner.
 blank
 text: Petite annonce : Cherche fanfare pour la fête. Une trompette suffira.
 rule
@@ -1301,6 +1322,7 @@ title: LA GAZETTE · lundi 28 septembre
 text: Ta semaine : pluie.
 blank
 text: Les échos : Quelqu'un a repeint la boîte aux lettres de la mairie en rose. Enquête en cours.
+text: Les chats du village fixent tous le même coin de ciel, les nuits sans lune.
 blank
 text: Petite annonce : Perdu : noisettes, quantité inconnue. Contacter Noisette, grand arbre.
 rule
@@ -1430,6 +1452,7 @@ title: LA GAZETTE · lundi 5 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Paulo a pêché une botte. Il la garde « pour la paire ».
+text: Une voix très vieille, très douce, fredonne parfois vers minuit, du côté de chez toi.
 blank
 text: Petite annonce : Vends parapluie jamais servi. Léo préfère les flaques.
 rule
@@ -1532,6 +1555,8 @@ frame: Wet
 title: Lettre 64/84
 text: Coin coin ! Des canetons sont nés au bord de la mare. Ils me suivent partout, même sous la pluie. Surtout sous la pluie.
 blank
+text: P.-S. : Tu n'as rien vu passer cette nuit ? J'ai cru… non, rien.
+blank
 text: P.-S. : ne lis pas cette lettre près de la fenêtre.
 blank
 text: — Coin-Coin, le canard
@@ -1545,6 +1570,7 @@ title: LA GAZETTE · lundi 12 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Les chats du village tiendraient des réunions secrètes sur le toit de l'église.
+text: Certaines nuits, il manquerait une étoile. Elle ne serait jamais loin.
 blank
 text: Petite annonce : Donne bocaux de confiture de mûres, récolte miraculeuse.
 rule
@@ -1581,6 +1607,8 @@ frame: Parchment
 == entry 78 night true
 title: Lettre 68/84
 text: J'ai retrouvé une noisette ! Ah non, c'est un bouton. Ça compte quand même. Tchic.
+blank
+text: P.-S. : Ma grand-mère disait qu'à minuit, le jardin garde ce qu'on y perd.
 blank
 text: P.-S. : il y a de la boue sur ton paillasson. Elle n'est pas à toi.
 blank
@@ -1638,6 +1666,8 @@ frame: Postcard
 title: Lettre 73/84
 text: Je suis arrivé à la boîte aux lettres ! Il m'a fallu des semaines. Maintenant, je repars vers la mare. À dans un mois.
 blank
+text: P.-S. : Drôle de lumière violette hier soir. Sûrement l'orage.
+blank
 text: P.-S. : tu entends le puits ?
 blank
 text: — Gustave, l'escargot
@@ -1657,6 +1687,7 @@ title: LA GAZETTE · lundi 19 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Odile cherche un nom pour le chemin qui mène au puits. Les propositions sont ouvertes.
+text: On raconte qu'une lueur violette a traversé le ciel au-dessus du lavoir, bien après minuit.
 blank
 text: Petite annonce : Cours de hululement le jeudi soir. Débutants acceptés.
 rule
@@ -1684,6 +1715,8 @@ frame: Parchment
 == entry 90 night true
 title: Lettre 77/84
 text: Les canetons veulent apprendre à sauter comme moi. Ils tombent tous dans la mare. C'est normal, c'est une mare.
+blank
+text: P.-S. : Les cartes trouvées la nuit ne se ramassent pas par hasard, paraît-il.
 blank
 text: P.-S. (d'une autre écriture, au crayon) : tu as oublié d'éteindre en bas.
 blank
@@ -1732,6 +1765,8 @@ frame: Wet
 title: Lettre 81/84
 text: Mes chatons ont appris à grimper sur la cheminée. Ils disent que, de là-haut, on entend mieux les étoiles. Je fais semblant de ne pas les connaître.
 blank
+text: P.-S. : Si tu entends un froissement de paille au-dessus du toit, ne te retourne pas trop vite.
+blank
 text: P.-S. : quelqu'un a lu cette lettre avant toi.
 blank
 text: — Minouche, la chatte du toit
@@ -1775,6 +1810,7 @@ title: LA GAZETTE · lundi 26 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Léo affirme avoir vu un écureuil faire ses comptes.
+text: Le boulanger jure avoir vu un vieil homme assis… dans les airs. Il dit qu'il ne boit que de l'eau.
 blank
 text: Petite annonce : Perdu clé ancienne. Elle ouvre quelque chose d'important. On ne sait pas quoi.
 rule
