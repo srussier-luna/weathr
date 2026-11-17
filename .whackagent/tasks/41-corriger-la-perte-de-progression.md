@@ -1,6 +1,6 @@
 ---
 issue: 41
-status: todo
+status: to-test
 wiki: [[mail]], [[render]]
 note: "Protéger la progression : si progress.json est abîmé, weathr repart de zéro sans prévenir et écrase le fichier ; garder une copie de secours et afficher un message"
 created: 2026-10-27
@@ -38,8 +38,29 @@ created: 2026-10-27
 
 ## Implementation
 
+- Branche remise à jour depuis `develop` (fusion, plus d'un mois de retard).
+- `src/progress.rs` : `Progress::load() -> (Self, Option<PathBuf>)`, le second élément est le chemin de la copie. Fichier présent mais illisible → renommé `progress.json.abime-YYYY-MM-DD-HHMM`, jamais écrasé, nouvelle partie (`Progress::default()` + date du jour). `load_from_path(path, now)` / `save_to_path(path)` sur le modèle de `Config`. Renommage impossible → partie en mémoire seulement (`in_memory`), ni boîte ni copie.
+- Écriture sûre : `progress.json.tmp` écrit, `sync_all`, puis renommé ; en cas d'erreur, le `.tmp` est supprimé.
+- `src/overlay.rs` : `Frame::Floppy` (`+-[#]---…+`, `| … |`, `+---…+`, gris-bleu RGB 150, 165, 190).
+- `src/views.rs` : vue « Sauvegarde » avec le chemin de la copie.
+- `src/app.rs` : `Overlay::Backup { shows_welcome }` + champ `App::backup` ; seuls `Esc` / `Entrée` la ferment (`q` quitte toujours), pour ne pas laisser le Facteur de l'Accueil bloqué devant la porte. Ordre : Sauvegarde → Accueil (nouvelle partie, `welcome_seen` faux, règle de #53) → Nouveautés.
+- Modes forcés (`--simulate`, `--demo`, `--silent`, `--night`) : copie + boîte quand même. `--day N` : fichier jamais touché.
+- Limite : un chemin plus large que la boîte dépasse le cadre (`wrap` ne coupe jamais un mot) ; les chemins réels tiennent à 80 colonnes.
+- Glossaire à ajouter à la clôture : Sauvegarde (`Progress`, `progress.json`), Copie de secours (`backup`, `progress.json.abime-…`).
+- Build : `cargo build`, `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use`, `cargo test` (492, 0 échec) verts.
+
 ## Review
 
 ## Verification
+
+Autopilot, binaire debug, HOME jetable, pseudo-terminal (implémenteur) :
+- ✅ `{oops` → boîte Sauvegarde, cadre floppy, chemin de la copie ; copie = `{oops` octet pour octet.
+- ✅ Même lancement : nouvelle partie, « Jour 1 », `progress.json` valide.
+- ⚠️ `Esc` → Accueil (nouvelle partie) → `Esc` → Nouveautés : l'Accueil passe entre les deux (spec écrite avant #53).
+- ✅ Lancement suivant : ni boîte ni nouvelle copie.
+- ✅ Sans `progress.json` : ni boîte ni copie, Accueil seul.
+- ✅ Aucun `.tmp` laissé, jamais de fichier tronqué (test).
+- ✅ Nom de copie à date fixe (test).
+- ✅ `--simulate rain` : copie + boîte ; `--day 3` : fichier intact.
 
 ## Feedback
