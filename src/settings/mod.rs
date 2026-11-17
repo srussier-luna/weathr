@@ -2,7 +2,7 @@ mod city;
 
 pub use city::{CitySearch, SearchStatus};
 
-use crate::config::{MAIL_HOURS, Setting};
+use crate::config::{Setting, clamp_mail_hour};
 use crate::weather::WeatherUnits;
 use crate::weather::types::{PrecipitationUnit, TemperatureUnit, WindSpeedUnit};
 use tokio::sync::oneshot;
@@ -63,11 +63,13 @@ impl Settings {
             Row::Precipitation => {
                 Setting::Precipitation(cycle(&PRECIPITATIONS, self.units.precipitation, step))
             }
-            Row::MailHour => Setting::MailHour(
-                self.mail_hour
-                    .saturating_add_signed(step as i32)
-                    .clamp(*MAIL_HOURS.start(), *MAIL_HOURS.end()),
-            ),
+            Row::MailHour => {
+                let hour = clamp_mail_hour(self.mail_hour.saturating_add_signed(step as i32));
+                if hour == self.mail_hour {
+                    return None;
+                }
+                Setting::MailHour(hour)
+            }
             Row::Hud => Setting::HideHud(!self.hide_hud),
             Row::City | Row::AutoLocation => return None,
         })
@@ -144,10 +146,7 @@ mod tests {
     fn test_mail_hour_stops_at_14() {
         let mut settings = settings();
         settings.mail_hour = 14;
-        assert_eq!(
-            settings.stepped(Row::MailHour, 1),
-            Some(Setting::MailHour(14))
-        );
+        assert_eq!(settings.stepped(Row::MailHour, 1), None);
         assert_eq!(
             settings.stepped(Row::MailHour, -1),
             Some(Setting::MailHour(13))
@@ -158,10 +157,7 @@ mod tests {
     fn test_mail_hour_stops_at_6() {
         let mut settings = settings();
         settings.mail_hour = 6;
-        assert_eq!(
-            settings.stepped(Row::MailHour, -1),
-            Some(Setting::MailHour(6))
-        );
+        assert_eq!(settings.stepped(Row::MailHour, -1), None);
         assert_eq!(
             settings.stepped(Row::MailHour, 1),
             Some(Setting::MailHour(7))

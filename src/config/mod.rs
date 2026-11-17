@@ -1,6 +1,6 @@
 mod writer;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::env;
 use std::fs;
 use std::ops::RangeInclusive;
@@ -13,7 +13,7 @@ use crate::weather::types::{PrecipitationUnit, TemperatureUnit, WeatherUnits, Wi
 
 pub const ENV_LATITUDE: &str = "WEATHR_LATITUDE";
 pub const ENV_LONGITUDE: &str = "WEATHR_LONGITUDE";
-pub const MAIL_HOURS: RangeInclusive<u32> = 6..=14;
+const MAIL_HOURS: RangeInclusive<u32> = 6..=14;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -40,7 +40,11 @@ pub struct Config {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Mail {
-    #[serde(default = "default_mail_hour", rename = "heure")]
+    #[serde(
+        default = "default_mail_hour",
+        rename = "heure",
+        deserialize_with = "deserialize_mail_hour"
+    )]
     pub hour: u32,
 }
 
@@ -54,6 +58,14 @@ impl Default for Mail {
 
 fn default_mail_hour() -> u32 {
     9
+}
+
+fn deserialize_mail_hour<'de, D: Deserializer<'de>>(deserializer: D) -> Result<u32, D::Error> {
+    u32::deserialize(deserializer).map(clamp_mail_hour)
+}
+
+pub fn clamp_mail_hour(hour: u32) -> u32 {
+    hour.clamp(*MAIL_HOURS.start(), *MAIL_HOURS.end())
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -239,10 +251,6 @@ impl Config {
 
         if self.location.longitude < -180.0 || self.location.longitude > 180.0 {
             return Err(ConfigError::InvalidLongitude(self.location.longitude));
-        }
-
-        if !MAIL_HOURS.contains(&self.mail.hour) {
-            return Err(ConfigError::InvalidMailHour(self.mail.hour));
         }
 
         Ok(())
@@ -790,29 +798,36 @@ auto = false
         }
     }
 
-    #[test]
-    fn test_mail_hour_from_config() {
-        for hour in [6, 14] {
-            let config: Config = toml::from_str(&format!("[courrier]\nheure = {hour}")).unwrap();
-            assert_eq!(config.mail.hour, hour);
-            assert!(config.validate().is_ok());
-        }
-
-        let config: Config = toml::from_str("").unwrap();
-        assert_eq!(config.mail.hour, 9);
-        assert!(config.validate().is_ok());
+    fn load_config_file(name: &str, content: &str) -> Config {
+        let path =
+            std::env::temp_dir().join(format!("weathr_test_{name}_{}.toml", std::process::id()));
+        fs::write(&path, content).unwrap();
+        let config = Config::load_from_path(&path).unwrap();
+        fs::remove_file(path).ok();
+        config
     }
 
     #[test]
-    fn test_mail_hour_outside_6_to_14_is_rejected() {
-        for hour in [5, 15] {
-            let config: Config = toml::from_str(&format!("[courrier]\nheure = {hour}")).unwrap();
-            let error = config.validate().unwrap_err();
-            assert_eq!(error.kind(), "InvalidMailHour");
-            assert_eq!(
-                error.to_string(),
-                format!("invalid mail hour {hour} (must be between 6 and 14)")
+    fn test_mail_hour_from_config() {
+        for hour in [6, 14] {
+            let config = load_config_file("mail_hour", &format!("[courrier]\nheure = {hour}"));
+            assert_eq!(config.mail.hour, hour);
+        }
+
+        let config = load_config_file("mail_hour", "");
+        assert_eq!(config.mail.hour, 9);
+    }
+
+    #[test]
+    fn test_mail_hour_outside_6_to_14_is_brought_back() {
+        for (saved, loaded) in [(0, 6), (5, 6), (15, 14), (23, 14)] {
+            let config = load_config_file(
+                "mail_hour_outside",
+                &format!("[location]\ncity = \"Lyon\"\n\n[courrier]\nheure = {saved}"),
             );
+            assert_eq!(config.mail.hour, loaded);
+            assert_eq!(config.location.city.as_deref(), Some("Lyon"));
+            assert!(config.validate().is_ok());
         }
     }
 
@@ -825,7 +840,7 @@ auto = false
             Setting::Temperature(TemperatureUnit::Fahrenheit),
             Setting::WindSpeed(WindSpeedUnit::Kn),
             Setting::Precipitation(PrecipitationUnit::Inch),
-            Setting::MailHour(23),
+            Setting::MailHour(14),
             Setting::HideHud(true),
         ] {
             Config::save_to_path(&path, setting).unwrap();
@@ -835,7 +850,7 @@ auto = false
         assert_eq!(config.units.temperature, TemperatureUnit::Fahrenheit);
         assert_eq!(config.units.wind_speed, WindSpeedUnit::Kn);
         assert_eq!(config.units.precipitation, PrecipitationUnit::Inch);
-        assert_eq!(config.mail.hour, 23);
+        assert_eq!(config.mail.hour, 14);
         assert!(config.hide_hud);
     }
 
