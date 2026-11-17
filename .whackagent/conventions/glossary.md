@@ -47,6 +47,9 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Perséides | | | | étoiles filantes plus fréquentes la nuit, du 9 au 15 août ; Badge dédié |
 | Géminides | | | | étoiles filantes plus fréquentes la nuit, du 10 au 16 décembre ; Badge dédié |
 | Boîte pleine | | | | 7 Lettres du village non lues ; l'histoire se met en pause |
+| Tricheur | anti-Badge | | `cheater` | anti-Badge de la 1re triche, gardé pour toujours → [[mail]] |
+| Village dégarni | | | `bare_village` | Habitants partis, Arbre sans feuilles : punition de triche |
+| Jours sans courrier | | | `mail_ban` | 3e triche et suivantes : Jour de jeu figé, rien livré |
 | Ruche | | | | cadeau de Nadia et Claire, entre le sapin et la mare |
 | Poulailler | | | | abri des poules la nuit et sous la pluie, au jardin et au Potager |
 | Carré | parcelle | case | | une des 9 planches du Potager : vide, plantée, fanée, mûre |
@@ -68,6 +71,7 @@ One precise screen. Team names, in the discussion language. UI projects only.
 | Fête du miel | scène de fête | | maison de Nadia et Claire, Jours de jeu 119–120 seulement |
 | Lieux | menu des lieux | | menu touche m : Jardin, Potager, Fête du miel disponibles |
 | Accueil | onboarding | `welcome` | Facteur arrive, bulle, note dépliée, bulle de départ ; une fois par joueur |
+| Mot des voisins | | `neighbours_note` | fenêtre à l'ouverture : triche repérée, punition, voisins déçus |
 | Réglages | | `settings_view` | écran ouvert par `s` : unités, Heure du Facteur, Barre du haut, Ville, Position auto → [[architecture]] |
 <!-- | Login screen | login page | `LoginView` | email + password, forgot-password link | -->
 
