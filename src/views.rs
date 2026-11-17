@@ -101,16 +101,27 @@ pub fn postman_note_view(back_to_school: NaiveDate) -> View {
     }
 }
 
-pub fn backup_view(backup: &Path) -> View {
+fn backup_box(line: String) -> View {
     View {
         title: "Sauvegarde".to_string(),
-        lines: vec![text(format!(
-            "Ta progression n'a pas pu être lue. Une copie est gardée dans {}. Une nouvelle partie commence.",
-            backup.display()
-        ))],
+        lines: vec![text(line)],
         footer: BACKUP_FOOTER.to_string(),
         frame: Frame::Floppy,
     }
+}
+
+pub fn backup_view(backup: &Path) -> View {
+    backup_box(format!(
+        "Ta progression n'a pas pu être lue. Une copie est gardée dans {}. Une nouvelle partie commence.",
+        backup.display()
+    ))
+}
+
+pub fn restored_view() -> View {
+    backup_box(
+        "Ta progression n'a pas pu être lue. Ta partie reprend à la dernière sauvegarde."
+            .to_string(),
+    )
 }
 
 pub fn full_box_index_view(
@@ -617,6 +628,17 @@ mod tests {
             "title: Sauvegarde\n\
              text: Ta progression n'a pas pu être lue. Une copie est gardée dans \
              /weathr/progress.json.abime-2026-11-07-1432. Une nouvelle partie commence.\n\
+             footer: [Entrée] ou [Echap] fermer\n\
+             frame: Floppy\n"
+        );
+    }
+
+    #[test]
+    fn test_restored_box_says_the_game_resumes_in_the_floppy_frame() {
+        assert_eq!(
+            render(&restored_view()),
+            "title: Sauvegarde\n\
+             text: Ta progression n'a pas pu être lue. Ta partie reprend à la dernière sauvegarde.\n\
              footer: [Entrée] ou [Echap] fermer\n\
              frame: Floppy\n"
         );
