@@ -2,7 +2,7 @@ mod city;
 
 pub use city::{CitySearch, SearchStatus};
 
-use crate::config::Setting;
+use crate::config::{Setting, clamp_mail_hour};
 use crate::weather::WeatherUnits;
 use crate::weather::types::{PrecipitationUnit, TemperatureUnit, WindSpeedUnit};
 use tokio::sync::oneshot;
@@ -15,7 +15,6 @@ const WIND_SPEEDS: [WindSpeedUnit; 4] = [
     WindSpeedUnit::Kn,
 ];
 const PRECIPITATIONS: [PrecipitationUnit; 2] = [PrecipitationUnit::Mm, PrecipitationUnit::Inch];
-const HOURS_PER_DAY: isize = 24;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Row {
@@ -65,7 +64,11 @@ impl Settings {
                 Setting::Precipitation(cycle(&PRECIPITATIONS, self.units.precipitation, step))
             }
             Row::MailHour => {
-                Setting::MailHour((self.mail_hour as isize + step).rem_euclid(HOURS_PER_DAY) as u32)
+                let hour = clamp_mail_hour(self.mail_hour.saturating_add_signed(step as i32));
+                if hour == self.mail_hour {
+                    return None;
+                }
+                Setting::MailHour(hour)
             }
             Row::Hud => Setting::HideHud(!self.hide_hud),
             Row::City | Row::AutoLocation => return None,
@@ -140,17 +143,24 @@ mod tests {
     }
 
     #[test]
-    fn test_mail_hour_wraps_around_the_day() {
+    fn test_mail_hour_stops_at_14() {
         let mut settings = settings();
-        settings.mail_hour = 23;
-        assert_eq!(
-            settings.stepped(Row::MailHour, 1),
-            Some(Setting::MailHour(0))
-        );
-        settings.mail_hour = 0;
+        settings.mail_hour = 14;
+        assert_eq!(settings.stepped(Row::MailHour, 1), None);
         assert_eq!(
             settings.stepped(Row::MailHour, -1),
-            Some(Setting::MailHour(23))
+            Some(Setting::MailHour(13))
+        );
+    }
+
+    #[test]
+    fn test_mail_hour_stops_at_6() {
+        let mut settings = settings();
+        settings.mail_hour = 6;
+        assert_eq!(settings.stepped(Row::MailHour, -1), None);
+        assert_eq!(
+            settings.stepped(Row::MailHour, 1),
+            Some(Setting::MailHour(7))
         );
     }
 
