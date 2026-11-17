@@ -70,6 +70,10 @@ Rides in to **arrive at mailbox exactly at `courrier.heure`**: departure time ba
 
 Accueil visit (see [[mail]]): `visit` → `Arriving` (2.5 s ride) → `Staying` at mailbox, no labels, daily round can't start. `leave` rides off when the Accueil ends (last `Entrée` or `Échap`); still off-screen → just stays hidden. `head` = bubble anchor. No mailbox (narrow terminal) → never visible.
 
+## Arcano-Facteur — `src/animation/arcane.rs`
+
+Secret second Facteur (sprint « Le secret », #114): old violet mage on a brown broom, flies at fixed altitude, never lands. Passes every evening at Heure du Facteur + 12 h once the secret is unlocked ([[mail]]). `ArcanoPostman` (`:60`) gets a `Round { hour, visit, is_arcane_waiting }` (`:46`) pushed by `App::refresh_arcanes` (`src/app.rs:673`) through `mage_round` (`src/app.rs:70`): animation never imports `story` (the lib crate compiles `animation` without it). `Visit` (`:39`): `PassesBy` → crosses the screen; `Drops` → stops above the Boîte violette, Invocation (wand + sparkles, 3–9 s), turquoise flag (RGB 64, 224, 208) on the box; `HasDropped` → flag stays. Shares the Facteur's clock (`round_due`, `ride_time`, `src/animation/postman.rs:30`). `--arcane` (hidden flag) = sample round with Arcane n° 0, no Accueil, no Notes (`launch_for`, `src/app.rs:209`).
+
 ## Demo — `src/demo.rs`
 
 `--demo` cycles every weather condition by day and night, then Fête scenes, 1 s each, label in HUD.
