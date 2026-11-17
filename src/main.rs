@@ -4,13 +4,12 @@ mod app;
 mod app_state;
 mod badges;
 mod cache;
-mod chronicles;
 mod config;
 mod demo;
+mod diagnostic;
 mod error;
 mod geolocation;
 mod holiday;
-mod letters;
 mod overlay;
 mod progress;
 mod rain_alert;
@@ -18,6 +17,8 @@ mod release_notes;
 mod remote_weather;
 mod render;
 mod scene;
+mod settings;
+mod story;
 mod updater;
 mod views;
 mod weather;
@@ -32,7 +33,7 @@ use crossterm::{
     terminal::{LeaveAlternateScreen, disable_raw_mode},
 };
 use render::TerminalRenderer;
-use std::{io, panic};
+use std::{io, num::NonZeroU16, panic};
 
 const LONG_VERSION: &str = concat!(
     env!("CARGO_PKG_VERSION"),
@@ -83,8 +84,21 @@ struct Cli {
     #[arg(long, help = "Simulate July 14th fireworks (at night)")]
     fireworks: bool,
 
+    #[arg(long, help = "Simulate the neighbours' party (table in the garden)")]
+    neighbours: bool,
+
+    #[arg(long, help = "Simulate June 21st Music Day (notes from the windows)")]
+    music: bool,
+
     #[arg(long, help = "Cycle through every weather scene, 1 second each")]
     demo: bool,
+
+    #[arg(
+        long,
+        value_name = "N",
+        help = "Preview the story on day N in a fresh game, without touching your save"
+    )]
+    day: Option<NonZeroU16>,
 
     #[arg(long, help = "Auto-detect location via IP (uses ipinfo.io)")]
     auto_location: bool,
@@ -120,6 +134,12 @@ struct Cli {
         help = "Update weathr from its git repository, then rebuild and reinstall it"
     )]
     update: bool,
+
+    #[arg(
+        long,
+        help = "Check git, cargo, the source clone, the network and file rights, then say what to fix"
+    )]
+    diagnostic: bool,
 }
 
 #[tokio::main]
@@ -177,6 +197,13 @@ async fn main() -> io::Result<()> {
         let mut cmd = Cli::command();
         let mut out = io::stdout();
         generate(shell, &mut cmd, "weathr", &mut out);
+        return Ok(());
+    }
+
+    if cli.diagnostic {
+        if !diagnostic::run().await {
+            std::process::exit(1);
+        }
         return Ok(());
     }
 
@@ -328,10 +355,15 @@ async fn main() -> io::Result<()> {
                 Some(holiday::Holiday::christmas())
             } else if cli.fireworks {
                 Some(holiday::Holiday::national_day())
+            } else if cli.neighbours {
+                Some(holiday::Holiday::neighbours_party())
+            } else if cli.music {
+                Some(holiday::Holiday::music_day())
             } else {
                 None
             },
             demo: cli.demo,
+            day: cli.day,
         },
         cli.leaves,
         term_width,
@@ -353,4 +385,31 @@ async fn main() -> io::Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_day_flag_parses_positive_days() {
+        let cli = Cli::try_parse_from(["weathr", "--day", "12"]).unwrap();
+        assert_eq!(cli.day.map(NonZeroU16::get), Some(12));
+    }
+
+    #[test]
+    fn test_day_flag_refuses_zero() {
+        assert!(Cli::try_parse_from(["weathr", "--day", "0"]).is_err());
+    }
+
+    #[test]
+    fn test_day_flag_refuses_huge_days() {
+        assert!(Cli::try_parse_from(["weathr", "--day", "100000000"]).is_err());
+    }
+
+    #[test]
+    fn test_help_lists_day_flag() {
+        let help = Cli::command().render_help().to_string();
+        assert!(help.contains("--day <N>"));
+    }
 }

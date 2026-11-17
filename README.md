@@ -78,6 +78,7 @@ weathr --simulate snow --night
 # Fêtes
 weathr --christmas
 weathr --fireworks
+weathr --music
 
 # Feuilles qui tombent et rafales
 weathr --simulate clear --leaves
@@ -193,7 +194,7 @@ wind_speed = "kmh"          # "kmh", "ms", "mph" ou "kn"
 precipitation = "mm"        # "mm" ou "inch"
 
 [courrier]
-# Heure d'arrivée du courrier (0 à 23)
+# Heure du Facteur (6 à 14)
 heure = 9
 ```
 

@@ -56,17 +56,19 @@ impl Frog {
         }
     }
 
-    pub fn render(
+    pub fn head(
         &self,
-        renderer: &mut TerminalRenderer,
         layout: &GardenLayout,
         conditions: &WeatherConditions,
-        unlocks: &Unlocks,
-    ) -> io::Result<()> {
+    ) -> Option<(u16, u16)> {
         if !Self::is_visible(conditions) {
-            return Ok(());
+            return None;
         }
+        let (x, y) = self.position(layout);
+        Some((x + 2, y))
+    }
 
+    fn position(&self, layout: &GardenLayout) -> (u16, u16) {
         let pond = puddle_x(layout.width);
         let bank_x = pond.saturating_sub(BANK_OFFSET) as f32;
         let pond_x = (pond + POND_OFFSET) as f32;
@@ -83,16 +85,32 @@ impl Frog {
         };
         let x = from + (to - from) * progress;
         let lift = (progress * std::f32::consts::PI).sin() * 2.0;
-        let y = layout.horizon_y.saturating_sub(1 + lift.round() as u16);
+        (
+            x as u16,
+            layout.horizon_y.saturating_sub(1 + lift.round() as u16),
+        )
+    }
 
-        garden::draw(renderer, x as u16, y, &SPRITE, Color::Green)?;
-        renderer.render_char(x as u16 + 1, y, '@', Color::Yellow)?;
-        renderer.render_char(x as u16 + 4, y, '@', Color::Yellow)?;
+    pub fn render(
+        &self,
+        renderer: &mut TerminalRenderer,
+        layout: &GardenLayout,
+        conditions: &WeatherConditions,
+        unlocks: &Unlocks,
+    ) -> io::Result<()> {
+        if !Self::is_visible(conditions) {
+            return Ok(());
+        }
+
+        let (x, y) = self.position(layout);
+        garden::draw(renderer, x, y, &SPRITE, Color::Green)?;
+        renderer.render_char(x + 1, y, '@', Color::Yellow)?;
+        renderer.render_char(x + 4, y, '@', Color::Yellow)?;
 
         if self.splash.is_visible() {
             garden::draw_solid(
                 renderer,
-                x as u16,
+                x,
                 y.saturating_sub(1),
                 &[if unlocks.choices.frog_croak {
                     "Croâ !"

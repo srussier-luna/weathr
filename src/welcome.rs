@@ -6,7 +6,6 @@ pub const DEPARTURE: &str = "Je viens de te déposer ton courrier. Moi, je file,
 pub const FOOTER: &str = "[Entrée] suite  [Echap] passer";
 pub const NOTE_FRAME: Frame = Frame::Parchment;
 const TITLE: &str = "Bienvenue au village";
-const SIGNATURE: &str = "— Le Facteur";
 const UNFOLD_FRAMES: u16 = 20;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -80,7 +79,7 @@ fn note() -> Vec<Line> {
             "Prends ton temps. Le village n'est pas pressé. Lis bien tout. Certains détails comptent plus qu'ils n'en ont l'air\u{202F};)",
         ),
         Line::Blank,
-        text(SIGNATURE),
+        text(views::POSTMAN_SIGNATURE),
     ]
 }
 
@@ -215,7 +214,7 @@ mod tests {
         assert_eq!(last, lines.len() - rows_shown);
         assert_eq!(
             rows(&note_view(last, rows_shown, width)).last(),
-            Some(&SIGNATURE)
+            Some(&views::POSTMAN_SIGNATURE)
         );
         assert!(lines.iter().all(|line| line.chars().count() <= width));
         assert!(
