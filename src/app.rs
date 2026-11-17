@@ -9,7 +9,7 @@ use crate::error::{GeolocationError, WeatherError};
 use crate::geolocation::{self, GeoLocation};
 use crate::holiday::{Holiday, MeteorShower};
 use crate::overlay;
-use crate::progress::Progress;
+use crate::progress::{Opening, Progress, Recovery};
 use crate::rain_alert::{self, RainAlert};
 use crate::release_notes::{self, Section};
 use crate::remote_weather::{self, Reply, Request};
@@ -21,6 +21,7 @@ use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, 
 use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
 use crate::story::postman_note::{self, MailStep};
+use crate::story::reach::Reach;
 use crate::story::{Entry, StoryClock, Thing, Timeline, pause, sources};
 use crate::updater;
 use crate::views;
@@ -200,11 +201,20 @@ fn notes_overlay(has_notes: bool) -> Option<Overlay> {
     has_notes.then_some(Overlay::Notes(0))
 }
 
-fn opening_overlay(shows_welcome: bool, has_notes: bool) -> Option<Overlay> {
-    if shows_welcome {
+fn opening_overlay(has_backup: bool, shows_welcome: bool, has_notes: bool) -> Option<Overlay> {
+    if has_backup {
+        Some(Overlay::Backup { shows_welcome })
+    } else if shows_welcome {
         Some(Overlay::Welcome(Step::Arriving))
     } else {
         notes_overlay(has_notes)
+    }
+}
+
+fn backup_after_key(shows_welcome: bool, code: KeyCode, has_notes: bool) -> Option<Overlay> {
+    match code {
+        KeyCode::Esc | KeyCode::Enter => opening_overlay(false, shows_welcome, has_notes),
+        _ => Some(Overlay::Backup { shows_welcome }),
     }
 }
 
@@ -263,6 +273,24 @@ fn shows_every_habitant(is_forced: bool, day: Option<NonZeroU16>) -> bool {
 
 fn build_timeline(village_count: usize, clock: &StoryClock, today: usize) -> Timeline {
     Timeline::new(&sources::registered(village_count), clock, today)
+}
+
+fn launch_reach(village_count: usize, clock: &StoryClock, today: usize) -> Reach {
+    let next_day = today + 1;
+    Reach::on(
+        &build_timeline(village_count, clock, next_day),
+        next_day,
+        clock.start(),
+        Local::now().date_naive(),
+    )
+}
+
+fn settle(progress: &mut Progress, out_of_sync: bool, reach: &Reach) -> bool {
+    let changed = reach.fit(progress) || out_of_sync;
+    if changed {
+        progress.resyncs += 1;
+    }
+    changed
 }
 
 fn is_live_box_full(
@@ -390,6 +418,7 @@ enum Overlay {
     Letter(usize),
     Badges,
     Album(usize),
+    Backup { shows_welcome: bool },
     Bottle(usize),
     Help,
     Index(usize),
@@ -440,6 +469,7 @@ pub struct App {
     clock: StoryClock,
     timeline: Timeline,
     release_notes: Vec<Section>,
+    recovery: Option<Recovery>,
     overlay: Option<Overlay>,
     is_simulated: bool,
     awards_badges: bool,
@@ -527,21 +557,33 @@ impl App {
         } else {
             Launch::Normal
         };
-        let (mut progress, letters, clock) = match simulation.day {
+        let (mut progress, letters, clock, opening) = match simulation.day {
             Some(day) => {
                 let clock = StoryClock::frozen(Local::now().date_naive(), config.mail.hour, day);
                 (
                     Progress::in_memory(clock.date_of(1)),
                     letters::read(),
                     clock,
+                    Opening::default(),
                 )
             }
             None => {
-                let progress = Progress::load();
+                let (progress, opening) = Progress::load();
                 let clock = story_clock(&progress, config.mail.hour);
-                (progress, letters::load(), clock)
+                (progress, letters::load(), clock, opening)
             }
         };
+        let timeline_day = story_today(&clock);
+        let timeline = build_timeline(letters.len(), &clock, timeline_day);
+        if simulation.day.is_none()
+            && settle(
+                &mut progress,
+                opening.out_of_sync,
+                &launch_reach(letters.len(), &clock, timeline_day),
+            )
+        {
+            progress.save();
+        }
         let release_notes = notes_on_launch(&mut progress, release_notes::load(), launch);
         let shows_welcome = welcome_on_launch(&progress, launch);
         if shows_welcome {
@@ -552,8 +594,6 @@ impl App {
         }
         let rain_receiver =
             (!is_simulated).then(|| rain_alert::spawn(location.latitude, location.longitude));
-        let timeline_day = story_today(&clock);
-        let timeline = build_timeline(letters.len(), &clock, timeline_day);
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
 
         let is_forced = is_simulated || simulation.night;
@@ -571,8 +611,13 @@ impl App {
             letters,
             clock,
             timeline,
-            overlay: opening_overlay(shows_welcome, !release_notes.is_empty()),
+            overlay: opening_overlay(
+                opening.recovery.is_some(),
+                shows_welcome,
+                !release_notes.is_empty(),
+            ),
             release_notes,
+            recovery: opening.recovery,
             is_simulated: is_forced,
             awards_badges: simulation.day.is_none(),
             is_sky_lookout: badges::is_sky_lookout(updater::git_user_name().as_deref()),
@@ -733,6 +778,12 @@ impl App {
                 WelcomeOutcome::Next(step) => self.overlay = Some(Overlay::Welcome(step)),
                 WelcomeOutcome::Done => self.end_welcome(),
             }
+        }
+    }
+
+    fn press_backup_key(&mut self, code: KeyCode) {
+        if let Some(Overlay::Backup { shows_welcome }) = self.overlay {
+            self.overlay = backup_after_key(shows_welcome, code, !self.release_notes.is_empty());
         }
     }
 
@@ -913,6 +964,11 @@ impl App {
                 let page = page.min(pages.len().saturating_sub(1));
                 pages.swap_remove(page)
             }
+            Some(Overlay::Backup { .. }) => match &self.recovery {
+                Some(Recovery::NewGame(backup)) => views::backup_view(backup),
+                Some(Recovery::Restored) => views::restored_view(),
+                None => return Ok(()),
+            },
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
             Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => {
                 views::badge_card_view(badge)
@@ -1615,6 +1671,9 @@ impl App {
                                     welcome_width(renderer),
                                 );
                             }
+                            _ if matches!(self.overlay, Some(Overlay::Backup { .. })) => {
+                                self.press_backup_key(key_event.code);
+                            }
                             KeyCode::Char('c') | KeyCode::Char('C') => self.press_mail(),
                             KeyCode::Char('b') | KeyCode::Char('B') => {
                                 self.overlay = match self.overlay {
@@ -1791,19 +1850,84 @@ mod tests {
     #[test]
     fn test_notes_wait_for_the_welcome_and_badge_cards_too() {
         assert!(matches!(
-            opening_overlay(true, true),
+            opening_overlay(false, true, true),
             Some(Overlay::Welcome(Step::Arriving))
         ));
         assert!(matches!(
-            opening_overlay(false, true),
+            opening_overlay(false, false, true),
             Some(Overlay::Notes(0))
         ));
-        assert!(opening_overlay(false, false).is_none());
+        assert!(opening_overlay(false, false, false).is_none());
 
         let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["rain"]).into();
-        let overlay = next_overlay(opening_overlay(true, false), &mut pending);
+        let overlay = next_overlay(opening_overlay(false, true, false), &mut pending);
         assert!(matches!(overlay, Some(Overlay::Welcome(_))));
         assert_eq!(pending.len(), 1);
+    }
+
+    #[test]
+    fn test_settle_adds_one_resync_at_most_per_launch() {
+        let start = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
+        let clock = StoryClock::new(start, 9);
+        let reach = Reach::on(
+            &build_timeline(60, &clock, 10),
+            10,
+            start,
+            clock.date_of(10),
+        );
+        let honest = || {
+            let mut progress = Progress::default();
+            progress.letters_read = 3;
+            progress.streak = 2;
+            progress
+        };
+
+        let mut progress = honest();
+        assert!(!settle(&mut progress, false, &reach));
+        assert_eq!(progress.resyncs, 0);
+
+        let mut progress = honest();
+        assert!(settle(&mut progress, true, &reach));
+        assert_eq!(progress.resyncs, 1);
+        assert_eq!(progress.letters_read, 3);
+
+        let mut progress = honest();
+        progress.letters_read = 900;
+        progress.streak = 400;
+        progress.resyncs = 2;
+        assert!(settle(&mut progress, true, &reach));
+        assert_eq!(progress.resyncs, 3);
+        assert_eq!(progress.streak, 10);
+        assert!(progress.letters_read < 900);
+    }
+
+    #[test]
+    fn test_backup_box_opens_before_the_welcome_and_the_notes() {
+        let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["rain"]).into();
+        let overlay = next_overlay(opening_overlay(true, false, true), &mut pending);
+        assert!(matches!(
+            overlay,
+            Some(Overlay::Backup {
+                shows_welcome: false
+            })
+        ));
+        assert_eq!(pending.len(), 1);
+
+        assert!(matches!(
+            backup_after_key(false, KeyCode::Char('h'), true),
+            Some(Overlay::Backup { .. })
+        ));
+        for code in [KeyCode::Esc, KeyCode::Enter] {
+            assert!(matches!(
+                backup_after_key(false, code, true),
+                Some(Overlay::Notes(0))
+            ));
+        }
+        assert!(matches!(
+            backup_after_key(true, KeyCode::Esc, true),
+            Some(Overlay::Welcome(Step::Arriving))
+        ));
+        assert!(backup_after_key(false, KeyCode::Enter, false).is_none());
     }
 
     #[test]
