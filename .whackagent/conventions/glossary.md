@@ -32,7 +32,7 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Fête de la musique | | | `is_music_day` | 21 juin : notes aux fenêtres, chanteurs, Notes du ciel ; Badge dédié → [[animation]] |
 | Notes du ciel | dessin de notes, croches | | `SkyNotes` | croche et deux doubles croches, remplace soleil ou lune → [[animation]] |
 | Facteur | postier | | `Postman` | livre les Lettres à la boîte aux lettres |
-| Heure du Facteur | heure du courrier | | `mail_hour` | heure de la tournée ; changée dans Réglages, effet le lendemain → [[mail]] |
+| Heure du Facteur | heure du courrier | | `mail_hour` | heure de la tournée, de 6 h à 14 h ; changée dans Réglages, effet le lendemain → [[mail]] |
 | Jour de jeu | jour | | `StoryClock` | jour de l'histoire depuis le début, change à `courrier.heure` → [[mail]] |
 | Timeline | | | `Timeline` | événements de l'histoire classés par Jour de jeu |
 | Apparition | déblocage | | `Arrival` | objet ou Habitant qui arrive au jardin un Jour de jeu |

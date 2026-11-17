@@ -49,7 +49,7 @@ tokio task (REFRESH_INTERVAL 300s) → WeatherClient → mpsc(1) → App::run
 `config.toml` = **only source** for settings. Read once at startup; Réglages screen (key `s`, #38) writes back changed values only. No settings copy in `progress.json`, one exception: pending Heure du Facteur (see [[mail]]).
 
 - `Settings` (`src/settings/mod.rs:49`) = running values, taken from `App`, not file → launch flags (`--imperial`, `--hide-hud`) shown as current. `ROWS` (`:31`): Température, Vent, Pluie, Heure du Facteur, Barre du haut, Ville, Position auto.
-- `Settings::stepped(row, step)` (`:58`) → `Option<Setting>` (`src/config/mod.rs:102`) = next value; choices loop both ways, hour wraps 0–23. `apply` updates snapshot. Ville + Position auto → `None`: actions, not values; `App::change_setting` routes them first (search box, detection).
+- `Settings::stepped(row, step)` (`:58`) → `Option<Setting>` (`src/config/mod.rs:102`) = next value; choices loop both ways, hour stops at 6 and 14 (`clamp_mail_hour`, #122): at a bound → `None`, nothing saved. `apply` updates snapshot. Ville + Position auto → `None`: actions, not values; `App::change_setting` routes them first (search box, detection).
 - `App::change_setting` (`src/app.rs:1214`): units → `AppState::set_units` (see [[weather]]), Barre du haut → `App.hide_hud`. Both live, no restart. Then `Config::save(setting)` (`src/config/mod.rs:149`). Write fails → kept for session anyway, toast « Réglage non enregistré : vérifie config.toml » (`toast_unsaved_setting`, once, see [[render]]).
 - Heure du Facteur → `App::change_mail_hour` (`src/app.rs:1240`) instead: clock changes only if `progress.json` **and** `config.toml` both saved, else rollback + same toast. Never under `--day`. Next-day rule in [[mail]].
 - Ville chosen (#82) → `Config::save_city` (`src/config/mod.rs:161`): one write for `latitude`, `longitude`, `city`, `auto = false`, `display = "city"`. Why `display`: Barre du haut in coordinates would hide the name just picked (user decision, #82 review).
@@ -84,7 +84,7 @@ tokio task (REFRESH_INTERVAL 300s) → WeatherClient → mpsc(1) → App::run
 
 Under `dirs::config_dir()/weathr/` (macOS: `~/Library/Application Support/weathr/`):
 
-- `config.toml` — `[location]`, `units`, `hide_hud`, `silent`, `[courrier] heure` (`src/config/mod.rs:26`). Written back by Réglages, comments kept (see above).
+- `config.toml` — `[location]`, `units`, `hide_hud`, `silent`, `[courrier] heure` (`src/config/mod.rs:26`, read through `deserialize_mail_hour`: out of 6–14 → nearest bound, rest of file kept). Written back by Réglages, comments kept (see above).
 - `progress.json` — all player progress (`src/progress.rs:21`), see [[mail]].
 - `lettres.txt` — editable Lettre texts, written with defaults on first run.
 - `update_check` — date of last update prompt.
