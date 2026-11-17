@@ -93,6 +93,9 @@ struct Cli {
     #[arg(long, help = "Cycle through every weather scene, 1 second each")]
     demo: bool,
 
+    #[arg(long, hide = true)]
+    arcane: bool,
+
     #[arg(
         long,
         value_name = "N",
@@ -364,6 +367,7 @@ async fn main() -> io::Result<()> {
             },
             demo: cli.demo,
             day: cli.day,
+            arcane: cli.arcane,
         },
         cli.leaves,
         term_width,
@@ -411,5 +415,13 @@ mod tests {
     fn test_help_lists_day_flag() {
         let help = Cli::command().render_help().to_string();
         assert!(help.contains("--day <N>"));
+    }
+
+    #[test]
+    fn test_arcane_flag_parses_but_stays_out_of_help() {
+        let cli = Cli::try_parse_from(["weathr", "--arcane"]).unwrap();
+        assert!(cli.arcane);
+        let help = Cli::command().render_long_help().to_string();
+        assert!(!help.contains("arcane"));
     }
 }

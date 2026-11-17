@@ -27,6 +27,29 @@ const PAPER_PINK: Color = Color::Rgb {
 };
 const MAILBOX_FISH_COLUMN: u16 = 2;
 
+pub fn ride_time(distance: f32, speed: f32) -> Duration {
+    Duration::milliseconds((distance / speed * FRAME_MILLIS) as i64)
+}
+
+pub fn round_due(
+    round_hour: u32,
+    last_round: Option<NaiveDate>,
+    ride: Duration,
+    now: NaiveDateTime,
+) -> Option<NaiveDate> {
+    let today = now.date();
+    [Some(today), today.succ_opt()]
+        .into_iter()
+        .flatten()
+        .filter(|date| last_round != Some(*date))
+        .find(|date| {
+            date.and_hms_opt(round_hour, 0, 0).is_some_and(|arrival| {
+                let departure = arrival - ride;
+                departure <= now && now < departure + Duration::minutes(ROUND_WINDOW_MINUTES)
+            })
+        })
+}
+
 enum Trip {
     Waiting,
     Riding,
@@ -128,20 +151,12 @@ impl Postman {
         if self.is_story_frozen {
             return None;
         }
-        let ride = Duration::milliseconds(((stop_x + SPRITE_WIDTH) / SPEED * FRAME_MILLIS) as i64);
-        let today = now.date();
-        [Some(today), today.succ_opt()]
-            .into_iter()
-            .flatten()
-            .filter(|date| self.last_round != Some(*date))
-            .find(|date| {
-                date.and_hms_opt(self.round_hour, 0, 0)
-                    .is_some_and(|arrival| {
-                        let departure = arrival - ride;
-                        departure <= now
-                            && now < departure + Duration::minutes(ROUND_WINDOW_MINUTES)
-                    })
-            })
+        round_due(
+            self.round_hour,
+            self.last_round,
+            ride_time(stop_x + SPRITE_WIDTH, SPEED),
+            now,
+        )
     }
 
     pub fn update(&mut self, layout: &GardenLayout) {
