@@ -1,6 +1,6 @@
 ---
 issue: 122
-status: todo
+status: to-test
 wiki: [[mail]], [[architecture]]
 note: "il faut bloquer le passage du facteur du matin dans les preference, avec impossibilite de le faire passer apres 14h et avant 6h"
 created: 2026-11-17
@@ -28,8 +28,21 @@ created: 2026-11-17
 
 ## Implementation
 
+- `src/config/mod.rs` : `pub const MAIL_HOURS: RangeInclusive<u32> = 6..=14` ; `validate` → `InvalidMailHour` hors plage ; défaut 9 inchangé.
+- `src/settings/mod.rs` : `Row::MailHour` → `saturating_add_signed(step).clamp(6, 14)` (bornes de `MAIL_HOURS`), plus de boucle ; `HOURS_PER_DAY` supprimé.
+- `src/error.rs` : « invalid mail hour {0} (must be between 6 and 14) » (bornes écrites à la main : error ne dépend pas de config ; un test fige le texte).
+- `README.md` : commentaire de la config d'exemple « (0 à 23) » → « (6 à 14) ».
+- Tests : `test_mail_hour_stops_at_14`, `test_mail_hour_stops_at_6`, `test_mail_hour_outside_6_to_14_is_rejected`, `test_mail_hour_from_config` (6, 14, défaut 9). Tests `StoryClock` / `save` avec d'autres heures laissés tels quels (hors `validate`).
+- À une borne, la valeur est réenregistrée telle quelle (comme les autres réglages).
+- Build : `cargo build`, `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use`, `cargo test --bin weathr` (331) verts.
+
 ## Review
 
 ## Verification
+
+Binaire debug, HOME jetable (implémenteur, autopilot) :
+- ✅ `heure = 5` / `heure = 15` → « Error loading config: invalid mail hour 5 (must be between 6 and 14) ».
+- ✅ `heure = 6` / `heure = 14` → le jeu démarre, Réglages « Heure du Facteur 6 h » / « 14 h ».
+- ✅ Réglages en pty : 14 puis → → reste 14 ; 14 puis ← ×10 → 6 ; 6 puis ← ← reste 6 ; 6 puis → → 7.
 
 ## Feedback

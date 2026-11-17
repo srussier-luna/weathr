@@ -3,6 +3,7 @@ mod writer;
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
+use std::ops::RangeInclusive;
 use std::path::{Path, PathBuf};
 use toml_edit::ser::ValueSerializer;
 
@@ -12,6 +13,7 @@ use crate::weather::types::{PrecipitationUnit, TemperatureUnit, WeatherUnits, Wi
 
 pub const ENV_LATITUDE: &str = "WEATHR_LATITUDE";
 pub const ENV_LONGITUDE: &str = "WEATHR_LONGITUDE";
+pub const MAIL_HOURS: RangeInclusive<u32> = 6..=14;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -239,7 +241,7 @@ impl Config {
             return Err(ConfigError::InvalidLongitude(self.location.longitude));
         }
 
-        if self.mail.hour > 23 {
+        if !MAIL_HOURS.contains(&self.mail.hour) {
             return Err(ConfigError::InvalidMailHour(self.mail.hour));
         }
 
@@ -790,15 +792,28 @@ auto = false
 
     #[test]
     fn test_mail_hour_from_config() {
-        let config: Config = toml::from_str("[courrier]\nheure = 6").unwrap();
-        assert_eq!(config.mail.hour, 6);
-        assert!(config.validate().is_ok());
-
-        let config: Config = toml::from_str("[courrier]\nheure = 24").unwrap();
-        assert_eq!(config.validate().unwrap_err().kind(), "InvalidMailHour");
+        for hour in [6, 14] {
+            let config: Config = toml::from_str(&format!("[courrier]\nheure = {hour}")).unwrap();
+            assert_eq!(config.mail.hour, hour);
+            assert!(config.validate().is_ok());
+        }
 
         let config: Config = toml::from_str("").unwrap();
         assert_eq!(config.mail.hour, 9);
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_mail_hour_outside_6_to_14_is_rejected() {
+        for hour in [5, 15] {
+            let config: Config = toml::from_str(&format!("[courrier]\nheure = {hour}")).unwrap();
+            let error = config.validate().unwrap_err();
+            assert_eq!(error.kind(), "InvalidMailHour");
+            assert_eq!(
+                error.to_string(),
+                format!("invalid mail hour {hour} (must be between 6 and 14)")
+            );
+        }
     }
 
     #[test]
