@@ -1,6 +1,6 @@
 ---
 issue: 115
-status: to-test
+status: to-close
 wiki: [[mail]], [[animation]]
 note: "Découpé de #113 (parapluie « Ajouter un secret »), sprint « Le secret ». Débloque l'Arcano-Facteur de #114."
 created: 2026-11-16
@@ -47,6 +47,10 @@ created: 2026-11-16
     - Texte : Une carte usée, violette, tiède comme une main. Un voyageur y marche vers le bord d'une falaise, un baluchon sur l'épaule, sans regarder ses pieds. Au dos, d'une écriture tremblée :
     - Énigme : « Je n'ai pas de numéro, pourtant je commence tout. Je marche sans savoir où, et c'est pour ça qu'on me suit. Qui suis-je ? »
     - Réponses acceptées (majuscules et accents ignorés) : « le mat », « mat », « le fou », « fou ».
+  - Deuxième ligne de la carte après la bonne réponse (validée 16–17/11), selon le prochain passage de l'Arcano-Facteur :
+    - passage entre 0 h et 5 h → « Cette nuit, vers {h} h, lève les yeux au-dessus de ta boîte aux lettres. » (gardé aussi quand l'énigme est résolue en pleine nuit après le passage : « cette nuit » couvre la nuit jusqu'au matin, décision utilisateur·rice) ;
+    - passage encore à venir aujourd'hui → « Ce soir, vers {h} h, lève les yeux au-dessus de ta boîte aux lettres. » ;
+    - passage déjà fait aujourd'hui → « Demain soir, vers {h} h, lève les yeux au-dessus de ta boîte aux lettres. ».
   - Typographie du projet à appliquer au code (`\u{202F}` avant `: ! ?` et dans « »).
 - `--day N` : montre rumeurs et allusions du jour N, ne débloque rien dans la sauvegarde. Étape minuit testée par tests unitaires (pas d'option d'heure).
 - Pas de Badge, rien dans l'Aide : le secret reste secret.
@@ -70,7 +74,7 @@ created: 2026-11-16
 
 ## Implementation
 
-- stacked on: wa/114-ajouter-le-passage-du-soir @ cccf6d3
+- stacked on: wa/114-ajouter-le-passage-du-soir @ 36c5f03
 - `src/story/content/secret_trail.rs` : textes validés mot pour mot (`\u{202F}`) ; `second_rumor(reading_day, week, is_unlocked)`, `mystery_allusion(letter_day, is_unlocked)`, listes en boucle.
 - `ReadContext` : `reading_day`, `is_secret_unlocked`. Gazette : deuxième rumeur sous « Les échos » (Jour de jeu de lecture, pour que `--day 46` la montre ; une ancienne Gazette relue après le Jour 42 la porte aussi). Allusion : Jour de la Lettre (Lettres du village à partir du Jour 42, une sur trois), avant le P.-S. de nuit si les deux s'appliquent. Verrouillé ou non : lu au moment de la lecture.
 - `src/story/tarot_card.rs` : `TarotCard { Hidden, InGrass, Picked }`, `appear(now, day, is_unlocked)` (0 h–0 h 59, Jour ≥ 42, une fois, jamais une fois débloqué), `pick_up`, `is_riddle_open`, `answer` (`chronicles::is_right_answer`) ; `Progress.tarot_card_appeared` / `tarot_card_picked` (`#[serde(default)]`).
@@ -85,6 +89,19 @@ created: 2026-11-16
 - Round 2 (feedback) : « R » violet sous la carte (`src/animation/tarot_card.rs`) ; résultat dans la carte (`tarot_card_view(riddle_input, passage_hour, is_cold)`, `ArcanePost::first_passage_hour`, `answer_feedback` → `Toast` / `ColdCard` / `WarmCard`, `is_tarot_card_cold`) : pas de toast pour une réponse sur la carte, la Gazette garde les siens ; lignes de réussite gardées à la réouverture. 4 tests, 380 verts.
 
 ## Review
+
+### Round validation — 2026-11-17
+- Scope : diff cumulé depuis le point d'empilement (#114 relu, 36c5f03) + correctifs ; fusion de #114 relu (conflit `progress.rs` résolu, chemins déplacés adaptés).
+- Findings (autofix, 3 tours) :
+  - 🟠 [correctness] énigme de la carte résolue via la saisie de la Gazette → toast, heure jamais affichée → la carte s'ouvre toujours avec ses deux lignes, sans toast.
+  - 🟡 [correctness] résolue après l'heure de passage → Arcane livrée aussitôt sans vol → `ArcanePost::unlock(clock, now)` compte le passage du jour comme fait : premier Arcane avec le vol du lendemain ; « Ce soir » / « Demain soir » via `next_passage` (`Tonight` / `Tomorrow`).
+  - 🟡 [correctness] Facteur ≥ 12 h, passage après minuit → « Cette nuit, vers {h} h » (passages 0–5 h).
+  - 🟡 [structure] saisie partagée importée de la Gazette → `INPUT_FOOTER`, `typed_answer` dans `content/mod.rs` ; `NextPassage` dans `story/arcane.rs`.
+  - 🟡 [elegance] trois booléens → `enum Answer { CardSolved, WeekSolved, Wrong }` ; texte réordonné dans `secret_trail.rs`.
+  - 🟡 [style] helper de test `evening(0)` → `at_hour`.
+- Accepté par l'utilisateur·rice : énigme résolue en pleine nuit après un passage de 0–2 h → la carte dit « Cette nuit » pour la nuit suivante (« cette nuit » = jusqu'au matin).
+- Preuve : `cargo build`, `cargo build --lib`, `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use`, `cargo test --bin weathr` (389) verts ; `story` n'importe pas `animation`.
+- LENSES : style ✓ · elegance ✓ · structure ✓ · correctness ✓ — VERDICT : clean (1 finding accepté).
 
 ## Verification
 

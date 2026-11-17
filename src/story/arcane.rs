@@ -1,6 +1,5 @@
 use super::clock::StoryClock;
 use super::content::arcanes::{ARCANES, FIRST_NUMBER, SAMPLE_NUMBER};
-use super::content::secret_trail::NextPassage;
 use super::event::Entry;
 use super::postman_note::MailStep;
 use crate::progress::Progress;
@@ -20,6 +19,12 @@ pub struct ArcaneRound {
     pub hour: u32,
     pub delivery: Delivery,
     pub is_arcane_waiting: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum NextPassage {
+    Tonight(u32),
+    Tomorrow(u32),
 }
 
 fn passage_hour(clock: &StoryClock, date: NaiveDate) -> u32 {
@@ -115,10 +120,14 @@ impl ArcanePost {
         })
     }
 
-    pub fn unlock(&mut self, today: NaiveDate) -> bool {
+    pub fn unlock(&mut self, clock: &StoryClock, now: NaiveDateTime) -> bool {
+        let today = now.date();
         let is_locked = self.unlocked_on.is_none();
         if is_locked {
             self.unlocked_on = Some(today);
+            if now.hour() >= passage_hour(clock, today) {
+                self.passed_on = Some(today);
+            }
         }
         is_locked
     }
@@ -233,6 +242,33 @@ mod tests {
 
     fn open(post: &mut ArcanePost, day: u32, hour: u32) {
         post.pass(&clock(), at(day, hour));
+    }
+
+    fn locked(count: usize) -> ArcanePost {
+        ArcanePost {
+            unlocked_on: None,
+            ..unlocked(count)
+        }
+    }
+
+    #[test]
+    fn test_unlock_before_the_passage_brings_an_arcane_that_evening() {
+        let mut post = locked(3);
+        assert!(post.unlock(&clock(), at(FRIDAY, 0)));
+        open(&mut post, FRIDAY, 21);
+        assert_eq!(post.received_on, [date(FRIDAY)]);
+    }
+
+    #[test]
+    fn test_unlock_after_the_passage_waits_for_the_next_evening() {
+        let mut post = locked(3);
+        assert!(post.unlock(&clock(), at(FRIDAY, 22)));
+        assert!(!post.pass(&clock(), at(FRIDAY, 22)));
+        assert!(!post.pass(&clock(), at(FRIDAY, 23)));
+        assert!(post.received_on.is_empty());
+        assert!(!post.pass(&clock(), at(SATURDAY, 20)));
+        open(&mut post, SATURDAY, 21);
+        assert_eq!(post.received_on, [date(SATURDAY)]);
     }
 
     #[test]

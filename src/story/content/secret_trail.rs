@@ -1,9 +1,12 @@
 use super::chronicles::Riddle;
 use super::{INPUT_FOOTER, text, typed_answer};
 use crate::overlay::{Frame, Line, View};
+use crate::story::arcane::NextPassage;
+use std::ops::RangeInclusive;
 
 pub const TRAIL_START_DAY: usize = 42;
 const ALLUSION_EVERY: usize = 3;
+const NIGHT_PASSAGE_HOURS: RangeInclusive<u32> = 0..=5;
 const TAROT_CARD_TITLE: &str = "L'Arcane sans numéro";
 const TAROT_CARD_TEXT: &str = "Une carte usée, violette, tiède comme une main. Un voyageur y marche vers le bord d'une falaise, un baluchon sur l'épaule, sans regarder ses pieds. Au dos, d'une écriture tremblée\u{202F}:";
 pub const TAROT_RIDDLE: Riddle = Riddle {
@@ -14,20 +17,6 @@ const TAROT_RIDDLE_FOOTER: &str = "[e] répondre à l'énigme  [Echap] fermer";
 const TAROT_CARD_FOOTER: &str = "[Echap] fermer";
 const TAROT_CARD_WARM: &str = "La carte se met à chauffer de plus en plus dans ta main. Quelque chose s'est ouvert, quelque part\u{202F}!";
 const TAROT_CARD_COLD: &str = "La carte reste froide.";
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum NextPassage {
-    Tonight(u32),
-    Tomorrow(u32),
-}
-
-fn evening_line(passage: NextPassage) -> String {
-    let (evening, hour) = match passage {
-        NextPassage::Tonight(hour) => ("Ce soir", hour),
-        NextPassage::Tomorrow(hour) => ("Demain soir", hour),
-    };
-    format!("{evening}, vers {hour} h, lève les yeux au-dessus de ta boîte aux lettres.")
-}
 
 const MYSTERY_RUMORS: [&str; 6] = [
     "On raconte qu'une lueur violette a traversé le ciel au-dessus du lavoir, bien après minuit.",
@@ -72,6 +61,19 @@ pub fn mystery_allusion(letter_day: usize, is_unlocked: bool) -> Option<&'static
         .filter(|_| !is_unlocked)?;
     (since_start % ALLUSION_EVERY == 0)
         .then(|| MYSTERY_ALLUSIONS[since_start / ALLUSION_EVERY % MYSTERY_ALLUSIONS.len()])
+}
+
+fn evening_line(passage: NextPassage) -> String {
+    let (evening, hour) = match passage {
+        NextPassage::Tonight(hour) | NextPassage::Tomorrow(hour)
+            if NIGHT_PASSAGE_HOURS.contains(&hour) =>
+        {
+            ("Cette nuit", hour)
+        }
+        NextPassage::Tonight(hour) => ("Ce soir", hour),
+        NextPassage::Tomorrow(hour) => ("Demain soir", hour),
+    };
+    format!("{evening}, vers {hour} h, lève les yeux au-dessus de ta boîte aux lettres.")
 }
 
 pub fn tarot_card_view(
@@ -226,6 +228,27 @@ mod tests {
             texts(&view).last(),
             Some(&"Demain soir, vers 21 h, lève les yeux au-dessus de ta boîte aux lettres.")
         );
+    }
+
+    #[test]
+    fn test_passage_between_midnight_and_five_comes_tonight() {
+        let line = |passage| texts(&tarot_card_view(None, Some(passage), false))[3].to_string();
+        for passage in [
+            NextPassage::Tonight(0),
+            NextPassage::Tonight(5),
+            NextPassage::Tomorrow(2),
+        ] {
+            assert!(
+                line(passage).starts_with("Cette nuit, vers "),
+                "{passage:?}"
+            );
+        }
+        assert_eq!(
+            line(NextPassage::Tomorrow(2)),
+            "Cette nuit, vers 2 h, lève les yeux au-dessus de ta boîte aux lettres."
+        );
+        assert!(line(NextPassage::Tonight(6)).starts_with("Ce soir, vers 6 h"));
+        assert!(line(NextPassage::Tomorrow(21)).starts_with("Demain soir, vers 21 h"));
     }
 
     #[test]

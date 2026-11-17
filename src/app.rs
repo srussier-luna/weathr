@@ -1312,8 +1312,11 @@ impl App {
             .or_else(|| self.latest_gazette_week())
             .filter(|week| !self.progress.riddles_solved.contains(week));
         let is_on_card = matches!(self.overlay, Some(Overlay::TarotCard));
-        let today = Local::now().date_naive();
-        let answer = if self.tarot_card.answer(&input, &mut self.arcanes, today) {
+        let now = Local::now().naive_local();
+        let answer = if self
+            .tarot_card
+            .answer(&input, &mut self.arcanes, &self.clock, now)
+        {
             self.save_arcanes();
             Answer::CardSolved
         } else if let Some(week) = week
