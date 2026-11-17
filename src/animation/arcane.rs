@@ -36,16 +36,16 @@ const TURQUOISE: Color = Color::Rgb {
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Delivery {
-    Nothing,
-    Due,
-    Done,
+pub enum Visit {
+    PassesBy,
+    Drops,
+    HasDropped,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ArcaneRound {
+pub struct Round {
     pub hour: u32,
-    pub delivery: Delivery,
+    pub visit: Visit,
     pub is_arcane_waiting: bool,
 }
 
@@ -60,7 +60,7 @@ enum Flight {
 pub struct ArcanoPostman {
     flight: Flight,
     x: f32,
-    round: Option<ArcaneRound>,
+    round: Option<Round>,
     last_round: Option<NaiveDate>,
 }
 
@@ -87,14 +87,14 @@ impl ArcanoPostman {
         }
     }
 
-    pub fn set_round(&mut self, round: Option<ArcaneRound>) {
+    pub fn set_round(&mut self, round: Option<Round>) {
         self.round = round;
     }
 
-    fn hides_flag(&self, delivery: Delivery) -> bool {
+    fn hides_flag(&self, visit: Visit) -> bool {
         match self.flight {
             Flight::Casting(_) => true,
-            Flight::Arriving => delivery != Delivery::Nothing,
+            Flight::Arriving => visit != Visit::PassesBy,
             Flight::Waiting | Flight::Leaving => false,
         }
     }
@@ -126,7 +126,7 @@ impl ArcanoPostman {
                 self.x += SPEED;
                 Flight::Arriving
             }
-            Flight::Arriving if round.delivery == Delivery::Nothing => {
+            Flight::Arriving if round.visit == Visit::PassesBy => {
                 self.x += SPEED;
                 Flight::Leaving
             }
@@ -136,7 +136,7 @@ impl ArcanoPostman {
             }
             Flight::Casting(elapsed)
                 if elapsed >= MAX_CAST_FRAMES
-                    || (elapsed >= CAST_FRAMES && round.delivery == Delivery::Done) =>
+                    || (elapsed >= CAST_FRAMES && round.visit == Visit::HasDropped) =>
             {
                 Flight::Leaving
             }
@@ -155,7 +155,7 @@ impl ArcanoPostman {
             return Ok(());
         };
 
-        if round.is_arcane_waiting && !self.hides_flag(round.delivery) {
+        if round.is_arcane_waiting && !self.hides_flag(round.visit) {
             let flag_x = mailbox_x + VIOLET_MAILBOX_WIDTH;
             renderer.render_char(flag_x, mailbox_y, '>', TURQUOISE)?;
             renderer.render_char(flag_x, mailbox_y + 1, '|', TURQUOISE)?;
@@ -221,10 +221,10 @@ mod tests {
         GardenLayout::new(80, 24, Growth::Full)
     }
 
-    fn round(delivery: Delivery) -> Option<ArcaneRound> {
-        Some(ArcaneRound {
+    fn round(visit: Visit) -> Option<Round> {
+        Some(Round {
             hour: 21,
-            delivery,
+            visit,
             is_arcane_waiting: false,
         })
     }
@@ -235,9 +235,9 @@ mod tests {
             .unwrap()
     }
 
-    fn flying(delivery: Delivery) -> ArcanoPostman {
+    fn flying(visit: Visit) -> ArcanoPostman {
         let mut mage = ArcanoPostman::new();
-        mage.set_round(round(delivery));
+        mage.set_round(round(visit));
         mage.flight = Flight::Arriving;
         mage
     }
@@ -260,7 +260,7 @@ mod tests {
         let departure = evening(21, 0, 0) - ride;
 
         let mut mage = ArcanoPostman::new();
-        mage.set_round(round(Delivery::Due));
+        mage.set_round(round(Visit::Drops));
         mage.fly(&layout, departure - Duration::seconds(5));
         assert_eq!(mage.flight, Flight::Waiting);
         mage.fly(&layout, departure);
@@ -278,28 +278,28 @@ mod tests {
     fn test_stops_in_the_air_above_the_violet_mailbox_and_casts() {
         let layout = layout();
         let (mailbox_x, mailbox_y) = violet_mailbox(&layout).unwrap();
-        let mut mage = flying(Delivery::Due);
+        let mut mage = flying(Visit::Drops);
         fly_until_not(&mut mage, Flight::Arriving);
         assert_eq!(mage.flight, Flight::Casting(0));
         assert_eq!(mage.x, stop_x(mailbox_x));
         assert!(altitude(mailbox_y) + (MAGE.len() as u16) < mailbox_y);
-        assert!(mage.hides_flag(Delivery::Due));
+        assert!(mage.hides_flag(Visit::Drops));
 
         for _ in 0..CAST_FRAMES * 2 {
             mage.fly(&layout, evening(21, 0, 0));
         }
         assert!(matches!(mage.flight, Flight::Casting(_)));
 
-        mage.set_round(round(Delivery::Done));
+        mage.set_round(round(Visit::HasDropped));
         mage.fly(&layout, evening(21, 0, 5));
         assert_eq!(mage.flight, Flight::Leaving);
-        assert!(!mage.hides_flag(Delivery::Done));
+        assert!(!mage.hides_flag(Visit::HasDropped));
     }
 
     #[test]
     fn test_crosses_the_sky_without_stopping_when_nothing_is_due() {
-        let mut mage = flying(Delivery::Nothing);
-        assert!(!mage.hides_flag(Delivery::Nothing));
+        let mut mage = flying(Visit::PassesBy);
+        assert!(!mage.hides_flag(Visit::PassesBy));
         fly_until_not(&mut mage, Flight::Arriving);
         assert_eq!(mage.flight, Flight::Leaving);
         fly_until_not(&mut mage, Flight::Leaving);
@@ -308,7 +308,7 @@ mod tests {
 
     #[test]
     fn test_casting_ends_even_if_the_arcane_never_comes() {
-        let mut mage = flying(Delivery::Due);
+        let mut mage = flying(Visit::Drops);
         fly_until_not(&mut mage, Flight::Arriving);
         for _ in 0..=MAX_CAST_FRAMES {
             mage.fly(&layout(), evening(21, 0, 0));

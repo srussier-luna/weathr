@@ -236,7 +236,7 @@ pub(crate) mod save_golden {
                 clock: &self.clock,
                 reading_hour,
                 reading_day: self.today,
-                is_secret_unlocked: self.progress.arcanes_unlocked_on.is_some(),
+                is_secret_unlocked: self.progress.arcanes_unlocked_date().is_some(),
                 riddle_input: None,
             }
         }

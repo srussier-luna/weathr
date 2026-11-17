@@ -192,7 +192,7 @@ mod tests {
 
         let mut progress = Progress::default();
         assert!(arcanes.write_to(&mut progress));
-        assert_eq!(progress.arcanes_unlocked_on.as_deref(), Some("2026-11-20"));
+        assert_eq!(progress.arcanes_unlocked_date(), Some(at_hour(0).date()));
         assert_eq!(
             arcanes.round(&clock, at_hour(20)).map(|round| round.hour),
             Some(21)
