@@ -74,7 +74,6 @@ created: 2026-11-16
 
 ## Implementation
 
-- stacked on: wa/114-ajouter-le-passage-du-soir @ 36c5f03
 - `src/story/content/secret_trail.rs` : textes validés mot pour mot (`\u{202F}`) ; `second_rumor(reading_day, week, is_unlocked)`, `mystery_allusion(letter_day, is_unlocked)`, listes en boucle.
 - `ReadContext` : `reading_day`, `is_secret_unlocked`. Gazette : deuxième rumeur sous « Les échos » (Jour de jeu de lecture, pour que `--day 46` la montre ; une ancienne Gazette relue après le Jour 42 la porte aussi). Allusion : Jour de la Lettre (Lettres du village à partir du Jour 42, une sur trois), avant le P.-S. de nuit si les deux s'appliquent. Verrouillé ou non : lu au moment de la lecture.
 - `src/story/tarot_card.rs` : `TarotCard { Hidden, InGrass, Picked }`, `appear(now, day, is_unlocked)` (0 h–0 h 59, Jour ≥ 42, une fois, jamais une fois débloqué), `pick_up`, `is_riddle_open`, `answer` (`chronicles::is_right_answer`) ; `Progress.tarot_card_appeared` / `tarot_card_picked` (`#[serde(default)]`).
