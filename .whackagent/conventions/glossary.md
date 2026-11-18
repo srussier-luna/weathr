@@ -30,6 +30,7 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret → [[mail]] |
 | Fête | jour férié | | `Holiday` | jour spécial qui décore la scène → [[animation]] |
 | Fête de la musique | | | `is_music_day` | 21 juin : notes aux fenêtres, chanteurs, Notes du ciel ; Badge dédié → [[animation]] |
+| Chandeleur | | | `is_candlemas` | 2 février : Crêpe géante à la place du soleil et de la lune ; Badge dédié → [[animation]] |
 | Notes du ciel | dessin de notes, croches | | `SkyNotes` | croche et deux doubles croches, remplace soleil ou lune → [[animation]] |
 | Facteur | postier | | `Postman` | livre les Lettres à la boîte aux lettres |
 | Heure du Facteur | heure du courrier | | `mail_hour` | heure de la tournée, de 6 h à 14 h ; changée dans Réglages, effet le lendemain → [[mail]] |
