@@ -1,5 +1,15 @@
 # Nouveautés
 
+## 2026-11-05
+
+- De nouvelles petites bouilles pourraient bien s'installer au jardin. Ouvre l'œil !
+- Le grand Arbre a des envies de grandeur. Laisse-lui le temps.
+- Le 21 juin, ça chante aux fenêtres. Bouchons d'oreilles non fournis ♪
+- Fin mai, les Voisins sortent la grande table. Pense au dessert !
+- Tape « s » pour les Réglages : unités, Heure du Facteur… et tu peux même déménager sans faire de cartons.
+- Un truc cloche ? « weathr --diagnostic » mène l'enquête et te dit quoi réparer.
+- Les nuages ne débarquent plus par surprise : ils prennent le temps d'entrer en scène. Merci Denis, notre vigie du ciel !
+
 ## 2026-10-30
 
 - Le village vit à ton rythme : chaque Jour de jeu apporte son courrier et ses surprises au jardin.

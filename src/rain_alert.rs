@@ -52,7 +52,10 @@ pub fn spawn(latitude: f64, longitude: f64) -> mpsc::Receiver<Option<RainAlert>>
             {
                 break;
             }
-            tokio::time::sleep(REFRESH_INTERVAL).await;
+            tokio::select! {
+                () = tokio::time::sleep(REFRESH_INTERVAL) => {}
+                () = sender.closed() => break,
+            }
         }
     });
     receiver

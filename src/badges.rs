@@ -59,6 +59,8 @@ const fn secret(
     }
 }
 
+const SKY_LOOKOUT_LOGIN: &str = "drichard-luna";
+
 pub const KINDS: [BadgeKind; 5] = [
     BadgeKind::Weather,
     BadgeKind::Holiday,
@@ -67,7 +69,7 @@ pub const KINDS: [BadgeKind; 5] = [
     BadgeKind::Secret,
 ];
 
-pub const BADGES: [Badge; 40] = [
+pub const BADGES: [Badge; 43] = [
     badge(
         "clear",
         "Ciel dégagé",
@@ -183,10 +185,22 @@ pub const BADGES: [Badge; 40] = [
         [" .-. ", "(~~~)", " '-' "],
     ),
     badge(
+        "neighbours_party",
+        "Fête des voisins",
+        BadgeKind::Holiday,
+        ["o   o", "[===]", " | | "],
+    ),
+    badge(
         "perseids",
         "Perséides",
         BadgeKind::Holiday,
         ["  * *", " / / ", "/ /  "],
+    ),
+    badge(
+        "music_day",
+        "Fête de la musique",
+        BadgeKind::Holiday,
+        ["  |\\ ", "  |  ", "(_|  "],
     ),
     badge(
         "geminids",
@@ -308,6 +322,12 @@ pub const BADGES: [Badge; 40] = [
         "boîte aux lettres pleine",
         [" _n_ ", "| | |", "|_|_|"],
     ),
+    secret(
+        "sky_lookout",
+        "Vigie du ciel",
+        "a repéré les nuages pressés",
+        [" .-. ", "(___)", "  \\o "],
+    ),
 ];
 
 pub fn weather_badges() -> impl Iterator<Item = &'static Badge> {
@@ -343,6 +363,10 @@ pub fn name(id: &str) -> &'static str {
     find(id).map_or("?", |badge| badge.name)
 }
 
+pub fn is_sky_lookout(user_name: Option<&str>) -> bool {
+    user_name.is_some_and(|name| name.trim() == SKY_LOOKOUT_LOGIN)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -356,5 +380,27 @@ mod tests {
                 badge.id
             );
         }
+    }
+
+    #[test]
+    fn test_sky_lookout_matches_exact_login() {
+        assert!(is_sky_lookout(Some("drichard-luna")));
+    }
+
+    #[test]
+    fn test_sky_lookout_ignores_surrounding_whitespace() {
+        assert!(is_sky_lookout(Some("drichard-luna\n")));
+        assert!(is_sky_lookout(Some("drichard-luna ")));
+    }
+
+    #[test]
+    fn test_sky_lookout_rejects_other_name() {
+        assert!(!is_sky_lookout(Some("srussier-luna")));
+    }
+
+    #[test]
+    fn test_sky_lookout_rejects_missing_name() {
+        assert!(!is_sky_lookout(None));
+        assert!(!is_sky_lookout(Some("")));
     }
 }

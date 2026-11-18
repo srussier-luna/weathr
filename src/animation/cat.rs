@@ -59,7 +59,7 @@ impl Cat {
             (NIGHT_FUR, Color::Yellow)
         };
 
-        if conditions.is_raining || conditions.is_thunderstorm || conditions.is_snowing {
+        if Self::is_indoors(conditions) {
             self.render_in_window(renderer, layout, fur, eyes_color)?;
             if unlocks.cat_bow {
                 let (window_x, window_y) = layout.house.big_window();
@@ -88,6 +88,20 @@ impl Cat {
             }
         }
         Ok(())
+    }
+
+    pub fn head(&self, layout: &GardenLayout, conditions: &WeatherConditions) -> (u16, u16) {
+        let (x, y) = if Self::is_indoors(conditions) {
+            layout.house.big_window()
+        } else {
+            let (perch_x, perch_y) = layout.house.roof_perch();
+            (perch_x + 2, perch_y)
+        };
+        (layout.house_x + x + 1, layout.house_y + y)
+    }
+
+    fn is_indoors(conditions: &WeatherConditions) -> bool {
+        conditions.is_raining || conditions.is_thunderstorm || conditions.is_snowing
     }
 
     fn render_in_window(

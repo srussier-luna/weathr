@@ -133,6 +133,22 @@ impl AppState {
         }
     }
 
+    pub fn set_location(&mut self, location: WeatherLocation, city_name: Option<String>) {
+        self.location = location;
+        self.city_name = city_name;
+        self.weather_info_needs_update = true;
+    }
+
+    pub fn set_location_display(&mut self, display: LocationDisplay) {
+        self.location_display = display;
+        self.weather_info_needs_update = true;
+    }
+
+    pub fn set_units(&mut self, units: WeatherUnits) {
+        self.units = units;
+        self.weather_info_needs_update = true;
+    }
+
     pub fn set_demo_label(&mut self, label: Option<String>) {
         self.demo_label = label;
         self.weather_info_needs_update = true;
@@ -484,6 +500,21 @@ mod tests {
     }
 
     #[test]
+    fn test_switching_to_city_display_shows_the_name_at_once() {
+        let mut app = create_app_state_full(
+            34.0754,
+            -84.2941,
+            Some("Alpharetta".to_string()),
+            LocationDisplay::Coordinates,
+        );
+        app.update_cached_info();
+        app.set_location_display(LocationDisplay::City);
+        app.update_cached_info();
+
+        assert!(app.cached_weather_info.contains("Location: Alpharetta"));
+    }
+
+    #[test]
     fn test_display_city_mode_without_city_falls_back() {
         let mut app = create_app_state_full(34.0754, -84.2941, None, LocationDisplay::City);
         app.update_cached_info();
@@ -559,5 +590,22 @@ mod tests {
         assert!(app.weather_info_needs_update);
         app.update_cached_info();
         assert!(app.cached_weather_info.contains(" | Jour 8 | "));
+    }
+
+    #[test]
+    fn test_units_change_redraws_the_bar() {
+        let mut app = create_app_state(0.0, 0.0);
+        app.update_cached_info();
+        assert!(app.cached_weather_info.contains("20.0°C"));
+
+        app.set_units(WeatherUnits {
+            temperature: TemperatureUnit::Fahrenheit,
+            wind_speed: WindSpeedUnit::Ms,
+            precipitation: PrecipitationUnit::Inch,
+        });
+        app.update_cached_info();
+        assert!(app.cached_weather_info.contains("68.0°F"));
+        assert!(app.cached_weather_info.contains("Wind: 10.0m/s"));
+        assert!(app.cached_weather_info.contains("Precip: 0.0in"));
     }
 }

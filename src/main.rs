@@ -6,6 +6,7 @@ mod badges;
 mod cache;
 mod config;
 mod demo;
+mod diagnostic;
 mod error;
 mod geolocation;
 mod holiday;
@@ -16,6 +17,7 @@ mod release_notes;
 mod remote_weather;
 mod render;
 mod scene;
+mod settings;
 mod story;
 mod updater;
 mod views;
@@ -82,6 +84,12 @@ struct Cli {
     #[arg(long, help = "Simulate July 14th fireworks (at night)")]
     fireworks: bool,
 
+    #[arg(long, help = "Simulate the neighbours' party (table in the garden)")]
+    neighbours: bool,
+
+    #[arg(long, help = "Simulate June 21st Music Day (notes from the windows)")]
+    music: bool,
+
     #[arg(long, help = "Cycle through every weather scene, 1 second each")]
     demo: bool,
 
@@ -126,6 +134,12 @@ struct Cli {
         help = "Update weathr from its git repository, then rebuild and reinstall it"
     )]
     update: bool,
+
+    #[arg(
+        long,
+        help = "Check git, cargo, the source clone, the network and file rights, then say what to fix"
+    )]
+    diagnostic: bool,
 }
 
 #[tokio::main]
@@ -183,6 +197,13 @@ async fn main() -> io::Result<()> {
         let mut cmd = Cli::command();
         let mut out = io::stdout();
         generate(shell, &mut cmd, "weathr", &mut out);
+        return Ok(());
+    }
+
+    if cli.diagnostic {
+        if !diagnostic::run().await {
+            std::process::exit(1);
+        }
         return Ok(());
     }
 
@@ -334,6 +355,10 @@ async fn main() -> io::Result<()> {
                 Some(holiday::Holiday::christmas())
             } else if cli.fireworks {
                 Some(holiday::Holiday::national_day())
+            } else if cli.neighbours {
+                Some(holiday::Holiday::neighbours_party())
+            } else if cli.music {
+                Some(holiday::Holiday::music_day())
             } else {
                 None
             },

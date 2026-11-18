@@ -14,7 +14,7 @@ const ROUND_WINDOW_MINUTES: i64 = 1;
 const RIDER: [&str; 2] = ["   __o", " _`\\<,_"];
 const WHEELS: &str = "(*)/ (*)";
 const SPRITE_WIDTH: f32 = 8.0;
-const POSTAL_YELLOW: Color = Color::Rgb {
+pub const POSTAL_YELLOW: Color = Color::Rgb {
     r: 255,
     g: 204,
     b: 0,
@@ -85,6 +85,10 @@ impl Postman {
         matches!(self.trip, Trip::Delivering(_))
     }
 
+    pub fn is_on_round(&self) -> bool {
+        !matches!(self.trip, Trip::Waiting)
+    }
+
     pub fn visit(&mut self) {
         self.x = -SPRITE_WIDTH;
         self.trip = Trip::Arriving;
@@ -108,6 +112,16 @@ impl Postman {
         let mailbox_x = layout.plan.mailbox_x?;
         matches!(self.trip, Trip::Staying)
             .then_some((mailbox_x + HEAD_COLUMN, layout.horizon_y.saturating_sub(2)))
+    }
+
+    pub fn rider_head(&self, layout: &GardenLayout) -> Option<(u16, u16)> {
+        if matches!(self.trip, Trip::Waiting) {
+            return None;
+        }
+        let x = self.x.round() as i32 + HEAD_COLUMN as i32;
+        (0..i32::from(layout.width))
+            .contains(&x)
+            .then_some((x as u16, layout.horizon_y.saturating_sub(2)))
     }
 
     fn due_round(&self, stop_x: f32, now: NaiveDateTime) -> Option<NaiveDate> {
@@ -245,6 +259,7 @@ impl Default for Postman {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::scene::tree::Growth;
 
     fn at(day: u32, hour: u32, minute: u32, second: u32) -> NaiveDateTime {
         NaiveDate::from_ymd_opt(2026, 10, day)
@@ -274,7 +289,7 @@ mod tests {
 
     #[test]
     fn test_visit_stays_at_the_mailbox_until_told_to_leave() {
-        let layout = GardenLayout::new(120, 40);
+        let layout = GardenLayout::new(120, 40, Growth::Full);
         let mailbox_x = layout.plan.mailbox_x.unwrap();
         let mut postman = Postman::new();
         postman.visit();
@@ -301,8 +316,24 @@ mod tests {
     }
 
     #[test]
+    fn test_on_round_from_departure_until_back_home() {
+        let layout = GardenLayout::new(120, 40, Growth::Full);
+        let mut postman = Postman::new();
+        assert!(!postman.is_on_round());
+
+        postman.trip = Trip::Riding;
+        assert!(postman.is_on_round());
+        postman.trip = Trip::Delivering(STOP_FRAMES);
+        assert!(postman.is_on_round());
+        postman.trip = Trip::Leaving;
+        postman.x = layout.width as f32;
+        postman.update(&layout);
+        assert!(!postman.is_on_round());
+    }
+
+    #[test]
     fn test_paper_fish_only_on_april_fools() {
-        let layout = GardenLayout::new(120, 40);
+        let layout = GardenLayout::new(120, 40, Growth::Full);
         let mailbox_x = layout.plan.mailbox_x.unwrap();
         let mut postman = Postman::new();
         assert_eq!(postman.mailbox_fish(&layout), None);
@@ -316,7 +347,7 @@ mod tests {
 
     #[test]
     fn test_mailbox_fish_leaves_the_flag_and_skips_a_missing_mailbox() {
-        let mut layout = GardenLayout::new(120, 40);
+        let mut layout = GardenLayout::new(120, 40, Growth::Full);
         let mut postman = Postman::new();
         postman.set_april_fools(true);
         let (fish_x, _) = postman.mailbox_fish(&layout).unwrap();

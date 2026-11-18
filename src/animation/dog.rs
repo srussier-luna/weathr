@@ -128,16 +128,37 @@ impl Dog {
         layout: &GardenLayout,
         conditions: &WeatherConditions,
     ) -> io::Result<()> {
-        let doghouse_x = layout.house_x + layout.house.porch_x() + DOGHOUSE_OFFSET;
-        let doghouse_y = layout.horizon_y.saturating_sub(4);
+        let (doghouse_x, doghouse_y) = Self::doghouse(layout);
         self.render_doghouse(renderer, doghouse_x, doghouse_y, conditions.is_day)?;
 
         if Self::is_inside(conditions) {
             self.render_inside(renderer, doghouse_x, doghouse_y, conditions.is_day)
         } else {
-            let x = self.x.map_or(Self::home_x(layout), |x| x.round() as u16);
-            self.render_outside(renderer, x, layout.horizon_y.saturating_sub(3))
+            let (x, y) = self.outside(layout);
+            self.render_outside(renderer, x, y)
         }
+    }
+
+    pub fn head(&self, layout: &GardenLayout, conditions: &WeatherConditions) -> (u16, u16) {
+        if Self::is_inside(conditions) {
+            let (x, y) = Self::doghouse(layout);
+            return (x + 4, y);
+        }
+        let (x, y) = self.outside(layout);
+        let head_column = if self.is_facing_left { 2 } else { 8 };
+        (x + head_column, y)
+    }
+
+    fn doghouse(layout: &GardenLayout) -> (u16, u16) {
+        (
+            layout.house_x + layout.house.porch_x() + DOGHOUSE_OFFSET,
+            layout.horizon_y.saturating_sub(4),
+        )
+    }
+
+    fn outside(&self, layout: &GardenLayout) -> (u16, u16) {
+        let x = self.x.map_or(Self::home_x(layout), |x| x.round() as u16);
+        (x, layout.horizon_y.saturating_sub(3))
     }
 
     fn home_x(layout: &GardenLayout) -> u16 {

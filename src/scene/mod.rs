@@ -1,3 +1,4 @@
+pub mod bunting;
 pub mod decorations;
 pub mod ground;
 pub mod house;
@@ -14,6 +15,7 @@ pub struct WorldScene {
     house: house::House,
     ground: ground::Ground,
     decorations: decorations::Decorations,
+    tree_growth: tree::Growth,
     width: u16,
     height: u16,
 }
@@ -30,6 +32,7 @@ impl WorldScene {
             house,
             ground,
             decorations,
+            tree_growth: tree::Growth::default(),
             width,
             height,
         }
@@ -39,6 +42,10 @@ impl WorldScene {
         self.width = width;
         self.height = height;
         self.house = house::House::for_terminal(width, height);
+    }
+
+    pub fn set_tree_growth(&mut self, growth: tree::Growth) {
+        self.tree_growth = growth;
     }
 
     pub fn render(
@@ -83,6 +90,7 @@ impl WorldScene {
         // Render House
         self.house
             .render(renderer, house_x, house_y, conditions.is_day)?;
+        bunting::render(renderer, holiday, &self.house, house_x, house_y, self.width)?;
 
         // Render Decorations
         self.decorations.render(
@@ -95,6 +103,7 @@ impl WorldScene {
                 is_day: conditions.is_day,
                 is_snowing: conditions.is_snowing,
                 holiday: *holiday,
+                tree_growth: self.tree_growth,
             },
         )?;
 

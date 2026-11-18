@@ -1,4 +1,4 @@
-use crate::animation::sun_path::day_progress;
+use crate::animation::sun_path::{day_progress, on_sun_path};
 use crate::animation::{
     AnimationController,
     airplanes::AirplaneSystem,
@@ -6,7 +6,7 @@ use crate::animation::{
     cat::Cat,
     chimney::ChimneySmoke,
     cloud_bank::CloudBank,
-    clouds::CloudSystem,
+    clouds::{self, CloudSystem},
     constellation::StarGazing,
     creepy::Creepy,
     dog::Dog,
@@ -24,6 +24,8 @@ use crate::animation::{
     leaves::FallingLeaves,
     lore::{Lore, Unlocks},
     moon::MoonSystem,
+    music::{MusicNotes, SkyNotes},
+    neighbours_party::{self, Neighbour},
     new_year::NewYearBanner,
     owl::Owl,
     postman::Postman,
@@ -45,13 +47,15 @@ use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
 use crate::scene::house::House;
 use crate::scene::river::River;
-use crate::weather::{FogIntensity, RainIntensity, SnowIntensity, WeatherConditions};
+use crate::scene::tree::Growth;
+use crate::weather::{
+    FogIntensity, RainIntensity, SnowIntensity, WeatherCondition, WeatherConditions,
+};
 use crossterm::style::Color;
 use std::io;
 use std::time::{Duration, Instant};
 
 const FRAME_DELAY: Duration = Duration::from_millis(500);
-const SUN_MARGIN: u16 = 2;
 const SUN_LOWEST_ABOVE_HORIZON: u16 = 5;
 const TWILIGHT: f64 = 0.12;
 const TWILIGHT_SUN: Color = Color::Rgb {
@@ -94,6 +98,8 @@ pub struct AnimationManager {
     squirrel: Squirrel,
     postman: Postman,
     halloween: Halloween,
+    music_notes: MusicNotes,
+    sky_notes: SkyNotes,
     spring: Spring,
     new_year_banner: NewYearBanner,
     rainbow: Rainbow,
@@ -103,7 +109,9 @@ pub struct AnimationManager {
     creepy: Creepy,
     finds: Finds,
     star_gazing: StarGazing,
+    guests: Vec<Neighbour>,
     season: Season,
+    tree_growth: Growth,
     animation_controller: AnimationController,
     last_frame_time: Instant,
     show_leaves: bool,
@@ -144,6 +152,8 @@ impl AnimationManager {
             squirrel: Squirrel::new(),
             postman: Postman::new(),
             halloween: Halloween::new(),
+            music_notes: MusicNotes::new(),
+            sky_notes: SkyNotes::new(),
             spring: Spring::new(),
             new_year_banner: NewYearBanner::new(),
             rainbow: Rainbow,
@@ -153,7 +163,9 @@ impl AnimationManager {
             creepy: Creepy::new(),
             finds: Finds::new(),
             star_gazing: StarGazing::new(),
+            guests: Vec::new(),
             season: Season::default(),
+            tree_growth: Growth::default(),
             animation_controller: AnimationController::new(),
             last_frame_time: Instant::now(),
             show_leaves,
@@ -181,10 +193,22 @@ impl AnimationManager {
         self.season = season;
     }
 
+    pub fn set_tree_growth(&mut self, growth: Growth) {
+        self.tree_growth = growth;
+    }
+
+    fn garden_layout(&self, term_width: u16, term_height: u16) -> GardenLayout {
+        GardenLayout::new(term_width, term_height, self.tree_growth)
+    }
+
     pub fn set_unlocks(&mut self, unlocks: Unlocks) {
         self.lore.set_unlocks(unlocks);
         self.postman.set_bell(unlocks.choices.postman_bell);
         self.kid.set_avoids_puddles(unlocks.choices.avoids_puddles);
+    }
+
+    pub fn set_guests(&mut self, guests: Vec<Neighbour>) {
+        self.guests = guests;
     }
 
     pub fn set_finds_remaining(&mut self, has_objects_left: bool, has_bottles_left: bool) {
@@ -225,12 +249,12 @@ impl AnimationManager {
 
     pub fn is_postman_arriving(&self, term_width: u16, term_height: u16) -> bool {
         self.postman
-            .is_arriving(&GardenLayout::new(term_width, term_height))
+            .is_arriving(&self.garden_layout(term_width, term_height))
     }
 
     pub fn postman_head(&self, term_width: u16, term_height: u16) -> Option<(u16, u16)> {
         self.postman
-            .head(&GardenLayout::new(term_width, term_height))
+            .head(&self.garden_layout(term_width, term_height))
     }
 
     pub fn sightings(&self, conditions: &WeatherConditions) -> Sightings {
@@ -257,6 +281,7 @@ impl AnimationManager {
         // Calculate horizon_y early so it's available for all systems
         let ground_height = WorldScene::GROUND_HEIGHT;
         let horizon_y = term_height.saturating_sub(ground_height);
+        let shows_sky_notes = SkyNotes::shows(&state.holiday, horizon_y);
 
         if !conditions.is_day {
             self.star_system.set_sky(if !conditions.is_clear_sky() {
@@ -269,7 +294,9 @@ impl AnimationManager {
             self.star_system.update(term_width, term_height, &mut rng);
             self.star_system.render(renderer)?;
             self.moon_system.update(term_width, term_height);
-            self.moon_system.render(renderer)?;
+            if !shows_sky_notes {
+                self.moon_system.render(renderer)?;
+            }
 
             if state.should_show_fireflies() {
                 self.firefly_system
@@ -292,7 +319,8 @@ impl AnimationManager {
             self.bird_system.render(renderer)?;
         }
 
-        if state.should_show_sun()
+        if !shows_sky_notes
+            && state.should_show_sun()
             && !conditions.is_raining
             && !conditions.is_thunderstorm
             && !conditions.is_snowing
@@ -307,18 +335,14 @@ impl AnimationManager {
         if conditions.is_cloudy
             || (!conditions.is_raining && !conditions.is_thunderstorm && !conditions.is_snowing)
         {
-            let (is_clear, cloud_color) = if let Some(weather) = &state.current_weather {
-                match weather.condition {
-                    crate::weather::WeatherCondition::Clear => (true, Color::White),
-                    crate::weather::WeatherCondition::PartlyCloudy => (false, Color::Grey),
-                    _ => (false, Color::DarkGrey),
-                }
-            } else {
-                (false, Color::DarkGrey)
-            };
+            let condition = state
+                .current_weather
+                .as_ref()
+                .map(|weather| weather.condition);
+            let is_clear = condition == Some(WeatherCondition::Clear);
+            let cloud_color = clouds::cloud_color(condition);
 
             if conditions.is_cloudy || is_clear {
-                self.cloud_system.set_cloud_color(is_clear);
                 self.cloud_system
                     .update(term_width, term_height, is_clear, cloud_color, &mut rng);
                 self.cloud_system.render(renderer)?;
@@ -338,6 +362,10 @@ impl AnimationManager {
         if conditions.is_raining || conditions.is_thunderstorm || conditions.is_snowing {
             self.cloud_bank.update();
             self.cloud_bank.render(renderer, term_width, conditions)?;
+        }
+
+        if shows_sky_notes {
+            self.render_sky_notes(renderer, state, conditions.is_day, term_width, horizon_y)?;
         }
 
         Ok(())
@@ -372,18 +400,41 @@ impl AnimationManager {
             );
         };
 
-        let top = CloudBank::TOP;
-        let lowest = horizon_y.saturating_sub(SUN_LOWEST_ABOVE_HORIZON).max(top);
-        let travel = term_width.saturating_sub(sun_width + 2 * SUN_MARGIN) as f64;
-        let x = SUN_MARGIN + (progress * travel) as u16;
-        let height = (std::f64::consts::PI * progress).sin();
-        let y = top + ((1.0 - height) * (lowest - top) as f64) as u16;
+        let lowest = horizon_y.saturating_sub(SUN_LOWEST_ABOVE_HORIZON);
+        let (x, y) = on_sun_path(progress, sun_width, lowest, term_width);
         let color = if !(TWILIGHT..=1.0 - TWILIGHT).contains(&progress) {
             TWILIGHT_SUN
         } else {
             Color::Yellow
         };
         garden::draw(renderer, x, y, &frame, color)
+    }
+
+    fn render_sky_notes(
+        &mut self,
+        renderer: &mut TerminalRenderer,
+        state: &AppState,
+        is_day: bool,
+        term_width: u16,
+        horizon_y: u16,
+    ) -> io::Result<()> {
+        let width = SkyNotes::WIDTH;
+        let lowest = horizon_y.saturating_sub(SkyNotes::HEIGHT);
+        let (x, y) = if is_day {
+            match day_progress(
+                state.location.latitude,
+                state.location.longitude,
+                chrono::Utc::now(),
+            ) {
+                Some(progress) => on_sun_path(progress, width, lowest, term_width),
+                None => (term_width.saturating_sub(width) / 2, CloudBank::TOP),
+            }
+        } else {
+            let (x, y) = self.moon_system.position();
+            (x.min(term_width.saturating_sub(width)), y.min(lowest))
+        };
+        self.sky_notes.update();
+        self.sky_notes.render(renderer, x, y)
     }
 
     pub fn render_chimney_smoke(
@@ -425,7 +476,7 @@ impl AnimationManager {
         term_height: u16,
         mut rng: &mut impl rand::Rng,
     ) -> io::Result<()> {
-        let layout = GardenLayout::new(term_width, term_height);
+        let layout = self.garden_layout(term_width, term_height);
 
         self.snow_cover.update(conditions.is_snowing);
         self.snow_cover.render(renderer, &layout)?;
@@ -468,39 +519,85 @@ impl AnimationManager {
         self.dog.set_staring(is_staring);
         self.owl.set_staring(is_staring);
 
-        self.owl.update(conditions, &mut rng);
-        self.owl.render(renderer, &layout, conditions, &unlocks)?;
-        self.star_gazing
-            .update(&layout, conditions, self.season, &mut rng);
-        self.star_gazing.render(renderer, &layout)?;
+        if unlocks.owl {
+            self.owl.update(conditions, &mut rng);
+            self.owl.render(renderer, &layout, conditions, &unlocks)?;
+            self.star_gazing
+                .update(&layout, conditions, self.season, &mut rng);
+            self.star_gazing.render(renderer, &layout)?;
+        }
 
-        self.cat.update(&mut rng);
-        self.cat.render(renderer, &layout, conditions, &unlocks)?;
+        if unlocks.cat {
+            self.cat.update(&mut rng);
+            self.cat.render(renderer, &layout, conditions, &unlocks)?;
+        }
 
-        self.dog.update(&layout, conditions, &mut rng);
-        self.dog.render(renderer, &layout, conditions)?;
+        if unlocks.dog {
+            self.dog.update(&layout, conditions, &mut rng);
+            self.dog.render(renderer, &layout, conditions)?;
+        }
 
-        self.duck.update(conditions, &mut rng);
-        self.duck.render(renderer, &layout, conditions, &unlocks)?;
+        if unlocks.duck {
+            self.duck.update(conditions, &mut rng);
+            self.duck.render(renderer, &layout, conditions, &unlocks)?;
+        }
 
-        self.frog.update(conditions, &mut rng);
-        self.frog.render(renderer, &layout, conditions, &unlocks)?;
+        if unlocks.frog {
+            self.frog.update(conditions, &mut rng);
+            self.frog.render(renderer, &layout, conditions, &unlocks)?;
+        }
 
-        self.snail.update(&layout, conditions);
-        self.snail.render(renderer, &layout)?;
+        if unlocks.snail {
+            self.snail.update(&layout, conditions);
+            self.snail.render(renderer, &layout)?;
+        }
 
         self.snowman
             .render(renderer, &layout, conditions, self.snow_cover.is_thick())?;
 
-        self.squirrel.update(&layout, conditions, &mut rng);
-        self.squirrel.render(renderer)?;
+        if unlocks.squirrel {
+            self.squirrel.update(&layout, conditions, &mut rng);
+            self.squirrel.render(renderer)?;
+        }
+
+        let is_leo_at_table = holiday.is_neighbours_party && self.guests.contains(&Neighbour::Leo);
+        if holiday.is_neighbours_party {
+            let is_gaston_on_round = self.postman.is_on_round();
+            let seated: Vec<Neighbour> = self
+                .guests
+                .iter()
+                .copied()
+                .filter(|guest| *guest != Neighbour::Gaston || !is_gaston_on_round)
+                .collect();
+            neighbours_party::render(renderer, &layout, &river, &seated)?;
+        }
 
         self.postman.set_april_fools(holiday.is_april_fools);
         self.postman.update(&layout);
         self.postman.render(renderer, &layout)?;
 
-        self.kid.update(&layout, conditions, &mut rng);
-        self.kid.render(renderer, &layout, conditions)?;
+        if !is_leo_at_table {
+            self.kid.update(&layout, conditions, &mut rng);
+            self.kid.render(renderer, &layout, conditions)?;
+        }
+
+        let singers: Vec<(u16, u16)> = [
+            Some(self.cat.head(&layout, conditions)),
+            Some(self.dog.head(&layout, conditions)),
+            self.owl.head(&layout, conditions),
+            self.duck.head(&layout, conditions),
+            self.frog.head(&layout, conditions),
+            self.snail.head(&layout),
+            self.squirrel.head(),
+            self.kid.head(&layout, conditions),
+            self.postman.rider_head(&layout),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        self.music_notes
+            .update(holiday, &layout, &singers, &mut rng);
+        self.music_notes.render(renderer)?;
 
         if holiday.is_halloween {
             self.halloween.render_spirits(renderer, &layout)?;
