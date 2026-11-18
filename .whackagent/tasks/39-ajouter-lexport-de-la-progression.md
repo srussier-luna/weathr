@@ -1,6 +1,6 @@
 ---
 issue: 39
-status: todo
+status: to-test
 wiki: [[architecture]], [[mail]], [[updater]]
 note: "weathr --export / --import pour changer de Mac sans perdre Lettres et Badges"
 created: 2026-10-26
@@ -44,8 +44,33 @@ created: 2026-10-26
 
 ## Implementation
 
+Round 1 — /wa-autopilot 2026-11-18 (branch merged with origin/develop first).
+
+- `src/backup.rs` (new): Sauvegarde bundle (`version`, `progress`, optional `config`), export, read + validation, version check, import with `[o/N]` question (empty = no), unit tests on temp dirs.
+- `src/main.rs`: `mod backup;`, `--export <FICHIER>` / `--import <FICHIER>` (clap `conflicts_with`), early exits after `--update`, before config load and TUI.
+- `src/config/mod.rs`: `get_config_path` now `pub(crate)`, reused by the backup.
+- `README.md`: « Changer de Mac » section (what the Sauvegarde carries, close weathr before `--import`).
+- Messages use `\u{202F}` before `:` and `?` (wording.md). Success on stdout, warning and errors on stderr.
+- A backup without `version` is « illisible » (spec only named `progress`).
+- Imported `progress.json` is JSON-equal to the saved one, keys in alphabetical order; weathr rewrites it in its own order at next save.
+- Absent or empty `config` in the backup → `config.toml` left untouched.
+- `accepts` and `PREFIX` duplicated locally (updater's `accepts` treats empty as yes).
+- Open: `--export` with no `progress.json` prints the raw OS error (`[weathr] No such file or directory (os error 2)`, exit 1). No wording in the spec → to decide at test.
+- Follow-up: #127 reworks the import.
+- Build: `cargo build` no warning · `cargo test` green (bin 340, 9 new `backup::` tests) · `cargo fmt --check` OK · clippy: only the existing `double_must_use`.
+
 ## Review
 
 ## Verification
+
+Round 1 — runtime check by the agent (`target/debug/weathr`, `HOME` = fresh temp dir each time):
+
+- ✅ Export: message, exit 0; file holds `version`, `progress` (JSON-equal to progress.json), `config` (text-equal, comments kept).
+- ✅ Overwrite of an existing file at the target path.
+- ✅ Import into an empty HOME: no question, `Progression importée.`, progress and config restored.
+- ✅ Existing progress: `Continuer ? [o/N]`; Enter, `n`, `non` → both files unchanged; `o` → replaced.
+- ✅ Backup from 1.5.0: warning line, import still done.
+- ✅ Missing / not JSON / no `progress`: `Sauvegarde illisible : <chemin>`, exit 1, nothing written.
+- ⚠️ « Same Lettres and Badges at launch » checked by comparing progress.json, not by driving the TUI.
 
 ## Feedback
