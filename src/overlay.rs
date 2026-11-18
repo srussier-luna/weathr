@@ -1,4 +1,4 @@
-use crate::badges::{BADGES, Badge, BadgeKind, KINDS};
+use crate::badges::{self, BADGES, Badge, BadgeKind, KINDS, SAM_TRAIL};
 use crate::render::TerminalRenderer;
 use crossterm::style::Color;
 use std::collections::BTreeSet;
@@ -284,6 +284,7 @@ pub fn render_badges(
     renderer: &mut TerminalRenderer,
     earned: &BTreeSet<String>,
     streak: u32,
+    sam_cities: usize,
 ) -> io::Result<()> {
     let box_width = Frame::Stars.fit(MAX_BADGES_WIDTH.min(renderer.get_size().0.saturating_sub(4)));
     let inner = Frame::Stars.inner_width(box_width);
@@ -301,7 +302,7 @@ pub fn render_badges(
 
         let cells: Vec<String> = badges
             .iter()
-            .map(|badge| badge_cell(badge, earned.contains(badge.id)))
+            .map(|badge| badge_cell(badge, earned.contains(badge.id), sam_cities))
             .collect();
         let longest_cell = cells
             .iter()
@@ -335,11 +336,17 @@ pub fn render_badges(
     )
 }
 
-fn badge_cell(badge: &Badge, is_earned: bool) -> String {
+fn badge_cell(badge: &Badge, is_earned: bool, sam_cities: usize) -> String {
     let mark = if is_earned { 'x' } else { ' ' };
-    match (is_earned, badge.kind, badge.hint) {
-        (false, BadgeKind::Secret, _) => format!("[{mark}] {HIDDEN_BADGE}"),
-        (true, _, Some(hint)) => format!("[{mark}] {} ({hint})", badge.name),
+    let sam_trail = if badge.id == SAM_TRAIL.id {
+        badges::sam_trail_line(sam_cities)
+    } else {
+        None
+    };
+    match (is_earned, badge.kind, badge.hint, sam_trail) {
+        (false, BadgeKind::Secret, _, _) => format!("[{mark}] {HIDDEN_BADGE}"),
+        (true, _, _, Some(line)) => format!("[{mark}] {line}"),
+        (true, _, Some(hint), None) => format!("[{mark}] {} ({hint})", badge.name),
         _ => format!("[{mark}] {}", badge.name),
     }
 }
@@ -491,18 +498,38 @@ mod tests {
     fn test_secret_badges_explain_themselves_once_earned() {
         let patience = BADGES.iter().find(|badge| badge.id == "patience").unwrap();
         let clear = BADGES.iter().find(|badge| badge.id == "clear").unwrap();
-        assert_eq!(badge_cell(patience, false), "[ ] ???");
+        assert_eq!(badge_cell(patience, false, 0), "[ ] ???");
         assert_eq!(
-            badge_cell(patience, true),
+            badge_cell(patience, true, 12),
             "[x] Patience (weathr ouvert 1 h d'affilée)"
         );
-        assert_eq!(badge_cell(clear, true), "[x] Ciel dégagé");
+        assert_eq!(badge_cell(clear, true, 0), "[x] Ciel dégagé");
         assert!(
             BADGES
                 .iter()
                 .filter(|badge| badge.kind == BadgeKind::Secret)
                 .all(|badge| badge.hint.is_some())
         );
+    }
+
+    #[test]
+    fn test_sam_trail_shows_its_tier_once_earned() {
+        assert_eq!(badge_cell(&SAM_TRAIL, false, 0), "[ ] ???");
+        assert_eq!(
+            badge_cell(&SAM_TRAIL, true, 20),
+            "[x] Sur les traces de Sam · argent (20 villes, prochain palier\u{202F}: or à 30)"
+        );
+        assert_eq!(
+            badge_cell(&SAM_TRAIL, true, 40),
+            "[x] Sur les traces de Sam · platine (40 villes)"
+        );
+    }
+
+    #[test]
+    fn test_travel_badges_show_their_name_only() {
+        let traveller = BADGES.iter().find(|badge| badge.id == "traveller").unwrap();
+        assert_eq!(badge_cell(traveller, false, 0), "[ ] Voyageur");
+        assert_eq!(badge_cell(traveller, true, 0), "[x] Voyageur");
     }
 
     #[test]

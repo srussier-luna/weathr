@@ -61,6 +61,22 @@ created: 2026-11-02
 
 ## Implementation
 
+Round 1 — /wa-autopilot 2026-11-18 (branch merged with origin/develop first). **blocked** — code done (bricks 1–2), runtime check not run.
+
+- Open question: at 12 Villes de Sam, does the Album line say **bronze** or **argent**? Thresholds (Decisions + criteria: argent à 15) give bronze; the Album example says `· argent (12 villes, prochain palier : or à 30)`. Code and tests follow the thresholds; recommended: fix the example (`· bronze (12 villes, prochain palier : argent à 15)`, argent checked at 20).
+- Total Badges 43 → 46 (develop already had 43, not 40).
+- `src/travel.rs` (new): `record` (city lowercased + trimmed), Ville de Sam = first `CITIES` entry ≤ 10 km.
+- `src/geolocation.rs`: `distance_km` (haversine).
+- `src/main.rs`: launch detection passed to `App::new` (`launch_location`), only when `location.auto`; reverse-geocoded city never counts.
+- `src/app.rs`: `record_trip` at launch (nothing under `--day`), saved once if changed; Voyageur ≥ 7 / Baroudeur ≥ 15 as `collect_badges` milestones; `Award { badge, tier }` replaces `&'static Badge` in pending badges and `Overlay::NewBadge`/`NoteBadge`.
+- `src/badges.rs`: ids `traveller`, `backpacker`, `sam_trail` (Secrets, `SAM_TRAIL`), `Tier` thresholds 1/5/15/30/40, crossed tiers from before/after counts.
+- `src/overlay.rs`, `src/views.rs`: Album line per Palier (`???` before chocolat, « 1 ville » singular), « Nouveau palier\u{202F}! » cards.
+- A detection without city name still counts for Sam (by coordinates), not for Voyageur/Baroudeur.
+- Other simulation flags (`--simulate`, `--demo`, fêtes) still count; only `--day` excluded, as for badges today.
+- Glossary: `Award` is new (card of a new Badge or Palier), to add or rename.
+- Not covered by tests: Voyageur/Baroudeur award in `collect_badges` (needs a full `App`), planned for the runtime check.
+- Build: `cargo build`, `cargo test` (364 + 132 unit, integration) green · fmt OK · clippy: existing `double_must_use` only.
+
 ## Review
 
 ## Verification

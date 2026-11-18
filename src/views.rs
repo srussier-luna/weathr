@@ -1,5 +1,5 @@
 use crate::animation::lore::Unlocks;
-use crate::badges::Badge;
+use crate::badges::Award;
 use crate::overlay::{self, Frame, Line, View};
 use crate::progress::Progress;
 use crate::release_notes::Section;
@@ -140,15 +140,20 @@ fn medal([top, middle, bottom]: [&str; 3]) -> [String; 5] {
     ]
 }
 
-pub fn badge_card_view(badge: &Badge) -> View {
+pub fn badge_card_view(award: Award) -> View {
+    let title = if award.is_new_tier() {
+        "Nouveau palier\u{202F}!"
+    } else {
+        "Nouveau badge\u{202F}!"
+    };
     let mut lines = vec![Line::Blank];
-    lines.extend(medal(badge.icon).into_iter().map(Line::Centered));
+    lines.extend(medal(award.badge.icon).into_iter().map(Line::Centered));
     lines.extend([
         Line::Blank,
-        Line::Centered("Nouveau badge\u{202F}!".to_string()),
-        Line::Centered(badge.name.to_string()),
+        Line::Centered(title.to_string()),
+        Line::Centered(award.name()),
     ]);
-    lines.extend(badge.hint.map(|hint| Line::Centered(hint.to_string())));
+    lines.extend(award.hint().map(Line::Centered));
     View {
         title: String::new(),
         lines,
@@ -533,7 +538,7 @@ pub fn album_pages(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::badges;
+    use crate::badges::{self, Tier};
     use crate::story::content::save_golden::{SavedGame, courrier_fixture, render};
 
     #[test]
@@ -703,18 +708,42 @@ mod tests {
 
     #[test]
     fn test_badge_card_names_the_badge_and_its_secret_condition() {
-        let rain = badge_card_view(badges::find("rain").unwrap());
+        let rain = badge_card_view(badges::find("rain").unwrap().into());
         assert_eq!(rain.frame, Frame::Stars);
         assert_eq!(centered(&rain)[1], "/ (___) \\");
         assert_eq!(centered(&rain)[5..], ["Nouveau badge\u{202F}!", "Pluie"]);
 
-        let patience = badge_card_view(badges::find("patience").unwrap());
+        let patience = badge_card_view(badges::find("patience").unwrap().into());
         assert_eq!(
             centered(&patience)[5..],
             [
                 "Nouveau badge\u{202F}!",
                 "Patience",
                 "weathr ouvert 1 h d'affilée"
+            ]
+        );
+    }
+
+    #[test]
+    fn test_sam_trail_card_is_a_new_badge_then_a_new_tier() {
+        let chocolate = badge_card_view(Award::sam_trail(Tier::Chocolate));
+        assert_eq!(
+            centered(&chocolate)[5..],
+            [
+                "Nouveau badge\u{202F}!",
+                "Sur les traces de Sam · chocolat",
+                "visité la même ville que Sam"
+            ]
+        );
+
+        let bronze = badge_card_view(Award::sam_trail(Tier::Bronze));
+        assert_eq!(centered(&bronze)[..5], centered(&chocolate)[..5]);
+        assert_eq!(
+            centered(&bronze)[5..],
+            [
+                "Nouveau palier\u{202F}!",
+                "Sur les traces de Sam · bronze",
+                "5 villes de Sam visitées"
             ]
         );
     }
