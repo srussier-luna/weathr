@@ -42,6 +42,11 @@ impl Snail {
         self.x = Some(if x < 1.0 { start } else { x });
     }
 
+    pub fn head(&self, layout: &GardenLayout) -> Option<(u16, u16)> {
+        let x = self.x?;
+        Some((x as u16, layout.horizon_y.saturating_sub(1)))
+    }
+
     pub fn render(&self, renderer: &mut TerminalRenderer, layout: &GardenLayout) -> io::Result<()> {
         let Some(x) = self.x else {
             return Ok(());

@@ -1,4 +1,4 @@
-use crate::animation::garden::{self, GardenLayout};
+use crate::animation::garden::{self, GardenLayout, WELL_WIDTH};
 use crate::animation::lore::Unlocks;
 use crate::render::TerminalRenderer;
 use crate::weather::WeatherConditions;
@@ -6,7 +6,6 @@ use crossterm::style::Color;
 use rand::prelude::*;
 use std::io;
 
-const WELL_OFFSET: u16 = 28;
 const SHOW_FRAMES: u16 = 90;
 const STARE_FRAMES: u16 = 150;
 const WHISPERS: [&str; 6] = ["...", "ici", "viens", "treize", "chut", "derrière toi"];
@@ -108,11 +107,12 @@ impl Creepy {
         unlocks: &Unlocks,
     ) -> io::Result<()> {
         let house = &layout.house;
-        let well_x = layout.house_x + house.porch_x() + WELL_OFFSET;
+        let well_x = layout.well_x().filter(|_| unlocks.well);
 
         if unlocks.wet_footprints && !conditions.is_day {
             let door_x = layout.house_x + house.door_x() + 2;
-            for x in (door_x..well_x).step_by(3) {
+            let end_x = well_x.map_or(0, |x| x + WELL_WIDTH);
+            for x in (end_x..door_x).rev().step_by(3) {
                 renderer.render_char(x, layout.horizon_y, '.', WET)?;
             }
         }
@@ -124,7 +124,9 @@ impl Creepy {
             garden::draw_solid(renderer, x, y, &["/o\\"], SHADOW)?;
         }
 
-        if self.whisper.is_visible() {
+        if self.whisper.is_visible()
+            && let Some(well_x) = well_x
+        {
             let y = layout.horizon_y.saturating_sub(5);
             garden::draw(
                 renderer,

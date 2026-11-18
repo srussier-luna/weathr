@@ -1,7 +1,6 @@
 mod banner;
 mod progress;
 
-use chrono::Local;
 use progress::InstallProgress;
 use std::env;
 use std::fs;
@@ -12,18 +11,16 @@ use std::process::{Command, ExitStatus, Stdio};
 use std::thread;
 use std::time::Duration;
 
-const SOURCE_DIR: &str = env!("CARGO_MANIFEST_DIR");
-const CHECK_FILE: &str = "update_check";
+pub(crate) const SOURCE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 const LOG_FILE: &str = "update.log";
 const PREFIX: &str = "[weathr]";
 const NEW_VERSION_MESSAGE: &str = "Une nouvelle version est arrivée\u{202F}!";
 
 pub async fn offer_update() {
-    if !io::stdin().is_terminal() || has_checked_today() {
+    if !io::stdin().is_terminal() {
         return;
     }
-    record_check();
 
     let source = Path::new(SOURCE_DIR);
     if !is_git_checkout(source) || !is_clean(source) || !fetch(source).await {
@@ -70,14 +67,24 @@ fn update_source() -> io::Result<()> {
     update(source)
 }
 
-fn is_git_checkout(source: &Path) -> bool {
+pub(crate) fn is_git_checkout(source: &Path) -> bool {
     source.join(".git").exists()
 }
 
 fn git_output(source: &Path, args: &[&str]) -> Option<String> {
-    let output = Command::new("git")
-        .args(args)
-        .current_dir(source)
+    stdout_of(Command::new("git").args(args).current_dir(source))
+}
+
+pub(crate) fn git_user_name() -> Option<String> {
+    git_output(Path::new(SOURCE_DIR), &["config", "user.name"])
+}
+
+pub(crate) fn tool_version(tool: &str) -> Option<String> {
+    stdout_of(Command::new(tool).arg("--version"))
+}
+
+fn stdout_of(command: &mut Command) -> Option<String> {
+    let output = command
         .stdin(Stdio::null())
         .stderr(Stdio::null())
         .output()
@@ -88,12 +95,12 @@ fn git_output(source: &Path, args: &[&str]) -> Option<String> {
         .then(|| String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
-fn is_clean(source: &Path) -> bool {
+pub(crate) fn is_clean(source: &Path) -> bool {
     git_output(source, &["status", "--porcelain", "--untracked-files=no"])
         .is_some_and(|status| status.trim().is_empty())
 }
 
-async fn fetch(source: &Path) -> bool {
+pub(crate) async fn fetch(source: &Path) -> bool {
     let mut command = tokio::process::Command::new("git");
     command
         .args(["fetch", "--quiet"])
@@ -121,9 +128,12 @@ fn uses_default_ssh(source: &Path) -> bool {
 }
 
 fn has_pending_changes(source: &Path) -> bool {
+    pending_count(source).is_some_and(|count| count > 0)
+}
+
+pub(crate) fn pending_count(source: &Path) -> Option<usize> {
     git_output(source, &["rev-list", "--count", "HEAD..@{u}"])
-        .and_then(|count| count.trim().parse::<usize>().ok())
-        .is_some_and(|count| count > 0)
+        .and_then(|count| count.trim().parse().ok())
 }
 
 fn ask_confirmation() -> bool {
@@ -305,32 +315,12 @@ fn wait_for_enter() {
     let _ = io::stdin().read_line(&mut String::new());
 }
 
+pub(crate) fn config_dir() -> Option<PathBuf> {
+    dirs::config_dir().map(|dir| dir.join("weathr"))
+}
+
 fn config_path(file: &str) -> Option<PathBuf> {
-    dirs::config_dir().map(|dir| dir.join("weathr").join(file))
-}
-
-fn check_path() -> Option<PathBuf> {
-    config_path(CHECK_FILE)
-}
-
-fn today() -> String {
-    Local::now().format("%Y-%m-%d").to_string()
-}
-
-fn has_checked_today() -> bool {
-    check_path()
-        .and_then(|path| fs::read_to_string(path).ok())
-        .is_some_and(|date| date.trim() == today())
-}
-
-fn record_check() {
-    let Some(path) = check_path() else {
-        return;
-    };
-    if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
-    let _ = fs::write(path, today());
+    config_dir().map(|dir| dir.join(file))
 }
 
 #[cfg(test)]

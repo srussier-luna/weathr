@@ -36,22 +36,24 @@ Assumes binary built from local clone of this fork.
 | `-s, --simulate <cond>` | fixed weather, no network (missing value prints list) |
 | `-n, --night` | night for simulated scenes |
 | `-l, --leaves` | falling leaves outside autumn |
-| `--christmas`, `--fireworks` | inject Fête (`--fireworks` also forces night) |
+| `--christmas`, `--fireworks`, `--music` | inject Fête (`--fireworks` also forces night; `--music` = Fête de la musique, see [[animation]]) |
 | `--demo` | cycle every scene, see [[animation]] |
 | `--auto-location`, `--hide-location`, `--hide-hud` | override config |
 | `--imperial` / `--metric` | units (mutually exclusive) |
 | `--silent` | no info output, **and no update prompt** |
+| `--day <N>` | preview the story on Jour de jeu N (1–65535) in a fresh in-memory game, real save untouched, see [[mail]] |
 | `--completions <shell>` | print completions, exit |
 | `--update` | update now, exit |
+| `--diagnostic` | check the install (git, cargo, source clone, Open-Meteo + git fetch, config dir, progress.json, binary dir), print one `✓`/`✗` line each with a fix hint, exit 0 if all ✓ else 1; no TUI |
 
 Any simulation flag marks session simulated: weather/Fête Badges and rain
 alerts off (see [[mail]], [[weather]]).
 
 ## Release notes — `src/release_notes.rs`
 
-- `NOUVEAUTES.md` at repo root, French, `tu`, one `## YYYY-MM-DD` section per release, newest first. Embedded with `include_str!` (binary always built from checkout). Written by hand at each release; avoid `: ; ! ?` (wrap splits on U+202F).
+- `NOUVEAUTES.md` at repo root, French, `tu`, one `## YYYY-MM-DD` section per release, newest first. Embedded with `include_str!` (binary always built from checkout). Written by hand at each release; U+202F before `: ; ! ?` (wrap keeps it glued).
 - `notes_seen_on` in `progress.json` = last section shown. First launch after update → `Nouveautés` box (`Overlay::Notes`) with every newer section; `Esc`/`Enter` closes and marks seen. Shown once, no key to reopen.
-- `Launch` (`src/app.rs`): `Fresh` (no `progress.json` before load) → newest marked seen, nothing shown, whatever mode · `Suppressed` (`--silent`, `--demo`, forced modes) → nothing shown or marked · `Normal`. Old save without the field → newest section only.
+- `Launch` (`src/app.rs`): `Fresh` (no `progress.json` before load) → newest marked seen, nothing shown, whatever mode · `Suppressed` (`--silent`, `--demo`, forced modes) → nothing shown or marked · `Normal`. Old save without the field → newest section only. Accueil pending (see [[mail]]) → Nouveautés box waits until it ends.
 - Lines wrapped at box width (`overlay::text_width`) before scroll limit; `↑`/`↓` scroll when taller than the box.
 
 ## Gotchas
@@ -61,3 +63,9 @@ alerts off (see [[mail]], [[weather]]).
 - `--ff-only`: local commits on branch → pull fails, no merge.
 - Prompt writes to plain stdout; all output here happens before TUI
   takes alternate screen.
+
+## Diagnostic — `src/diagnostic/`
+
+- `mod.rs` runs the probes (network ones with 5 s timeouts, in parallel), `checks.rs` turns probe results into `Check { status, label, detail/hint }` (pure, tested), `report.rs` renders lines + summary « Tout est en ordre. » / « <n> problème(s) à corriger. ».
+- Reuses updater helpers (`SOURCE_DIR`, `is_git_checkout`, `is_clean`, fetch, `pending_count`, `config_dir`, `tool_version`); clone behind upstream = ✓ with « lance weathr --update ».
+- Write checks use a unique probe file `.weathr-diagnostic-<pid>`, created then removed; directory not owned by the user → `sudo chown -R` hint.
