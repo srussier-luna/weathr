@@ -37,6 +37,8 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Timeline | | | `Timeline` | événements de l'histoire classés par Jour de jeu |
 | Apparition | déblocage | | `Arrival` | objet ou Habitant qui arrive au jardin un Jour de jeu |
 | Habitant | animal | | | animal du jardin (Minouche, Biscuit…), arrive à sa 1re Lettre |
+| Recette | | | `Recipe` | Lettre de Rose avec une recette ; tous les 10 jours après sa question → [[mail]] |
+| Régime | régime alimentaire | | `diet` | ce que le joueur ne mange pas (7, cumulables) ; filtre les Recettes → [[mail]] |
 | Voisin | | | | personne d'une autre maison du village (Sam, Nadia et Claire…) |
 | Arbre | | | `Tree` | grand arbre à gauche de la maison, pousse du jour 1 au jour 12 |
 | Puits | | | `well` | vieux puits réparé, à gauche du grand Arbre |
