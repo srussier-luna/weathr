@@ -26,6 +26,8 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Gazette | journal | | | chaque lundi : prévisions de la semaine, rumeurs, annonces, Énigme |
 | Alerte météo | vigilance | | | ligne ⚠ de la Gazette : canicule, grand froid, vent fort, orage ; calculée sur les prévisions |
 | Énigme | devinette | | `Riddle` | question de la Gazette, réponse touche `e` |
+| Question | choix | | `Choice` | question [1]/[2] d'une Lettre du village ; réponse modifiable dans l'Album → [[mail]] |
+| Écho | | | `echoes` | phrase d'une Lettre suivante qui rappelle la réponse à une Question |
 | Bouteille | message à la mer | | `bottle` | message dérivant sur la rivière |
 | Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret → [[mail]] |
 | Fête | jour férié | | `Holiday` | jour spécial qui décore la scène → [[animation]] |
