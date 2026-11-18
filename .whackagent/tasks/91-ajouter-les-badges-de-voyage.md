@@ -1,6 +1,6 @@
 ---
 issue: 91
-status: todo
+status: to-test
 wiki: [[architecture]], [[weather]]
 note: "ajouter un badge voyageur pour une personne qui a visiter 7 villes / badge baroudeur 15 villes visiter"
 created: 2026-11-02
@@ -29,7 +29,7 @@ created: 2026-11-02
   - Même icône à tous les Paliers, seul le nom change.
   - Le système de Badges change : nom et indice sont fixes aujourd'hui (`Badge` en `const`, `badge_card_view` dans `src/views.rs`, `badge_cell` dans `src/overlay.rs`). Il faut un nom et une ligne qui dépendent du Palier.
 - Album, avant le chocolat : `???` comme les autres Secrets. Ensuite visible, avec le Palier et la progression :
-  - `[x] Sur les traces de Sam · argent (12 villes, prochain palier : or à 30)` ;
+  - `[x] Sur les traces de Sam · bronze (12 villes, prochain palier : argent à 15)` ;
   - à platine : `[x] Sur les traces de Sam · platine (40 villes)`.
 - Cartes :
   - chocolat → « Nouveau badge ! », « Sur les traces de Sam · chocolat », « visité la même ville que Sam » ;
@@ -53,8 +53,8 @@ created: 2026-11-02
 - Même Ville de Sam relancée → comptée une seule fois, pas de nouvelle carte.
 - Position auto à plus de 10 km de toutes les villes de Sam → rien ne bouge.
 - Lisbonne choisie dans les Réglages ou écrite à la main → rien ne bouge.
-- Album, Secrets : `???` avant le chocolat ; à 12 Villes de Sam → `Sur les traces de Sam · argent (12 villes, prochain palier : or à 30)` ; à 40 → `· platine (40 villes)`.
-- Album → Voyageur et Baroudeur dans Fidélité ; le total de la Barre du haut passe de 40 à 43, quel que soit le Palier.
+- Album, Secrets : `???` avant le chocolat ; à 12 Villes de Sam → `Sur les traces de Sam · bronze (12 villes, prochain palier : argent à 15)`, à 20 → `· argent (20 villes, prochain palier : or à 30)` ; à 40 → `· platine (40 villes)`.
+- Album → Voyageur et Baroudeur dans Fidélité ; le total de la Barre du haut passe de 43 à 46, quel que soit le Palier.
 - Sauvegarde d'une version précédente (sans `visited_cities` ni `sam_cities`) → se charge sans erreur, comptes à 0.
 - `weathr --day N` → aucune ville comptée, aucun Badge attribué.
 - `cargo fmt --check` et `cargo test` verts ; clippy rouge uniquement sur `double_must_use` (`src/weather/provider.rs:23`).
@@ -63,7 +63,7 @@ created: 2026-11-02
 
 Round 1 — /wa-autopilot 2026-11-18 (branch merged with origin/develop first). **blocked** — code done (bricks 1–2), runtime check not run.
 
-- Open question: at 12 Villes de Sam, does the Album line say **bronze** or **argent**? Thresholds (Decisions + criteria: argent à 15) give bronze; the Album example says `· argent (12 villes, prochain palier : or à 30)`. Code and tests follow the thresholds; recommended: fix the example (`· bronze (12 villes, prochain palier : argent à 15)`, argent checked at 20).
+- Answered 2026-11-18 — thresholds kept (bronze at 12, example fixed). Was: at 12 Villes de Sam, does the Album line say **bronze** or **argent**? Thresholds (Decisions + criteria: argent à 15) give bronze; the Album example says `· argent (12 villes, prochain palier : or à 30)`. Code and tests follow the thresholds; recommended: fix the example (`· bronze (12 villes, prochain palier : argent à 15)`, argent checked at 20).
 - Total Badges 43 → 46 (develop already had 43, not 40).
 - `src/travel.rs` (new): `record` (city lowercased + trimmed), Ville de Sam = first `CITIES` entry ≤ 10 km.
 - `src/geolocation.rs`: `distance_km` (haversine).
@@ -77,8 +77,25 @@ Round 1 — /wa-autopilot 2026-11-18 (branch merged with origin/develop first). 
 - Not covered by tests: Voyageur/Baroudeur award in `collect_badges` (needs a full `App`), planned for the runtime check.
 - Build: `cargo build`, `cargo test` (364 + 132 unit, integration) green · fmt OK · clippy: existing `double_must_use` only.
 
+Round 1 (cont.) — after the answer, runtime check run.
+
+- `src/overlay.rs`: `wrap_cell` — an Album cell longer than the box (75 chars) wraps, the parenthesised part on a second line, 4-space indent. Sam line at chocolat/bronze (77 chars) uses two lines; other cells unchanged. Keeping one line would need the Album max width 80 → 82.
+- Voyageur / Baroudeur awarded from the saved count (`collect_badges`), covered by the runtime check.
+- Build: `cargo test` 522 green · fmt OK · clippy: existing `double_must_use` only.
+
 ## Review
 
 ## Verification
+
+Round 1 — runtime check by the agent (`target/debug/weathr --silent` in a pty, fresh `HOME` per series; auto location through a fake `CoreLocationCLI` on PATH, real `detect_location` path):
+
+- ✅ 12 Villes de Sam, 6 villes: Voyageur/Baroudeur `[ ]` in Fidélité, `Badges 23/46`, Sam `· bronze` + `(12 villes, prochain palier : argent à 15)` on the next line.
+- ✅ 20 Villes de Sam: `· argent (20 villes, prochain palier : or à 30)` on one line.
+- ✅ Lisbonne written by hand → nothing counted.
+- ✅ 6 villes → no card; 7 → Voyageur card; 15 → Baroudeur card.
+- ✅ Old save without the fields loads, counts at 0.
+- ✅ `--day 3` → no card, progress.json byte-identical.
+- ✅ Auto at Lisbonne → chocolat card; again 1 km away → nothing; 5th Ville de Sam → « Nouveau palier ! » bronze; Lyon (far) → visited only; 7th city → Voyageur; « LYON » after « Lyon » → nothing.
+- Tests only: argent/or/platine cards, platine Album line, several tiers at once, city chosen in Settings (never reaches the launch path).
 
 ## Feedback

@@ -8,6 +8,7 @@ const MAX_BOX_WIDTH: u16 = 66;
 const MAX_BADGES_WIDTH: u16 = 80;
 const MAX_BADGE_COLUMNS: usize = 3;
 const HIDDEN_BADGE: &str = "???";
+const CELL_INDENT: &str = "    ";
 const BADGES_FOOTER: &str = "[b] ou [Echap] fermer";
 const FOOTER_GAP: &str = "  ";
 const FOLDER_TAB: &str = "/  Archives  \\";
@@ -317,7 +318,7 @@ pub fn render_badges(
                 .iter()
                 .map(|cell| format!("{cell:<width$} ", width = column_width.saturating_sub(1)))
                 .collect();
-            lines.push(line.trim_end().to_string());
+            lines.extend(wrap_cell(line.trim_end(), inner));
         }
     }
 
@@ -349,6 +350,30 @@ fn badge_cell(badge: &Badge, is_earned: bool, sam_cities: usize) -> String {
         (true, _, Some(hint), None) => format!("[{mark}] {} ({hint})", badge.name),
         _ => format!("[{mark}] {}", badge.name),
     }
+}
+
+fn wrap_cell(cell: &str, width: usize) -> Vec<String> {
+    if cell.chars().count() <= width {
+        return vec![cell.to_string()];
+    }
+    let (mark, text) = cell.split_at(CELL_INDENT.len());
+    let text_width = width.saturating_sub(CELL_INDENT.len());
+    let lines = match text.split_once(" (") {
+        Some((name, hint)) => [
+            wrap(name, text_width),
+            wrap(&format!("({hint}"), text_width),
+        ]
+        .concat(),
+        None => wrap(text, text_width),
+    };
+    lines
+        .into_iter()
+        .enumerate()
+        .map(|(index, line)| {
+            let prefix = if index == 0 { mark } else { CELL_INDENT };
+            format!("{prefix}{line}")
+        })
+        .collect()
 }
 
 fn box_width(renderer: &TerminalRenderer) -> u16 {
@@ -523,6 +548,24 @@ mod tests {
             badge_cell(&SAM_TRAIL, true, 40),
             "[x] Sur les traces de Sam · platine (40 villes)"
         );
+    }
+
+    #[test]
+    fn test_long_cell_puts_its_hint_under_the_name() {
+        let line = badge_cell(&SAM_TRAIL, true, 12);
+        assert_eq!(
+            wrap_cell(&line, 75),
+            [
+                "[x] Sur les traces de Sam · bronze",
+                "    (12 villes, prochain palier\u{202F}: argent à 15)"
+            ]
+        );
+        assert!(
+            wrap_cell(&line, 30)
+                .iter()
+                .all(|row| row.chars().count() <= 30)
+        );
+        assert_eq!(wrap_cell(&line, 77), [line]);
     }
 
     #[test]
