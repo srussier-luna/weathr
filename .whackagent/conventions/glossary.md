@@ -29,6 +29,7 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Bouteille | message à la mer | | `bottle` | message dérivant sur la rivière |
 | Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret → [[mail]] |
 | Fête | jour férié | | `Holiday` | jour spécial qui décore la scène → [[animation]] |
+| Encadré de Fête | | | | fenêtre au lancement un jour de Fête : nom et ce qu'il faut guetter → [[render]] |
 | Fête de la musique | | | `is_music_day` | 21 juin : notes aux fenêtres, chanteurs, Notes du ciel ; Badge dédié → [[animation]] |
 | Notes du ciel | dessin de notes, croches | | `SkyNotes` | croche et deux doubles croches, remplace soleil ou lune → [[animation]] |
 | Facteur | postier | | `Postman` | livre les Lettres à la boîte aux lettres |
