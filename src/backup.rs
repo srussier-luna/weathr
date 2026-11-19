@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::progress::{progress_path, write_creating_dir, write_restored};
+use crate::progress::{check_restorable, progress_path, write_creating_dir, write_restored};
 use crate::prompt::{PREFIX, confirm};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -58,7 +58,9 @@ impl Backup {
     }
 
     fn read(file: &Path) -> io::Result<Self> {
-        Ok(serde_json::from_str(&fs::read_to_string(file)?)?)
+        let backup: Self = serde_json::from_str(&fs::read_to_string(file)?)?;
+        check_restorable(&backup.progress)?;
+        Ok(backup)
     }
 
     fn write(&self, file: &Path) -> io::Result<()> {
@@ -328,6 +330,10 @@ mod tests {
             (
                 "progress_not_object.json",
                 r#"{"version":"1.7.0","progress":[1,2]}"#,
+            ),
+            (
+                "progress_wrong_type.json",
+                r#"{"version":"1.7.0","progress":{"letters_read":"douze"}}"#,
             ),
         ];
         for (name, content) in cases {

@@ -340,7 +340,12 @@ pub(crate) fn write_creating_dir(path: &Path, content: impl AsRef<[u8]>) -> io::
     saved
 }
 
+pub(crate) fn check_restorable(progress: &Map<String, Value>) -> serde_json::Result<()> {
+    serde_json::from_value::<Progress>(Value::Object(progress.clone())).map(drop)
+}
+
 pub(crate) fn write_restored(path: &Path, progress: &Map<String, Value>) -> io::Result<()> {
+    check_restorable(progress)?;
     let mut progress = progress.clone();
     progress.remove(FORMAT_KEY);
     write_creating_dir(path, serde_json::to_vec_pretty(&progress)?)
@@ -937,6 +942,17 @@ mod tests {
         assert_eq!(progress.letters_read, 4);
         assert_eq!(elsewhere_opening, Opening::default());
         assert_eq!(elsewhere.letters_read, 4);
+    }
+
+    #[test]
+    fn test_wrong_typed_restore_writes_nothing() {
+        let files = Files::new("wrong_type");
+        let restored: Map<String, Value> =
+            serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":"douze"}"#).unwrap();
+
+        assert!(check_restorable(&restored).is_err());
+        assert!(write_restored(&files.save, &restored).is_err());
+        assert!(!files.save.exists());
     }
 
     #[test]
