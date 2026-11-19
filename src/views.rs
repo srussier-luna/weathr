@@ -764,7 +764,7 @@ mod tests {
     }
 
     #[test]
-    fn test_holiday_box_names_the_fete_and_what_to_look_for() {
+    fn test_holiday_box_names_the_holiday_and_what_to_look_for() {
         let music = Holiday::music_day().holiday_box().unwrap();
         assert_eq!(
             render(&holiday_box_view(music)),

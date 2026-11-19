@@ -1,6 +1,6 @@
 ---
 issue: 94
-status: to-test
+status: to-close
 wiki: [[animation]], [[render]]
 note: "ajouter un event quand un jours de fete est afficher, nouvel encadré, v 1.8"
 created: 2026-11-18
@@ -53,6 +53,9 @@ Round 1 — /wa-autopilot 2026-11-19.
 - Build: `cargo build`, `cargo test` (495) green · fmt OK · clippy: existing `double_must_use` only.
 
 ## Review
+
+Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- 1 minor style finding (test names `fete` → `holiday`, glossary) fixed by autofix round 1 (tests only), re-verified clean.
 
 ## Verification
 

@@ -466,8 +466,8 @@ mod tests {
     }
 
     #[test]
-    fn test_every_fete_and_meteor_shower_has_its_own_box() {
-        let fetes = [
+    fn test_every_holiday_and_meteor_shower_has_its_own_box() {
+        let holidays = [
             (Holiday::christmas(), "Noël"),
             (Holiday::new_year(2027), "Nouvel An"),
             (Holiday::on(date(2027, 1, 6)), "Épiphanie"),
@@ -483,13 +483,13 @@ mod tests {
             (Holiday::geminids(), "Géminides"),
         ];
 
-        for (holiday, title) in fetes {
+        for (holiday, title) in holidays {
             let holiday_box = holiday.holiday_box().unwrap();
             assert_eq!(holiday_box.title, title);
             assert!((2..=3).contains(&holiday_box.lines.len()), "{title}");
             assert!(holiday_box.lines.iter().all(|line| !line.is_empty()));
         }
-        assert_eq!(HOLIDAY_BOXES.len(), fetes.len());
+        assert_eq!(HOLIDAY_BOXES.len(), holidays.len());
     }
 
     #[test]
@@ -500,7 +500,7 @@ mod tests {
     }
 
     #[test]
-    fn test_box_follows_the_fete_days() {
+    fn test_box_follows_the_holiday_days() {
         assert_eq!(
             box_title(Holiday::on(date(2026, 7, 13))),
             Some("14 juillet")
@@ -522,7 +522,7 @@ mod tests {
     }
 
     #[test]
-    fn test_single_day_fete_wins_over_a_longer_one() {
+    fn test_single_day_holiday_wins_over_a_longer_one() {
         assert_eq!(box_title(Holiday::on(date(2026, 12, 25))), Some("Noël"));
         assert_eq!(box_title(Holiday::on(date(2027, 1, 6))), Some("Épiphanie"));
         assert_eq!(
