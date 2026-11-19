@@ -52,6 +52,8 @@ pub struct Holiday {
     pub is_epiphany: bool,
     pub is_neighbours_party: bool,
     pub is_music_day: bool,
+    pub is_candlemas: bool,
+    pub is_may_day: bool,
     pub meteor_shower: Option<MeteorShower>,
     pub is_winter: bool,
     pub season: Season,
@@ -78,6 +80,8 @@ impl Holiday {
             is_epiphany: month == 1 && day == 6,
             is_neighbours_party: last_friday_of_may(date.year()) == Some(date),
             is_music_day: month == 6 && day == 21,
+            is_candlemas: month == 2 && day == 2,
+            is_may_day: month == 5 && day == 1,
             meteor_shower: MeteorShower::on(month, day),
             is_winter: matches!(month, 12 | 1 | 2),
             season: Season::on(month, day),
@@ -139,6 +143,24 @@ impl Holiday {
     pub fn music_day() -> Self {
         Self {
             is_music_day: true,
+            ..Self::default()
+        }
+    }
+
+    pub fn candlemas() -> Self {
+        Self {
+            is_candlemas: true,
+            is_winter: true,
+            season: Season::Winter,
+            ..Self::default()
+        }
+    }
+
+    pub fn may_day() -> Self {
+        Self {
+            is_spring: true,
+            is_may_day: true,
+            season: Season::Spring,
             ..Self::default()
         }
     }
@@ -318,5 +340,42 @@ mod tests {
         assert!(Holiday::on(date(2027, 6, 21)).is_music_day);
         assert!(!Holiday::on(date(2027, 6, 22)).is_music_day);
         assert!(!Holiday::on(date(2027, 7, 21)).is_music_day);
+    }
+
+    #[test]
+    fn test_candlemas_is_only_the_second_of_february() {
+        assert!(!Holiday::on(date(2027, 2, 1)).is_candlemas);
+        assert!(Holiday::on(date(2027, 2, 2)).is_candlemas);
+        assert!(!Holiday::on(date(2027, 2, 3)).is_candlemas);
+        assert!(!Holiday::on(date(2027, 3, 2)).is_candlemas);
+        assert!(Holiday::on(date(2028, 2, 2)).is_candlemas);
+    }
+
+    #[test]
+    fn test_forced_candlemas_matches_the_real_day() {
+        let real = Holiday::on(date(2027, 2, 2));
+        let forced = Holiday::candlemas();
+        assert!(forced.is_candlemas);
+        assert_eq!(forced.is_winter, real.is_winter);
+        assert!(forced.season == real.season);
+    }
+
+    #[test]
+    fn test_may_day_is_only_the_first_of_may() {
+        assert!(!Holiday::on(date(2027, 4, 30)).is_may_day);
+        assert!(Holiday::on(date(2027, 5, 1)).is_may_day);
+        assert!(!Holiday::on(date(2027, 5, 2)).is_may_day);
+        assert!(!Holiday::on(date(2027, 6, 1)).is_may_day);
+        assert!(Holiday::on(date(2028, 5, 1)).is_may_day);
+    }
+
+    #[test]
+    fn test_forced_may_day_matches_the_real_day() {
+        let real = Holiday::on(date(2027, 5, 1));
+        let forced = Holiday::may_day();
+        assert!(forced.is_may_day);
+        assert_eq!(forced.is_spring, real.is_spring);
+        assert_eq!(forced.is_winter, real.is_winter);
+        assert!(forced.season == real.season);
     }
 }
