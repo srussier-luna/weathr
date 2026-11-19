@@ -24,6 +24,7 @@ use crate::animation::{
     kid::Kid,
     leaves::FallingLeaves,
     lore::{Lore, Unlocks},
+    may_day::GiantMuguet,
     moon::MoonSystem,
     music::{MusicNotes, SkyNotes},
     neighbours_party::{self, Neighbour},
@@ -70,6 +71,7 @@ const TWILIGHT_SUN: Color = Color::Rgb {
 enum SkySpriteKind {
     Notes,
     Crepe,
+    Muguet,
 }
 
 impl SkySpriteKind {
@@ -78,6 +80,8 @@ impl SkySpriteKind {
             Some(Self::Notes)
         } else if GiantCrepe::shows(holiday, horizon_y) {
             Some(Self::Crepe)
+        } else if GiantMuguet::shows(holiday, horizon_y) {
+            Some(Self::Muguet)
         } else {
             None
         }
@@ -121,6 +125,7 @@ pub struct AnimationManager {
     music_notes: MusicNotes,
     sky_notes: SkyNotes,
     giant_crepe: GiantCrepe,
+    giant_muguet: GiantMuguet,
     spring: Spring,
     new_year_banner: NewYearBanner,
     rainbow: Rainbow,
@@ -176,6 +181,7 @@ impl AnimationManager {
             music_notes: MusicNotes::new(),
             sky_notes: SkyNotes::new(),
             giant_crepe: GiantCrepe::new(),
+            giant_muguet: GiantMuguet,
             spring: Spring::new(),
             new_year_banner: NewYearBanner::new(),
             rainbow: Rainbow,
@@ -439,6 +445,7 @@ impl AnimationManager {
         match kind {
             SkySpriteKind::Notes => &mut self.sky_notes,
             SkySpriteKind::Crepe => &mut self.giant_crepe,
+            SkySpriteKind::Muguet => &mut self.giant_muguet,
         }
     }
 

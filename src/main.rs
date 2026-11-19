@@ -96,6 +96,12 @@ struct Cli {
     )]
     candlemas: bool,
 
+    #[arg(
+        long = "muguet",
+        help = "Simulate May 1st (a giant lily of the valley in the sky)"
+    )]
+    may_day: bool,
+
     #[arg(long, help = "Cycle through every weather scene, 1 second each")]
     demo: bool,
 
@@ -367,6 +373,8 @@ async fn main() -> io::Result<()> {
                 Some(holiday::Holiday::music_day())
             } else if cli.candlemas {
                 Some(holiday::Holiday::candlemas())
+            } else if cli.may_day {
+                Some(holiday::Holiday::may_day())
             } else {
                 None
             },
