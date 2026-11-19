@@ -8,6 +8,8 @@ use std::fs::{self, File};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
+pub(crate) use journal::{pack, path as sync_path, unpack};
+
 pub const DATE_FORMAT: &str = "%Y-%m-%d";
 const BACKUP_SUFFIX: &str = ".abime-%Y-%m-%d-%H%M";
 const TMP_SUFFIX: &str = ".tmp";
@@ -110,19 +112,22 @@ impl Progress {
     }
 
     pub fn load() -> (Self, Opening) {
-        let (mut progress, opening) = match progress_path() {
-            Some(path) => Self::load_from_path(
-                &path,
-                journal::path().as_deref(),
-                Local::now().naive_local(),
+        match progress_path() {
+            Some(path) => Self::load_at(&path, journal::path().as_deref()),
+            None => (
+                Self::in_memory(Local::now().date_naive()),
+                Opening::default(),
             ),
-            None => (Self::default(), Opening::default()),
-        };
+        }
+    }
 
+    pub(crate) fn load_at(path: &Path, journal: Option<&Path>) -> (Self, Opening) {
+        let (mut progress, opening) =
+            Self::load_from_path(path, journal, Local::now().naive_local());
         if progress.start_date().is_none() {
             progress.started_on = Some(Local::now().format(DATE_FORMAT).to_string());
         }
-        progress.save();
+        let _ = progress.save_to_path(path, journal);
         (progress, opening)
     }
 
@@ -198,13 +203,14 @@ impl Progress {
     }
 
     pub fn try_save(&self) -> io::Result<()> {
-        let path = progress_path()
-            .filter(|_| !self.in_memory)
-            .ok_or(io::ErrorKind::Unsupported)?;
+        let path = progress_path().ok_or(io::ErrorKind::Unsupported)?;
         self.save_to_path(&path, journal::path().as_deref())
     }
 
-    fn save_to_path(&self, path: &Path, journal: Option<&Path>) -> io::Result<()> {
+    pub(crate) fn save_to_path(&self, path: &Path, journal: Option<&Path>) -> io::Result<()> {
+        if self.in_memory {
+            return Err(io::ErrorKind::Unsupported.into());
+        }
         let content = self.to_json(FORMAT)?;
         let recorded = journal.is_some_and(|journal| {
             Journal::record(journal, &fs::read(path).unwrap_or_default(), &content).is_ok()

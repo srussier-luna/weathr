@@ -293,6 +293,17 @@ fn settle(progress: &mut Progress, out_of_sync: bool, reach: &Reach) -> bool {
     changed
 }
 
+pub(crate) fn settle_on_launch(
+    progress: &mut Progress,
+    out_of_sync: bool,
+    mail_hour: u32,
+    village_count: usize,
+) -> bool {
+    let clock = story_clock(progress, mail_hour);
+    let reach = launch_reach(village_count, &clock, story_today(&clock));
+    settle(progress, out_of_sync, &reach)
+}
+
 fn is_live_box_full(
     clock: &StoryClock,
     timeline: &Timeline,

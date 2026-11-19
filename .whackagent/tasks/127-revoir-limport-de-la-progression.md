@@ -1,6 +1,6 @@
 ---
 issue: 127
-status: todo
+status: to-test
 wiki: [[architecture]]
 note: "Suite de #125 pour l'export/import de #39, sprint « Anti-triche »."
 created: 2026-11-18
@@ -23,8 +23,14 @@ created: 2026-11-18
 
 ## Implementation
 
+- stacked on: wa/125-reperer-la-triche @ 09a41e4 + wa/39-ajouter-lexport-de-la-progression @ 215ca68 (fusion).
+- Détails hors du dépôt.
+- Build : `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use`, `cargo test` verts.
+
 ## Review
 
 ## Verification
+
+- Autopilot, HOME jetable, pseudo-terminal (implémenteur) : cas de test vérifiés, détails hors du dépôt.
 
 ## Feedback
