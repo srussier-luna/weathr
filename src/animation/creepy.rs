@@ -1,4 +1,4 @@
-use crate::animation::garden::{self, GardenLayout, WELL_WIDTH};
+use crate::animation::garden::{self, GardenLayout, KEY_WIDTH, WELL_WIDTH};
 use crate::animation::lore::Unlocks;
 use crate::render::TerminalRenderer;
 use crate::weather::WeatherConditions;
@@ -110,9 +110,7 @@ impl Creepy {
         let well_x = layout.well_x().filter(|_| unlocks.well);
 
         if unlocks.wet_footprints && !conditions.is_day {
-            let door_x = layout.house_x + house.door_x() + 2;
-            let end_x = well_x.map_or(0, |x| x + WELL_WIDTH);
-            for x in (end_x..door_x).rev().step_by(3) {
+            for x in wet_footprint_columns(layout, unlocks) {
                 renderer.render_char(x, layout.horizon_y, '.', WET)?;
             }
         }
@@ -143,5 +141,86 @@ impl Creepy {
 impl Default for Creepy {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+fn wet_footprint_columns(layout: &GardenLayout, unlocks: &Unlocks) -> impl Iterator<Item = u16> {
+    let door_x = layout.house_x + layout.house.door_x() + 2;
+    let end_x = layout
+        .well_x()
+        .filter(|_| unlocks.well)
+        .map_or(0, |x| x + WELL_WIDTH);
+    let key = layout
+        .key_x()
+        .filter(|_| unlocks.key)
+        .map(|x| x..x + KEY_WIDTH);
+    (end_x..door_x)
+        .rev()
+        .step_by(3)
+        .filter(move |x| !key.as_ref().is_some_and(|key| key.contains(x)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scene::tree::Growth;
+
+    fn layouts() -> impl Iterator<Item = GardenLayout> {
+        [(80, 24), (120, 30), (160, 40), (200, 40), (240, 50)]
+            .into_iter()
+            .map(|(width, height)| GardenLayout::new(width, height, Growth::Full))
+    }
+
+    fn columns(layout: &GardenLayout, key: bool) -> Vec<u16> {
+        let unlocks = Unlocks {
+            well: true,
+            key,
+            ..Unlocks::default()
+        };
+        wet_footprint_columns(layout, &unlocks).collect()
+    }
+
+    fn key_columns(layout: &GardenLayout) -> std::ops::Range<u16> {
+        let key_x = layout.key_x().unwrap();
+        key_x..key_x + KEY_WIDTH
+    }
+
+    #[test]
+    fn test_wet_footprints_skip_the_key() {
+        for layout in layouts() {
+            let key = key_columns(&layout);
+            assert!(
+                columns(&layout, false).iter().any(|x| key.contains(x)),
+                "width {}",
+                layout.width
+            );
+            assert!(
+                !columns(&layout, true).iter().any(|x| key.contains(x)),
+                "width {}",
+                layout.width
+            );
+        }
+    }
+
+    #[test]
+    fn test_wet_footprints_keep_their_path_around_the_key() {
+        for layout in layouts() {
+            let key = key_columns(&layout);
+            let around_key: Vec<u16> = columns(&layout, false)
+                .into_iter()
+                .filter(|x| !key.contains(x))
+                .collect();
+            assert_eq!(columns(&layout, true), around_key, "width {}", layout.width);
+        }
+    }
+
+    #[test]
+    fn test_wet_footprints_unchanged_without_key() {
+        for layout in layouts() {
+            let door_x = layout.house_x + layout.house.door_x() + 2;
+            let end_x = layout.well_x().map_or(0, |x| x + WELL_WIDTH);
+            let path: Vec<u16> = (end_x..door_x).rev().step_by(3).collect();
+            assert_eq!(columns(&layout, false), path, "width {}", layout.width);
+        }
     }
 }

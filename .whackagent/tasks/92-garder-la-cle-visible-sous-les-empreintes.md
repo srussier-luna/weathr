@@ -1,6 +1,6 @@
 ---
 issue: 92
-status: todo
+status: to-test
 wiki: [[animation]]
 note: "les empreintes mouillées ne cachent plus la clé"
 created: 2026-11-18
@@ -23,8 +23,23 @@ created: 2026-11-18
 
 ## Implementation
 
+Round 1 — /wa-autopilot 2026-11-19.
+
+- `src/animation/garden.rs`: `KEY_WIDTH`, `KEY_OFFSET`, `GardenLayout::key_x()` (= `mailbox_x + 2`), like `well_x`/`WELL_WIDTH`.
+- `src/animation/lore.rs`: `KEY` const, drawn at `layout.key_x()` (same place and colour).
+- `src/animation/creepy.rs`: `wet_footprint_columns` — same path (start, end, step 3), minus the key's columns when `unlocks.key`; 3 tests.
+- The key arrives on Jour de jeu 17 (`Thing::Key`).
+- Nuts `oo` untouched (spec): footprints may still cover them.
+- Build: `cargo build`, `cargo test` green · fmt OK · clippy: existing `double_must_use` only.
+
 ## Review
 
 ## Verification
+
+Round 1 — runtime check by the agent (`--silent --simulate clear --day N [--night]` in a pty, fresh `HOME`, 100x30 / 160x40 / 220x50):
+
+- ✅ Night 30 (key + wet footprints): `o-m` whole, no `.` on it; one gap in the path, same first and last columns.
+- ✅ Night 13 (no key yet): footprints regular every 3 columns.
+- ✅ Day 30: no wet footprints, key whole.
 
 ## Feedback
