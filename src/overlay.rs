@@ -20,6 +20,7 @@ const FIRST_DROP: usize = 4;
 const DROP_GAP: usize = 7;
 const DROPS: [&str; 2] = ["'", "."];
 const WET_CUT: [&str; 3] = ["/", " /", "  /"];
+const FLOPPY_LABEL: &str = "-[#]";
 const MAX_BUBBLE_WIDTH: u16 = 40;
 const BUBBLE_GAP: &str = ". .";
 const BUBBLE_TAIL: &str = "V";
@@ -74,6 +75,7 @@ pub enum Frame {
     Stars,
     Bubble,
     Notice,
+    Floppy,
 }
 
 impl Frame {
@@ -89,6 +91,7 @@ impl Frame {
             Self::Waves => (100, 180, 225),
             Self::Photo => (150, 210, 150),
             Self::Stars => (255, 210, 90),
+            Self::Floppy => (150, 165, 190),
         };
         Some(Color::Rgb { r, g, b })
     }
@@ -106,9 +109,12 @@ impl Frame {
 
     fn edges(self, row: usize, rows_below: Option<usize>) -> (u16, &'static str, &'static str) {
         match self {
-            Self::Plain | Self::Postcard | Self::Folder | Self::Photo | Self::Bubble => {
-                (0, "| ", " |")
-            }
+            Self::Plain
+            | Self::Postcard
+            | Self::Folder
+            | Self::Photo
+            | Self::Bubble
+            | Self::Floppy => (0, "| ", " |"),
             Self::Parchment if row % 2 == 0 => (0, "(  ", "  )"),
             Self::Parchment => (1, ") ", " ("),
             Self::Wet => (
@@ -165,6 +171,13 @@ impl Frame {
             Self::Stars => vec![(0, "*~".chars().cycle().take(width).collect())],
             Self::Bubble => vec![(0, rule('.', "-", '.', width))],
             Self::Notice => vec![(0, rule('╔', "═", '╗', width))],
+            Self::Floppy => vec![(
+                0,
+                format!(
+                    "+{FLOPPY_LABEL}{}+",
+                    "-".repeat(width.saturating_sub(FLOPPY_LABEL.len() + 2))
+                ),
+            )],
         }
     }
 
@@ -188,6 +201,7 @@ impl Frame {
             Self::Photo => vec![(0, rule('\\', "-", '/', width))],
             Self::Bubble => vec![(0, rule('\'', "-", '\'', width))],
             Self::Notice => vec![(0, rule('╚', "═", '╝', width))],
+            Self::Floppy => vec![(0, rule('+', "-", '+', width))],
             _ => self.top(width),
         }
     }
@@ -673,7 +687,7 @@ mod tests {
         }
     }
 
-    const FRAMES: [Frame; 12] = [
+    const FRAMES: [Frame; 13] = [
         Frame::Plain,
         Frame::Parchment,
         Frame::Wet,
@@ -686,6 +700,7 @@ mod tests {
         Frame::Stars,
         Frame::Bubble,
         Frame::Notice,
+        Frame::Floppy,
     ];
 
     fn draw(frame: Frame, title: &str, lines: &[&str], footer: &str, width: u16) -> Vec<String> {
@@ -848,6 +863,11 @@ mod tests {
         assert_eq!(notice[0], "╔══════════╗");
         assert_eq!(notice[1], "║ Pleine.  ║");
         assert_eq!(notice.last().unwrap(), "╚══════════╝");
+
+        let floppy = draw(Frame::Floppy, "Sauvegarde", &[], "", 16);
+        assert_eq!(floppy[0], "+-[#]----------+");
+        assert_eq!(floppy[1], "| Sauvegarde   |");
+        assert_eq!(floppy.last().unwrap(), "+--------------+");
     }
 
     #[test]
