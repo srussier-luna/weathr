@@ -2,7 +2,7 @@ use crate::animation::lore::{Choices, Unlocks};
 use crate::animation::neighbours_party::Neighbour;
 use crate::animation_manager::AnimationManager;
 use crate::app_state::AppState;
-use crate::badges::{self, Badge};
+use crate::badges::{self, Award, SAM_TRAIL, Tier};
 use crate::config::{Config, LocationDisplay, Setting};
 use crate::demo::{Demo, SCENE_DURATION};
 use crate::error::{GeolocationError, WeatherError};
@@ -25,6 +25,7 @@ use crate::story::postman_note::{self, MailStep};
 use crate::story::reach::{Reach, settle};
 use crate::story::sources::Recipes;
 use crate::story::{Entry, StoryClock, Thing, Timeline, pause, sources};
+use crate::travel;
 use crate::updater;
 use crate::views;
 use crate::weather::{
@@ -119,24 +120,49 @@ fn guests_on(timeline: &Timeline, day: usize) -> Vec<Neighbour> {
         .collect()
 }
 
-fn earn(earned: &mut BTreeSet<String>, ids: Vec<&'static str>) -> Vec<&'static Badge> {
+fn earn(earned: &mut BTreeSet<String>, ids: Vec<&'static str>) -> Vec<Award> {
     ids.into_iter()
         .filter(|id| earned.insert(id.to_string()))
         .filter_map(badges::find)
+        .map(Award::from)
         .collect()
 }
 
-fn badge_card(overlay: Option<Overlay>) -> Option<&'static Badge> {
+fn earn_tiers(earned: &mut BTreeSet<String>, before: usize, after: usize) -> Vec<Award> {
+    let tiers = Tier::crossed(before, after);
+    if tiers.contains(&Tier::Chocolate) {
+        earned.insert(SAM_TRAIL.id.to_string());
+    }
+    tiers.into_iter().map(Award::sam_trail).collect()
+}
+
+struct Trip {
+    is_new: bool,
+    tier_cards: Vec<Award>,
+}
+
+fn record_trip(
+    progress: &mut Progress,
+    launch_location: Option<&GeoLocation>,
+    day: Option<NonZeroU16>,
+) -> Trip {
+    let sam_cities = progress.sam_cities.len();
+    let is_new = match (launch_location, day) {
+        (Some(location), None) => travel::record(progress, location),
+        _ => false,
+    };
+    let tier_cards = earn_tiers(&mut progress.badges, sam_cities, progress.sam_cities.len());
+    Trip { is_new, tier_cards }
+}
+
+fn badge_card(overlay: Option<Overlay>) -> Option<Award> {
     match overlay {
-        Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => Some(badge),
+        Some(Overlay::NewBadge(award) | Overlay::NoteBadge(award)) => Some(award),
         _ => None,
     }
 }
 
-fn next_overlay(
-    overlay: Option<Overlay>,
-    pending_badges: &mut VecDeque<&'static Badge>,
-) -> Option<Overlay> {
+fn next_overlay(overlay: Option<Overlay>, pending_badges: &mut VecDeque<Award>) -> Option<Overlay> {
     match overlay {
         None => pending_badges.pop_front().map(Overlay::NewBadge),
         Some(Overlay::PostmanNote) => Some(
@@ -210,7 +236,7 @@ fn album_after_scroll(
 fn requeue_replaced_badge(
     previous: Option<Overlay>,
     current: Option<Overlay>,
-    pending_badges: &mut VecDeque<&'static Badge>,
+    pending_badges: &mut VecDeque<Award>,
 ) {
     if let (Some(badge), Some(current)) = (badge_card(previous), current)
         && badge_card(Some(current)).is_none()
@@ -491,8 +517,8 @@ enum Overlay {
     Help,
     HolidayBox(&'static HolidayBox),
     Index(usize),
-    NewBadge(&'static Badge),
-    NoteBadge(&'static Badge),
+    NewBadge(Award),
+    NoteBadge(Award),
     Notes(usize),
     PostmanNote,
     Settings(usize),
@@ -546,7 +572,7 @@ pub struct App {
     is_time_master: bool,
     toasts: VecDeque<String>,
     toast_until: Option<Instant>,
-    pending_badges: VecDeque<&'static Badge>,
+    pending_badges: VecDeque<Award>,
     pending_holiday_box: Option<&'static HolidayBox>,
     session_start: Instant,
     star_watch: StarWatch,
@@ -572,6 +598,7 @@ impl App {
     pub fn new(
         config: &Config,
         simulation: SimulationOptions,
+        launch_location: Option<&GeoLocation>,
         show_leaves: bool,
         term_width: u16,
         term_height: u16,
@@ -660,7 +687,8 @@ impl App {
         if shows_welcome {
             animations.postman_visit();
         }
-        if progress.record_visit() {
+        let trip = record_trip(&mut progress, launch_location, simulation.day);
+        if progress.record_visit() || trip.is_new {
             progress.save();
         }
         let rain_receiver =
@@ -706,7 +734,7 @@ impl App {
             is_time_master: badges::is_time_master(user_name.as_deref()),
             toasts: VecDeque::new(),
             toast_until: None,
-            pending_badges: VecDeque::new(),
+            pending_badges: trip.tier_cards.into(),
             pending_holiday_box,
             session_start: Instant::now(),
             star_watch: StarWatch::default(),
@@ -779,6 +807,8 @@ impl App {
             (self.progress.streak >= 3, "streak_3"),
             (self.progress.streak >= 7, "streak_7"),
             (self.progress.streak >= 30, "streak_30"),
+            (self.progress.visited_cities.len() >= 7, "traveller"),
+            (self.progress.visited_cities.len() >= 15, "backpacker"),
             (self.has_read_all_letters(), "all_letters"),
             (!self.progress.riddles_solved.is_empty(), "riddle_1"),
             (self.progress.riddles_solved.len() >= 10, "riddle_10"),
@@ -1099,8 +1129,8 @@ impl App {
             },
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
             Some(Overlay::HolidayBox(holiday_box)) => views::holiday_box_view(holiday_box),
-            Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => {
-                views::badge_card_view(badge)
+            Some(Overlay::NewBadge(award) | Overlay::NoteBadge(award)) => {
+                views::badge_card_view(award)
             }
             Some(Overlay::PostmanNote) => views::postman_note_view(self.back_to_school()),
             Some(Overlay::Notes(first)) => views::notes_view(
@@ -1144,6 +1174,7 @@ impl App {
                     renderer,
                     &self.progress.badges,
                     self.progress.streak,
+                    self.progress.sam_cities.len(),
                 );
             }
             Some(Overlay::Welcome(step)) => return self.render_welcome(renderer, step),
@@ -1905,7 +1936,7 @@ mod tests {
     use chrono::{NaiveDate, NaiveDateTime};
 
     fn card_id(overlay: Option<Overlay>) -> Option<&'static str> {
-        badge_card(overlay).map(|badge| badge.id)
+        badge_card(overlay).map(|award| award.badge.id)
     }
 
     #[test]
@@ -2517,7 +2548,7 @@ mod tests {
         let mut earned = BTreeSet::new();
         let first = earn(&mut earned, vec!["summer_holidays"]);
         assert_eq!(
-            first.iter().map(|badge| badge.id).collect::<Vec<_>>(),
+            first.iter().map(|award| award.badge.id).collect::<Vec<_>>(),
             ["summer_holidays"]
         );
         assert!(earn(&mut earned, vec!["summer_holidays"]).is_empty());
@@ -2560,6 +2591,14 @@ mod tests {
         assert_eq!(toasts, ["A", "B"]);
     }
 
+    fn detected(city: &str, latitude: f64, longitude: f64) -> GeoLocation {
+        GeoLocation {
+            latitude,
+            longitude,
+            city: Some(city.to_string()),
+        }
+    }
+
     fn album(page: usize, selected: usize) -> Option<Overlay> {
         Some(Overlay::Album { page, selected })
     }
@@ -2569,6 +2608,123 @@ mod tests {
             Some(Overlay::Album { page, selected }) => Some((page, selected)),
             _ => None,
         }
+    }
+
+    #[test]
+    fn test_launch_detection_records_the_city() {
+        let mut progress = Progress::default();
+        let lyon = detected("Lyon", 45.76, 4.84);
+        assert!(record_trip(&mut progress, Some(&lyon), None).is_new);
+        assert!(!record_trip(&mut progress, Some(&lyon), None).is_new);
+        assert_eq!(progress.visited_cities.len(), 1);
+    }
+
+    #[test]
+    fn test_no_launch_detection_records_nothing() {
+        let mut progress = Progress::default();
+        assert!(!record_trip(&mut progress, None, None).is_new);
+        assert!(progress.visited_cities.is_empty());
+    }
+
+    #[test]
+    fn test_day_flag_records_nothing() {
+        let mut progress = Progress::default();
+        let lyon = detected("Lyon", 45.76, 4.84);
+        assert!(!record_trip(&mut progress, Some(&lyon), NonZeroU16::new(3)).is_new);
+        assert!(progress.visited_cities.is_empty());
+    }
+
+    fn launch(
+        progress: &mut Progress,
+        launch_location: Option<&GeoLocation>,
+        day: Option<NonZeroU16>,
+    ) -> Vec<Award> {
+        record_trip(progress, launch_location, day).tier_cards
+    }
+
+    fn lisbon() -> GeoLocation {
+        detected("Lisbon", 38.7223, -9.1393)
+    }
+
+    #[test]
+    fn test_first_launch_in_a_sam_city_earns_chocolate() {
+        let mut progress = Progress::default();
+        let cards = launch(&mut progress, Some(&lisbon()), None);
+        assert_eq!(cards.len(), 1);
+        assert!(!cards[0].is_new_tier());
+        assert_eq!(cards[0].badge.id, SAM_TRAIL.id);
+        assert_eq!(cards[0].name(), "Sur les traces de Sam · chocolat");
+        assert!(progress.badges.contains(SAM_TRAIL.id));
+    }
+
+    #[test]
+    fn test_same_sam_city_again_opens_no_card() {
+        let mut progress = Progress::default();
+        launch(&mut progress, Some(&lisbon()), None);
+        assert!(launch(&mut progress, Some(&lisbon()), None).is_empty());
+        assert_eq!(progress.sam_cities.len(), 1);
+    }
+
+    #[test]
+    fn test_far_from_every_sam_city_changes_nothing() {
+        let mut progress = Progress::default();
+        let lyon = detected("Lyon", 45.76, 4.84);
+        assert!(launch(&mut progress, Some(&lyon), None).is_empty());
+        assert!(progress.sam_cities.is_empty());
+        assert!(!progress.badges.contains(SAM_TRAIL.id));
+    }
+
+    #[test]
+    fn test_lisbon_not_detected_at_launch_or_on_day_flag_changes_nothing() {
+        let mut progress = Progress::default();
+        assert!(launch(&mut progress, None, None).is_empty());
+        assert!(launch(&mut progress, Some(&lisbon()), NonZeroU16::new(3)).is_empty());
+        assert!(progress.sam_cities.is_empty());
+        assert!(progress.visited_cities.is_empty());
+        assert!(progress.badges.is_empty());
+    }
+
+    #[test]
+    fn test_each_tier_opens_one_new_tier_card() {
+        let mut progress = Progress::default();
+        let mut cards = Vec::new();
+        for (index, city) in CITIES.iter().enumerate() {
+            let location = detected(city.name, city.latitude, city.longitude);
+            for card in launch(&mut progress, Some(&location), None) {
+                cards.push((index + 1, card.is_new_tier(), card.name(), card.hint()));
+            }
+        }
+        let expected = [
+            (1, false, "chocolat", "visité la même ville que Sam"),
+            (5, true, "bronze", "5 villes de Sam visitées"),
+            (15, true, "argent", "15 villes de Sam visitées"),
+            (30, true, "or", "30 villes de Sam visitées"),
+            (40, true, "platine", "40 villes de Sam visitées"),
+        ]
+        .map(|(count, is_new_tier, tier, hint)| {
+            (
+                count,
+                is_new_tier,
+                format!("Sur les traces de Sam · {tier}"),
+                Some(hint.to_string()),
+            )
+        });
+        assert_eq!(cards, expected);
+    }
+
+    #[test]
+    fn test_several_tiers_crossed_at_once_open_one_card_each() {
+        let mut earned = BTreeSet::new();
+        let cards = earn_tiers(&mut earned, 0, 5);
+        let names: Vec<_> = cards.iter().map(Award::name).collect();
+        assert_eq!(
+            names,
+            [
+                "Sur les traces de Sam · chocolat",
+                "Sur les traces de Sam · bronze"
+            ]
+        );
+        assert_eq!(earned, BTreeSet::from([SAM_TRAIL.id.to_string()]));
     }
 
     #[test]
