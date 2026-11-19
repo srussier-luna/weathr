@@ -21,6 +21,7 @@ pub mod halloween;
 pub mod kid;
 pub mod leaves;
 pub mod lore;
+pub mod may_day;
 pub mod moon;
 pub mod music;
 pub mod neighbours_party;

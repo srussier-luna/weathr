@@ -46,13 +46,15 @@ pub fn in_place_of_moon(
 mod tests {
     use super::*;
     use crate::animation::candlemas::GiantCrepe;
+    use crate::animation::may_day::GiantMuguet;
     use crate::animation::moon::MoonSystem;
     use crate::animation::music::SkyNotes;
     use crate::scene::WorldScene;
 
-    const SIZES: [(u16, u16); 2] = [
+    const SIZES: [(u16, u16); 3] = [
         (SkyNotes::WIDTH, SkyNotes::HEIGHT),
         (GiantCrepe::WIDTH, GiantCrepe::HEIGHT),
+        (GiantMuguet::WIDTH, GiantMuguet::HEIGHT),
     ];
     const TERMINALS: [(u16, u16); 3] = [(80, 24), (120, 40), (200, 50)];
 

@@ -33,6 +33,7 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Chandeleur | | | `is_candlemas` | 2 février : Crêpe géante à la place du soleil et de la lune ; Badge dédié → [[animation]] |
 | Crêpe géante | | | `GiantCrepe` | crêpe dorée ou pâle à la place du soleil et de la lune le 2 février ; se retourne |
 | 1er mai | | | `is_may_day` | Muguet géant à la place du soleil et de la lune ; Badge dédié → [[animation]] |
+| Muguet géant | | | `GiantMuguet` | brin de muguet à la place du soleil et de la lune le 1er mai |
 | Notes du ciel | dessin de notes, croches | | `SkyNotes` | croche et deux doubles croches, remplace soleil ou lune → [[animation]] |
 | Facteur | postier | | `Postman` | livre les Lettres à la boîte aux lettres |
 | Heure du Facteur | heure du courrier | | `mail_hour` | heure de la tournée, de 6 h à 14 h ; changée dans Réglages, effet le lendemain → [[mail]] |
