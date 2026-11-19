@@ -1,7 +1,7 @@
-use crate::app::settle_on_launch;
 use crate::config::{Config, Mail};
 use crate::progress::{Progress, pack, progress_path, sync_path, unpack};
 use crate::story::content::letters;
+use crate::story::reach::settle_on_launch;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::fs;
@@ -63,9 +63,10 @@ impl Backup {
         })
     }
 
-    fn read(file: &Path) -> io::Result<Self> {
+    fn read(file: &Path) -> io::Result<(Self, Progress, bool)> {
         let backup: Self = serde_json::from_str(&fs::read_to_string(file)?)?;
-        backup.checked().map(|_| backup)
+        let (progress, out_of_sync) = backup.checked()?;
+        Ok((backup, progress, out_of_sync))
     }
 
     fn write(&self, file: &Path) -> io::Result<()> {
@@ -77,24 +78,27 @@ impl Backup {
     }
 
     fn checked(&self) -> io::Result<(Progress, bool)> {
-        let kept: Option<Map<String, Value>> = self
-            .sync
-            .as_deref()
-            .and_then(unpack)
-            .and_then(|content| serde_json::from_slice(&content).ok());
-        let (progress, out_of_sync) = match kept {
-            Some(kept) if kept != self.progress => (kept, true),
-            Some(kept) => (kept, false),
-            None => (self.progress.clone(), true),
-        };
-        Ok((
-            serde_json::from_value(Value::Object(progress))?,
-            out_of_sync,
-        ))
+        let kept = self.sync.as_deref().and_then(unpack).and_then(|content| {
+            let progress: Progress = serde_json::from_slice(&content).ok()?;
+            let fields: Map<String, Value> = serde_json::from_slice(&content).ok()?;
+            Some((progress, fields != self.progress))
+        });
+        match kept {
+            Some(kept) => Ok(kept),
+            None => Ok((
+                serde_json::from_value(Value::Object(self.progress.clone()))?,
+                true,
+            )),
+        }
     }
 
-    fn restore(&self, paths: &Paths, village_count: usize) -> io::Result<()> {
-        let (mut progress, out_of_sync) = self.checked()?;
+    fn restore(
+        &self,
+        mut progress: Progress,
+        out_of_sync: bool,
+        paths: &Paths,
+        village_count: usize,
+    ) -> io::Result<()> {
         if let Some(config) = self.config.as_deref().filter(|config| !config.is_empty()) {
             write_creating_dir(&paths.config, config)?;
         }
@@ -120,7 +124,7 @@ pub fn export(file: &Path) -> bool {
 }
 
 pub fn import(file: &Path) -> bool {
-    let Ok(backup) = Backup::read(file) else {
+    let Ok((backup, progress, out_of_sync)) = Backup::read(file) else {
         eprintln!("{PREFIX} Sauvegarde illisible\u{202F}: {}", file.display());
         return false;
     };
@@ -134,7 +138,9 @@ pub fn import(file: &Path) -> bool {
         if paths.progress.exists() && !confirm_replacement() {
             return Ok(false);
         }
-        backup.restore(&paths, letters::read().len()).map(|()| true)
+        backup
+            .restore(progress, out_of_sync, &paths, letters::read().len())
+            .map(|()| true)
     });
     match restored {
         Ok(true) => {
@@ -242,9 +248,9 @@ mod tests {
     }
 
     fn import_from(file: &Path, paths: &Paths) {
-        Backup::read(file)
-            .unwrap()
-            .restore(paths, VILLAGE_LETTER_COUNT)
+        let (backup, progress, out_of_sync) = Backup::read(file).unwrap();
+        backup
+            .restore(progress, out_of_sync, paths, VILLAGE_LETTER_COUNT)
             .unwrap();
     }
 
@@ -333,12 +339,24 @@ mod tests {
         export_to(&old_mac, &file);
         let exported = fs::read_to_string(&file).unwrap();
 
+        let mut far_ahead: Progress = serde_json::from_str(PROGRESS).unwrap();
+        far_ahead.letters_read = 900;
+        old_mac.settle(&mut far_ahead, false, VILLAGE_LETTER_COUNT);
+        let reachable = far_ahead.letters_read;
+        assert!(reachable < 900);
+
         let cases = [
-            ("removed", None, 12),
-            ("damaged", Some("zz"), 12),
-            ("removed_and_edited", None, 900),
+            ("removed", None, 12, 12),
+            ("damaged", Some("zz".to_string()), 12, 12),
+            (
+                "not_a_progress",
+                Some(pack(br#"{"letters_read":"douze"}"#)),
+                12,
+                12,
+            ),
+            ("removed_and_edited", None, 900, reachable),
         ];
-        for (name, copy, letters_read) in cases {
+        for (name, copy, letters_read, expected) in cases {
             let new_mac = temp.paths(name);
             fs::write(&file, &exported).unwrap();
             edit_backup(&file, |backup| {
@@ -354,7 +372,7 @@ mod tests {
 
             let reopened = reopen(&new_mac);
             assert_eq!(reopened.resyncs, 1, "{name}");
-            assert!(reopened.letters_read < 900, "{name}");
+            assert_eq!(reopened.letters_read, expected, "{name}");
         }
     }
 

@@ -21,8 +21,8 @@ use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, 
 use crate::story::content::letters::{self, Choice, Letter};
 use crate::story::content::{self, ReadContext};
 use crate::story::postman_note::{self, MailStep};
-use crate::story::reach::Reach;
-use crate::story::{Entry, StoryClock, Thing, Timeline, pause, sources};
+use crate::story::reach::{launch_reach, settle};
+use crate::story::{Entry, StoryClock, Thing, Timeline, pause};
 use crate::updater;
 use crate::views;
 use crate::weather::{
@@ -306,54 +306,8 @@ fn push_toast(toasts: &mut VecDeque<String>, message: &str) {
     }
 }
 
-fn story_clock(progress: &Progress, mail_hour: u32) -> StoryClock {
-    let start = progress
-        .start_date()
-        .unwrap_or_else(|| Local::now().date_naive());
-    StoryClock::new(start, mail_hour)
-        .with_pauses(progress.paused_days.clone())
-        .with_previous_mail_hour(progress.previous_mail_hour())
-}
-
-fn story_today(clock: &StoryClock) -> usize {
-    clock.day_on(Local::now().naive_local())
-}
-
 fn shows_every_habitant(is_forced: bool, day: Option<NonZeroU16>) -> bool {
     is_forced && day.is_none()
-}
-
-fn build_timeline(village_count: usize, clock: &StoryClock, today: usize) -> Timeline {
-    Timeline::new(&sources::registered(village_count), clock, today)
-}
-
-fn launch_reach(village_count: usize, clock: &StoryClock, today: usize) -> Reach {
-    let next_day = today + 1;
-    Reach::on(
-        &build_timeline(village_count, clock, next_day),
-        next_day,
-        clock.start(),
-        Local::now().date_naive(),
-    )
-}
-
-fn settle(progress: &mut Progress, out_of_sync: bool, reach: &Reach) -> bool {
-    let changed = reach.fit(progress) || out_of_sync;
-    if changed {
-        progress.resyncs += 1;
-    }
-    changed
-}
-
-pub(crate) fn settle_on_launch(
-    progress: &mut Progress,
-    out_of_sync: bool,
-    mail_hour: u32,
-    village_count: usize,
-) -> bool {
-    let clock = story_clock(progress, mail_hour);
-    let reach = launch_reach(village_count, &clock, story_today(&clock));
-    settle(progress, out_of_sync, &reach)
 }
 
 fn is_live_box_full(
@@ -632,12 +586,12 @@ impl App {
             }
             None => {
                 let (progress, opening) = Progress::load();
-                let clock = story_clock(&progress, config.mail.hour);
+                let clock = StoryClock::for_progress(&progress, config.mail.hour);
                 (progress, letters::load(), clock, opening)
             }
         };
-        let timeline_day = story_today(&clock);
-        let timeline = build_timeline(letters.len(), &clock, timeline_day);
+        let timeline_day = clock.today();
+        let timeline = Timeline::for_village(letters.len(), &clock, timeline_day);
         if simulation.day.is_none()
             && settle(
                 &mut progress,
@@ -901,7 +855,7 @@ impl App {
     }
 
     fn available_letters(&self) -> usize {
-        self.timeline.delivered_by(story_today(&self.clock))
+        self.timeline.delivered_by(self.clock.today())
     }
 
     fn village_letter_number(&self, index: usize) -> Option<usize> {
@@ -1164,9 +1118,9 @@ impl App {
 
     fn refresh_timeline(&mut self) {
         self.hold_full_box();
-        let today = story_today(&self.clock);
+        let today = self.clock.today();
         if today != self.timeline_day {
-            self.timeline = build_timeline(self.letters.len(), &self.clock, today);
+            self.timeline = Timeline::for_village(self.letters.len(), &self.clock, today);
             self.timeline_day = today;
             self.refresh_unlocks();
             self.refresh_tree_growth();
@@ -1952,42 +1906,6 @@ mod tests {
     }
 
     #[test]
-    fn test_settle_adds_one_resync_at_most_per_launch() {
-        let start = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
-        let clock = StoryClock::new(start, 9);
-        let reach = Reach::on(
-            &build_timeline(60, &clock, 10),
-            10,
-            start,
-            clock.date_of(10),
-        );
-        let honest = || {
-            let mut progress = Progress::default();
-            progress.letters_read = 3;
-            progress.streak = 2;
-            progress
-        };
-
-        let mut progress = honest();
-        assert!(!settle(&mut progress, false, &reach));
-        assert_eq!(progress.resyncs, 0);
-
-        let mut progress = honest();
-        assert!(settle(&mut progress, true, &reach));
-        assert_eq!(progress.resyncs, 1);
-        assert_eq!(progress.letters_read, 3);
-
-        let mut progress = honest();
-        progress.letters_read = 900;
-        progress.streak = 400;
-        progress.resyncs = 2;
-        assert!(settle(&mut progress, true, &reach));
-        assert_eq!(progress.resyncs, 3);
-        assert_eq!(progress.streak, 10);
-        assert!(progress.letters_read < 900);
-    }
-
-    #[test]
     fn test_backup_box_opens_before_the_welcome_and_the_notes() {
         let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["rain"]).into();
         let overlay = next_overlay(opening_overlay(true, false, true), &mut pending);
@@ -2188,7 +2106,7 @@ mod tests {
     }
 
     fn timeline_on(day: usize) -> Timeline {
-        build_timeline(letters::defaults().len(), &clock(), day)
+        Timeline::for_village(letters::defaults().len(), &clock(), day)
     }
 
     fn unlocks_at(now: NaiveDateTime) -> Unlocks {
@@ -2426,7 +2344,7 @@ mod tests {
     #[test]
     fn test_frozen_clock_never_fills_the_box() {
         let frozen = StoryClock::frozen(date(2026, 10, 26), 9, NonZeroU16::new(7).unwrap());
-        let timeline = build_timeline(letters::defaults().len(), &frozen, 7);
+        let timeline = Timeline::for_village(letters::defaults().len(), &frozen, 7);
         assert!(!is_live_box_full(&frozen, &timeline, 7, 0));
     }
 
@@ -2435,7 +2353,7 @@ mod tests {
         let mut progress = Progress::default();
         progress.started_on = Some(Local::now().format(DATE_FORMAT).to_string());
         for mail_hour in [0, 23] {
-            assert_eq!(story_today(&story_clock(&progress, mail_hour)), 1);
+            assert_eq!(StoryClock::for_progress(&progress, mail_hour).today(), 1);
         }
     }
 
@@ -2444,7 +2362,7 @@ mod tests {
         let mut progress = Progress::default();
         progress.started_on = Some("2026-10-01".to_string());
         progress.set_previous_mail_hour(Some((date(2026, 10, 9), 9)));
-        let clock = story_clock(&progress, 11);
+        let clock = StoryClock::for_progress(&progress, 11);
         let at = |day, hour, minute| date(2026, 10, day).and_hms_opt(hour, minute, 0).unwrap();
         assert_eq!(clock.day_on(at(8, 10, 30)), 8);
         assert_eq!(clock.day_on(at(9, 10, 59)), 8);

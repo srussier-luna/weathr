@@ -1,6 +1,6 @@
 ---
 issue: 127
-status: to-test
+status: to-close
 wiki: [[architecture]]
 note: "Suite de #125 pour l'export/import de #39, sprint « Anti-triche »."
 created: 2026-11-18
@@ -28,6 +28,9 @@ created: 2026-11-18
 - Build : `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use`, `cargo test` verts.
 
 ## Review
+
+Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- Détails hors du dépôt. Constats mineurs corrigés en 2 tours, revérifié propre.
 
 ## Verification
 
