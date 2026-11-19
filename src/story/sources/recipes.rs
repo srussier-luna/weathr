@@ -32,7 +32,8 @@ pub struct Recipes {
     letter_day: usize,
     answered_day: Option<usize>,
     diets: BTreeSet<Diet>,
-    delivered: BTreeMap<usize, Option<usize>>,
+    delivered: BTreeMap<usize, usize>,
+    frozen_until: usize,
 }
 
 impl Default for Recipes {
@@ -42,6 +43,7 @@ impl Default for Recipes {
             answered_day: None,
             diets: BTreeSet::new(),
             delivered: BTreeMap::new(),
+            frozen_until: 0,
         }
     }
 }
@@ -53,6 +55,10 @@ impl Recipes {
             answered_day: progress.diet_answered_day,
             diets: diets_from_ids(&progress.diets),
             delivered: progress.diet_recipes.clone(),
+            frozen_until: progress
+                .diet_recipes_until
+                .or_else(|| progress.diet_recipes.keys().last().copied())
+                .unwrap_or_default(),
         }
     }
 
@@ -68,7 +74,7 @@ impl Recipes {
             .collect()
     }
 
-    pub fn deliveries(&self, clock: &StoryClock, today: usize) -> BTreeMap<usize, Option<usize>> {
+    pub fn deliveries(&self, clock: &StoryClock, today: usize) -> BTreeMap<usize, usize> {
         let Some(answered) = self.answered_day else {
             return BTreeMap::new();
         };
@@ -79,14 +85,14 @@ impl Recipes {
             .collect();
         (answered + 1..=today)
             .step_by(DIET_RECIPE_INTERVAL_DAYS)
-            .map(|day| {
-                let recipe = self
-                    .delivered
-                    .get(&day)
-                    .copied()
-                    .unwrap_or_else(|| next_recipe(&self.diets, clock.date_of(day), &received));
-                received.extend(recipe);
-                (day, recipe)
+            .filter_map(|day| {
+                let recipe = if day <= self.frozen_until {
+                    self.delivered.get(&day).copied()
+                } else {
+                    next_recipe(&self.diets, clock.date_of(day), &received)
+                }?;
+                received.insert(recipe);
+                Some((day, recipe))
             })
             .collect()
     }
@@ -103,7 +109,7 @@ impl StorySource for Recipes {
         let reserve = self
             .deliveries(clock, today)
             .into_iter()
-            .filter_map(|(day, recipe)| Some(Beat::mail(day, Entry::DietRecipe(recipe?))));
+            .map(|(day, recipe)| Beat::mail(day, Entry::DietRecipe(recipe)));
         monthly.chain(letter).chain(reserve).collect()
     }
 }
@@ -251,7 +257,6 @@ mod tests {
         let picks: Vec<usize> = answered(41, &[])
             .deliveries(&clock, 100)
             .into_values()
-            .flatten()
             .collect();
         assert_eq!(picks, [2, 3, 6, 0, 8, 15]);
     }
@@ -265,22 +270,34 @@ mod tests {
             .map(|(_, recipe)| recipe + 1)
             .collect();
         assert_eq!(picks, [18, 20, 27, 29]);
-        assert_eq!(recipes.deliveries(&clock, 400).len(), 39);
+        assert_eq!(recipes.deliveries(&clock, 400).len(), 4);
+    }
+
+    #[test]
+    fn test_exhausted_reserve_keeps_the_frozen_recipes_bounded() {
+        let clock = StoryClock::new(date(2026, 11, 2), 9);
+        let mut recipes = answered(10, &[]);
+        for today in [1000, 4000] {
+            recipes.delivered = recipes.deliveries(&clock, today);
+            recipes.frozen_until = today;
+            assert_eq!(recipes.delivered.len(), RECIPES.len());
+        }
     }
 
     #[test]
     fn test_delivered_recipes_stay_when_diets_change() {
         let clock = StoryClock::new(date(2026, 11, 2), 9);
         let delivered = answered(10, &[]).deliveries(&clock, 21);
-        assert_eq!(delivered, BTreeMap::from([(11, Some(2)), (21, Some(3))]));
+        assert_eq!(delivered, BTreeMap::from([(11, 2), (21, 3)]));
 
         let after = Recipes {
             delivered,
+            frozen_until: 21,
             ..answered(10, &[Diet::Protein])
         };
         assert_eq!(
             after.deliveries(&clock, 31),
-            BTreeMap::from([(11, Some(2)), (21, Some(3)), (31, Some(16))])
+            BTreeMap::from([(11, 2), (21, 3), (31, 16)])
         );
     }
 
@@ -288,12 +305,25 @@ mod tests {
     fn test_empty_slot_stays_empty_when_diets_change() {
         let clock = StoryClock::new(date(2026, 11, 2), 9);
         let recipes = Recipes {
-            delivered: BTreeMap::from([(11, None)]),
+            frozen_until: 11,
             ..answered(10, &[])
         };
+        assert_eq!(recipes.deliveries(&clock, 21), BTreeMap::from([(21, 2)]));
+    }
+
+    #[test]
+    fn test_old_branch_save_keeps_its_delivered_recipes() {
+        let clock = StoryClock::new(date(2026, 11, 2), 9);
+        let mut progress: Progress = serde_json::from_str(
+            r#"{"started_on":"2026-11-02","diet_answered_day":10,"diets":[],"diet_recipes":{"11":2}}"#,
+        )
+        .unwrap();
+        progress.diets = BTreeSet::from(["protein".to_string()]);
+        let recipes = Recipes::from_progress(&progress);
+        assert_eq!(recipes.frozen_until, 11);
         assert_eq!(
             recipes.deliveries(&clock, 21),
-            BTreeMap::from([(11, None), (21, Some(2))])
+            BTreeMap::from([(11, 2), (21, 16)])
         );
     }
 
@@ -303,11 +333,13 @@ mod tests {
         progress.diet_letter_day = Some(30);
         progress.diet_answered_day = Some(31);
         progress.diets = BTreeSet::from(["vegan".to_string()]);
-        progress.diet_recipes = BTreeMap::from([(32, None)]);
+        progress.diet_recipes = BTreeMap::from([(32, 2)]);
+        progress.diet_recipes_until = Some(42);
         let recipes = Recipes::from_progress(&progress);
         assert_eq!(recipes.letter_day, 30);
         assert_eq!(recipes.answered_day, Some(31));
         assert_eq!(recipes.diets, BTreeSet::from([Diet::Vegan]));
-        assert_eq!(recipes.delivered, BTreeMap::from([(32, None)]));
+        assert_eq!(recipes.delivered, BTreeMap::from([(32, 2)]));
+        assert_eq!(recipes.frozen_until, 42);
     }
 }

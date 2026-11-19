@@ -19,7 +19,7 @@ use crate::scene::tree::Growth;
 use crate::settings::{self, AutoLocation, CitySearch, Row, Settings};
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Choice, Letter};
-use crate::story::content::recipes::{Diet, diet_ids, diets_from_ids, toggle_diet};
+use crate::story::content::recipes::{Diet, diet_for_key, diet_ids, diets_from_ids, toggle_diet};
 use crate::story::content::{self, ReadContext};
 use crate::story::postman_note::{self, MailStep};
 use crate::story::sources::Recipes;
@@ -145,10 +145,6 @@ fn next_overlay(
         ),
         overlay => overlay,
     }
-}
-
-fn diet_number(key: char) -> usize {
-    key.to_digit(10).map_or(0, |number| number as usize)
 }
 
 fn closed_overlay(overlay: Option<Overlay>) -> Option<Overlay> {
@@ -330,9 +326,9 @@ fn build_timeline(
 
 fn freeze_recipes(progress: &mut Progress, clock: &StoryClock, today: usize) -> Recipes {
     let recipes = Recipes::from_progress(progress);
-    let delivered = recipes.deliveries(clock, today);
-    if delivered != progress.diet_recipes {
-        progress.diet_recipes = delivered;
+    if progress.diet_answered_day.is_some() && progress.diet_recipes_until != Some(today) {
+        progress.diet_recipes = recipes.deliveries(clock, today);
+        progress.diet_recipes_until = Some(today);
         progress.save();
     }
     recipes
@@ -905,7 +901,9 @@ impl App {
 
     fn press_number(&mut self, key: char) {
         if self.is_diet_letter_waiting() {
-            toggle_diet(&mut self.diet_draft, diet_number(key));
+            if let Some(diet) = diet_for_key(key) {
+                toggle_diet(&mut self.diet_draft, diet);
+            }
             return;
         }
         match key {
@@ -1422,7 +1420,11 @@ impl App {
             return;
         };
         match code {
-            KeyCode::Char(key) => toggle_diet(diets, diet_number(key)),
+            KeyCode::Char(key) => {
+                if let Some(diet) = diet_for_key(key) {
+                    toggle_diet(diets, diet);
+                }
+            }
             KeyCode::Enter => {
                 self.progress.diets = diet_ids(diets);
                 self.progress.save();

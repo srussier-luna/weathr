@@ -59,11 +59,10 @@ pub struct Settings {
 }
 
 impl Settings {
-    pub fn rows(&self) -> &'static [Row] {
-        match self.diets {
-            Some(_) => &ROWS,
-            None => &ROWS[..ROWS.len() - 1],
-        }
+    pub fn rows(&self) -> Vec<Row> {
+        ROWS.into_iter()
+            .filter(|row| *row != Row::Diet || self.diets.is_some())
+            .collect()
     }
 
     pub fn stepped(&self, row: Row, step: isize) -> Option<Setting> {

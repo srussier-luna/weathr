@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 
 const DIET_LETTER: &str = "Une idée m'est venue en pétrissant\u{202F}: t'envoyer une de mes recettes tous les dix jours. Avant d'allumer le four, dis-moi ce qui va dans ton assiette et ce qui n'y va pas. Coche ce qui te concerne, puis renvoie-moi ma lettre. Rien de coché\u{202F}? Tu manges de tout, et j'ai carte blanche.";
 const CHECKLIST_FOOTER: &str =
-    "[1]…[8] cocher  [Entrée] envoyer  [c] suivante  [<] [>]  [Echap] fermer";
+    "[1]…[8] cocher  [Entrée] envoyer  [<] [>] parcourir  [Echap] fermer";
 const EATS_EVERYTHING: &str = "je mange de tout";
 const CHECKBOX_WIDTH: usize = 22;
 

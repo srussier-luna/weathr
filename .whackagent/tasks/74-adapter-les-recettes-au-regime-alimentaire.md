@@ -1,6 +1,6 @@
 ---
 issue: 74
-status: to-test
+status: to-close
 wiki: [[mail]], [[architecture]]
 note: "j'aimerai une recette tous les 10 jour avec une lettre qui demande les regimes alimentaire, vegetarien, vegan, sans legume, sans viande, sans poisson, sans porc, full proteine, possible d,en avoir plusierus adapter les recette en fonction de la reponse"
 created: 2026-11-18
@@ -82,6 +82,9 @@ Round 2 — /wa-autopilot 2026-11-19, table v3 validated by the user, code.
 - Build: `cargo build`, `cargo test` (513) green · fmt OK · clippy: existing `double_must_use` only.
 
 ## Review
+
+Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- 4 minor findings (unbounded save growth, placeholder key index, Régime row position, checklist footer wording) fixed in round 1; save format `diet_recipes` → delivered only + `diet_recipes_until`, old test saves with `null` still load (rounds 2–3, frozen day falls back to the largest stored day). Re-verified clean. Accepted limit: a trailing `null` day of an old dev test save is not frozen. Code changed since the user's test: checklist footer now « [1]…[8] cocher  [Entrée] envoyer  [<] [>] parcourir  [Echap] fermer ».
 
 ## Verification
 

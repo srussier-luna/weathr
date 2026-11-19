@@ -97,12 +97,14 @@ pub fn diet_labels(diets: &BTreeSet<Diet>) -> String {
         .join(", ")
 }
 
-pub fn toggle_diet(diets: &mut BTreeSet<Diet>, number: usize) {
-    let Some(diet) = number.checked_sub(1).and_then(|index| DIETS.get(index)) else {
-        return;
-    };
-    if !diets.remove(diet) {
-        diets.insert(*diet);
+pub fn diet_for_key(key: char) -> Option<Diet> {
+    let index = key.to_digit(10)?.checked_sub(1)?;
+    DIETS.get(usize::try_from(index).ok()?).copied()
+}
+
+pub fn toggle_diet(diets: &mut BTreeSet<Diet>, diet: Diet) {
+    if !diets.remove(&diet) {
+        diets.insert(diet);
     }
 }
 
@@ -531,14 +533,17 @@ mod tests {
     }
 
     #[test]
-    fn test_numbers_check_then_uncheck_their_diet() {
+    fn test_keys_check_then_uncheck_their_diet() {
+        assert_eq!(diet_for_key('1'), Some(Diet::Vegetarian));
+        assert_eq!(diet_for_key('8'), Some(Diet::NoFruit));
+        for key in ['0', '9', 'a'] {
+            assert_eq!(diet_for_key(key), None);
+        }
         let mut diets = BTreeSet::new();
-        toggle_diet(&mut diets, 1);
-        toggle_diet(&mut diets, 6);
+        toggle_diet(&mut diets, Diet::Vegetarian);
+        toggle_diet(&mut diets, Diet::NoPork);
         assert_eq!(diets, BTreeSet::from([Diet::Vegetarian, Diet::NoPork]));
-        toggle_diet(&mut diets, 1);
-        toggle_diet(&mut diets, 0);
-        toggle_diet(&mut diets, 9);
+        toggle_diet(&mut diets, Diet::Vegetarian);
         assert_eq!(diets, BTreeSet::from([Diet::NoPork]));
     }
 }
