@@ -42,6 +42,14 @@ created: 2026-11-18
 
 ## Implementation
 
+Round 1 — /wa-autopilot 2026-11-19. **blocked** — step 1 done, no code.
+
+- Open question: validate the table of the 36 Recettes (kept outside the repo, `recettes-tableau.md`) before the code.
+- Compatible Recettes per Régime (total / without month): végétarien 28/18 · vegan 15/12 · sans légume 25/18 · sans viande 31/21 · sans poisson 33/23 · sans porc 34/24 · full protéine 15/15.
+- Choices: pomme de terre = légume; legumes (lentilles…) = protéinée, not légume; pastry = produits animaux; bread, yeast, wine = vegan; egg desserts not protéinée.
+- Order: 1–12 existing Recettes unchanged, 13–15 new seasonal (Orties mars, Gaspacho juillet, Châtaignes novembre), 16–36 sweet and savoury alternated.
+- Doubts to settle: « bouillon de légumes » in the Potiron text; Clafoutis stays in May; Poires pochées au vin (alcohol); Houmous, Tofu, Chili sin carne less « village » but needed for vegan + protéinée.
+
 ## Review
 
 ## Verification
