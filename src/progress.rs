@@ -1,5 +1,5 @@
 use chrono::{Local, NaiveDate, NaiveDateTime};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs::{self, File};
 use std::io::{self, Write};
@@ -8,6 +8,16 @@ use std::path::{Path, PathBuf};
 pub const DATE_FORMAT: &str = "%Y-%m-%d";
 const BACKUP_SUFFIX: &str = ".abime-%Y-%m-%d-%H%M";
 const TMP_SUFFIX: &str = ".tmp";
+
+fn delivered_recipes<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<BTreeMap<usize, usize>, D::Error> {
+    let recipes = BTreeMap::<usize, Option<usize>>::deserialize(deserializer)?;
+    Ok(recipes
+        .into_iter()
+        .filter_map(|(day, recipe)| Some((day, recipe?)))
+        .collect())
+}
 
 fn parse_date(date: &str) -> Option<NaiveDate> {
     NaiveDate::parse_from_str(date, DATE_FORMAT).ok()
@@ -55,6 +65,16 @@ pub struct Progress {
     pub postman_note_day: Option<usize>,
     #[serde(default)]
     mail_hour_change: Option<MailHourChange>,
+    #[serde(default)]
+    pub diet_letter_day: Option<usize>,
+    #[serde(default)]
+    pub diet_answered_day: Option<usize>,
+    #[serde(default)]
+    pub diets: BTreeSet<String>,
+    #[serde(default, deserialize_with = "delivered_recipes")]
+    pub diet_recipes: BTreeMap<usize, usize>,
+    #[serde(default)]
+    pub diet_recipes_until: Option<usize>,
     #[serde(skip)]
     in_memory: bool,
 }
@@ -245,6 +265,49 @@ mod tests {
         let progress: Progress =
             serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":12}"#).unwrap();
         assert_eq!(progress.previous_mail_hour(), None);
+    }
+
+    #[test]
+    fn test_save_without_diet_fields_has_no_diet_letter_yet() {
+        let progress: Progress =
+            serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":29}"#).unwrap();
+        assert_eq!(progress.diet_letter_day, None);
+        assert_eq!(progress.diet_answered_day, None);
+        assert!(progress.diets.is_empty());
+        assert!(progress.diet_recipes.is_empty());
+        assert_eq!(progress.diet_recipes_until, None);
+    }
+
+    #[test]
+    fn test_save_with_empty_recipe_slots_still_loads() {
+        let progress: Progress = serde_json::from_str(
+            r#"{"started_on":"2026-09-01","letters_read":31,"diet_answered_day":10,"diets":["vegan"],"diet_recipes":{"11":2,"21":null}}"#,
+        )
+        .unwrap();
+        assert_eq!(progress.letters_read, 31);
+        assert_eq!(progress.start_date(), NaiveDate::from_ymd_opt(2026, 9, 1));
+        assert_eq!(progress.diet_answered_day, Some(10));
+        assert_eq!(progress.diets, BTreeSet::from(["vegan".to_string()]));
+        assert_eq!(progress.diet_recipes, BTreeMap::from([(11, 2)]));
+    }
+
+    #[test]
+    fn test_diet_answer_and_delivered_recipes_round_trip() {
+        let progress = Progress {
+            diet_letter_day: Some(30),
+            diet_answered_day: Some(31),
+            diets: BTreeSet::from(["vegetarian".to_string(), "no_pork".to_string()]),
+            diet_recipes: BTreeMap::from([(32, 2)]),
+            diet_recipes_until: Some(42),
+            ..Progress::default()
+        };
+        let saved = serde_json::to_string(&progress).unwrap();
+        let loaded: Progress = serde_json::from_str(&saved).unwrap();
+        assert_eq!(loaded.diet_letter_day, Some(30));
+        assert_eq!(loaded.diet_answered_day, Some(31));
+        assert_eq!(loaded.diets, progress.diets);
+        assert_eq!(loaded.diet_recipes, progress.diet_recipes);
+        assert_eq!(loaded.diet_recipes_until, Some(42));
     }
 
     #[test]

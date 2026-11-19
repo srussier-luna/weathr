@@ -9,11 +9,13 @@ mod village;
 use super::clock::StoryClock;
 use super::event::Beat;
 
+pub use recipes::{Recipes, diet_letter_day};
+
 pub trait StorySource {
     fn beats(&self, clock: &StoryClock, today: usize) -> Vec<Beat>;
 }
 
-pub fn registered(village_count: usize) -> Vec<Box<dyn StorySource>> {
+pub fn registered(village_count: usize, recipes: Recipes) -> Vec<Box<dyn StorySource>> {
     vec![
         Box::new(village::Village::new(village_count)),
         Box::new(correspondents::SAM),
@@ -22,7 +24,7 @@ pub fn registered(village_count: usize) -> Vec<Box<dyn StorySource>> {
         Box::new(archives::Archives),
         Box::new(creepy::Creepy),
         Box::new(gazettes::Gazettes),
-        Box::new(recipes::Recipes),
+        Box::new(recipes),
         Box::new(postcards::Postcards),
     ]
 }
