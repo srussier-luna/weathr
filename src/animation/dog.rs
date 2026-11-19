@@ -179,7 +179,7 @@ impl Dog {
             }
             Activity::Walking(target) => {
                 if self.walk_to(x, target, WALK_SPEED) {
-                    self.activity = Activity::Sitting(rng.random_range(SITTING_FRAMES));
+                    self.sit(rng);
                 }
             }
             Activity::Bathing(bathing) => self.bathe(bathing, x, layout, is_frozen, rng),
@@ -246,20 +246,22 @@ impl Dog {
             }
             Bathing::Leaving(target) => {
                 if self.walk_to(x, target, speed) {
-                    self.activity = if is_frozen {
-                        Activity::Sitting(rng.random_range(SITTING_FRAMES))
+                    if is_frozen {
+                        self.sit(rng);
                     } else {
-                        Activity::Bathing(Bathing::ShakingOff(SHAKING_FRAMES))
-                    };
+                        self.activity = Activity::Bathing(Bathing::ShakingOff(SHAKING_FRAMES));
+                    }
                 }
             }
-            Bathing::ShakingOff(0) => {
-                self.activity = Activity::Sitting(rng.random_range(SITTING_FRAMES));
-            }
+            Bathing::ShakingOff(0) => self.sit(rng),
             Bathing::ShakingOff(remaining) => {
                 self.activity = Activity::Bathing(Bathing::ShakingOff(remaining - 1));
             }
         }
+    }
+
+    fn sit(&mut self, rng: &mut impl Rng) {
+        self.activity = Activity::Sitting(rng.random_range(SITTING_FRAMES));
     }
 
     fn walk_to(&mut self, x: f32, target: f32, speed: f32) -> bool {
@@ -311,8 +313,10 @@ impl Dog {
     }
 
     fn splashing_paws(&self, layout: &GardenLayout, is_frozen: bool) -> impl Iterator<Item = u16> {
-        let is_splashing = !is_frozen && self.is_moving();
-        self.paws_in_puddle(layout).filter(move |_| is_splashing)
+        (!is_frozen && self.is_moving())
+            .then(|| self.paws_in_puddle(layout))
+            .into_iter()
+            .flatten()
     }
 
     fn doghouse(layout: &GardenLayout) -> (u16, u16) {
@@ -420,14 +424,14 @@ impl Dog {
         renderer.render_char(nose_x, y + 2, '@', Color::DarkGrey)?;
         renderer.render_char(tail_x, y + 1, tail, DOG_FUR)?;
 
-        let (behind, ahead) = if stride == 0 {
+        let (left_mark, right_mark) = if stride == 0 {
             ('\'', '.')
         } else {
             ('.', '\'')
         };
         for paw in self.splashing_paws(layout, is_frozen) {
-            renderer.render_char(paw.saturating_sub(1), y + 3, behind, WATER)?;
-            renderer.render_char(paw + 2, y + 3, ahead, WATER)?;
+            renderer.render_char(paw.saturating_sub(1), y + 3, left_mark, WATER)?;
+            renderer.render_char(paw + 2, y + 3, right_mark, WATER)?;
         }
         self.render_spray(renderer, layout, x, y, is_frozen)?;
 

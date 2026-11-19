@@ -1,6 +1,6 @@
 ---
 issue: 69
-status: to-test
+status: to-close
 wiki: [[animation]], [[scene]]
 note: "Une animation quand il est dans l'eau"
 created: 2026-11-18
@@ -41,6 +41,9 @@ Round 1 — /wa-autopilot 2026-11-19.
 - Build: `cargo build`, `cargo test` green · fmt OK · clippy: existing `double_must_use` only.
 
 ## Review
+
+Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- 3 minor findings (on/off filter, triplicated sit, mark names) fixed by autofix round 1 in dog.rs, same screen output (re-run by the agent), re-verified clean.
 
 ## Verification
 
