@@ -18,7 +18,7 @@ use crate::scene::WorldScene;
 use crate::scene::tree::Growth;
 use crate::settings::{self, AutoLocation, CitySearch, Row, Settings};
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
-use crate::story::content::letters::{self, Letter};
+use crate::story::content::letters::{self, Choice, Letter};
 use crate::story::content::neighbours_note::NeighboursNote;
 use crate::story::content::{self, ReadContext};
 use crate::story::postman_note::{self, MailStep};
@@ -56,8 +56,8 @@ const NEIGHBOUR_FIRST_LETTERS: [(Neighbour, usize); 5] = [
     (Neighbour::Gaston, 10),
     (Neighbour::Leo, 16),
 ];
-const FOOTPRINT_DAYS: [usize; 1] = [8];
-const WET_FOOTPRINT_DAYS: [usize; 3] = [13, 14, 30];
+const FOOTPRINT_DAYS: [usize; 3] = [8, 11, 16];
+const WET_FOOTPRINT_DAYS: [usize; 2] = [13, 30];
 
 fn count_read(timeline: &Timeline, progress: &Progress, kind: fn(&Entry) -> bool) -> usize {
     timeline
@@ -151,6 +151,58 @@ fn closed_overlay(overlay: Option<Overlay>) -> Option<Overlay> {
     match overlay {
         Some(Overlay::NoteBadge(_)) => Some(Overlay::PostmanNote),
         _ => None,
+    }
+}
+
+fn album_choice(
+    overlay: Option<Overlay>,
+    answers: &BTreeMap<String, u8>,
+) -> Option<&'static Choice> {
+    match overlay {
+        Some(Overlay::Album {
+            page: views::ANSWERS_PAGE,
+            selected,
+        }) => letters::answered_choices(answers)
+            .nth(selected)
+            .map(|(choice, _)| choice),
+        _ => None,
+    }
+}
+
+fn answer_option(
+    overlay: Option<Overlay>,
+    answers: &mut BTreeMap<String, u8>,
+    letter_choice: Option<&'static Choice>,
+    option: u8,
+) -> bool {
+    let choice = match overlay {
+        Some(Overlay::Letter(_)) => letter_choice.filter(|choice| !answers.contains_key(choice.id)),
+        _ => album_choice(overlay, answers),
+    };
+    let Some(choice) = choice else {
+        return false;
+    };
+    answers.insert(choice.id.to_string(), option);
+    true
+}
+
+fn album_after_scroll(
+    overlay: Option<Overlay>,
+    step: isize,
+    answers: &BTreeMap<String, u8>,
+) -> Option<Overlay> {
+    match overlay {
+        Some(Overlay::Album {
+            page: views::ANSWERS_PAGE,
+            selected,
+        }) => {
+            let last = letters::answered_choices(answers).count().saturating_sub(1);
+            Some(Overlay::Album {
+                page: views::ANSWERS_PAGE,
+                selected: selected.saturating_add_signed(step).min(last),
+            })
+        }
+        overlay => overlay,
     }
 }
 
@@ -458,7 +510,7 @@ pub struct SimulationOptions {
 enum Overlay {
     Letter(usize),
     Badges,
-    Album(usize),
+    Album { page: usize, selected: usize },
     Backup { shows_welcome: bool },
     Bottle(usize),
     Help,
@@ -791,6 +843,8 @@ impl App {
                 (holiday.is_easter, "easter"),
                 (holiday.is_neighbours_party, "neighbours_party"),
                 (holiday.is_music_day, "music_day"),
+                (holiday.is_candlemas, "candlemas"),
+                (holiday.is_may_day, "may_day"),
                 (self.state.shows_rainbow(), "rainbow"),
                 (sightings.postman, "postman"),
                 (sightings.snowman, "snowman"),
@@ -931,22 +985,22 @@ impl App {
         }
     }
 
-    fn answer_letter(&mut self, option: u8) {
-        let Some(Overlay::Letter(index)) = self.overlay else {
-            return;
+    fn press_option(&mut self, option: u8) {
+        let letter_choice = match self.overlay {
+            Some(Overlay::Letter(index)) => self
+                .village_letter_number(index)
+                .and_then(letters::choice_for),
+            _ => None,
         };
-        let Some(choice) = self
-            .village_letter_number(index)
-            .and_then(letters::choice_for)
-        else {
-            return;
-        };
-        if self.progress.answers.contains_key(choice.id) {
-            return;
+        if answer_option(
+            self.overlay,
+            &mut self.progress.answers,
+            letter_choice,
+            option,
+        ) {
+            self.progress.save();
+            self.refresh_unlocks();
         }
-        self.progress.answers.insert(choice.id.to_string(), option);
-        self.progress.save();
-        self.refresh_unlocks();
     }
 
     fn refresh_rain_alert(&mut self) {
@@ -1042,12 +1096,19 @@ impl App {
                 let Some(view) = content::entry_view(delivered, index, &self.read_context()) else {
                     return Ok(());
                 };
-                view
+                let has_unread_mail = postman_note::has_unread_after(
+                    index,
+                    self.available_letters(),
+                    self.progress.letters_read,
+                );
+                return overlay::render_with_chevrons(renderer, &view, false, has_unread_mail);
             }
-            Some(Overlay::Album(page)) => {
-                let mut pages = self.album_pages();
-                let page = page.min(pages.len().saturating_sub(1));
-                pages.swap_remove(page)
+            Some(Overlay::Album { page, selected }) => {
+                let mut pages = self.album_pages(selected);
+                let last = pages.len().saturating_sub(1);
+                let page = page.min(last);
+                let view = pages.swap_remove(page);
+                return overlay::render_with_chevrons(renderer, &view, page > 0, page < last);
             }
             Some(Overlay::Backup { .. }) => match &self.recovery {
                 Some(Recovery::NewGame(backup)) => views::backup_view(backup),
@@ -1148,8 +1209,13 @@ impl App {
             .first_mail(self.progress.letters_read.min(self.available_letters()))
     }
 
-    fn album_pages(&self) -> Vec<overlay::View> {
-        views::album_pages(self.read_entries(), &self.progress, &self.unlocks())
+    fn album_pages(&self, selected_answer: usize) -> Vec<overlay::View> {
+        views::album_pages(
+            self.read_entries(),
+            &self.progress,
+            &self.unlocks(),
+            selected_answer,
+        )
     }
 
     fn back_to_school(&self) -> NaiveDate {
@@ -1351,6 +1417,9 @@ impl App {
                 self.overlay = Some(Overlay::Settings(
                     selected.saturating_add_signed(step).min(last),
                 ));
+            }
+            Some(Overlay::Album { .. }) => {
+                self.overlay = album_after_scroll(self.overlay, step, &self.progress.answers);
             }
             _ => self.select_in_index(step),
         }
@@ -1589,16 +1658,22 @@ impl App {
 
     fn toggle_album(&mut self) {
         self.overlay = match self.overlay {
-            Some(Overlay::Album(_)) => None,
-            _ => Some(Overlay::Album(0)),
+            Some(Overlay::Album { .. }) => None,
+            _ => Some(Overlay::Album {
+                page: 0,
+                selected: 0,
+            }),
         };
     }
 
     fn browse(&mut self, step: isize) {
         match self.overlay {
-            Some(Overlay::Album(page)) => {
-                let last = self.album_pages().len().saturating_sub(1);
-                self.overlay = Some(Overlay::Album(page.saturating_add_signed(step).min(last)));
+            Some(Overlay::Album { page, selected }) => {
+                let last = self.album_pages(selected).len().saturating_sub(1);
+                self.overlay = Some(Overlay::Album {
+                    page: page.saturating_add_signed(step).min(last),
+                    selected: 0,
+                });
             }
             Some(Overlay::Letter(_)) => self.browse_letters(step),
             Some(Overlay::Settings(_)) => self.change_setting(step),
@@ -1779,8 +1854,8 @@ impl App {
                                     _ => Some(Overlay::Badges),
                                 };
                             }
-                            KeyCode::Char('1') => self.answer_letter(1),
-                            KeyCode::Char('2') => self.answer_letter(2),
+                            KeyCode::Char('1') => self.press_option(1),
+                            KeyCode::Char('2') => self.press_option(2),
                             KeyCode::Char('a') | KeyCode::Char('A') => self.toggle_album(),
                             KeyCode::Char('h') | KeyCode::Char('H') => self.toggle_help(),
                             KeyCode::Char('s') | KeyCode::Char('S') => self.toggle_settings(),
@@ -2402,27 +2477,60 @@ mod tests {
         assert!(Neighbour::ALL.iter().all(|guest| everyone.contains(guest)));
     }
 
+    const FOOTPRINT_MAIL: [(Entry, &str); 3] = [
+        (Entry::Main(7), "Regarde le sol"),
+        (Entry::Main(10), "Ces traces sont petites"),
+        (Entry::Main(15), "Pardon pour les traces de boue"),
+    ];
+
+    const WET_FOOTPRINT_MAIL: [(Entry, &str); 2] = [
+        (Entry::Creepy(2), "Les traces vont du puits à ta porte"),
+        (Entry::Marcel(2), "Des pas qui vont vers ta maison"),
+    ];
+
+    fn mail_text(entry: Entry) -> String {
+        match entry {
+            Entry::Main(index) => letters::defaults()[index].body.clone(),
+            Entry::Creepy(index) => letters::CREEPY_LETTERS[index].to_string(),
+            Entry::Marcel(index) => chronicles::MARCEL_LETTERS[index].to_string(),
+            other => panic!("no footprint mail in {other:?}"),
+        }
+    }
+
+    fn delivery_days(mail: &[(Entry, &str)]) -> Vec<usize> {
+        let timeline = timeline_on(120);
+        mail.iter()
+            .map(|(entry, _)| {
+                timeline
+                    .mail()
+                    .find(|(_, delivered)| delivered == entry)
+                    .map(|(day, _)| day)
+                    .unwrap_or_else(|| panic!("{entry:?} never delivered"))
+            })
+            .collect()
+    }
+
     #[test]
-    fn test_footprints_show_only_on_day_8() {
-        assert!(unlocks_on_day(8).footprints);
-        for day in [7, 9, 14, 61] {
-            assert!(!unlocks_on_day(day).footprints, "footprints on day {day}");
+    fn test_footprint_mail_talks_about_footprints() {
+        for (entry, quote) in FOOTPRINT_MAIL.iter().chain(&WET_FOOTPRINT_MAIL) {
+            assert!(mail_text(*entry).contains(quote), "{entry:?}");
         }
     }
 
     #[test]
-    fn test_wet_footprints_show_only_on_days_13_14_and_30() {
-        for day in [13, 14, 30] {
-            assert!(
-                unlocks_on_day(day).wet_footprints,
-                "wet footprints on day {day}"
-            );
-        }
-        for day in [12, 15, 29, 31] {
-            assert!(
-                !unlocks_on_day(day).wet_footprints,
-                "wet footprints on day {day}"
-            );
+    fn test_footprints_show_only_on_the_days_their_mail_arrives() {
+        for (thing, mail) in [
+            (Thing::Footprints, &FOOTPRINT_MAIL[..]),
+            (Thing::WetFootprints, &WET_FOOTPRINT_MAIL[..]),
+        ] {
+            let days = delivery_days(mail);
+            for day in 1..=120 {
+                assert_eq!(
+                    shows(&unlocks_on_day(day), thing),
+                    days.contains(&day),
+                    "{thing:?} on day {day}"
+                );
+            }
         }
     }
 
@@ -2560,5 +2668,93 @@ mod tests {
         push_toast(&mut toasts, "B");
         push_toast(&mut toasts, "A");
         assert_eq!(toasts, ["A", "B"]);
+    }
+
+    fn album(page: usize, selected: usize) -> Option<Overlay> {
+        Some(Overlay::Album { page, selected })
+    }
+
+    fn album_position(overlay: Option<Overlay>) -> Option<(usize, usize)> {
+        match overlay {
+            Some(Overlay::Album { page, selected }) => Some((page, selected)),
+            _ => None,
+        }
+    }
+
+    #[test]
+    fn test_album_selection_stays_within_answered_questions() {
+        let answers = BTreeMap::from([("bow".to_string(), 1), ("well".to_string(), 2)]);
+        let page = views::ANSWERS_PAGE;
+        let scroll = |overlay, step| album_position(album_after_scroll(overlay, step, &answers));
+        assert_eq!(scroll(album(page, 0), -1), Some((page, 0)));
+        assert_eq!(scroll(album(page, 0), 1), Some((page, 1)));
+        assert_eq!(scroll(album(page, 1), 1), Some((page, 1)));
+        assert_eq!(scroll(album(page, 1), -1), Some((page, 0)));
+        assert_eq!(scroll(album(0, 0), 1), Some((0, 0)));
+
+        let nothing_answered = BTreeMap::new();
+        for step in [-1, 1] {
+            assert_eq!(
+                album_position(album_after_scroll(album(page, 0), step, &nothing_answered)),
+                Some((page, 0))
+            );
+        }
+    }
+
+    #[test]
+    fn test_option_keys_change_the_selected_answer_on_the_answers_page_only() {
+        let timeline = timeline_on(60);
+        let mut answers = BTreeMap::from([("bow".to_string(), 1), ("well".to_string(), 2)]);
+        let selected = album(views::ANSWERS_PAGE, 0);
+        for (option, is_bow_blue) in [(2, true), (1, false), (2, true)] {
+            assert!(answer_option(selected, &mut answers, None, option));
+            assert_eq!(
+                unlocks_on(&timeline, 60, &answers).choices.bow_blue,
+                is_bow_blue
+            );
+        }
+        assert_eq!(answers["bow"], 2);
+        assert_eq!(answers["well"], 2);
+        assert_eq!(
+            album_choice(album(views::ANSWERS_PAGE, 1), &answers).map(|choice| choice.id),
+            Some("well")
+        );
+
+        let before = answers.clone();
+        assert!(!answer_option(album(0, 0), &mut answers, None, 1));
+        assert!(!answer_option(
+            album(views::ANSWERS_PAGE + 1, 0),
+            &mut answers,
+            None,
+            1
+        ));
+        assert!(!answer_option(
+            None,
+            &mut answers,
+            letters::choice_for(3),
+            1
+        ));
+        assert!(!answer_option(
+            Some(Overlay::Letter(2)),
+            &mut answers,
+            letters::choice_for(3),
+            1
+        ));
+        assert_eq!(answers, before);
+
+        let mut nothing_answered = BTreeMap::new();
+        assert!(!answer_option(
+            album(views::ANSWERS_PAGE, 0),
+            &mut nothing_answered,
+            None,
+            1
+        ));
+        assert!(answer_option(
+            Some(Overlay::Letter(2)),
+            &mut nothing_answered,
+            letters::choice_for(3),
+            2
+        ));
+        assert_eq!(nothing_answered, BTreeMap::from([("bow".to_string(), 2)]));
     }
 }

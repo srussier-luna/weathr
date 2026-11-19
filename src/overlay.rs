@@ -1,5 +1,6 @@
 use crate::badges::{self, BADGES, Badge, BadgeKind, KINDS};
 use crate::render::TerminalRenderer;
+use chrono::Local;
 use crossterm::style::Color;
 use std::collections::BTreeSet;
 use std::io;
@@ -24,8 +25,33 @@ const MAX_BUBBLE_WIDTH: u16 = 40;
 const BUBBLE_GAP: &str = ". .";
 const BUBBLE_TAIL: &str = "V";
 const TAIL_ROWS_ABOVE_SPEAKER: u16 = 2;
+const CHEVRON_STEP_MILLIS: i64 = 500;
+const CHEVRON_GAP: u16 = 1;
 
 type Piece = (u16, String, Color);
+
+#[derive(Clone, Copy)]
+struct BoxArea {
+    x: u16,
+    y: u16,
+    width: u16,
+    height: u16,
+}
+
+#[derive(Clone, Copy)]
+enum Side {
+    Left,
+    Right,
+}
+
+impl Side {
+    fn chevron(self) -> char {
+        match self {
+            Self::Left => '«',
+            Self::Right => '»',
+        }
+    }
+}
 
 pub enum Line {
     Text(String),
@@ -248,6 +274,28 @@ pub fn lay_out(lines: &[Line], width: usize) -> Vec<String> {
 }
 
 pub fn render_view(renderer: &mut TerminalRenderer, view: &View) -> io::Result<()> {
+    render_view_box(renderer, view)?;
+    Ok(())
+}
+
+pub fn render_with_chevrons(
+    renderer: &mut TerminalRenderer,
+    view: &View,
+    has_previous: bool,
+    has_next: bool,
+) -> io::Result<()> {
+    let area = render_view_box(renderer, view)?;
+    let tick = (Local::now().timestamp_millis() / CHEVRON_STEP_MILLIS) as usize;
+    let width = renderer.get_size().0;
+    for (side, is_shown) in [(Side::Left, has_previous), (Side::Right, has_next)] {
+        if is_shown && let Some((x, y)) = chevron_cell(area, side, width, tick) {
+            renderer.render_char(x, y, side.chevron(), Color::Yellow)?;
+        }
+    }
+    Ok(())
+}
+
+fn render_view_box(renderer: &mut TerminalRenderer, view: &View) -> io::Result<BoxArea> {
     let box_width = view.frame.fit(box_width(renderer));
     let lines = lay_out(&view.lines, view.frame.inner_width(box_width));
     render_box(
@@ -258,6 +306,18 @@ pub fn render_view(renderer: &mut TerminalRenderer, view: &View) -> io::Result<(
         &view.footer,
         box_width,
     )
+}
+
+fn chevron_cell(area: BoxArea, side: Side, terminal_width: u16, tick: usize) -> Option<(u16, u16)> {
+    let offset = CHEVRON_GAP + (tick % 2) as u16;
+    let x = match side {
+        Side::Left => (area.x > CHEVRON_GAP + 1).then(|| area.x - 1 - offset),
+        Side::Right => {
+            let right = area.x + area.width;
+            (right + CHEVRON_GAP + 1 < terminal_width).then_some(right + offset)
+        }
+    }?;
+    Some((x, area.y + area.height / 2))
 }
 
 pub fn render_bubble(
@@ -312,7 +372,8 @@ pub fn render_badges(
         &badge_lines(earned, streak, Frame::Stars.inner_width(box_width)),
         BADGES_FOOTER,
         box_width,
-    )
+    )?;
+    Ok(())
 }
 
 fn badges_title(earned: &BTreeSet<String>) -> String {
@@ -394,12 +455,17 @@ fn render_box(
     lines: &[String],
     footer: &str,
     box_width: u16,
-) -> io::Result<()> {
+) -> io::Result<BoxArea> {
     let (width, height) = renderer.get_size();
     let rows = frame_rows(frame, title, lines, footer, box_width);
-    let x = width.saturating_sub(box_width) / 2;
-    let y = (height.saturating_sub(rows.len() as u16) / 2).max(2);
-    draw_rows(renderer, &rows, x, y)
+    let area = BoxArea {
+        x: width.saturating_sub(box_width) / 2,
+        y: (height.saturating_sub(rows.len() as u16) / 2).max(2),
+        width: box_width,
+        height: rows.len() as u16,
+    };
+    draw_rows(renderer, &rows, area.x, area.y)?;
+    Ok(area)
 }
 
 fn draw_rows(
@@ -805,5 +871,34 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_chevrons_go_back_and_forth_one_column_off_the_box_at_mid_height() {
+        let area = BoxArea {
+            x: 7,
+            y: 4,
+            width: 66,
+            height: 21,
+        };
+        assert_eq!(chevron_cell(area, Side::Right, 80, 0), Some((74, 14)));
+        assert_eq!(chevron_cell(area, Side::Right, 80, 1), Some((75, 14)));
+        assert_eq!(chevron_cell(area, Side::Right, 80, 2), Some((74, 14)));
+        assert_eq!(chevron_cell(area, Side::Left, 80, 0), Some((5, 14)));
+        assert_eq!(chevron_cell(area, Side::Left, 80, 1), Some((4, 14)));
+    }
+
+    #[test]
+    fn test_chevrons_hide_without_room_beside_the_box() {
+        let area = |x, width| BoxArea {
+            x,
+            y: 2,
+            width,
+            height: 9,
+        };
+        assert_eq!(chevron_cell(area(3, 14), Side::Right, 20, 1), Some((19, 6)));
+        assert_eq!(chevron_cell(area(2, 16), Side::Right, 20, 0), None);
+        assert_eq!(chevron_cell(area(3, 14), Side::Left, 20, 1), Some((0, 6)));
+        assert_eq!(chevron_cell(area(2, 16), Side::Left, 20, 0), None);
     }
 }

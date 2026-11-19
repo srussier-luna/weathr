@@ -23,6 +23,8 @@ const TREEHOUSE_WIDTH: u16 = 16;
 const TREEHOUSE_MIN_CANOPY_WIDTH: u16 = 18;
 const CHEST: [&str; 3] = [" _______", "/_______\\", "[___$___]"];
 const _: () = assert!(CHEST[1].len() == garden::CHEST_WIDTH as usize);
+const KEY: &str = "o-m";
+const _: () = assert!(KEY.len() == garden::KEY_WIDTH as usize);
 const BALLOON: [&str; 4] = [" ,-. ", "(   )", " \\ / ", "  #  "];
 const BALLOON_SPEED: f32 = 0.06;
 const LANTERN_WINDOW: (u16, u16) = (8, 8);
@@ -256,9 +258,9 @@ impl Lore {
         }
 
         if unlocks.key
-            && let Some(mailbox_x) = layout.plan.mailbox_x
+            && let Some(x) = layout.key_x()
         {
-            garden::draw(renderer, mailbox_x + 2, ground_y, &["o-m"], Color::Yellow)?;
+            garden::draw(renderer, x, ground_y, &[KEY], Color::Yellow)?;
         }
 
         if unlocks.choices.nuts

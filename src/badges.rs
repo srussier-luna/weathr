@@ -83,7 +83,7 @@ pub const KINDS: [BadgeKind; 6] = [
     BadgeKind::Demerit,
 ];
 
-pub const BADGES: [Badge; 44] = [
+pub const BADGES: [Badge; 46] = [
     badge(
         "clear",
         "Ciel dégagé",
@@ -221,6 +221,18 @@ pub const BADGES: [Badge; 44] = [
         "Géminides",
         BadgeKind::Holiday,
         ["* *  ", " \\ \\ ", "  \\ \\"],
+    ),
+    badge(
+        "candlemas",
+        "Chandeleur",
+        BadgeKind::Holiday,
+        [" _._ ", "(o .)", " '-' "],
+    ),
+    badge(
+        "may_day",
+        "1er mai",
+        BadgeKind::Holiday,
+        [" .--.", " |o o", "\\|/  "],
     ),
     badge(
         "rainbow",
@@ -420,6 +432,22 @@ mod tests {
         assert!(find(CHEATER).is_some_and(|badge| badge.hint.is_some()));
         assert_eq!(collection().count(), BADGES.len() - 1);
         assert!(collection().all(|badge| badge.id != CHEATER));
+    }
+
+    #[test]
+    fn test_candlemas_badge_is_a_fete() {
+        let badge = find("candlemas").unwrap();
+        assert_eq!(badge.name, "Chandeleur");
+        assert!(badge.kind == BadgeKind::Holiday);
+        assert!(badge.hint.is_none());
+    }
+
+    #[test]
+    fn test_may_day_badge_is_a_fete() {
+        let badge = find("may_day").unwrap();
+        assert_eq!(badge.name, "1er mai");
+        assert!(badge.kind == BadgeKind::Holiday);
+        assert!(badge.hint.is_none());
     }
 
     #[test]

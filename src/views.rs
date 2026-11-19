@@ -8,7 +8,7 @@ use crate::story::Entry;
 use crate::story::content::chronicles::{
     BOTTLE_MESSAGES, CHEST_SOUVENIRS, DRAWINGS, OBJECTS, RECIPES,
 };
-use crate::story::content::letters::CHOICES;
+use crate::story::content::letters::{Choice, answered_choices};
 use crate::story::content::neighbours_note::{self, NeighboursNote};
 use crate::story::content::{self, MONTHS, ReadContext, postcard_lines, postcard_title, text};
 use crate::story::punishment::Punishment;
@@ -18,6 +18,8 @@ use std::path::Path;
 
 const INDEX_FOOTER: &str = "[↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer";
 const ALBUM_FOOTER: &str = "[<] [>] pages  [a] ou [Echap] fermer";
+const ANSWERS_FOOTER: &str =
+    "[↑] [↓] choisir  [1] [2] changer  [<] [>] pages  [a] ou [Echap] fermer";
 const BOTTLE_FOOTER: &str = "[Echap] fermer";
 const BADGE_CARD_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const HELP_FOOTER: &str = "[h] ou [Echap] fermer";
@@ -35,6 +37,7 @@ const NOTES_BULLET: &str = "- ";
 const NOTES_INDENT: &str = "  ";
 pub const NOTES_FRAME: Frame = Frame::Plain;
 pub const INDEX_FRAME: Frame = Frame::Plain;
+pub const ANSWERS_PAGE: usize = 2;
 pub const POSTMAN_SIGNATURE: &str = "— Le Facteur";
 const FULL_BOX_NOTE: &str =
     "Pendant ton absence, tout le village en a profité pour prendre des vacances\u{202F}!";
@@ -443,26 +446,61 @@ fn gifts(unlocks: &Unlocks) -> Vec<&'static str> {
 }
 
 fn list_page(title: &str, items: Vec<String>) -> View {
+    let items = items.into_iter().map(|item| format!("- {item}")).collect();
+    album_page(title, items, ALBUM_FOOTER)
+}
+
+fn album_page(title: &str, items: Vec<String>, footer: &str) -> View {
     let lines = if items.is_empty() {
         vec![text("Rien pour l'instant.")]
     } else {
-        items
-            .into_iter()
-            .map(|item| text(format!("- {item}")))
-            .collect()
+        items.into_iter().map(text).collect()
     };
     View {
         title: title.to_string(),
         lines,
-        footer: ALBUM_FOOTER.to_string(),
+        footer: footer.to_string(),
         frame: Frame::Photo,
     }
+}
+
+fn answers_page(progress: &Progress, selected: usize) -> View {
+    let items: Vec<String> = answered_choices(&progress.answers)
+        .enumerate()
+        .map(|(index, (choice, answer))| {
+            if index == selected {
+                format!("> {} {}", choice.prompt, both_options(choice, answer))
+            } else {
+                format!("- {} {}", choice.prompt, choice.options[answer])
+            }
+        })
+        .collect();
+    let footer = if items.is_empty() {
+        ALBUM_FOOTER
+    } else {
+        ANSWERS_FOOTER
+    };
+    album_page("Album : tes réponses", items, footer)
+}
+
+fn both_options(choice: &Choice, answer: usize) -> String {
+    choice
+        .options
+        .iter()
+        .enumerate()
+        .map(|(index, option)| {
+            let mark = if index == answer { "\u{a0}✓" } else { "" };
+            format!("[{}]\u{a0}{option}{mark}", index + 1)
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 pub fn album_pages(
     read_entries: &[(usize, Entry)],
     progress: &Progress,
     unlocks: &Unlocks,
+    selected_answer: usize,
 ) -> Vec<View> {
     let postcards: Vec<usize> = read_entries
         .iter()
@@ -501,14 +539,6 @@ pub fn album_pages(
         format!("Recettes : {}", recipes.len()),
         format!("Dessins de Léo : {}", drawings.len()),
     ];
-    let answers = CHOICES
-        .iter()
-        .filter_map(|choice| {
-            let answer = *progress.answers.get(choice.id)?;
-            let option = choice.options.get(usize::from(answer).checked_sub(1)?)?;
-            Some(format!("{} {option}", choice.prompt))
-        })
-        .collect();
     let objects = progress
         .found_objects
         .iter()
@@ -521,7 +551,7 @@ pub fn album_pages(
             "Album : cadeaux du village",
             gifts.iter().map(|gift| gift.to_string()).collect(),
         ),
-        list_page("Album : tes réponses", answers),
+        answers_page(progress, selected_answer),
         list_page("Album : objets trouvés", objects),
     ];
     if unlocks.chest {
@@ -582,7 +612,10 @@ pub fn album_pages(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::badges;
+    use crate::story::content::letters::CHOICES;
     use crate::story::content::save_golden::{SavedGame, courrier_fixture, render};
+    use std::collections::BTreeMap;
 
     #[test]
     fn test_save_lists_in_courrier_as_before_refactor() {
@@ -894,5 +927,79 @@ mod tests {
             ["> Lyon_", "", "Aucune ville trouvée"]
         );
         assert_eq!(view.footer, CITY_SEARCH_FOOTER);
+    }
+
+    #[test]
+    fn test_answers_page_shows_both_options_of_the_selected_question() {
+        let mut progress = Progress::default();
+        progress.answers = BTreeMap::from([("bow".to_string(), 1), ("well".to_string(), 2)]);
+        let [bow, well] = [&CHOICES[0], &CHOICES[1]];
+        let pages = |selected| album_pages(&[], &progress, &Unlocks::default(), selected);
+
+        let pages_on_first = pages(0);
+        let view = &pages_on_first[ANSWERS_PAGE];
+        assert!(view.title.starts_with("Album : tes réponses"));
+        assert_eq!(view.footer, ANSWERS_FOOTER);
+        assert_eq!(
+            overlay::lay_out(&view.lines, 200),
+            [
+                format!("> {} [1]\u{a0}Rouge\u{a0}✓ [2]\u{a0}Bleu", bow.prompt),
+                format!("- {} De la mousse verte", well.prompt),
+            ]
+        );
+        assert!(
+            pages_on_first
+                .iter()
+                .enumerate()
+                .filter(|(index, _)| *index != ANSWERS_PAGE)
+                .all(|(_, page)| page.footer == ALBUM_FOOTER)
+        );
+
+        let view = &pages(1)[ANSWERS_PAGE];
+        assert_eq!(
+            overlay::lay_out(&view.lines, 200),
+            [
+                format!("- {} Rouge", bow.prompt),
+                format!(
+                    "> {} [1]\u{a0}Des tuiles rouges [2]\u{a0}De la mousse verte\u{a0}✓",
+                    well.prompt
+                ),
+            ]
+        );
+        for width in 20..=60 {
+            assert!(
+                overlay::lay_out(&view.lines, width)
+                    .iter()
+                    .all(|line| !line.ends_with(']') && !line.starts_with('✓'))
+            );
+        }
+    }
+
+    #[test]
+    fn test_album_opens_on_its_fixed_pages_in_order() {
+        let pages = album_pages(&[], &Progress::default(), &Unlocks::default(), 0);
+        let titles = [
+            "Album : sommaire",
+            "Album : cadeaux du village",
+            "Album : tes réponses",
+            "Album : objets trouvés",
+        ];
+        for (page, title) in pages.iter().zip(titles) {
+            assert!(page.title.starts_with(title), "{}", page.title);
+        }
+        assert!(
+            pages[ANSWERS_PAGE]
+                .title
+                .starts_with("Album : tes réponses")
+        );
+    }
+
+    #[test]
+    fn test_answers_page_stays_empty_until_a_question_is_answered() {
+        let pages = album_pages(&[], &Progress::default(), &Unlocks::default(), 0);
+        let view = &pages[ANSWERS_PAGE];
+        assert!(view.title.starts_with("Album : tes réponses"));
+        assert_eq!(overlay::lay_out(&view.lines, 60), ["Rien pour l'instant."]);
+        assert_eq!(view.footer, ALBUM_FOOTER);
     }
 }
