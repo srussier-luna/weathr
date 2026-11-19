@@ -12,6 +12,7 @@ use crate::story::content::letters::CHOICES;
 use crate::story::content::{self, MONTHS, ReadContext, postcard_lines, postcard_title, text};
 use crate::weather::units::{precipitation_symbol, temperature_symbol, wind_speed_symbol};
 use chrono::{Datelike, NaiveDate};
+use std::path::Path;
 
 const INDEX_FOOTER: &str = "[↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer";
 const ALBUM_FOOTER: &str = "[<] [>] pages  [a] ou [Echap] fermer";
@@ -24,6 +25,7 @@ const CITY_SEARCH_FOOTER: &str = "[Entrée] chercher  [Echap] retour";
 const CITY_RESULTS_FOOTER: &str = "[↑] [↓] choisir  [Entrée] valider  [Echap] retour";
 const NOTES_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const POSTMAN_NOTE_FOOTER: &str = "[c] suivante  [Echap] fermer";
+const BACKUP_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const SCROLL_HINT: &str = "[↑] [↓] défiler";
 const HELP_KEY_WIDTH: usize = 10;
 const NOTES_BULLET: &str = "- ";
@@ -97,6 +99,29 @@ pub fn postman_note_view(back_to_school: NaiveDate) -> View {
         footer: POSTMAN_NOTE_FOOTER.to_string(),
         frame: Frame::Notice,
     }
+}
+
+fn backup_box(line: String) -> View {
+    View {
+        title: "Sauvegarde".to_string(),
+        lines: vec![text(line)],
+        footer: BACKUP_FOOTER.to_string(),
+        frame: Frame::Floppy,
+    }
+}
+
+pub fn backup_view(backup: &Path) -> View {
+    backup_box(format!(
+        "Ta progression n'a pas pu être lue. Une copie est gardée dans {}. Une nouvelle partie commence.",
+        backup.display()
+    ))
+}
+
+pub fn restored_view() -> View {
+    backup_box(
+        "Ta progression n'a pas pu être lue. Ta partie reprend à la dernière sauvegarde."
+            .to_string(),
+    )
 }
 
 pub fn full_box_index_view(
@@ -593,6 +618,30 @@ mod tests {
              blank\n\
              text: — Le Facteur\n"
         )));
+    }
+
+    #[test]
+    fn test_backup_box_names_the_copy_in_the_floppy_frame() {
+        let view = backup_view(Path::new("/weathr/progress.json.abime-2026-11-07-1432"));
+        assert_eq!(
+            render(&view),
+            "title: Sauvegarde\n\
+             text: Ta progression n'a pas pu être lue. Une copie est gardée dans \
+             /weathr/progress.json.abime-2026-11-07-1432. Une nouvelle partie commence.\n\
+             footer: [Entrée] ou [Echap] fermer\n\
+             frame: Floppy\n"
+        );
+    }
+
+    #[test]
+    fn test_restored_box_says_the_game_resumes_in_the_floppy_frame() {
+        assert_eq!(
+            render(&restored_view()),
+            "title: Sauvegarde\n\
+             text: Ta progression n'a pas pu être lue. Ta partie reprend à la dernière sauvegarde.\n\
+             footer: [Entrée] ou [Echap] fermer\n\
+             frame: Floppy\n"
+        );
     }
 
     #[test]
