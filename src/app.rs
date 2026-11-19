@@ -167,6 +167,23 @@ fn album_choice(
     }
 }
 
+fn answer_option(
+    overlay: Option<Overlay>,
+    answers: &mut BTreeMap<String, u8>,
+    letter_choice: Option<&'static Choice>,
+    option: u8,
+) -> bool {
+    let choice = match overlay {
+        Some(Overlay::Letter(_)) => letter_choice.filter(|choice| !answers.contains_key(choice.id)),
+        _ => album_choice(overlay, answers),
+    };
+    let Some(choice) = choice else {
+        return false;
+    };
+    answers.insert(choice.id.to_string(), option);
+    true
+}
+
 fn album_after_scroll(
     overlay: Option<Overlay>,
     step: isize,
@@ -830,33 +847,22 @@ impl App {
         }
     }
 
-    fn answer_letter(&mut self, option: u8) {
-        let Some(Overlay::Letter(index)) = self.overlay else {
-            return;
-        };
-        let Some(choice) = self
-            .village_letter_number(index)
-            .and_then(letters::choice_for)
-        else {
-            return;
-        };
-        if self.progress.answers.contains_key(choice.id) {
-            return;
-        }
-        self.set_answer(choice, option);
-    }
-
     fn press_option(&mut self, option: u8) {
-        match album_choice(self.overlay, &self.progress.answers) {
-            Some(choice) => self.set_answer(choice, option),
-            None => self.answer_letter(option),
+        let letter_choice = match self.overlay {
+            Some(Overlay::Letter(index)) => self
+                .village_letter_number(index)
+                .and_then(letters::choice_for),
+            _ => None,
+        };
+        if answer_option(
+            self.overlay,
+            &mut self.progress.answers,
+            letter_choice,
+            option,
+        ) {
+            self.progress.save();
+            self.refresh_unlocks();
         }
-    }
-
-    fn set_answer(&mut self, choice: &Choice, option: u8) {
-        self.progress.answers.insert(choice.id.to_string(), option);
-        self.progress.save();
-        self.refresh_unlocks();
     }
 
     fn refresh_rain_alert(&mut self) {
@@ -2314,8 +2320,7 @@ mod tests {
         let mut answers = BTreeMap::from([("bow".to_string(), 1), ("well".to_string(), 2)]);
         let selected = album(views::ANSWERS_PAGE, 0);
         for (option, is_bow_blue) in [(2, true), (1, false), (2, true)] {
-            let choice = album_choice(selected, &answers).unwrap();
-            answers.insert(choice.id.to_string(), option);
+            assert!(answer_option(selected, &mut answers, None, option));
             assert_eq!(
                 unlocks_on(&timeline, 60, &answers).choices.bow_blue,
                 is_bow_blue
@@ -2328,9 +2333,41 @@ mod tests {
             Some("well")
         );
 
-        assert!(album_choice(album(0, 0), &answers).is_none());
-        assert!(album_choice(album(views::ANSWERS_PAGE + 1, 0), &answers).is_none());
-        assert!(album_choice(Some(Overlay::Letter(2)), &answers).is_none());
-        assert!(album_choice(album(views::ANSWERS_PAGE, 0), &BTreeMap::new()).is_none());
+        let before = answers.clone();
+        assert!(!answer_option(album(0, 0), &mut answers, None, 1));
+        assert!(!answer_option(
+            album(views::ANSWERS_PAGE + 1, 0),
+            &mut answers,
+            None,
+            1
+        ));
+        assert!(!answer_option(
+            None,
+            &mut answers,
+            letters::choice_for(3),
+            1
+        ));
+        assert!(!answer_option(
+            Some(Overlay::Letter(2)),
+            &mut answers,
+            letters::choice_for(3),
+            1
+        ));
+        assert_eq!(answers, before);
+
+        let mut nothing_answered = BTreeMap::new();
+        assert!(!answer_option(
+            album(views::ANSWERS_PAGE, 0),
+            &mut nothing_answered,
+            None,
+            1
+        ));
+        assert!(answer_option(
+            Some(Overlay::Letter(2)),
+            &mut nothing_answered,
+            letters::choice_for(3),
+            2
+        ));
+        assert_eq!(nothing_answered, BTreeMap::from([("bow".to_string(), 2)]));
     }
 }

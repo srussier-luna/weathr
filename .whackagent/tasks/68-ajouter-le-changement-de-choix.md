@@ -1,6 +1,6 @@
 ---
 issue: 68
-status: to-test
+status: to-close
 wiki: [[mail]], [[render]]
 note: "ajouter un moyen de changer les choix anciennement faits"
 created: 2026-11-18
@@ -45,6 +45,9 @@ Round 1 — /wa-autopilot 2026-11-19.
 - Build: `cargo build`, `cargo test` green · fmt OK · clippy: existing `double_must_use` only.
 
 ## Review
+
+Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- 2 minor findings fixed by autofix round 1: answer writes now go through one pure `answer_option` (replaces `answer_letter`/`set_answer`), tested; test pins the Album page order. Runtime re-run by the agent: all criteria ✅. Code changed since the user's test (app.rs, views.rs).
 
 ## Verification
 

@@ -869,6 +869,25 @@ mod tests {
     }
 
     #[test]
+    fn test_album_opens_on_its_fixed_pages_in_order() {
+        let pages = album_pages(&[], &Progress::default(), &Unlocks::default(), 0);
+        let titles = [
+            "Album : sommaire",
+            "Album : cadeaux du village",
+            "Album : tes réponses",
+            "Album : objets trouvés",
+        ];
+        for (page, title) in pages.iter().zip(titles) {
+            assert!(page.title.starts_with(title), "{}", page.title);
+        }
+        assert!(
+            pages[ANSWERS_PAGE]
+                .title
+                .starts_with("Album : tes réponses")
+        );
+    }
+
+    #[test]
     fn test_answers_page_stays_empty_until_a_question_is_answered() {
         let pages = album_pages(&[], &Progress::default(), &Unlocks::default(), 0);
         let view = &pages[ANSWERS_PAGE];
