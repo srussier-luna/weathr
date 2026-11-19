@@ -9,7 +9,7 @@ use crate::error::{GeolocationError, WeatherError};
 use crate::geolocation::{self, GeoLocation};
 use crate::holiday::{Holiday, HolidayBox, MeteorShower};
 use crate::overlay;
-use crate::progress::Progress;
+use crate::progress::{Opening, Progress, Recovery};
 use crate::rain_alert::{self, RainAlert};
 use crate::release_notes::{self, Section};
 use crate::remote_weather::{self, Reply, Request};
@@ -22,6 +22,7 @@ use crate::story::content::letters::{self, Choice, Letter};
 use crate::story::content::recipes::{Diet, diet_for_key, diet_ids, diets_from_ids, toggle_diet};
 use crate::story::content::{self, ReadContext};
 use crate::story::postman_note::{self, MailStep};
+use crate::story::reach::{Reach, settle};
 use crate::story::sources::Recipes;
 use crate::story::{Entry, StoryClock, Thing, Timeline, pause, sources};
 use crate::travel;
@@ -36,7 +37,6 @@ use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::io;
 use std::num::NonZeroU16;
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::{mpsc, oneshot};
@@ -377,6 +377,16 @@ fn freeze_recipes(progress: &mut Progress, clock: &StoryClock, today: usize) -> 
     recipes
 }
 
+fn launch_reach(village_count: usize, clock: &StoryClock, today: usize, recipes: Recipes) -> Reach {
+    let next_day = today + 1;
+    Reach::on(
+        &build_timeline(village_count, clock, next_day, recipes),
+        next_day,
+        clock.start(),
+        Local::now().date_naive(),
+    )
+}
+
 fn is_live_box_full(
     clock: &StoryClock,
     timeline: &Timeline,
@@ -554,7 +564,7 @@ pub struct App {
     clock: StoryClock,
     timeline: Timeline,
     release_notes: Vec<Section>,
-    backup: Option<PathBuf>,
+    recovery: Option<Recovery>,
     overlay: Option<Overlay>,
     is_simulated: bool,
     awards_badges: bool,
@@ -647,19 +657,31 @@ impl App {
         } else {
             Launch::Normal
         };
-        let (mut progress, letters, clock, backup) = match simulation.day {
+        let (mut progress, letters, clock, opening) = match simulation.day {
             Some(day) => {
                 let clock = StoryClock::frozen(Local::now().date_naive(), config.mail.hour, day);
                 let mut progress = Progress::in_memory(clock.date_of(1));
                 progress.diet_letter_day = Some(sources::diet_letter_day(1));
-                (progress, letters::read(), clock, None)
+                (progress, letters::read(), clock, Opening::default())
             }
             None => {
-                let (progress, backup) = Progress::load();
+                let (progress, opening) = Progress::load();
                 let clock = story_clock(&progress, config.mail.hour);
-                (progress, letters::load(), clock, backup)
+                (progress, letters::load(), clock, opening)
             }
         };
+        let timeline_day = story_today(&clock);
+        if simulation.day.is_none() {
+            let reach = launch_reach(
+                letters.len(),
+                &clock,
+                timeline_day,
+                Recipes::from_progress(&progress),
+            );
+            if settle(&mut progress, opening.out_of_sync, &reach) {
+                progress.save();
+            }
+        }
         let release_notes = notes_on_launch(&mut progress, release_notes::load(), launch);
         let shows_welcome = welcome_on_launch(&progress, launch);
         if shows_welcome {
@@ -671,7 +693,6 @@ impl App {
         }
         let rain_receiver =
             (!is_simulated).then(|| rain_alert::spawn(location.latitude, location.longitude));
-        let timeline_day = story_today(&clock);
         if progress.diet_letter_day.is_none() {
             progress.diet_letter_day = Some(sources::diet_letter_day(timeline_day));
             progress.save();
@@ -700,9 +721,13 @@ impl App {
             letters,
             clock,
             timeline,
-            overlay: opening_overlay(backup.is_some(), shows_welcome, !release_notes.is_empty()),
+            overlay: opening_overlay(
+                opening.recovery.is_some(),
+                shows_welcome,
+                !release_notes.is_empty(),
+            ),
             release_notes,
-            backup,
+            recovery: opening.recovery,
             is_simulated: is_forced,
             awards_badges: simulation.day.is_none(),
             is_sky_lookout: badges::is_sky_lookout(user_name.as_deref()),
@@ -1097,12 +1122,11 @@ impl App {
                 let view = pages.swap_remove(page);
                 return overlay::render_with_chevrons(renderer, &view, page > 0, page < last);
             }
-            Some(Overlay::Backup { .. }) => {
-                let Some(backup) = &self.backup else {
-                    return Ok(());
-                };
-                views::backup_view(backup)
-            }
+            Some(Overlay::Backup { .. }) => match &self.recovery {
+                Some(Recovery::NewGame(backup)) => views::backup_view(backup),
+                Some(Recovery::Restored) => views::restored_view(),
+                None => return Ok(()),
+            },
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
             Some(Overlay::HolidayBox(holiday_box)) => views::holiday_box_view(holiday_box),
             Some(Overlay::NewBadge(award) | Overlay::NoteBadge(award)) => {

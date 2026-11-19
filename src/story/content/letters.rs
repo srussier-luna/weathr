@@ -7,7 +7,9 @@ const FILE_HEADER: &str = "# Lettres de weathr : une nouvelle lettre arrive chaq
 # Tu peux réécrire les textes librement ou ajouter des lettres après la dernière.
 ";
 
-const DEFAULT_LETTERS: [(&str, &str); 60] = [
+pub const VILLAGE_LETTER_COUNT: usize = 60;
+
+const DEFAULT_LETTERS: [(&str, &str); VILLAGE_LETTER_COUNT] = [
     (
         "Rose, la boulangère",
         "Bienvenue dans la maison au bout du chemin ! Ici, tout le monde se connaît. Je passe chaque matin avec mon panier de croissants : si tu sens une odeur de beurre, c'est moi. Je suis sourde : inutile de sonner chez moi, fais-moi plutôt signe par la fenêtre. Gaston, le facteur, t'apportera une lettre par jour. C'est la tradition du village.",
