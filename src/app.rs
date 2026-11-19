@@ -906,7 +906,12 @@ impl App {
                 let Some(view) = content::entry_view(delivered, index, &self.read_context()) else {
                     return Ok(());
                 };
-                view
+                let has_unread_mail = postman_note::has_unread_after(
+                    index,
+                    self.available_letters(),
+                    self.progress.letters_read,
+                );
+                return overlay::render_letter(renderer, &view, has_unread_mail);
             }
             Some(Overlay::Album(page)) => {
                 let mut pages = self.album_pages();

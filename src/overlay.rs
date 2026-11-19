@@ -1,5 +1,6 @@
 use crate::badges::{BADGES, Badge, BadgeKind, KINDS};
 use crate::render::TerminalRenderer;
+use chrono::Local;
 use crossterm::style::Color;
 use std::collections::BTreeSet;
 use std::io;
@@ -22,8 +23,18 @@ const MAX_BUBBLE_WIDTH: u16 = 40;
 const BUBBLE_GAP: &str = ". .";
 const BUBBLE_TAIL: &str = "V";
 const TAIL_ROWS_ABOVE_SPEAKER: u16 = 2;
+const MAIL_CHEVRON: char = '»';
+const MAIL_CHEVRON_STEP_MILLIS: i64 = 500;
 
 type Piece = (u16, String, Color);
+
+#[derive(Clone, Copy)]
+struct BoxArea {
+    x: u16,
+    y: u16,
+    width: u16,
+    height: u16,
+}
 
 pub enum Line {
     Text(String),
@@ -229,6 +240,27 @@ pub fn lay_out(lines: &[Line], width: usize) -> Vec<String> {
 }
 
 pub fn render_view(renderer: &mut TerminalRenderer, view: &View) -> io::Result<()> {
+    render_view_box(renderer, view)?;
+    Ok(())
+}
+
+pub fn render_letter(
+    renderer: &mut TerminalRenderer,
+    view: &View,
+    has_unread_mail: bool,
+) -> io::Result<()> {
+    let area = render_view_box(renderer, view)?;
+    if !has_unread_mail {
+        return Ok(());
+    }
+    let tick = (Local::now().timestamp_millis() / MAIL_CHEVRON_STEP_MILLIS) as usize;
+    match mail_chevron_cell(area, renderer.get_size().0, tick) {
+        Some((x, y)) => renderer.render_char(x, y, MAIL_CHEVRON, Color::Yellow),
+        None => Ok(()),
+    }
+}
+
+fn render_view_box(renderer: &mut TerminalRenderer, view: &View) -> io::Result<BoxArea> {
     let box_width = view.frame.fit(box_width(renderer));
     let lines = lay_out(&view.lines, view.frame.inner_width(box_width));
     render_box(
@@ -239,6 +271,11 @@ pub fn render_view(renderer: &mut TerminalRenderer, view: &View) -> io::Result<(
         &view.footer,
         box_width,
     )
+}
+
+fn mail_chevron_cell(area: BoxArea, terminal_width: u16, tick: usize) -> Option<(u16, u16)> {
+    let x = area.x + area.width;
+    (x + 1 < terminal_width).then(|| (x + (tick % 2) as u16, area.y + area.height / 2))
 }
 
 pub fn render_bubble(
@@ -332,7 +369,8 @@ pub fn render_badges(
         &lines,
         BADGES_FOOTER,
         box_width,
-    )
+    )?;
+    Ok(())
 }
 
 fn badge_cell(badge: &Badge, is_earned: bool) -> String {
@@ -363,12 +401,17 @@ fn render_box(
     lines: &[String],
     footer: &str,
     box_width: u16,
-) -> io::Result<()> {
+) -> io::Result<BoxArea> {
     let (width, height) = renderer.get_size();
     let rows = frame_rows(frame, title, lines, footer, box_width);
-    let x = width.saturating_sub(box_width) / 2;
-    let y = (height.saturating_sub(rows.len() as u16) / 2).max(2);
-    draw_rows(renderer, &rows, x, y)
+    let area = BoxArea {
+        x: width.saturating_sub(box_width) / 2,
+        y: (height.saturating_sub(rows.len() as u16) / 2).max(2),
+        width: box_width,
+        height: rows.len() as u16,
+    };
+    draw_rows(renderer, &rows, area.x, area.y)?;
+    Ok(area)
 }
 
 fn draw_rows(
@@ -742,5 +785,31 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_mail_chevron_goes_back_and_forth_right_of_the_box_at_mid_height() {
+        let area = BoxArea {
+            x: 7,
+            y: 4,
+            width: 66,
+            height: 21,
+        };
+        assert_eq!(mail_chevron_cell(area, 80, 0), Some((73, 14)));
+        assert_eq!(mail_chevron_cell(area, 80, 1), Some((74, 14)));
+        assert_eq!(mail_chevron_cell(area, 80, 2), Some((73, 14)));
+    }
+
+    #[test]
+    fn test_mail_chevron_hides_without_room_right_of_the_box() {
+        let area = |x, width| BoxArea {
+            x,
+            y: 2,
+            width,
+            height: 9,
+        };
+        assert_eq!(mail_chevron_cell(area(2, 16), 20, 1), Some((19, 6)));
+        assert_eq!(mail_chevron_cell(area(3, 16), 20, 0), None);
+        assert_eq!(mail_chevron_cell(area(0, 20), 20, 0), None);
     }
 }

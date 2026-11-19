@@ -1,6 +1,6 @@
 ---
 issue: 131
-status: todo
+status: to-test
 wiki: [[render]], [[mail]]
 note: "ajoute un chevron animé a droite du courrier en cours de lecture s'il y a un courier non lu, vu que le numero concerne leslettre s'il y a une archive apres on ne sais pas qu'il y a encore du courrier non lu v1.8"
 created: 2026-11-18
@@ -26,8 +26,23 @@ created: 2026-11-18
 
 ## Implementation
 
+Round 1 — /wa-autopilot 2026-11-19.
+
+- `src/story/postman_note.rs`: `has_unread_after(open_letter, available, letters_read)` next to `next_mail`; 2 tests.
+- `src/overlay.rs`: `render_box` returns its `BoxArea`; `render_letter(renderer, view, has_unread_mail)` draws the yellow `»` at `x + width` / `x + width + 1`, row `y + height / 2`, 0.5 s per position (blink idiom of `tree.rs`); no room → nothing; 2 tests.
+- `src/app.rs`: the `Overlay::Letter` branch of `render_overlays` passes the flag. Keys, titles, footers, views unchanged.
+- With today's layout the box always leaves 2 free columns: the « no room » guard is covered by a unit test only.
+- Build: `cargo build`, `cargo test` (489) green · fmt OK · clippy: existing `double_must_use` only.
+
 ## Review
 
 ## Verification
+
+Round 1 — runtime check by the agent (pty 100x40, fresh `HOME`, seeded save at Jour 29):
+
+- ✅ 2 unread, `c` → yellow `»` at mid-height right of the frame, alternating 2 columns every ~0.5 s.
+- ✅ `c` to the last unread → no `»`.
+- ✅ Archive then Lettre unread → `»` on the Archive and on the next Lettre, gone on the last.
+- ✅ Old mail reread (Left arrow) with all read → no `»`; footers unchanged.
 
 ## Feedback
