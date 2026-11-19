@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub const DATE_FORMAT: &str = "%Y-%m-%d";
 
@@ -91,10 +91,7 @@ impl Progress {
         let path = progress_path()
             .filter(|_| !self.in_memory)
             .ok_or(io::ErrorKind::Unsupported)?;
-        if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        fs::write(path, serde_json::to_string_pretty(self)?)
+        write_creating_dir(&path, &serde_json::to_string_pretty(self)?)
     }
 
     pub fn record_visit(&mut self) -> bool {
@@ -147,6 +144,13 @@ impl Progress {
 
 pub(crate) fn progress_path() -> Option<PathBuf> {
     dirs::config_dir().map(|dir| dir.join("weathr").join("progress.json"))
+}
+
+pub(crate) fn write_creating_dir(path: &Path, content: &str) -> io::Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    fs::write(path, content)
 }
 
 #[cfg(test)]

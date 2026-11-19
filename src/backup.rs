@@ -1,12 +1,12 @@
 use crate::config::Config;
-use crate::progress::progress_path;
+use crate::progress::{progress_path, write_creating_dir};
+use crate::prompt::{PREFIX, confirm};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::fs;
-use std::io::{self, Write};
+use std::io;
 use std::path::{Path, PathBuf};
 
-const PREFIX: &str = "[weathr]";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 struct Paths {
@@ -15,12 +15,23 @@ struct Paths {
 }
 
 impl Paths {
-    fn local() -> io::Result<Self> {
-        Ok(Self {
-            progress: progress_path().ok_or(io::ErrorKind::NotFound)?,
-            config: Config::get_config_path().map_err(io::Error::other)?,
+    fn local() -> Option<Self> {
+        Some(Self {
+            progress: progress_path()?,
+            config: Config::get_config_path().ok()?,
         })
     }
+}
+
+#[derive(Debug)]
+enum CollectError<'a> {
+    NoProgress,
+    Unreadable(&'a Path),
+}
+
+enum Restore {
+    Done,
+    Declined,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -32,11 +43,17 @@ struct Backup {
 }
 
 impl Backup {
-    fn collect(paths: &Paths) -> io::Result<Self> {
+    fn collect(paths: &Paths) -> Result<Self, CollectError<'_>> {
+        let progress = fs::read_to_string(&paths.progress).map_err(|error| match error.kind() {
+            io::ErrorKind::NotFound => CollectError::NoProgress,
+            _ => CollectError::Unreadable(&paths.progress),
+        })?;
         Ok(Self {
             version: VERSION.to_string(),
-            progress: serde_json::from_str(&fs::read_to_string(&paths.progress)?)?,
-            config: read_if_present(&paths.config)?,
+            progress: serde_json::from_str(&progress)
+                .map_err(|_| CollectError::Unreadable(&paths.progress))?,
+            config: read_if_present(&paths.config)
+                .map_err(|_| CollectError::Unreadable(&paths.config))?,
         })
     }
 
@@ -52,32 +69,40 @@ impl Backup {
         Some(self.version.as_str()).filter(|version| *version != VERSION)
     }
 
-    fn restore(&self, paths: &Paths) -> io::Result<()> {
-        write_creating_dir(
-            &paths.progress,
-            &serde_json::to_string_pretty(&self.progress)?,
-        )?;
-        match self.config.as_deref().filter(|config| !config.is_empty()) {
-            Some(config) => write_creating_dir(&paths.config, config),
-            None => Ok(()),
+    fn restore<'a>(&self, paths: &'a Paths) -> Result<(), &'a Path> {
+        if let Some(config) = self.config.as_deref().filter(|config| !config.is_empty()) {
+            write_creating_dir(&paths.config, config).map_err(|_| paths.config.as_path())?;
         }
+        serde_json::to_string_pretty(&self.progress)
+            .map_err(io::Error::from)
+            .and_then(|progress| write_creating_dir(&paths.progress, &progress))
+            .map_err(|_| paths.progress.as_path())
     }
 }
 
 pub fn export(file: &Path) -> bool {
-    match Paths::local()
-        .and_then(|paths| Backup::collect(&paths))
-        .and_then(|backup| backup.write(file))
-    {
-        Ok(()) => {
-            println!("{PREFIX} Sauvegarde écrite dans {}.", file.display());
-            true
+    let paths = Paths::local();
+    let collected = paths
+        .as_ref()
+        .ok_or(CollectError::NoProgress)
+        .and_then(Backup::collect);
+    let backup = match collected {
+        Ok(backup) => backup,
+        Err(CollectError::NoProgress) => {
+            eprintln!("{PREFIX} Aucune progression à sauvegarder.");
+            return false;
         }
-        Err(error) => {
-            eprintln!("{PREFIX} {error}");
-            false
+        Err(CollectError::Unreadable(path)) => {
+            eprintln!("{PREFIX} Impossible de lire {}.", path.display());
+            return false;
         }
+    };
+    if backup.write(file).is_err() {
+        eprintln!("{PREFIX} Impossible d'écrire {}.", file.display());
+        return false;
     }
+    println!("{PREFIX} Sauvegarde écrite dans {}.", file.display());
+    true
 }
 
 pub fn import(file: &Path) -> bool {
@@ -90,40 +115,34 @@ pub fn import(file: &Path) -> bool {
             "{PREFIX} Sauvegarde faite avec weathr {version}, tu as la {VERSION}\u{202F}: des données peuvent manquer."
         );
     }
+    let Some(paths) = Paths::local() else {
+        eprintln!("{PREFIX} Impossible d'écrire la progression.");
+        return false;
+    };
 
-    let restored = Paths::local().and_then(|paths| {
-        if paths.progress.exists() && !confirm_replacement() {
-            return Ok(false);
-        }
-        backup.restore(&paths).map(|()| true)
-    });
-    match restored {
-        Ok(true) => {
+    match import_into(&backup, &paths) {
+        Ok(Restore::Done) => {
             println!("{PREFIX} Progression importée.");
             true
         }
-        Ok(false) => true,
-        Err(error) => {
-            eprintln!("{PREFIX} {error}");
+        Ok(Restore::Declined) => true,
+        Err(path) => {
+            eprintln!("{PREFIX} Impossible d'écrire {}.", path.display());
             false
         }
     }
 }
 
-fn confirm_replacement() -> bool {
-    print!(
-        "{PREFIX} Ta progression et tes réglages actuels seront remplacés. Continuer\u{202F}? [o/N] "
-    );
-    let _ = io::stdout().flush();
-    let mut answer = String::new();
-    io::stdin().read_line(&mut answer).is_ok() && accepts(&answer)
-}
-
-fn accepts(answer: &str) -> bool {
-    matches!(
-        answer.trim().to_lowercase().as_str(),
-        "o" | "oui" | "y" | "yes"
-    )
+fn import_into<'a>(backup: &Backup, paths: &'a Paths) -> Result<Restore, &'a Path> {
+    if paths.progress.exists()
+        && !confirm(
+            "Ta progression et tes réglages actuels seront remplacés. Continuer\u{202F}?",
+            false,
+        )
+    {
+        return Ok(Restore::Declined);
+    }
+    backup.restore(paths).map(|()| Restore::Done)
 }
 
 fn read_if_present(path: &Path) -> io::Result<Option<String>> {
@@ -132,13 +151,6 @@ fn read_if_present(path: &Path) -> io::Result<Option<String>> {
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
         Err(error) => Err(error),
     }
-}
-
-fn write_creating_dir(path: &Path, content: &str) -> io::Result<()> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)?;
-    }
-    fs::write(path, content)
 }
 
 #[cfg(test)]
@@ -256,9 +268,39 @@ mod tests {
     }
 
     #[test]
+    fn test_failed_config_write_leaves_progress_untouched() {
+        let temp = TempDir::new("config_fails");
+        let old_mac = temp.paths("old");
+        let new_mac = temp.paths("new");
+        let file = temp.file("s.json");
+        seed(&old_mac, Some(CONFIG));
+        fs::create_dir_all(&new_mac.config).unwrap();
+
+        Backup::collect(&old_mac).unwrap().write(&file).unwrap();
+        let failed = Backup::read(&file).unwrap().restore(&new_mac).err();
+
+        assert_eq!(failed, Some(new_mac.config.as_path()));
+        assert!(!new_mac.progress.exists());
+    }
+
+    #[test]
     fn test_export_without_progress_fails() {
         let temp = TempDir::new("no_progress");
-        assert!(Backup::collect(&temp.paths("mac")).is_err());
+        assert!(matches!(
+            Backup::collect(&temp.paths("mac")),
+            Err(CollectError::NoProgress)
+        ));
+    }
+
+    #[test]
+    fn test_export_of_a_corrupt_progress_names_the_file() {
+        let temp = TempDir::new("corrupt_progress");
+        let paths = temp.paths("mac");
+        write_creating_dir(&paths.progress, "pas du JSON").unwrap();
+        assert!(matches!(
+            Backup::collect(&paths),
+            Err(CollectError::Unreadable(path)) if path == paths.progress
+        ));
     }
 
     #[test]
@@ -270,10 +312,11 @@ mod tests {
 
     #[test]
     fn test_same_version_is_not_reported() {
-        let temp = TempDir::new("same_version");
-        let paths = temp.paths("mac");
-        seed(&paths, None);
-        assert_eq!(Backup::collect(&paths).unwrap().other_version(), None);
+        let backup: Backup = serde_json::from_str(&format!(
+            r#"{{"version":"{VERSION}","progress":{{"letters_read":3}}}}"#
+        ))
+        .unwrap();
+        assert_eq!(backup.other_version(), None);
     }
 
     #[test]
@@ -296,15 +339,5 @@ mod tests {
             assert!(Backup::read(&file).is_err(), "{name}");
         }
         assert!(Backup::read(&temp.file("missing.json")).is_err());
-    }
-
-    #[test]
-    fn test_only_an_explicit_yes_replaces_the_progress() {
-        for answer in ["o\n", "oui", "Y", " yes \n"] {
-            assert!(accepts(answer), "{answer:?}");
-        }
-        for answer in ["", "\n", "n", "non", "no", "ok"] {
-            assert!(!accepts(answer), "{answer:?}");
-        }
     }
 }

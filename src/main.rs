@@ -13,6 +13,7 @@ mod geolocation;
 mod holiday;
 mod overlay;
 mod progress;
+mod prompt;
 mod rain_alert;
 mod release_notes;
 mod remote_weather;
