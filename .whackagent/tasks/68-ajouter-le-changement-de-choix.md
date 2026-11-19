@@ -49,6 +49,8 @@ Round 1 — /wa-autopilot 2026-11-19.
 Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
 - 2 minor findings fixed by autofix round 1: answer writes now go through one pure `answer_option` (replaces `answer_letter`/`set_answer`), tested; test pins the Album page order. Runtime re-run by the agent: all criteria ✅. Code changed since the user's test (app.rs, views.rs).
 
+- Landing 2026-11-19: develop (with #131's Album chevrons) merged in (6cb233e), one conflict in the Album arm resolved keeping both; runtime re-run by the agent; resolution re-verified clean.
+
 ## Verification
 
 Round 1 — runtime check by the agent (pty 120x50, fresh `HOME`, seeded save at Jour 40 with 3 answers; `--day` not used: it never saves):
