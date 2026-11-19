@@ -908,12 +908,19 @@ impl App {
                 let Some(view) = content::entry_view(delivered, index, &self.read_context()) else {
                     return Ok(());
                 };
-                view
+                let has_unread_mail = postman_note::has_unread_after(
+                    index,
+                    self.available_letters(),
+                    self.progress.letters_read,
+                );
+                return overlay::render_with_chevrons(renderer, &view, false, has_unread_mail);
             }
             Some(Overlay::Album(page)) => {
                 let mut pages = self.album_pages();
-                let page = page.min(pages.len().saturating_sub(1));
-                pages.swap_remove(page)
+                let last = pages.len().saturating_sub(1);
+                let page = page.min(last);
+                let view = pages.swap_remove(page);
+                return overlay::render_with_chevrons(renderer, &view, page > 0, page < last);
             }
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
             Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => {

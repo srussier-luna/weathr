@@ -47,11 +47,15 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Coffre | | | `chest` | coffre de Jeanne, à gauche du Puits |
 | Traces de boue | pas | | `footprints` | `:` marron de l'Arbre à la porte, Jour de jeu 8 seulement |
 | Traces mouillées | pas | | `wet_footprints` | `.` bleus du Puits à la porte, nuits 13, 14 et 30 |
+| Clé | | | `key` | clé `o-m` jaune près de la boîte aux lettres, dès le Jour de jeu 17 |
 | Cabane | | | `treehouse` | cabane de Léo, dans le feuillage de l'Arbre |
 | Perséides | | | | étoiles filantes plus fréquentes la nuit, du 9 au 15 août ; Badge dédié |
 | Géminides | | | | étoiles filantes plus fréquentes la nuit, du 10 au 16 décembre ; Badge dédié |
 | Boîte pleine | | | | 7 Lettres du village non lues ; l'histoire se met en pause |
+| Chevron de courrier | | | `render_with_chevrons` | `«`/`»` animés au bord d'une Lettre ou de l'Album : il reste à voir → [[render]] |
 | Ruche | | | | cadeau de Nadia et Claire, entre le sapin et la mare |
+| Mare | flaque | | `puddle` | petite eau à droite du jardin, chez Coin-Coin et Rainette ; gèle en grand froid → [[scene]] |
+| Baignade | | | `Bathing` | Biscuit va à la Mare, s'éclabousse puis s'ébroue ; glisse si elle est gelée → [[animation]] |
 | Poulailler | | | | abri des poules la nuit et sous la pluie, au jardin et au Potager |
 | Carré | parcelle | case | | une des 9 planches du Potager : vide, plantée, fanée, mûre |
 | Jour de plante | | | | jour où weathr est ouvert ; fait pousser et faner les plantes du Potager |
