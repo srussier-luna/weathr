@@ -1,6 +1,6 @@
 ---
 issue: 99
-status: to-test
+status: to-close
 wiki: [[animation]], [[mail]]
 note: "ok, ajoute un draft poue verifier toutes les traces de pas de la saison 1, avjoute le label 1.8"
 created: 2026-11-18
@@ -54,6 +54,9 @@ Round 1 — /wa-autopilot 2026-11-19. **blocked** — unambiguous part done and 
 - Build: `cargo build`, `cargo test` green · fmt OK.
 
 ## Review
+
+Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- 2 minor findings (duplicated tests, bare unwrap) fixed by autofix round 1 (tests only), re-verified clean. Game code unchanged since the user's test.
 
 ## Verification
 

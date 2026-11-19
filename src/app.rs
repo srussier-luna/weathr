@@ -2085,7 +2085,7 @@ mod tests {
                     .mail()
                     .find(|(_, delivered)| delivered == entry)
                     .map(|(day, _)| day)
-                    .unwrap()
+                    .unwrap_or_else(|| panic!("{entry:?} never delivered"))
             })
             .collect()
     }
@@ -2099,25 +2099,18 @@ mod tests {
 
     #[test]
     fn test_footprints_show_only_on_the_days_their_mail_arrives() {
-        let days = delivery_days(&FOOTPRINT_MAIL);
-        for day in 1..=120 {
-            assert_eq!(
-                unlocks_on_day(day).footprints,
-                days.contains(&day),
-                "footprints on day {day}"
-            );
-        }
-    }
-
-    #[test]
-    fn test_wet_footprints_show_only_on_the_days_their_mail_arrives() {
-        let days = delivery_days(&WET_FOOTPRINT_MAIL);
-        for day in 1..=120 {
-            assert_eq!(
-                unlocks_on_day(day).wet_footprints,
-                days.contains(&day),
-                "wet footprints on day {day}"
-            );
+        for (thing, mail) in [
+            (Thing::Footprints, &FOOTPRINT_MAIL[..]),
+            (Thing::WetFootprints, &WET_FOOTPRINT_MAIL[..]),
+        ] {
+            let days = delivery_days(mail);
+            for day in 1..=120 {
+                assert_eq!(
+                    shows(&unlocks_on_day(day), thing),
+                    days.contains(&day),
+                    "{thing:?} on day {day}"
+                );
+            }
         }
     }
 
