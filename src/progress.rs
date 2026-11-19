@@ -66,6 +66,10 @@ pub struct Progress {
     #[serde(default)]
     mail_hour_change: Option<MailHourChange>,
     #[serde(default)]
+    pub visited_cities: BTreeSet<String>,
+    #[serde(default)]
+    pub sam_cities: BTreeSet<usize>,
+    #[serde(default)]
     pub diet_letter_day: Option<usize>,
     #[serde(default)]
     pub diet_answered_day: Option<usize>,
@@ -265,6 +269,25 @@ mod tests {
         let progress: Progress =
             serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":12}"#).unwrap();
         assert_eq!(progress.previous_mail_hour(), None);
+    }
+
+    #[test]
+    fn test_save_without_city_fields_loads_with_no_city() {
+        let progress: Progress =
+            serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":20}"#).unwrap();
+        assert!(progress.visited_cities.is_empty());
+        assert!(progress.sam_cities.is_empty());
+    }
+
+    #[test]
+    fn test_cities_round_trip() {
+        let mut progress = Progress::default();
+        progress.visited_cities.insert("lyon".to_string());
+        progress.sam_cities.insert(0);
+        let saved = serde_json::to_string(&progress).unwrap();
+        let loaded: Progress = serde_json::from_str(&saved).unwrap();
+        assert_eq!(loaded.visited_cities, BTreeSet::from(["lyon".to_string()]));
+        assert_eq!(loaded.sam_cities, BTreeSet::from([0]));
     }
 
     #[test]
