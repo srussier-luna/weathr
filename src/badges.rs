@@ -69,7 +69,7 @@ pub const KINDS: [BadgeKind; 5] = [
     BadgeKind::Secret,
 ];
 
-pub const BADGES: [Badge; 43] = [
+pub const BADGES: [Badge; 44] = [
     badge(
         "clear",
         "Ciel dégagé",
@@ -207,6 +207,12 @@ pub const BADGES: [Badge; 43] = [
         "Géminides",
         BadgeKind::Holiday,
         ["* *  ", " \\ \\ ", "  \\ \\"],
+    ),
+    badge(
+        "candlemas",
+        "Chandeleur",
+        BadgeKind::Holiday,
+        [" _._ ", "(o .)", " '-' "],
     ),
     badge(
         "rainbow",
@@ -380,6 +386,14 @@ mod tests {
                 badge.id
             );
         }
+    }
+
+    #[test]
+    fn test_candlemas_badge_is_a_fete() {
+        let badge = find("candlemas").unwrap();
+        assert_eq!(badge.name, "Chandeleur");
+        assert!(badge.kind == BadgeKind::Holiday);
+        assert!(badge.hint.is_none());
     }
 
     #[test]

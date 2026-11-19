@@ -62,6 +62,7 @@ Demo has `Perséides` and `Géminides` scenes. `StarGazing` (constellations) use
 - Notes drawn in `render_garden` after Léo → over Habitants. Same `PALETTE` for windows, singers, sky: pink, gold, cyan, light green.
 - **Notes du ciel** (`SkyNotes`, 12 × 27): croche + two doubles croches, straight beams, heads aligned (straight version chosen over diagonal, #17). Replaces sun by day, on sun's course (`on_sun_path`, own real size); no course (polar) → centred at top. Replaces moon by night at `MoonSystem::position()`, clamped to screen. Sun / moon not drawn.
 - Drawn after cloud bank, all weathers, `garden::draw` → see-through; rain still falls in front (foreground layer). Colour steps through `PALETTE` every `COLOR_STEP_FRAMES` = 90 frames (~3 s).
+- **Sky sprites** (`src/animation/sky_sprite.rs`, trait `SkySprite`): a giant sprite replaces the sun on its course (`in_place_of_sun`) and the moon (`in_place_of_moon`), all weathers. One list picks it, `SkySpriteKind::on` in `animation_manager.rs`: Notes du ciel, Crêpe géante (Chandeleur, 2 February, flips golden ↔ pale every ~5 s, #95). New sprite = struct + `shows()` + `impl SkySprite`, one variant, one `on` branch, one match arm.
 - Sky shorter than 12 rows (`SkyNotes::shows`: horizon < `CloudBank::TOP` + 12, e.g. 20-row terminal, the game's minimum) → usual sun / moon.
 
 ## Facteur — `src/animation/postman.rs`

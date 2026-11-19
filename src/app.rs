@@ -689,6 +689,7 @@ impl App {
                 (holiday.is_easter, "easter"),
                 (holiday.is_neighbours_party, "neighbours_party"),
                 (holiday.is_music_day, "music_day"),
+                (holiday.is_candlemas, "candlemas"),
                 (self.state.shows_rainbow(), "rainbow"),
                 (sightings.postman, "postman"),
                 (sightings.snowman, "snowman"),
