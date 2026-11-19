@@ -8,8 +8,10 @@ use std::io;
 
 pub const WELL_WIDTH: u16 = 9;
 pub const CHEST_WIDTH: u16 = 9;
+pub const KEY_WIDTH: u16 = 3;
 const SLOT_GAP: u16 = 1;
 const CHEST_GAP: u16 = 5;
+const KEY_OFFSET: u16 = 2;
 
 #[derive(Clone, Copy)]
 pub struct GardenLayout {
@@ -45,6 +47,10 @@ impl GardenLayout {
 
     pub fn chest_x(&self) -> Option<u16> {
         self.well_x()?.checked_sub(CHEST_GAP + CHEST_WIDTH)
+    }
+
+    pub fn key_x(&self) -> Option<u16> {
+        self.plan.mailbox_x.map(|x| x + KEY_OFFSET)
     }
 }
 

@@ -54,7 +54,7 @@ created: 2026-11-02
 - Position auto à plus de 10 km de toutes les villes de Sam → rien ne bouge.
 - Lisbonne choisie dans les Réglages ou écrite à la main → rien ne bouge.
 - Album, Secrets : `???` avant le chocolat ; à 12 Villes de Sam → `Sur les traces de Sam · bronze (12 villes, prochain palier : argent à 15)`, à 20 → `· argent (20 villes, prochain palier : or à 30)` ; à 40 → `· platine (40 villes)`.
-- Album → Voyageur et Baroudeur dans Fidélité ; le total de la Barre du haut passe de 43 à 46, quel que soit le Palier.
+- Album → Voyageur et Baroudeur dans Fidélité ; le total de la Barre du haut passe de 45 à 48, quel que soit le Palier.
 - Sauvegarde d'une version précédente (sans `visited_cities` ni `sam_cities`) → se charge sans erreur, comptes à 0.
 - `weathr --day N` → aucune ville comptée, aucun Badge attribué.
 - `cargo fmt --check` et `cargo test` verts ; clippy rouge uniquement sur `double_must_use` (`src/weather/provider.rs:23`).
