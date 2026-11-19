@@ -23,9 +23,8 @@ const SETTINGS_FOOTER: &str = "[↑] [↓] choisir  [<] [>] changer  [s] ou [Ech
 const SETTINGS_LABEL_WIDTH: usize = 18;
 const CITY_SEARCH_FOOTER: &str = "[Entrée] chercher  [Echap] retour";
 const CITY_RESULTS_FOOTER: &str = "[↑] [↓] choisir  [Entrée] valider  [Echap] retour";
-const NOTES_FOOTER: &str = "[Entrée] ou [Echap] fermer";
+const CLOSE_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const POSTMAN_NOTE_FOOTER: &str = "[c] suivante  [Echap] fermer";
-const BACKUP_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const SCROLL_HINT: &str = "[↑] [↓] défiler";
 const HELP_KEY_WIDTH: usize = 10;
 const NOTES_BULLET: &str = "- ";
@@ -105,7 +104,7 @@ fn backup_box(line: String) -> View {
     View {
         title: "Sauvegarde".to_string(),
         lines: vec![text(line)],
-        footer: BACKUP_FOOTER.to_string(),
+        footer: CLOSE_FOOTER.to_string(),
         frame: Frame::Floppy,
     }
 }
@@ -390,7 +389,7 @@ pub fn notes_view(sections: &[Section], first: usize, rows: usize, width: usize)
         notes_lines(sections, width),
         first,
         rows,
-        NOTES_FOOTER,
+        CLOSE_FOOTER,
         NOTES_FRAME,
     )
 }
@@ -722,7 +721,7 @@ mod tests {
                 "- Ancienne"
             ]
         );
-        assert_eq!(view.footer, NOTES_FOOTER);
+        assert_eq!(view.footer, CLOSE_FOOTER);
     }
 
     #[test]
@@ -732,7 +731,7 @@ mod tests {
         );
         let (height, width) = (3, 20);
 
-        assert_eq!(notes_view(&sections, 0, 20, width).footer, NOTES_FOOTER);
+        assert_eq!(notes_view(&sections, 0, 20, width).footer, CLOSE_FOOTER);
         let top = notes_view(&sections, 0, height, width);
         assert_eq!(
             rows(&top),

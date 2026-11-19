@@ -166,7 +166,7 @@ impl Progress {
             );
         }
 
-        let backup = backup_path(path, now);
+        let backup = free_backup_path(path, now);
         match fs::rename(path, &backup) {
             Ok(()) => (
                 Self::default(),
@@ -280,6 +280,14 @@ pub(crate) fn progress_path() -> Option<PathBuf> {
 
 fn backup_path(path: &Path, now: NaiveDateTime) -> PathBuf {
     with_suffix(path, &now.format(BACKUP_SUFFIX).to_string())
+}
+
+fn free_backup_path(path: &Path, now: NaiveDateTime) -> PathBuf {
+    let base = backup_path(path, now);
+    let free = std::iter::once(base.clone())
+        .chain((2..).map(|copy| with_suffix(&base, &format!("-{copy}"))))
+        .find(|candidate| !candidate.exists());
+    free.unwrap_or(base)
 }
 
 fn with_suffix(path: &Path, suffix: &str) -> PathBuf {
@@ -444,6 +452,32 @@ mod tests {
             assert_eq!(progress.start_date(), None);
             assert_eq!(next, Opening::default());
         }
+    }
+
+    #[test]
+    fn test_unreadable_saves_in_the_same_minute_keep_every_copy() {
+        let dir = scratch_dir("same_minute");
+        let path = dir.join("progress.json");
+        let mut backups = Vec::new();
+        for content in ["{first", "{second", "{third"] {
+            fs::write(&path, content).unwrap();
+            let (_, opening) = Progress::load_from_path(&path, None, at(14, 32));
+            let Some(Recovery::NewGame(backup)) = opening.recovery else {
+                panic!("expected a backup");
+            };
+            backups.push((backup.clone(), fs::read_to_string(&backup).unwrap()));
+        }
+        fs::remove_dir_all(&dir).ok();
+
+        let stamp = "progress.json.abime-2026-11-07-1432";
+        assert_eq!(
+            backups,
+            [
+                (dir.join(stamp), "{first".to_string()),
+                (dir.join(format!("{stamp}-2")), "{second".to_string()),
+                (dir.join(format!("{stamp}-3")), "{third".to_string()),
+            ]
+        );
     }
 
     #[test]

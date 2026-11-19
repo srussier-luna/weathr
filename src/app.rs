@@ -211,7 +211,7 @@ fn opening_overlay(has_backup: bool, shows_welcome: bool, has_notes: bool) -> Op
     }
 }
 
-fn backup_after_key(shows_welcome: bool, code: KeyCode, has_notes: bool) -> Option<Overlay> {
+fn backup_after_key(code: KeyCode, shows_welcome: bool, has_notes: bool) -> Option<Overlay> {
     match code {
         KeyCode::Esc | KeyCode::Enter => opening_overlay(false, shows_welcome, has_notes),
         _ => Some(Overlay::Backup { shows_welcome }),
@@ -783,7 +783,7 @@ impl App {
 
     fn press_backup_key(&mut self, code: KeyCode) {
         if let Some(Overlay::Backup { shows_welcome }) = self.overlay {
-            self.overlay = backup_after_key(shows_welcome, code, !self.release_notes.is_empty());
+            self.overlay = backup_after_key(code, shows_welcome, !self.release_notes.is_empty());
         }
     }
 
@@ -1914,20 +1914,20 @@ mod tests {
         assert_eq!(pending.len(), 1);
 
         assert!(matches!(
-            backup_after_key(false, KeyCode::Char('h'), true),
+            backup_after_key(KeyCode::Char('h'), false, true),
             Some(Overlay::Backup { .. })
         ));
         for code in [KeyCode::Esc, KeyCode::Enter] {
             assert!(matches!(
-                backup_after_key(false, code, true),
+                backup_after_key(code, false, true),
                 Some(Overlay::Notes(0))
             ));
         }
         assert!(matches!(
-            backup_after_key(true, KeyCode::Esc, true),
+            backup_after_key(KeyCode::Esc, true, true),
             Some(Overlay::Welcome(Step::Arriving))
         ));
-        assert!(backup_after_key(false, KeyCode::Enter, false).is_none());
+        assert!(backup_after_key(KeyCode::Enter, false, false).is_none());
     }
 
     #[test]
