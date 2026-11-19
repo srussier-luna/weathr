@@ -14,6 +14,7 @@ use crate::story::content::{
 use crate::weather::units::{precipitation_symbol, temperature_symbol, wind_speed_symbol};
 use chrono::{Datelike, NaiveDate};
 use std::collections::BTreeSet;
+use std::path::Path;
 
 const INDEX_FOOTER: &str = "[↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer";
 const ALBUM_FOOTER: &str = "[<] [>] pages  [a] ou [Echap] fermer";
@@ -28,7 +29,7 @@ const CITY_SEARCH_FOOTER: &str = "[Entrée] chercher  [Echap] retour";
 const CITY_RESULTS_FOOTER: &str = "[↑] [↓] choisir  [Entrée] valider  [Echap] retour";
 const DIET_FOOTER: &str = "[1]…[8] cocher  [Entrée] valider  [Echap] retour";
 const LISTED_DIETS: usize = 2;
-const NOTES_FOOTER: &str = "[Entrée] ou [Echap] fermer";
+const CLOSE_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const POSTMAN_NOTE_FOOTER: &str = "[c] suivante  [Echap] fermer";
 const SCROLL_HINT: &str = "[↑] [↓] défiler";
 const HELP_KEY_WIDTH: usize = 10;
@@ -103,6 +104,18 @@ pub fn postman_note_view(back_to_school: NaiveDate) -> View {
         lines: full_box_note(back_to_school),
         footer: POSTMAN_NOTE_FOOTER.to_string(),
         frame: Frame::Notice,
+    }
+}
+
+pub fn backup_view(backup: &Path) -> View {
+    View {
+        title: "Sauvegarde".to_string(),
+        lines: vec![text(format!(
+            "Ta progression n'a pas pu être lue. Une copie est gardée dans {}. Une nouvelle partie commence.",
+            backup.display()
+        ))],
+        footer: CLOSE_FOOTER.to_string(),
+        frame: Frame::Floppy,
     }
 }
 
@@ -398,7 +411,7 @@ pub fn notes_view(sections: &[Section], first: usize, rows: usize, width: usize)
         notes_lines(sections, width),
         first,
         rows,
-        NOTES_FOOTER,
+        CLOSE_FOOTER,
         NOTES_FRAME,
     )
 }
@@ -658,6 +671,19 @@ mod tests {
     }
 
     #[test]
+    fn test_backup_box_names_the_copy_in_the_floppy_frame() {
+        let view = backup_view(Path::new("/weathr/progress.json.abime-2026-11-07-1432"));
+        assert_eq!(
+            render(&view),
+            "title: Sauvegarde\n\
+             text: Ta progression n'a pas pu être lue. Une copie est gardée dans \
+             /weathr/progress.json.abime-2026-11-07-1432. Une nouvelle partie commence.\n\
+             footer: [Entrée] ou [Echap] fermer\n\
+             frame: Floppy\n"
+        );
+    }
+
+    #[test]
     fn test_back_to_school_says_1er_on_the_first() {
         let rentree = |date| render(&postman_note_view(date));
         assert!(rentree(day(11, 1)).contains("La rentrée, c'est le 1er novembre."));
@@ -735,7 +761,7 @@ mod tests {
                 "- Ancienne"
             ]
         );
-        assert_eq!(view.footer, NOTES_FOOTER);
+        assert_eq!(view.footer, CLOSE_FOOTER);
     }
 
     #[test]
@@ -745,7 +771,7 @@ mod tests {
         );
         let (height, width) = (3, 20);
 
-        assert_eq!(notes_view(&sections, 0, 20, width).footer, NOTES_FOOTER);
+        assert_eq!(notes_view(&sections, 0, 20, width).footer, CLOSE_FOOTER);
         let top = notes_view(&sections, 0, height, width);
         assert_eq!(
             rows(&top),

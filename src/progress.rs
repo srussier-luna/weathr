@@ -1,11 +1,13 @@
-use chrono::{Local, NaiveDate};
+use chrono::{Local, NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
-use std::fs;
-use std::io;
-use std::path::PathBuf;
+use std::fs::{self, File};
+use std::io::{self, Write};
+use std::path::{Path, PathBuf};
 
 pub const DATE_FORMAT: &str = "%Y-%m-%d";
+const BACKUP_SUFFIX: &str = ".abime-%Y-%m-%d-%H%M";
+const TMP_SUFFIX: &str = ".tmp";
 
 fn delivered_recipes<'de, D: Deserializer<'de>>(
     deserializer: D,
@@ -82,17 +84,41 @@ impl Progress {
         progress_path().is_some_and(|path| path.exists())
     }
 
-    pub fn load() -> Self {
-        let mut progress: Self = progress_path()
-            .and_then(|path| fs::read_to_string(path).ok())
-            .and_then(|content| serde_json::from_str(&content).ok())
-            .unwrap_or_default();
+    pub fn load() -> (Self, Option<PathBuf>) {
+        let (mut progress, backup) = match progress_path() {
+            Some(path) => Self::load_from_path(&path, Local::now().naive_local()),
+            None => (Self::default(), None),
+        };
 
         if progress.start_date().is_none() {
             progress.started_on = Some(Local::now().format(DATE_FORMAT).to_string());
             progress.save();
         }
-        progress
+        (progress, backup)
+    }
+
+    fn load_from_path(path: &Path, now: NaiveDateTime) -> (Self, Option<PathBuf>) {
+        let content = match fs::read_to_string(path) {
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {
+                return (Self::default(), None);
+            }
+            content => content.ok(),
+        };
+        if let Some(progress) = content.and_then(|content| serde_json::from_str(&content).ok()) {
+            return (progress, None);
+        }
+
+        let backup = free_backup_path(path, now);
+        match fs::rename(path, &backup) {
+            Ok(()) => (Self::default(), Some(backup)),
+            Err(_) => (
+                Self {
+                    in_memory: true,
+                    ..Self::default()
+                },
+                None,
+            ),
+        }
     }
 
     pub fn in_memory(start: NaiveDate) -> Self {
@@ -111,10 +137,20 @@ impl Progress {
         let path = progress_path()
             .filter(|_| !self.in_memory)
             .ok_or(io::ErrorKind::Unsupported)?;
+        self.save_to_path(&path)
+    }
+
+    fn save_to_path(&self, path: &Path) -> io::Result<()> {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)?;
         }
-        fs::write(path, serde_json::to_string_pretty(self)?)
+        let tmp = with_suffix(path, TMP_SUFFIX);
+        let saved = write_synced(&tmp, serde_json::to_string_pretty(self)?.as_bytes())
+            .and_then(|()| fs::rename(&tmp, path));
+        if saved.is_err() {
+            let _ = fs::remove_file(&tmp);
+        }
+        saved
     }
 
     pub fn record_visit(&mut self) -> bool {
@@ -167,6 +203,30 @@ impl Progress {
 
 pub(crate) fn progress_path() -> Option<PathBuf> {
     dirs::config_dir().map(|dir| dir.join("weathr").join("progress.json"))
+}
+
+fn backup_path(path: &Path, now: NaiveDateTime) -> PathBuf {
+    with_suffix(path, &now.format(BACKUP_SUFFIX).to_string())
+}
+
+fn free_backup_path(path: &Path, now: NaiveDateTime) -> PathBuf {
+    let base = backup_path(path, now);
+    let free = std::iter::once(base.clone())
+        .chain((2..).map(|copy| with_suffix(&base, &format!("-{copy}"))))
+        .find(|candidate| !candidate.exists());
+    free.unwrap_or(base)
+}
+
+fn with_suffix(path: &Path, suffix: &str) -> PathBuf {
+    let mut name = path.as_os_str().to_owned();
+    name.push(suffix);
+    name.into()
+}
+
+fn write_synced(path: &Path, content: &[u8]) -> io::Result<()> {
+    let mut file = File::create(path)?;
+    file.write_all(content)?;
+    file.sync_all()
 }
 
 #[cfg(test)]
@@ -297,5 +357,129 @@ mod tests {
     fn test_in_memory_progress_is_never_saved() {
         let progress = Progress::in_memory(NaiveDate::from_ymd_opt(2026, 10, 19).unwrap());
         assert!(progress.try_save().is_err());
+    }
+
+    fn scratch_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "weathr_test_progress_{name}_{}",
+            std::process::id()
+        ));
+        fs::remove_dir_all(&dir).ok();
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    fn at(hour: u32, minute: u32) -> NaiveDateTime {
+        NaiveDate::from_ymd_opt(2026, 11, 7)
+            .unwrap()
+            .and_hms_opt(hour, minute, 0)
+            .unwrap()
+    }
+
+    #[test]
+    fn test_backup_name_has_the_date_and_the_minute() {
+        assert_eq!(
+            backup_path(Path::new("/weathr/progress.json"), at(9, 5)),
+            Path::new("/weathr/progress.json.abime-2026-11-07-0905")
+        );
+    }
+
+    #[test]
+    fn test_unreadable_save_is_kept_byte_for_byte_and_a_new_game_starts() {
+        for (name, content) in [
+            ("unparsable", b"{oops".as_slice()),
+            ("not_utf8", [0xff, 0xfe].as_slice()),
+        ] {
+            let dir = scratch_dir(name);
+            let path = dir.join("progress.json");
+            fs::write(&path, content).unwrap();
+
+            let (progress, backup) = Progress::load_from_path(&path, at(14, 32));
+            let kept = backup.as_deref().map(fs::read);
+            let was_left = path.exists();
+            progress.save_to_path(&path).unwrap();
+            let (_, next_backup) = Progress::load_from_path(&path, at(14, 33));
+            fs::remove_dir_all(&dir).ok();
+
+            assert_eq!(
+                backup,
+                Some(dir.join("progress.json.abime-2026-11-07-1432"))
+            );
+            assert_eq!(kept.unwrap().unwrap(), content);
+            assert!(!was_left);
+            assert_eq!(progress.letters_read, 0);
+            assert_eq!(progress.start_date(), None);
+            assert_eq!(next_backup, None);
+        }
+    }
+
+    #[test]
+    fn test_unreadable_saves_in_the_same_minute_keep_every_copy() {
+        let dir = scratch_dir("same_minute");
+        let path = dir.join("progress.json");
+        let mut backups = Vec::new();
+        for content in ["{first", "{second", "{third"] {
+            fs::write(&path, content).unwrap();
+            let (_, backup) = Progress::load_from_path(&path, at(14, 32));
+            let backup = backup.unwrap();
+            backups.push((backup.clone(), fs::read_to_string(&backup).unwrap()));
+        }
+        fs::remove_dir_all(&dir).ok();
+
+        let stamp = "progress.json.abime-2026-11-07-1432";
+        assert_eq!(
+            backups,
+            [
+                (dir.join(stamp), "{first".to_string()),
+                (dir.join(format!("{stamp}-2")), "{second".to_string()),
+                (dir.join(format!("{stamp}-3")), "{third".to_string()),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_missing_save_is_a_fresh_install_without_backup() {
+        let dir = scratch_dir("missing");
+        let (progress, backup) = Progress::load_from_path(&dir.join("progress.json"), at(9, 0));
+        let files = fs::read_dir(&dir).unwrap().count();
+        fs::remove_dir_all(&dir).ok();
+        assert_eq!(backup, None);
+        assert_eq!(files, 0);
+        assert_eq!(progress.letters_read, 0);
+    }
+
+    #[test]
+    fn test_readable_save_loads_in_place() {
+        let dir = scratch_dir("readable");
+        let path = dir.join("progress.json");
+        fs::write(&path, r#"{"started_on":"2026-09-01","letters_read":4}"#).unwrap();
+        let (progress, backup) = Progress::load_from_path(&path, at(9, 0));
+        let files = fs::read_dir(&dir).unwrap().count();
+        fs::remove_dir_all(&dir).ok();
+        assert_eq!(backup, None);
+        assert_eq!(files, 1);
+        assert_eq!(progress.letters_read, 4);
+    }
+
+    #[test]
+    fn test_save_replaces_the_whole_file_and_leaves_no_tmp() {
+        let dir = scratch_dir("save");
+        let path = dir.join("weathr").join("progress.json");
+        let mut progress = Progress {
+            answers: (0..50).map(|day| (day.to_string(), 1)).collect(),
+            ..Progress::default()
+        };
+        progress.save_to_path(&path).unwrap();
+        progress.answers.clear();
+        progress.letters_read = 3;
+        progress.save_to_path(&path).unwrap();
+
+        let saved = fs::read_to_string(&path).unwrap();
+        let tmp_left = with_suffix(&path, TMP_SUFFIX).exists();
+        fs::remove_dir_all(&dir).ok();
+        assert!(!tmp_left);
+        let loaded: Progress = serde_json::from_str(&saved).unwrap();
+        assert_eq!(loaded.letters_read, 3);
+        assert!(loaded.answers.is_empty());
     }
 }
