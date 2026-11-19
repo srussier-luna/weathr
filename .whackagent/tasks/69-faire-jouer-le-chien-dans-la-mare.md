@@ -1,6 +1,6 @@
 ---
 issue: 69
-status: todo
+status: to-test
 wiki: [[animation]], [[scene]]
 note: "Une animation quand il est dans l'eau"
 created: 2026-11-18
@@ -31,8 +31,25 @@ created: 2026-11-18
 
 ## Implementation
 
+Round 1 — /wa-autopilot 2026-11-19.
+
+- `src/animation/dog.rs`: `Activity::Bathing` (going in, ripples, splashes, shake-off; glissade when frozen), `BATHING_CHANCE = 1/6`, splashes per pair of paws over the Mare during any walk, `SITTING_FRAMES`; 5 tests.
+- `src/animation_manager.rs`: passes `holiday.is_winter` (frozen Mare) to `Dog::update` / `render`.
+- Biscuit's leg row is the Mare's top row: « in the water » = a pair of paws within `puddle_x..+PUDDLE_WIDTH`.
+- Bath goes to the middle of the Mare; glissade to the far end; leaving → left bank, shake-off there (~3 s). Bath 5–8 s; slide 3× walking speed.
+- Unchanged: a random walk that ends inside the Mare → Biscuit sits there, no effect.
+- Build: `cargo build`, `cargo test` green · fmt OK · clippy: existing `double_must_use` only.
+
 ## Review
 
 ## Verification
+
+Round 1 — runtime check by the agent (pty 120x30, fresh `HOME`, `--silent --day 20`):
+
+- ✅ Real build, 300 s: 4 baths in ~23 walks; ripples hide the paws, splashes around, shake-off drops ~3 s on the bank.
+- ✅ Crossing the Mare on a normal walk → splashes at the paws (temporary build forcing the walk, restored after).
+- ✅ Frozen Mare (`--christmas`): glissade, legs apart, ~3× faster, no water at all; crossing the ice → no splash.
+- ✅ Rain / night → doghouse; `--day 8` → no dog; Coin-Coin unchanged.
+- Not observed live: « staring » freeze (rare); by code, `update` still returns early.
 
 ## Feedback

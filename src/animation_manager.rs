@@ -533,8 +533,10 @@ impl AnimationManager {
         }
 
         if unlocks.dog {
-            self.dog.update(&layout, conditions, &mut rng);
-            self.dog.render(renderer, &layout, conditions)?;
+            self.dog
+                .update(&layout, conditions, holiday.is_winter, &mut rng);
+            self.dog
+                .render(renderer, &layout, conditions, holiday.is_winter)?;
         }
 
         if unlocks.duck {
