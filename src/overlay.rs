@@ -292,10 +292,7 @@ fn render_view_box(renderer: &mut TerminalRenderer, view: &View) -> io::Result<B
 fn chevron_cell(area: BoxArea, side: Side, terminal_width: u16, tick: usize) -> Option<(u16, u16)> {
     let offset = CHEVRON_GAP + (tick % 2) as u16;
     let x = match side {
-        Side::Left => area
-            .x
-            .checked_sub(CHEVRON_GAP + 2)
-            .map(|_| area.x - 1 - offset),
+        Side::Left => (area.x > CHEVRON_GAP + 1).then(|| area.x - 1 - offset),
         Side::Right => {
             let right = area.x + area.width;
             (right + CHEVRON_GAP + 1 < terminal_width).then_some(right + offset)

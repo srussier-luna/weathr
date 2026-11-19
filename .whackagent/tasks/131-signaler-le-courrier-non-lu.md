@@ -1,6 +1,6 @@
 ---
 issue: 131
-status: to-test
+status: to-close
 wiki: [[render]], [[mail]]
 note: "ajoute un chevron animé a droite du courrier en cours de lecture s'il y a un courier non lu, vu que le numero concerne leslettre s'il y a une archive apres on ne sais pas qu'il y a encore du courrier non lu v1.8"
 created: 2026-11-18
@@ -37,6 +37,9 @@ Round 1 — /wa-autopilot 2026-11-19.
 - Build: `cargo build`, `cargo test` (489) green · fmt OK · clippy: existing `double_must_use` only.
 
 ## Review
+
+Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- 2 minor findings (hidden left bounds check, glossary row) + 1 from re-check (glossary Means too long), fixed in 2 autofix rounds; behaviour unchanged. Clean.
 
 ## Verification
 
