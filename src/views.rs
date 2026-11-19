@@ -1,5 +1,6 @@
 use crate::animation::lore::Unlocks;
 use crate::badges::Badge;
+use crate::holiday::HolidayBox;
 use crate::overlay::{self, Frame, Line, View};
 use crate::progress::Progress;
 use crate::release_notes::Section;
@@ -19,6 +20,7 @@ const ALBUM_FOOTER: &str = "[<] [>] pages  [a] ou [Echap] fermer";
 const ANSWERS_FOOTER: &str =
     "[↑] [↓] choisir  [1] [2] changer  [<] [>] pages  [a] ou [Echap] fermer";
 const BOTTLE_FOOTER: &str = "[Echap] fermer";
+const HOLIDAY_BOX_FOOTER: &str = "[Echap] fermer";
 const BADGE_CARD_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const HELP_FOOTER: &str = "[h] ou [Echap] fermer";
 const SETTINGS_FOOTER: &str = "[↑] [↓] choisir  [<] [>] changer  [s] ou [Echap] fermer";
@@ -143,6 +145,15 @@ pub fn bottle_view(index: usize) -> View {
         lines: vec![text(BOTTLE_MESSAGES[index])],
         footer: BOTTLE_FOOTER.to_string(),
         frame: Frame::Waves,
+    }
+}
+
+pub fn holiday_box_view(holiday_box: &HolidayBox) -> View {
+    View {
+        title: holiday_box.title.to_string(),
+        lines: holiday_box.lines.iter().copied().map(text).collect(),
+        footer: HOLIDAY_BOX_FOOTER.to_string(),
+        frame: Frame::Plain,
     }
 }
 
@@ -577,6 +588,7 @@ pub fn album_pages(
 mod tests {
     use super::*;
     use crate::badges;
+    use crate::holiday::Holiday;
     use crate::story::content::letters::CHOICES;
     use crate::story::content::save_golden::{SavedGame, courrier_fixture, render};
     use std::collections::BTreeMap;
@@ -774,6 +786,19 @@ mod tests {
                 "Patience",
                 "weathr ouvert 1 h d'affilée"
             ]
+        );
+    }
+
+    #[test]
+    fn test_holiday_box_names_the_holiday_and_what_to_look_for() {
+        let music = Holiday::music_day().holiday_box().unwrap();
+        assert_eq!(
+            render(&holiday_box_view(music)),
+            "title: Fête de la musique\n\
+             text: Ce soir, le village chante.\n\
+             text: Ouvre l'œil\u{202F}: des notes s'échappent des fenêtres.\n\
+             footer: [Echap] fermer\n\
+             frame: Plain\n"
         );
     }
 

@@ -7,7 +7,7 @@ use crate::config::{Config, LocationDisplay, Setting};
 use crate::demo::{Demo, SCENE_DURATION};
 use crate::error::{GeolocationError, WeatherError};
 use crate::geolocation::{self, GeoLocation};
-use crate::holiday::{Holiday, MeteorShower};
+use crate::holiday::{Holiday, HolidayBox, MeteorShower};
 use crate::overlay;
 use crate::progress::Progress;
 use crate::rain_alert::{self, RainAlert};
@@ -263,6 +263,13 @@ fn opening_overlay(has_backup: bool, shows_welcome: bool, has_notes: bool) -> Op
     }
 }
 
+fn holiday_box_after_launch(
+    overlay: Option<Overlay>,
+    pending_holiday_box: &mut Option<&'static HolidayBox>,
+) -> Option<Overlay> {
+    overlay.or_else(|| pending_holiday_box.take().map(Overlay::HolidayBox))
+}
+
 fn backup_after_key(code: KeyCode, shows_welcome: bool, has_notes: bool) -> Option<Overlay> {
     match code {
         KeyCode::Esc | KeyCode::Enter => opening_overlay(false, shows_welcome, has_notes),
@@ -455,6 +462,7 @@ enum Overlay {
     Backup { shows_welcome: bool },
     Bottle(usize),
     Help,
+    HolidayBox(&'static HolidayBox),
     Index(usize),
     NewBadge(&'static Badge),
     NoteBadge(&'static Badge),
@@ -512,6 +520,7 @@ pub struct App {
     toasts: VecDeque<String>,
     toast_until: Option<Instant>,
     pending_badges: VecDeque<&'static Badge>,
+    pending_holiday_box: Option<&'static HolidayBox>,
     session_start: Instant,
     star_watch: StarWatch,
     rain_receiver: Option<mpsc::Receiver<Option<RainAlert>>>,
@@ -622,6 +631,10 @@ impl App {
         let timeline = build_timeline(letters.len(), &clock, timeline_day);
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
 
+        let pending_holiday_box = (!simulation.demo)
+            .then(|| simulation.holiday.unwrap_or_else(Holiday::today))
+            .and_then(|holiday| holiday.holiday_box());
+
         let is_forced = is_simulated || simulation.night;
         let user_name = updater::git_user_name();
         let mut app = Self {
@@ -648,6 +661,7 @@ impl App {
             toasts: VecDeque::new(),
             toast_until: None,
             pending_badges: VecDeque::new(),
+            pending_holiday_box,
             session_start: Instant::now(),
             star_watch: StarWatch::default(),
             rain_receiver,
@@ -782,6 +796,10 @@ impl App {
             self.pending_badges.extend(new_badges);
             self.progress.save();
         }
+    }
+
+    fn open_holiday_box(&mut self) {
+        self.overlay = holiday_box_after_launch(self.overlay, &mut self.pending_holiday_box);
     }
 
     fn open_pending_badge(&mut self) {
@@ -1005,6 +1023,7 @@ impl App {
                 views::backup_view(backup)
             }
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
+            Some(Overlay::HolidayBox(holiday_box)) => views::holiday_box_view(holiday_box),
             Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => {
                 views::badge_card_view(badge)
             }
@@ -1664,6 +1683,7 @@ impl App {
             )?;
 
             self.collect_badges();
+            self.open_holiday_box();
             self.open_pending_badge();
             self.update_welcome(term_width, term_height);
             self.update_toasts();
@@ -1912,6 +1932,47 @@ mod tests {
         let overlay = next_overlay(opening_overlay(false, true, false), &mut pending);
         assert!(matches!(overlay, Some(Overlay::Welcome(_))));
         assert_eq!(pending.len(), 1);
+    }
+
+    fn holiday_box_title(overlay: Option<Overlay>) -> Option<&'static str> {
+        match overlay {
+            Some(Overlay::HolidayBox(holiday_box)) => Some(holiday_box.title),
+            _ => None,
+        }
+    }
+
+    #[test]
+    fn test_holiday_box_opens_after_the_launch_windows_and_before_badge_cards() {
+        let mut holiday_box = Holiday::music_day().holiday_box();
+        let mut badges: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["music_day"]).into();
+
+        let backup = holiday_box_after_launch(opening_overlay(true, true, true), &mut holiday_box);
+        assert!(matches!(
+            backup,
+            Some(Overlay::Backup {
+                shows_welcome: true
+            })
+        ));
+        let welcome =
+            holiday_box_after_launch(backup_after_key(KeyCode::Esc, true, true), &mut holiday_box);
+        assert!(matches!(welcome, Some(Overlay::Welcome(Step::Arriving))));
+        let notes = holiday_box_after_launch(notes_overlay(true), &mut holiday_box);
+        assert!(matches!(notes, Some(Overlay::Notes(0))));
+        assert!(holiday_box.is_some());
+
+        let shown = next_overlay(
+            holiday_box_after_launch(notes_overlay(false), &mut holiday_box),
+            &mut badges,
+        );
+        assert_eq!(holiday_box_title(shown), Some("Fête de la musique"));
+        assert_eq!(badges.len(), 1);
+
+        let closed = holiday_box_after_launch(closed_overlay(shown), &mut holiday_box);
+        assert!(closed.is_none());
+        assert_eq!(
+            card_id(next_overlay(closed, &mut badges)),
+            Some("music_day")
+        );
     }
 
     #[test]
