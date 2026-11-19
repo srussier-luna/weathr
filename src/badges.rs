@@ -61,7 +61,7 @@ const fn secret(
 
 const SKY_LOOKOUT_LOGIN: &str = "drichard-luna";
 
-const CONTRIBUTORS: [&str; 2] = ["srussier-luna", "bpisano"];
+const CONTRIBUTORS: [&str; 1] = ["bpisano"];
 
 pub const KINDS: [BadgeKind; 5] = [
     BadgeKind::Weather,
@@ -450,7 +450,6 @@ mod tests {
 
     #[test]
     fn test_time_master_matches_each_contributor() {
-        assert!(is_time_master(Some("srussier-luna")));
         assert!(is_time_master(Some("bpisano")));
     }
 
@@ -461,6 +460,7 @@ mod tests {
 
     #[test]
     fn test_time_master_rejects_other_name() {
+        assert!(!is_time_master(Some("srussier-luna")));
         assert!(!is_time_master(Some("drichard-luna")));
     }
 
