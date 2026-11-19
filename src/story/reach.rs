@@ -100,7 +100,7 @@ pub(crate) fn settle(progress: &mut Progress, out_of_sync: bool, reach: &Reach) 
 mod tests {
     use super::*;
     use crate::story::clock::StoryClock;
-    use crate::story::sources;
+    use crate::story::sources::{self, Recipes};
 
     fn date(month: u32, day: u32) -> NaiveDate {
         NaiveDate::from_ymd_opt(2026, month, day).unwrap()
@@ -109,7 +109,11 @@ mod tests {
     fn reach_on(day: usize) -> Reach {
         let start = date(9, 1);
         let clock = StoryClock::new(start, 9);
-        let timeline = Timeline::new(&sources::registered(VILLAGE_LETTER_COUNT), &clock, day);
+        let timeline = Timeline::new(
+            &sources::registered(VILLAGE_LETTER_COUNT, Recipes::default()),
+            &clock,
+            day,
+        );
         Reach::on(&timeline, day, start, clock.date_of(day))
     }
 
@@ -143,6 +147,29 @@ mod tests {
         assert_eq!(progress.streak, 50);
         assert_eq!(progress.riddles_solved.len(), 3);
         assert_eq!(progress.badges, honest().badges);
+    }
+
+    #[test]
+    fn test_diet_letter_counts_among_the_delivered_ones() {
+        let start = date(9, 1);
+        let clock = StoryClock::new(start, 9);
+        let timeline = Timeline::new(
+            &sources::registered(VILLAGE_LETTER_COUNT, Recipes::default()),
+            &clock,
+            10,
+        );
+        let delivered = timeline.delivered_by(10);
+        let mut progress = Progress::default();
+        progress.letters_read = delivered;
+
+        assert!(
+            timeline
+                .first_mail(delivered)
+                .iter()
+                .any(|(_, entry)| *entry == Entry::DietLetter)
+        );
+        assert!(!reach_on(10).fit(&mut progress));
+        assert_eq!(progress.letters_read, delivered);
     }
 
     #[test]

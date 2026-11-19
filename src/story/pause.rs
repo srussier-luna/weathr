@@ -42,7 +42,7 @@ pub fn hold_since(
 mod tests {
     use super::*;
     use crate::story::event::{Beat, Entry};
-    use crate::story::sources::{self, StorySource};
+    use crate::story::sources::{self, Recipes, StorySource};
     use chrono::{Datelike, NaiveDateTime, Weekday};
 
     const VILLAGE_COUNT: usize = 60;
@@ -57,7 +57,11 @@ mod tests {
     }
 
     fn timeline(clock: &StoryClock, today: usize) -> Timeline {
-        Timeline::new(&sources::registered(VILLAGE_COUNT), clock, today)
+        Timeline::new(
+            &sources::registered(VILLAGE_COUNT, Recipes::default()),
+            clock,
+            today,
+        )
     }
 
     fn live(clock: &mut StoryClock, letters_read: usize, checked: NaiveDate, now: NaiveDateTime) {

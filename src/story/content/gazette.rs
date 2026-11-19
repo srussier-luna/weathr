@@ -82,6 +82,7 @@ mod tests {
     use crate::story::clock::StoryClock;
     use crate::story::content::save_golden::render;
     use chrono::NaiveDate;
+    use std::collections::BTreeSet;
 
     #[test]
     fn test_old_gazette_keeps_its_frozen_weather() {
@@ -98,6 +99,7 @@ mod tests {
                 clock: &clock,
                 reading_hour: 10,
                 riddle_input: None,
+                diet_draft: &BTreeSet::new(),
             })
         };
         let first_weather = |view: View| match view.lines.into_iter().next() {
@@ -130,6 +132,7 @@ mod tests {
                 clock: &clock,
                 reading_hour: 10,
                 riddle_input: None,
+                diet_draft: &BTreeSet::new(),
             }))
         };
 

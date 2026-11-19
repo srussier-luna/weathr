@@ -57,7 +57,7 @@ impl Journal {
             _ => digest(on_disk),
         };
         let text = format!("{previous:016x}{:016x}{}", digest(current), encode(current));
-        super::replace_file(path, text.as_bytes())
+        super::write_creating_dir(path, text)
     }
 
     pub(super) fn holds(&self, content: &[u8]) -> bool {

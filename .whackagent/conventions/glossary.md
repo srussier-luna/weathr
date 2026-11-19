@@ -26,10 +26,17 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Gazette | journal | | | chaque lundi : prévisions de la semaine, rumeurs, annonces, Énigme |
 | Alerte météo | vigilance | | | ligne ⚠ de la Gazette : canicule, grand froid, vent fort, orage ; calculée sur les prévisions |
 | Énigme | devinette | | `Riddle` | question de la Gazette, réponse touche `e` |
+| Question | choix | | `Choice` | question [1]/[2] d'une Lettre du village ; réponse modifiable dans l'Album → [[mail]] |
+| Écho | | | `echoes` | phrase d'une Lettre suivante qui rappelle la réponse à une Question |
 | Bouteille | message à la mer | | `bottle` | message dérivant sur la rivière |
 | Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret → [[mail]] |
 | Fête | jour férié | | `Holiday` | jour spécial qui décore la scène → [[animation]] |
+| Encadré de Fête | | | `HolidayBox` | fenêtre au lancement un jour de Fête : nom et ce qu'il faut guetter → [[render]] |
 | Fête de la musique | | | `is_music_day` | 21 juin : notes aux fenêtres, chanteurs, Notes du ciel ; Badge dédié → [[animation]] |
+| Chandeleur | | | `is_candlemas` | 2 février : Crêpe géante à la place du soleil et de la lune ; Badge dédié → [[animation]] |
+| Crêpe géante | | | `GiantCrepe` | crêpe dorée ou pâle à la place du soleil et de la lune le 2 février ; se retourne |
+| 1er mai | | | `is_may_day` | Muguet géant à la place du soleil et de la lune ; Badge dédié → [[animation]] |
+| Muguet géant | | | `GiantMuguet` | brin de muguet à la place du soleil et de la lune le 1er mai |
 | Notes du ciel | dessin de notes, croches | | `SkyNotes` | croche et deux doubles croches, remplace soleil ou lune → [[animation]] |
 | Facteur | postier | | `Postman` | livre les Lettres à la boîte aux lettres |
 | Heure du Facteur | heure du courrier | | `mail_hour` | heure de la tournée, de 6 h à 14 h ; changée dans Réglages, effet le lendemain → [[mail]] |
@@ -37,20 +44,28 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Timeline | | | `Timeline` | événements de l'histoire classés par Jour de jeu |
 | Apparition | déblocage | | `Arrival` | objet ou Habitant qui arrive au jardin un Jour de jeu |
 | Habitant | animal | | | animal du jardin (Minouche, Biscuit…), arrive à sa 1re Lettre |
+| Recette | | | `Recipe` | Lettre de Rose avec une recette ; tous les 10 jours après sa question → [[mail]] |
+| Régime | régime alimentaire | | `diet` | ce que le joueur ne mange pas (8, cumulables) ; filtre les Recettes → [[mail]] |
+| Liste à cocher | | | `diet_checklist` | cases [1]…[8] des Régimes, dans la Lettre de Rose et les Réglages |
 | Voisin | | | | personne d'une autre maison du village (Sam, Nadia et Claire…) |
 | Arbre | | | `Tree` | grand arbre à gauche de la maison, pousse du jour 1 au jour 12 |
 | Puits | | | `well` | vieux puits réparé, à gauche du grand Arbre |
 | Coffre | | | `chest` | coffre de Jeanne, à gauche du Puits |
-| Traces de boue | pas | | `footprints` | `:` marron de l'Arbre à la porte, Jour de jeu 8 seulement |
-| Traces mouillées | pas | | `wet_footprints` | `.` bleus du Puits à la porte, nuits 13, 14 et 30 |
+| Traces de boue | pas | | `footprints` | `:` marron de l'Arbre à la porte, Jours de jeu 8, 11 et 16 |
+| Traces mouillées | pas | | `wet_footprints` | `.` bleus du Puits à la porte, nuits 13 et 30 |
+| Clé | | | `key` | clé `o-m` jaune près de la boîte aux lettres, dès le Jour de jeu 17 |
 | Cabane | | | `treehouse` | cabane de Léo, dans le feuillage de l'Arbre |
 | Perséides | | | | étoiles filantes plus fréquentes la nuit, du 9 au 15 août ; Badge dédié |
 | Géminides | | | | étoiles filantes plus fréquentes la nuit, du 10 au 16 décembre ; Badge dédié |
 | Boîte pleine | | | | 7 Lettres du village non lues ; l'histoire se met en pause |
+| Chevron de courrier | | | `render_with_chevrons` | `«`/`»` animés au bord d'une Lettre ou de l'Album : il reste à voir → [[render]] |
 | Ruche | | | | cadeau de Nadia et Claire, entre le sapin et la mare |
+| Mare | flaque | | `puddle` | petite eau à droite du jardin, chez Coin-Coin et Rainette ; gèle en grand froid → [[scene]] |
+| Baignade | | | `Bathing` | Biscuit va à la Mare, s'éclabousse puis s'ébroue ; glisse si elle est gelée → [[animation]] |
 | Poulailler | | | | abri des poules la nuit et sous la pluie, au jardin et au Potager |
 | Carré | parcelle | case | | une des 9 planches du Potager : vide, plantée, fanée, mûre |
 | Jour de plante | | | | jour où weathr est ouvert ; fait pousser et faner les plantes du Potager |
+| Sauvegarde | export | | `backup` | fichier écrit par `--export` : progression + réglages, relu par `--import` |
 <!-- | Inbox | mailbox | Messages | `Inbox` | received mail, not archived, all accounts | -->
 <!-- | Message | mail | Email | `Message` | one mail. States: Draft, Sent, Pending | -->
 

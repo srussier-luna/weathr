@@ -1,6 +1,7 @@
 mod banner;
 mod progress;
 
+use crate::prompt::{PREFIX, confirm};
 use progress::InstallProgress;
 use std::env;
 use std::fs;
@@ -14,7 +15,6 @@ use std::time::Duration;
 pub(crate) const SOURCE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 const LOG_FILE: &str = "update.log";
-const PREFIX: &str = "[weathr]";
 const NEW_VERSION_MESSAGE: &str = "Une nouvelle version est arrivée\u{202F}!";
 
 pub async fn offer_update() {
@@ -31,7 +31,7 @@ pub async fn offer_update() {
     }
 
     banner::show(Some(NEW_VERSION_MESSAGE));
-    if !ask_confirmation() {
+    if !confirm("Mettre à jour maintenant\u{202F}?", true) {
         return;
     }
     match update(source) {
@@ -134,20 +134,6 @@ fn has_pending_changes(source: &Path) -> bool {
 pub(crate) fn pending_count(source: &Path) -> Option<usize> {
     git_output(source, &["rev-list", "--count", "HEAD..@{u}"])
         .and_then(|count| count.trim().parse().ok())
-}
-
-fn ask_confirmation() -> bool {
-    print!("{PREFIX} Mettre à jour maintenant ? [O/n] ");
-    let _ = io::stdout().flush();
-    let mut answer = String::new();
-    io::stdin().read_line(&mut answer).is_ok() && accepts(&answer)
-}
-
-fn accepts(answer: &str) -> bool {
-    matches!(
-        answer.trim().to_lowercase().as_str(),
-        "" | "o" | "oui" | "y" | "yes"
-    )
 }
 
 fn update(source: &Path) -> io::Result<()> {
@@ -326,16 +312,6 @@ fn config_path(file: &str) -> Option<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_empty_or_yes_answers_accept_update() {
-        assert!(accepts("\n"));
-        assert!(accepts(" O \n"));
-        assert!(accepts("oui"));
-        assert!(accepts("Y"));
-        assert!(!accepts("n"));
-        assert!(!accepts("non"));
-    }
 
     #[test]
     fn test_cargo_artifact_line_counts_as_progress() {

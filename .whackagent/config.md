@@ -177,3 +177,7 @@ Inside autopilot: never ask (nobody watching) — freeze task, log open question
 - `/wa-task` grill: always ask which version the task targets (`vX` or `vX.Y`), then put that label on the issue (create it if missing). Every open task carries one.
 - Never merge into `develop` a PR whose label targets a release not being prepared: `vX` waits for the first `X.y` release, `vX.Y` for `X.Y`.
 - Glossary and wiki: always write every glossary row (`+` / `~`) and every wiki page a task brings, at grill, close or wiki sync. Never ask for them.
+- `/wa-board` Task list: one section per state, lifecycle order. Inside each state:
+  - one `####` sub-section per version label, ascending (`v1.8`, `v1.8.1`, `v2`, `v3`), a bare `vX` after its `vX.Y`, `sans version` last;
+  - inside a version, tasks grouped by sprint, one `— <Sprint> —` line per group, sprints in board order, tasks without sprint last under `— sans sprint —`;
+  - priority order inside each group; empty groups not shown.

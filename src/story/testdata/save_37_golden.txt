@@ -477,7 +477,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 53 night false
 title: Recette du mois 1/1 : Soupe de potiron
-text: Un potiron, une pomme de terre, un oignon, un litre de bouillon, un peu de crème. Cuis 30 min, mixe. Garde l'écorce pour la lanterne d'Halloween.
+text: Un potiron, une pomme de terre, un oignon, un litre de bouillon de légumes, un peu de crème (ou de crème d'avoine). Cuis 30 min, mixe. Garde l'écorce pour la lanterne d'Halloween.
 blank
 text: — Rose, la boulangère
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1355,7 +1355,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 53 night true
 title: Recette du mois 1/1 : Soupe de potiron
-text: Un potiron, une pomme de terre, un oignon, un litre de bouillon, un peu de crème. Cuis 30 min, mixe. Garde l'écorce pour la lanterne d'Halloween.
+text: Un potiron, une pomme de terre, un oignon, un litre de bouillon de légumes, un peu de crème (ou de crème d'avoine). Cuis 30 min, mixe. Garde l'écorce pour la lanterne d'Halloween.
 blank
 text: — Rose, la boulangère
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
