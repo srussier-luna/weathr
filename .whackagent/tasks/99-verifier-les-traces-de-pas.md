@@ -1,6 +1,6 @@
 ---
 issue: 99
-status: todo
+status: to-test
 wiki: [[animation]], [[mail]]
 note: "ok, ajoute un draft poue verifier toutes les traces de pas de la saison 1, avjoute le label 1.8"
 created: 2026-11-18
@@ -32,7 +32,7 @@ created: 2026-11-18
 
 Round 1 — /wa-autopilot 2026-11-19. **blocked** — unambiguous part done and proven.
 
-- Open question: do these count as mail about footprints?
+- Answered 2026-11-19 — neither counts (doormat P.-S., Biscuit's sound): nothing more to change. Was: do these count as mail about footprints?
   - Night P.-S. « il y a de la boue sur ton paillasson » (`NIGHT_POSTSCRIPTS[4]`, Lettres 5, 15, 25, 35, 45, 55 read 22 h–6 h). Recommended: no (doormat, not garden). Yes → wet footprints nights 15, 25, 35, 45, 55 (day 5 impossible: wet footprints arrive day 13).
   - Lettre n°9, Biscuit « J'ai entendu des petits pas, très légers » (day 9). Recommended: no (a sound). Yes → mud on day 9.
 - Audit (season 1):
