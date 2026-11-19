@@ -56,3 +56,8 @@ Status line built in `AppState::update_cached_info` (`src/app_state.rs:192`), re
 
 - One `char` = one cell. Wide glyphs (emoji, CJK) misalign diff + boxes.
 - UI strings French, live in `views.rs`, `overlay.rs`, `app.rs`; follow glossary (Lettre, never Message).
+
+## Chevrons (#131)
+
+- `overlay::render_with_chevrons(view, has_previous, has_next)` draws a yellow `«` left / `»` right of the box, mid-height, one empty column (`CHEVRON_GAP`) then a back-and-forth every 500 ms; no room → nothing (under 70 columns the right one does not fit).
+- Lettre: `»` while unread mail remains after the open one (`postman_note::has_unread_after`). Album: `«` except on page 1, `»` except on the last page.

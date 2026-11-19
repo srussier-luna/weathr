@@ -57,7 +57,11 @@ impl StoryClock {
     }
 
     pub fn pause(&mut self, day: usize) {
-        *self.pauses.entry(day).or_default() += 1;
+        self.pause_for(day, 1);
+    }
+
+    pub fn pause_for(&mut self, day: usize, days: u32) {
+        *self.pauses.entry(day).or_default() += days;
     }
 
     pub fn mail_hour(&self) -> u32 {
