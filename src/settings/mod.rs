@@ -3,8 +3,10 @@ mod city;
 pub use city::{CitySearch, SearchStatus};
 
 use crate::config::{Setting, clamp_mail_hour};
+use crate::story::content::recipes::Diet;
 use crate::weather::WeatherUnits;
 use crate::weather::types::{PrecipitationUnit, TemperatureUnit, WindSpeedUnit};
+use std::collections::BTreeSet;
 use tokio::sync::oneshot;
 
 const TEMPERATURES: [TemperatureUnit; 2] = [TemperatureUnit::Celsius, TemperatureUnit::Fahrenheit];
@@ -25,9 +27,10 @@ pub enum Row {
     Hud,
     City,
     AutoLocation,
+    Diet,
 }
 
-pub const ROWS: [Row; 7] = [
+const ROWS: [Row; 8] = [
     Row::Temperature,
     Row::WindSpeed,
     Row::Precipitation,
@@ -35,6 +38,7 @@ pub const ROWS: [Row; 7] = [
     Row::Hud,
     Row::City,
     Row::AutoLocation,
+    Row::Diet,
 ];
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -51,9 +55,17 @@ pub struct Settings {
     pub hide_hud: bool,
     pub city: String,
     pub auto_location: AutoLocation,
+    pub diets: Option<BTreeSet<Diet>>,
 }
 
 impl Settings {
+    pub fn rows(&self) -> &'static [Row] {
+        match self.diets {
+            Some(_) => &ROWS,
+            None => &ROWS[..ROWS.len() - 1],
+        }
+    }
+
     pub fn stepped(&self, row: Row, step: isize) -> Option<Setting> {
         Some(match row {
             Row::Temperature => {
@@ -71,7 +83,7 @@ impl Settings {
                 Setting::MailHour(hour)
             }
             Row::Hud => Setting::HideHud(!self.hide_hud),
-            Row::City | Row::AutoLocation => return None,
+            Row::City | Row::AutoLocation | Row::Diet => return None,
         })
     }
 
@@ -118,6 +130,7 @@ mod tests {
             hide_hud: false,
             city: "Lyon".to_string(),
             auto_location: AutoLocation::Off,
+            diets: None,
         }
     }
 
@@ -165,9 +178,19 @@ mod tests {
     }
 
     #[test]
-    fn test_location_rows_are_not_stepped() {
+    fn test_location_and_diet_rows_are_not_stepped() {
         assert_eq!(settings().stepped(Row::City, 1), None);
         assert_eq!(settings().stepped(Row::AutoLocation, -1), None);
+        assert_eq!(settings().stepped(Row::Diet, 1), None);
+    }
+
+    #[test]
+    fn test_diet_row_appears_once_rose_has_an_answer() {
+        let mut settings = settings();
+        assert_eq!(settings.rows().last(), Some(&Row::AutoLocation));
+        settings.diets = Some(BTreeSet::new());
+        assert_eq!(settings.rows().last(), Some(&Row::Diet));
+        assert_eq!(settings.rows().len(), 8);
     }
 
     #[test]

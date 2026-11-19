@@ -31,12 +31,17 @@ mod tests {
     use super::*;
     use crate::story::content::letters;
     use crate::story::pause::is_box_full;
-    use crate::story::{StoryClock, Timeline, sources};
+    use crate::story::sources::{self, Recipes};
+    use crate::story::{StoryClock, Timeline};
     use chrono::NaiveDate;
 
     fn timeline_on(day: usize) -> Timeline {
         let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 10, 1).unwrap(), 9);
-        Timeline::new(&sources::registered(letters::defaults().len()), &clock, day)
+        Timeline::new(
+            &sources::registered(letters::defaults().len(), Recipes::default()),
+            &clock,
+            day,
+        )
     }
 
     #[test]

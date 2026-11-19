@@ -1,6 +1,6 @@
 ---
 issue: 74
-status: todo
+status: to-test
 wiki: [[mail]], [[architecture]]
 note: "j'aimerai une recette tous les 10 jour avec une lettre qui demande les regimes alimentaire, vegetarien, vegan, sans legume, sans viande, sans poisson, sans porc, full proteine, possible d,en avoir plusierus adapter les recette en fonction de la reponse"
 created: 2026-11-18
@@ -68,8 +68,30 @@ Round 1 (cont.) — table v2 after the user's feedback (2026-11-19), still block
 
 - Table v3: the 4 removed Recettes are back (never remove content unless asked) → 40 Recettes. Counts (total / without month): végétarien 32/22 · vegan 25/17 · sans légume 30/23 · sans viande 35/25 · sans poisson 37/27 · sans porc 38/28 · full protéine 19/19 · sans fruit 30/23. Chili: soja texturé + haricots rouges. Retouched texts OK.
 
+Round 2 — /wa-autopilot 2026-11-19, table v3 validated by the user, code.
+
+- New `src/story/content/recipes.rs` (40 tagged Recettes, texts verbatim from the table, `next_recipe` pure) and `src/story/content/diet_letter.rs` (Rose's Lettre).
+- `Entry::DietLetter` (counts as a Lettre, last mail of its day) and `Entry::DietRecipe(index)` (« Recette n/N : Nom »); `Entry::Recipe(month)` unchanged.
+- `Progress`: `diet_letter_day` (10, or the next Jour de jeu for a save past 10, written once), `diet_answered_day`, `diets` (ids), `diet_recipes` (day → Recette or `null`, frozen at delivery).
+- Monthly Recettes stop after the answer; reserve ones on answer day + 1, then every 10 days; exhausted → nothing.
+- Keys: `1`–`8` toggle only in Rose's unanswered Lettre (else `1`/`2` as before), `[Entrée]` sends. Réglages row « Régime » (shown once Rose has an answer): « aucun », 1–2 names, or « n Régimes »; Enter opens the same checklist.
+- Golden fixtures: `timeline_golden.txt` gains `10 DietLetter` (last of day 10, nothing before moves); `save_37_golden.txt` only the validated Soupe de potiron text.
+- New strings use `\u{202F}`; a script checked the 40 names and texts against the table: 0 differences.
+- Rose's Lettre, to validate: « Une idée m'est venue en pétrissant : t'envoyer une de mes recettes tous les dix jours. Avant d'allumer le four, dis-moi ce qui va dans ton assiette et ce qui n'y va pas. Coche ce qui te concerne, puis renvoie-moi ma lettre. Rien de coché ? Tu manges de tout, et j'ai carte blanche. » — Rose, la boulangère. Answer: « Ta réponse : végétarien, sans porc » / « je mange de tout ».
+- Not changed: Aide still lists « [1] [2] répondre à une question ».
+- Build: `cargo build`, `cargo test` (513) green · fmt OK · clippy: existing `double_must_use` only.
+
 ## Review
 
 ## Verification
+
+Round 2 — runtime check by the agent (pty, fresh `HOME`, seeded saves):
+
+- ✅ Day 10: Rose's Lettre with 8 boxes; `[1]` `[6]` Entrée → saved, reread shows the answer.
+- ✅ Day 11 → Pain perdu; day 21 → Gâteau au yaourt; day 31 → Sorbet citron (compatible, no repeat).
+- ✅ Réglages « Régime » → checklist → full protéine → day 41 Omelette au fromage; earlier ones frozen.
+- ✅ Seasonal: Châtaignes grillées skipped 10/10, 20/10, 30/10, delivered 09/11.
+- ✅ Save at Jour 29: Courrier identical to the old binary (51 entries); day 30 adds Rose's Lettre last.
+- ✅ Unanswered Lettre → monthly Recette still delivered; new game saves `diet_letter_day: 10`.
 
 ## Feedback
