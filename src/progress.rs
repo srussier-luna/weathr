@@ -121,16 +121,7 @@ impl Progress {
     }
 
     fn save_to_path(&self, path: &Path) -> io::Result<()> {
-        if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        let tmp = with_suffix(path, TMP_SUFFIX);
-        let saved = write_synced(&tmp, serde_json::to_string_pretty(self)?.as_bytes())
-            .and_then(|()| fs::rename(&tmp, path));
-        if saved.is_err() {
-            let _ = fs::remove_file(&tmp);
-        }
-        saved
+        write_creating_dir(path, &serde_json::to_string_pretty(self)?)
     }
 
     pub fn record_visit(&mut self) -> bool {
@@ -183,6 +174,18 @@ impl Progress {
 
 pub(crate) fn progress_path() -> Option<PathBuf> {
     dirs::config_dir().map(|dir| dir.join("weathr").join("progress.json"))
+}
+
+pub(crate) fn write_creating_dir(path: &Path, content: &str) -> io::Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let tmp = with_suffix(path, TMP_SUFFIX);
+    let saved = write_synced(&tmp, content.as_bytes()).and_then(|()| fs::rename(&tmp, path));
+    if saved.is_err() {
+        let _ = fs::remove_file(&tmp);
+    }
+    saved
 }
 
 fn backup_path(path: &Path, now: NaiveDateTime) -> PathBuf {

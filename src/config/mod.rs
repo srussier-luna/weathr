@@ -281,7 +281,7 @@ impl Config {
         toml::Value::try_into(value).map_err(ConfigError::ParseError)
     }
 
-    fn get_config_path() -> Result<PathBuf, ConfigError> {
+    pub(crate) fn get_config_path() -> Result<PathBuf, ConfigError> {
         let config_dir = dirs::config_dir()
             .or_else(|| dirs::home_dir().map(|h| h.join(".config")))
             .ok_or(ConfigError::NoConfigDir)?;
