@@ -1,6 +1,6 @@
 ---
 issue: 91
-status: to-test
+status: to-close
 wiki: [[architecture]], [[weather]]
 note: "ajouter un badge voyageur pour une personne qui a visiter 7 villes / badge baroudeur 15 villes visiter"
 created: 2026-11-02
@@ -84,6 +84,9 @@ Round 1 (cont.) — after the answer, runtime check run.
 - Build: `cargo test` 522 green · fmt OK · clippy: existing `double_must_use` only.
 
 ## Review
+
+Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- 7 minor findings fixed by autofix round 1 (Sam earned on its own row out of the grid width, shared `record_trip` → `Trip`, constants grouped, dedicated `badge_cell` arm, `MARK_END`, test arg, glossary rows Ville visitée / Ville de Sam / Palier / Carte de badge). Re-verified clean. Out of scope (pre-existing on develop): the Badges grid overflows a 24-row terminal.
 
 ## Verification
 

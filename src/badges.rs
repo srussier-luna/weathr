@@ -68,14 +68,6 @@ pub enum Tier {
     Platinum,
 }
 
-const TIERS: [Tier; 5] = [
-    Tier::Chocolate,
-    Tier::Bronze,
-    Tier::Silver,
-    Tier::Gold,
-    Tier::Platinum,
-];
-
 impl Tier {
     pub fn name(&self) -> &'static str {
         match self {
@@ -175,14 +167,22 @@ pub fn sam_trail_line(sam_cities: usize) -> Option<String> {
     })
 }
 
+const SKY_LOOKOUT_LOGIN: &str = "drichard-luna";
+
+const TIERS: [Tier; 5] = [
+    Tier::Chocolate,
+    Tier::Bronze,
+    Tier::Silver,
+    Tier::Gold,
+    Tier::Platinum,
+];
+
 pub const SAM_TRAIL: Badge = secret(
     "sam_trail",
     "Sur les traces de Sam",
     "visité la même ville que Sam",
     ["   ::", " ::  ", "::   "],
 );
-
-const SKY_LOOKOUT_LOGIN: &str = "drichard-luna";
 
 pub const KINDS: [BadgeKind; 5] = [
     BadgeKind::Weather,

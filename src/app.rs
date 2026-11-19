@@ -133,15 +133,23 @@ fn earn_tiers(earned: &mut BTreeSet<String>, before: usize, after: usize) -> Vec
     tiers.into_iter().map(Award::sam_trail).collect()
 }
 
+struct Trip {
+    is_new: bool,
+    tier_cards: Vec<Award>,
+}
+
 fn record_trip(
     progress: &mut Progress,
     launch_location: Option<&GeoLocation>,
     day: Option<NonZeroU16>,
-) -> bool {
-    match (launch_location, day) {
+) -> Trip {
+    let sam_cities = progress.sam_cities.len();
+    let is_new = match (launch_location, day) {
         (Some(location), None) => travel::record(progress, location),
         _ => false,
-    }
+    };
+    let tier_cards = earn_tiers(&mut progress.badges, sam_cities, progress.sam_cities.len());
+    Trip { is_new, tier_cards }
 }
 
 fn badge_card(overlay: Option<Overlay>) -> Option<Award> {
@@ -618,10 +626,8 @@ impl App {
         if shows_welcome {
             animations.postman_visit();
         }
-        let sam_cities = progress.sam_cities.len();
-        let has_travelled = record_trip(&mut progress, launch_location, simulation.day);
-        let tier_cards = earn_tiers(&mut progress.badges, sam_cities, progress.sam_cities.len());
-        if progress.record_visit() || has_travelled {
+        let trip = record_trip(&mut progress, launch_location, simulation.day);
+        if progress.record_visit() || trip.is_new {
             progress.save();
         }
         let rain_receiver =
@@ -652,7 +658,7 @@ impl App {
             is_sky_lookout: badges::is_sky_lookout(updater::git_user_name().as_deref()),
             toasts: VecDeque::new(),
             toast_until: None,
-            pending_badges: tier_cards.into(),
+            pending_badges: trip.tier_cards.into(),
             session_start: Instant::now(),
             star_watch: StarWatch::default(),
             rain_receiver,
@@ -2373,15 +2379,15 @@ mod tests {
     fn test_launch_detection_records_the_city() {
         let mut progress = Progress::default();
         let lyon = detected("Lyon", 45.76, 4.84);
-        assert!(record_trip(&mut progress, Some(&lyon), None));
-        assert!(!record_trip(&mut progress, Some(&lyon), None));
+        assert!(record_trip(&mut progress, Some(&lyon), None).is_new);
+        assert!(!record_trip(&mut progress, Some(&lyon), None).is_new);
         assert_eq!(progress.visited_cities.len(), 1);
     }
 
     #[test]
     fn test_no_launch_detection_records_nothing() {
         let mut progress = Progress::default();
-        assert!(!record_trip(&mut progress, None, None));
+        assert!(!record_trip(&mut progress, None, None).is_new);
         assert!(progress.visited_cities.is_empty());
     }
 
@@ -2389,7 +2395,7 @@ mod tests {
     fn test_day_flag_records_nothing() {
         let mut progress = Progress::default();
         let lyon = detected("Lyon", 45.76, 4.84);
-        assert!(!record_trip(&mut progress, Some(&lyon), NonZeroU16::new(3)));
+        assert!(!record_trip(&mut progress, Some(&lyon), NonZeroU16::new(3)).is_new);
         assert!(progress.visited_cities.is_empty());
     }
 
@@ -2398,9 +2404,7 @@ mod tests {
         launch_location: Option<&GeoLocation>,
         day: Option<NonZeroU16>,
     ) -> Vec<Award> {
-        let sam_cities = progress.sam_cities.len();
-        record_trip(progress, launch_location, day);
-        earn_tiers(&mut progress.badges, sam_cities, progress.sam_cities.len())
+        record_trip(progress, launch_location, day).tier_cards
     }
 
     fn lisbon() -> GeoLocation {
