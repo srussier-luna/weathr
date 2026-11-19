@@ -508,6 +508,7 @@ pub struct App {
     is_simulated: bool,
     awards_badges: bool,
     is_sky_lookout: bool,
+    is_time_master: bool,
     toasts: VecDeque<String>,
     toast_until: Option<Instant>,
     pending_badges: VecDeque<&'static Badge>,
@@ -622,6 +623,7 @@ impl App {
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
 
         let is_forced = is_simulated || simulation.night;
+        let user_name = updater::git_user_name();
         let mut app = Self {
             state,
             animations,
@@ -641,7 +643,8 @@ impl App {
             backup,
             is_simulated: is_forced,
             awards_badges: simulation.day.is_none(),
-            is_sky_lookout: badges::is_sky_lookout(updater::git_user_name().as_deref()),
+            is_sky_lookout: badges::is_sky_lookout(user_name.as_deref()),
+            is_time_master: badges::is_time_master(user_name.as_deref()),
             toasts: VecDeque::new(),
             toast_until: None,
             pending_badges: VecDeque::new(),
@@ -723,6 +726,7 @@ impl App {
             ),
             (!self.progress.bottles.is_empty(), "first_bottle"),
             (self.is_sky_lookout, "sky_lookout"),
+            (self.is_time_master, "time_master"),
         ];
         found.extend(
             milestones
