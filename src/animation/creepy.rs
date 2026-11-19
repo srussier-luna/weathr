@@ -107,7 +107,7 @@ impl Creepy {
         unlocks: &Unlocks,
     ) -> io::Result<()> {
         let house = &layout.house;
-        let well_x = layout.well_x().filter(|_| unlocks.well);
+        let well_x = visible_well_x(layout, unlocks);
 
         if unlocks.wet_footprints && !conditions.is_day {
             for x in wet_footprint_columns(layout, unlocks) {
@@ -144,12 +144,13 @@ impl Default for Creepy {
     }
 }
 
+fn visible_well_x(layout: &GardenLayout, unlocks: &Unlocks) -> Option<u16> {
+    layout.well_x().filter(|_| unlocks.well)
+}
+
 fn wet_footprint_columns(layout: &GardenLayout, unlocks: &Unlocks) -> impl Iterator<Item = u16> {
     let door_x = layout.house_x + layout.house.door_x() + 2;
-    let end_x = layout
-        .well_x()
-        .filter(|_| unlocks.well)
-        .map_or(0, |x| x + WELL_WIDTH);
+    let end_x = visible_well_x(layout, unlocks).map_or(0, |x| x + WELL_WIDTH);
     let key = layout
         .key_x()
         .filter(|_| unlocks.key)
@@ -157,7 +158,7 @@ fn wet_footprint_columns(layout: &GardenLayout, unlocks: &Unlocks) -> impl Itera
     (end_x..door_x)
         .rev()
         .step_by(3)
-        .filter(move |x| !key.as_ref().is_some_and(|key| key.contains(x)))
+        .filter(move |x| key.as_ref().is_none_or(|range| !range.contains(x)))
 }
 
 #[cfg(test)]

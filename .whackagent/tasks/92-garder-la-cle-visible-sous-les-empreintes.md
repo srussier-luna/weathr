@@ -1,6 +1,6 @@
 ---
 issue: 92
-status: to-test
+status: to-close
 wiki: [[animation]]
 note: "les empreintes mouillées ne cachent plus la clé"
 created: 2026-11-18
@@ -33,6 +33,9 @@ Round 1 — /wa-autopilot 2026-11-19.
 - Build: `cargo build`, `cargo test` green · fmt OK · clippy: existing `double_must_use` only.
 
 ## Review
+
+Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- 2 minor elegance findings (double negation in the key filter, repeated well filter) fixed by autofix round 1 in creepy.rs, behaviour unchanged (re-run by the agent), re-verified clean.
 
 ## Verification
 
