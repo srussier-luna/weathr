@@ -1,5 +1,5 @@
-use crate::animation::cloud_bank::CloudBank;
 use crate::animation::garden::{self, GardenLayout};
+use crate::animation::sky_sprite::{self, SkySprite};
 use crate::holiday::Holiday;
 use crate::render::TerminalRenderer;
 use crossterm::style::Color;
@@ -175,18 +175,24 @@ impl SkyNotes {
     }
 
     pub fn shows(holiday: &Holiday, horizon_y: u16) -> bool {
-        holiday.is_music_day && horizon_y >= CloudBank::TOP + Self::HEIGHT
-    }
-
-    pub fn update(&mut self) {
-        self.frame = self.frame.wrapping_add(1);
+        holiday.is_music_day && sky_sprite::fits(Self::HEIGHT, horizon_y)
     }
 
     fn color(&self) -> Color {
         PALETTE[(self.frame / COLOR_STEP_FRAMES) as usize % PALETTE.len()]
     }
+}
 
-    pub fn render(&self, renderer: &mut TerminalRenderer, x: u16, y: u16) -> io::Result<()> {
+impl SkySprite for SkyNotes {
+    fn size(&self) -> (u16, u16) {
+        (Self::WIDTH, Self::HEIGHT)
+    }
+
+    fn update(&mut self) {
+        self.frame = self.frame.wrapping_add(1);
+    }
+
+    fn render(&self, renderer: &mut TerminalRenderer, x: u16, y: u16) -> io::Result<()> {
         garden::draw(renderer, x, y, &SKY_NOTES, self.color())
     }
 }
@@ -200,6 +206,7 @@ impl Default for SkyNotes {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::animation::cloud_bank::CloudBank;
     use crate::scene::WorldScene;
     use crate::scene::tree::Growth;
     use rand::rngs::StdRng;
