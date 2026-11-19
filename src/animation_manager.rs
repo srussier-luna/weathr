@@ -67,6 +67,27 @@ const TWILIGHT_SUN: Color = Color::Rgb {
     b: 0,
 };
 
+#[derive(Clone, Copy)]
+enum SkySpriteKind {
+    Notes,
+    Crepe,
+    Muguet,
+}
+
+impl SkySpriteKind {
+    fn on(holiday: &Holiday, horizon_y: u16) -> Option<Self> {
+        if SkyNotes::shows(holiday, horizon_y) {
+            Some(Self::Notes)
+        } else if GiantCrepe::shows(holiday, horizon_y) {
+            Some(Self::Crepe)
+        } else if GiantMuguet::shows(holiday, horizon_y) {
+            Some(Self::Muguet)
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Clone, Copy, Default)]
 pub struct Sightings {
     pub shooting_star: bool,
@@ -288,7 +309,7 @@ impl AnimationManager {
         // Calculate horizon_y early so it's available for all systems
         let ground_height = WorldScene::GROUND_HEIGHT;
         let horizon_y = term_height.saturating_sub(ground_height);
-        let shows_sky_sprite = self.sky_sprite(&state.holiday, horizon_y).is_some();
+        let sky_sprite = SkySpriteKind::on(&state.holiday, horizon_y);
 
         if !conditions.is_day {
             self.star_system.set_sky(if !conditions.is_clear_sky() {
@@ -301,7 +322,7 @@ impl AnimationManager {
             self.star_system.update(term_width, term_height, &mut rng);
             self.star_system.render(renderer)?;
             self.moon_system.update(term_width, term_height);
-            if !shows_sky_sprite {
+            if sky_sprite.is_none() {
                 self.moon_system.render(renderer)?;
             }
 
@@ -326,7 +347,7 @@ impl AnimationManager {
             self.bird_system.render(renderer)?;
         }
 
-        if !shows_sky_sprite
+        if sky_sprite.is_none()
             && state.should_show_sun()
             && !conditions.is_raining
             && !conditions.is_thunderstorm
@@ -371,7 +392,14 @@ impl AnimationManager {
             self.cloud_bank.render(renderer, term_width, conditions)?;
         }
 
-        self.render_sky_sprite(renderer, state, conditions.is_day, term_width, horizon_y)
+        self.render_sky_sprite(
+            renderer,
+            sky_sprite,
+            state,
+            conditions.is_day,
+            term_width,
+            horizon_y,
+        )
     }
 
     fn render_sun(
@@ -413,30 +441,28 @@ impl AnimationManager {
         garden::draw(renderer, x, y, &frame, color)
     }
 
-    fn sky_sprite(&mut self, holiday: &Holiday, horizon_y: u16) -> Option<&mut dyn SkySprite> {
-        if SkyNotes::shows(holiday, horizon_y) {
-            Some(&mut self.sky_notes)
-        } else if GiantCrepe::shows(holiday, horizon_y) {
-            Some(&mut self.giant_crepe)
-        } else if GiantMuguet::shows(holiday, horizon_y) {
-            Some(&mut self.giant_muguet)
-        } else {
-            None
+    fn sky_sprite(&mut self, kind: SkySpriteKind) -> &mut dyn SkySprite {
+        match kind {
+            SkySpriteKind::Notes => &mut self.sky_notes,
+            SkySpriteKind::Crepe => &mut self.giant_crepe,
+            SkySpriteKind::Muguet => &mut self.giant_muguet,
         }
     }
 
     fn render_sky_sprite(
         &mut self,
         renderer: &mut TerminalRenderer,
+        kind: Option<SkySpriteKind>,
         state: &AppState,
         is_day: bool,
         term_width: u16,
         horizon_y: u16,
     ) -> io::Result<()> {
-        let moon = self.moon_system.position();
-        let Some(sprite) = self.sky_sprite(&state.holiday, horizon_y) else {
+        let Some(kind) = kind else {
             return Ok(());
         };
+        let moon = self.moon_system.position();
+        let sprite = self.sky_sprite(kind);
         let size = sprite.size();
         let (x, y) = if is_day {
             let progress = day_progress(

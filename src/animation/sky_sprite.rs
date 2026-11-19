@@ -98,7 +98,7 @@ mod tests {
         moon.update(120, 40);
         let size = (GiantCrepe::WIDTH, GiantCrepe::HEIGHT);
         assert_eq!(
-            in_place_of_moon(moon.position(), size, 120, 33),
+            in_place_of_moon(moon.position(), size, 120, 40 - WorldScene::GROUND_HEIGHT),
             moon.position()
         );
     }

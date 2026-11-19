@@ -1,6 +1,6 @@
 ---
 issue: 95
-status: to-test
+status: to-close
 wiki: [[animation]], [[mail]]
 note: "Chandeleur (2 février) : crêpes qui sautent à la fenêtre + Badge"
 created: 2026-11-18
@@ -41,6 +41,9 @@ Round 1 — /wa-autopilot 2026-11-19.
 - Build: `cargo build`, `cargo test` (512) green · fmt OK · clippy: existing `double_must_use` only.
 
 ## Review
+
+Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- 2 minor findings, fixed in 2 autofix rounds: single sprite list (`SkySpriteKind::on` + `sky_sprite(kind)` match), redundant checks removed, test horizon from GROUND_HEIGHT. Runtime re-run by the agent (crêpe day/night, Notes du ciel). Re-verified clean.
 
 ## Verification
 
