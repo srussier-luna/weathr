@@ -1,6 +1,6 @@
 ---
 issue: 68
-status: todo
+status: to-test
 wiki: [[mail]], [[render]]
 note: "ajouter un moyen de changer les choix anciennement faits"
 created: 2026-11-18
@@ -35,8 +35,25 @@ created: 2026-11-18
 
 ## Implementation
 
+Round 1 — /wa-autopilot 2026-11-19.
+
+- `src/app.rs`: `Overlay::Album { page, selected }` (selection reset on open and page change); `set_answer` shared with `answer_letter`; `press_option` routes `[1]`/`[2]` to the Album or the Letter; `album_choice`, `album_after_scroll` testable.
+- `src/views.rs`: « tes réponses » page = `views::ANSWERS_PAGE` (index 2); selected line « question ? [1] Rouge ✓ [2] Bleu » with non-breaking spaces; other lines keep `- `; footer with `[↑] [↓] choisir  [1] [2] changer`.
+- `src/story/content/letters.rs`: `answered_choices` in Question order (shared by page and keys).
+- No answer yet → « Rien pour l'instant. » with the normal Album footer (choice of the implementer, not in spec).
+- `CHOICES` has 12 Questions (spec said 11).
+- Build: `cargo build`, `cargo test` green · fmt OK · clippy: existing `double_must_use` only.
+
 ## Review
 
 ## Verification
+
+Round 1 — runtime check by the agent (pty 120x50, fresh `HOME`, seeded save at Jour 40 with 3 answers; `--day` not used: it never saves):
+
+- ✅ Page opens with `>` on line 1, both options and `✓`, new footer.
+- ✅ ↑/↓ bounded; selection back to line 1 after a page change.
+- ✅ `[2]` / `[1]` → line and `progress.json` updated; Lettre relue « Ta réponse : Bleu »; Écho relu follows; bow at the garden red ↔ blue.
+- ✅ Three changes → last kept; second line changes only its Question.
+- ✅ `[1]`/`[2]` on other Album pages → nothing; no answers → empty page, keys inert.
 
 ## Feedback
