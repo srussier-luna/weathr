@@ -61,6 +61,8 @@ const fn secret(
 
 const SKY_LOOKOUT_LOGIN: &str = "drichard-luna";
 
+const CONTRIBUTORS: [&str; 1] = ["bpisano"];
+
 pub const KINDS: [BadgeKind; 5] = [
     BadgeKind::Weather,
     BadgeKind::Holiday,
@@ -69,7 +71,7 @@ pub const KINDS: [BadgeKind; 5] = [
     BadgeKind::Secret,
 ];
 
-pub const BADGES: [Badge; 45] = [
+pub const BADGES: [Badge; 46] = [
     badge(
         "clear",
         "Ciel dégagé",
@@ -340,6 +342,12 @@ pub const BADGES: [Badge; 45] = [
         "a repéré les nuages pressés",
         [" .-. ", "(___)", "  \\o "],
     ),
+    secret(
+        "time_master",
+        "Maître du temps",
+        "a mis le village à l'heure",
+        ["\\___/", " )_( ", "/___\\"],
+    ),
 ];
 
 pub fn weather_badges() -> impl Iterator<Item = &'static Badge> {
@@ -376,7 +384,15 @@ pub fn name(id: &str) -> &'static str {
 }
 
 pub fn is_sky_lookout(user_name: Option<&str>) -> bool {
-    user_name.is_some_and(|name| name.trim() == SKY_LOOKOUT_LOGIN)
+    is_listed(user_name, &[SKY_LOOKOUT_LOGIN])
+}
+
+pub fn is_time_master(user_name: Option<&str>) -> bool {
+    is_listed(user_name, &CONTRIBUTORS)
+}
+
+fn is_listed(user_name: Option<&str>, logins: &[&str]) -> bool {
+    user_name.is_some_and(|name| logins.contains(&name.trim()))
 }
 
 #[cfg(test)]
@@ -430,5 +446,27 @@ mod tests {
     fn test_sky_lookout_rejects_missing_name() {
         assert!(!is_sky_lookout(None));
         assert!(!is_sky_lookout(Some("")));
+    }
+
+    #[test]
+    fn test_time_master_matches_each_contributor() {
+        assert!(is_time_master(Some("bpisano")));
+    }
+
+    #[test]
+    fn test_time_master_ignores_surrounding_whitespace() {
+        assert!(is_time_master(Some(" bpisano\n")));
+    }
+
+    #[test]
+    fn test_time_master_rejects_other_name() {
+        assert!(!is_time_master(Some("srussier-luna")));
+        assert!(!is_time_master(Some("drichard-luna")));
+    }
+
+    #[test]
+    fn test_time_master_rejects_missing_name() {
+        assert!(!is_time_master(None));
+        assert!(!is_time_master(Some("")));
     }
 }

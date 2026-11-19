@@ -33,6 +33,7 @@ use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::io;
 use std::num::NonZeroU16;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::{mpsc, oneshot};
@@ -252,11 +253,20 @@ fn notes_overlay(has_notes: bool) -> Option<Overlay> {
     has_notes.then_some(Overlay::Notes(0))
 }
 
-fn opening_overlay(shows_welcome: bool, has_notes: bool) -> Option<Overlay> {
-    if shows_welcome {
+fn opening_overlay(has_backup: bool, shows_welcome: bool, has_notes: bool) -> Option<Overlay> {
+    if has_backup {
+        Some(Overlay::Backup { shows_welcome })
+    } else if shows_welcome {
         Some(Overlay::Welcome(Step::Arriving))
     } else {
         notes_overlay(has_notes)
+    }
+}
+
+fn backup_after_key(code: KeyCode, shows_welcome: bool, has_notes: bool) -> Option<Overlay> {
+    match code {
+        KeyCode::Esc | KeyCode::Enter => opening_overlay(false, shows_welcome, has_notes),
+        _ => Some(Overlay::Backup { shows_welcome }),
     }
 }
 
@@ -442,6 +452,7 @@ enum Overlay {
     Letter(usize),
     Badges,
     Album { page: usize, selected: usize },
+    Backup { shows_welcome: bool },
     Bottle(usize),
     Help,
     Index(usize),
@@ -492,10 +503,12 @@ pub struct App {
     clock: StoryClock,
     timeline: Timeline,
     release_notes: Vec<Section>,
+    backup: Option<PathBuf>,
     overlay: Option<Overlay>,
     is_simulated: bool,
     awards_badges: bool,
     is_sky_lookout: bool,
+    is_time_master: bool,
     toasts: VecDeque<String>,
     toast_until: Option<Instant>,
     pending_badges: VecDeque<&'static Badge>,
@@ -579,19 +592,20 @@ impl App {
         } else {
             Launch::Normal
         };
-        let (mut progress, letters, clock) = match simulation.day {
+        let (mut progress, letters, clock, backup) = match simulation.day {
             Some(day) => {
                 let clock = StoryClock::frozen(Local::now().date_naive(), config.mail.hour, day);
                 (
                     Progress::in_memory(clock.date_of(1)),
                     letters::read(),
                     clock,
+                    None,
                 )
             }
             None => {
-                let progress = Progress::load();
+                let (progress, backup) = Progress::load();
                 let clock = story_clock(&progress, config.mail.hour);
-                (progress, letters::load(), clock)
+                (progress, letters::load(), clock, backup)
             }
         };
         let release_notes = notes_on_launch(&mut progress, release_notes::load(), launch);
@@ -609,6 +623,7 @@ impl App {
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
 
         let is_forced = is_simulated || simulation.night;
+        let user_name = updater::git_user_name();
         let mut app = Self {
             state,
             animations,
@@ -623,11 +638,13 @@ impl App {
             letters,
             clock,
             timeline,
-            overlay: opening_overlay(shows_welcome, !release_notes.is_empty()),
+            overlay: opening_overlay(backup.is_some(), shows_welcome, !release_notes.is_empty()),
             release_notes,
+            backup,
             is_simulated: is_forced,
             awards_badges: simulation.day.is_none(),
-            is_sky_lookout: badges::is_sky_lookout(updater::git_user_name().as_deref()),
+            is_sky_lookout: badges::is_sky_lookout(user_name.as_deref()),
+            is_time_master: badges::is_time_master(user_name.as_deref()),
             toasts: VecDeque::new(),
             toast_until: None,
             pending_badges: VecDeque::new(),
@@ -709,6 +726,7 @@ impl App {
             ),
             (!self.progress.bottles.is_empty(), "first_bottle"),
             (self.is_sky_lookout, "sky_lookout"),
+            (self.is_time_master, "time_master"),
         ];
         found.extend(
             milestones
@@ -787,6 +805,12 @@ impl App {
                 WelcomeOutcome::Next(step) => self.overlay = Some(Overlay::Welcome(step)),
                 WelcomeOutcome::Done => self.end_welcome(),
             }
+        }
+    }
+
+    fn press_backup_key(&mut self, code: KeyCode) {
+        if let Some(Overlay::Backup { shows_welcome }) = self.overlay {
+            self.overlay = backup_after_key(code, shows_welcome, !self.release_notes.is_empty());
         }
     }
 
@@ -973,6 +997,12 @@ impl App {
                 let page = page.min(last);
                 let view = pages.swap_remove(page);
                 return overlay::render_with_chevrons(renderer, &view, page > 0, page < last);
+            }
+            Some(Overlay::Backup { .. }) => {
+                let Some(backup) = &self.backup else {
+                    return Ok(());
+                };
+                views::backup_view(backup)
             }
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
             Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => {
@@ -1690,6 +1720,9 @@ impl App {
                                     welcome_width(renderer),
                                 );
                             }
+                            _ if matches!(self.overlay, Some(Overlay::Backup { .. })) => {
+                                self.press_backup_key(key_event.code);
+                            }
                             KeyCode::Char('c') | KeyCode::Char('C') => self.press_mail(),
                             KeyCode::Char('b') | KeyCode::Char('B') => {
                                 self.overlay = match self.overlay {
@@ -1866,19 +1899,48 @@ mod tests {
     #[test]
     fn test_notes_wait_for_the_welcome_and_badge_cards_too() {
         assert!(matches!(
-            opening_overlay(true, true),
+            opening_overlay(false, true, true),
             Some(Overlay::Welcome(Step::Arriving))
         ));
         assert!(matches!(
-            opening_overlay(false, true),
+            opening_overlay(false, false, true),
             Some(Overlay::Notes(0))
         ));
-        assert!(opening_overlay(false, false).is_none());
+        assert!(opening_overlay(false, false, false).is_none());
 
         let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["rain"]).into();
-        let overlay = next_overlay(opening_overlay(true, false), &mut pending);
+        let overlay = next_overlay(opening_overlay(false, true, false), &mut pending);
         assert!(matches!(overlay, Some(Overlay::Welcome(_))));
         assert_eq!(pending.len(), 1);
+    }
+
+    #[test]
+    fn test_backup_box_opens_before_the_welcome_and_the_notes() {
+        let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["rain"]).into();
+        let overlay = next_overlay(opening_overlay(true, false, true), &mut pending);
+        assert!(matches!(
+            overlay,
+            Some(Overlay::Backup {
+                shows_welcome: false
+            })
+        ));
+        assert_eq!(pending.len(), 1);
+
+        assert!(matches!(
+            backup_after_key(KeyCode::Char('h'), false, true),
+            Some(Overlay::Backup { .. })
+        ));
+        for code in [KeyCode::Esc, KeyCode::Enter] {
+            assert!(matches!(
+                backup_after_key(code, false, true),
+                Some(Overlay::Notes(0))
+            ));
+        }
+        assert!(matches!(
+            backup_after_key(KeyCode::Esc, true, true),
+            Some(Overlay::Welcome(Step::Arriving))
+        ));
+        assert!(backup_after_key(KeyCode::Enter, false, false).is_none());
     }
 
     #[test]
