@@ -49,6 +49,7 @@ Round 1 — /wa-autopilot 2026-11-19.
   9. Géminides — « En décembre aussi, il pleut des étoiles filantes. » / « Par nuit claire, couvre-toi bien et lève les yeux. »
   10. Nouvel An — « Le village fête la nouvelle année. » / « Chaque nuit, le ciel s'allume de feux d'artifice. »
   11. Pâques — « Les cloches sont passées par le village. » / « Cherche dans l'herbe : des œufs colorés s'y cachent. »
+- Merge of develop (2026-11-19): Chandeleur and 1er mai added (13 boxes), texts to validate: Chandeleur — « Au village, ça sent la pâte à crêpes. » / « Lève les yeux : dans le ciel, une crêpe géante se retourne. » · 1er mai — « Au village, on s'offre du muguet pour porter bonheur. » / « Regarde le ciel : un brin géant y a fleuri. »
 - Build: `cargo build`, `cargo test` (495) green · fmt OK · clippy: existing `double_must_use` only.
 
 ## Review

@@ -52,6 +52,8 @@ pub struct Holiday {
     pub is_epiphany: bool,
     pub is_neighbours_party: bool,
     pub is_music_day: bool,
+    pub is_candlemas: bool,
+    pub is_may_day: bool,
     pub meteor_shower: Option<MeteorShower>,
     pub is_winter: bool,
     pub season: Season,
@@ -78,6 +80,8 @@ impl Holiday {
             is_epiphany: month == 1 && day == 6,
             is_neighbours_party: last_friday_of_may(date.year()) == Some(date),
             is_music_day: month == 6 && day == 21,
+            is_candlemas: month == 2 && day == 2,
+            is_may_day: month == 5 && day == 1,
             meteor_shower: MeteorShower::on(month, day),
             is_winter: matches!(month, 12 | 1 | 2),
             season: Season::on(month, day),
@@ -143,6 +147,24 @@ impl Holiday {
         }
     }
 
+    pub fn candlemas() -> Self {
+        Self {
+            is_candlemas: true,
+            is_winter: true,
+            season: Season::Winter,
+            ..Self::default()
+        }
+    }
+
+    pub fn may_day() -> Self {
+        Self {
+            is_spring: true,
+            is_may_day: true,
+            season: Season::Spring,
+            ..Self::default()
+        }
+    }
+
     pub fn perseids() -> Self {
         Self {
             meteor_shower: Some(MeteorShower::Perseids),
@@ -191,7 +213,7 @@ pub struct HolidayBox {
     is_due: fn(&Holiday) -> bool,
 }
 
-const HOLIDAY_BOXES: [HolidayBox; 11] = [
+const HOLIDAY_BOXES: [HolidayBox; 13] = [
     HolidayBox {
         title: "Noël",
         lines: &[
@@ -209,12 +231,28 @@ const HOLIDAY_BOXES: [HolidayBox; 11] = [
         is_due: |holiday| holiday.is_epiphany,
     },
     HolidayBox {
+        title: "Chandeleur",
+        lines: &[
+            "Au village, ça sent la pâte à crêpes.",
+            "Lève les yeux\u{202F}: dans le ciel, une crêpe géante se retourne.",
+        ],
+        is_due: |holiday| holiday.is_candlemas,
+    },
+    HolidayBox {
         title: "Poisson d'avril",
         lines: &[
             "Au village, les farceurs sont de sortie.",
             "Guette ta boîte aux lettres et le dos du Facteur.",
         ],
         is_due: |holiday| holiday.is_april_fools,
+    },
+    HolidayBox {
+        title: "1er mai",
+        lines: &[
+            "Au village, on s'offre du muguet pour porter bonheur.",
+            "Regarde le ciel\u{202F}: un brin géant y a fleuri.",
+        ],
+        is_due: |holiday| holiday.is_may_day,
     },
     HolidayBox {
         title: "Fête des voisins",
@@ -434,6 +472,8 @@ mod tests {
             (Holiday::new_year(2027), "Nouvel An"),
             (Holiday::on(date(2027, 1, 6)), "Épiphanie"),
             (Holiday::on(date(2025, 4, 1)), "Poisson d'avril"),
+            (Holiday::candlemas(), "Chandeleur"),
+            (Holiday::may_day(), "1er mai"),
             (Holiday::easter(), "Pâques"),
             (Holiday::neighbours_party(), "Fête des voisins"),
             (Holiday::music_day(), "Fête de la musique"),
@@ -490,5 +530,44 @@ mod tests {
             Some("Poisson d'avril")
         );
         assert_eq!(box_title(Holiday::on(date(2026, 4, 2))), Some("Pâques"));
+        assert_eq!(box_title(Holiday::on(date(2027, 2, 2))), Some("Chandeleur"));
+        assert_eq!(box_title(Holiday::on(date(2011, 5, 1))), Some("1er mai"));
+    }
+
+    #[test]
+    fn test_candlemas_is_only_the_second_of_february() {
+        assert!(!Holiday::on(date(2027, 2, 1)).is_candlemas);
+        assert!(Holiday::on(date(2027, 2, 2)).is_candlemas);
+        assert!(!Holiday::on(date(2027, 2, 3)).is_candlemas);
+        assert!(!Holiday::on(date(2027, 3, 2)).is_candlemas);
+        assert!(Holiday::on(date(2028, 2, 2)).is_candlemas);
+    }
+
+    #[test]
+    fn test_forced_candlemas_matches_the_real_day() {
+        let real = Holiday::on(date(2027, 2, 2));
+        let forced = Holiday::candlemas();
+        assert!(forced.is_candlemas);
+        assert_eq!(forced.is_winter, real.is_winter);
+        assert!(forced.season == real.season);
+    }
+
+    #[test]
+    fn test_may_day_is_only_the_first_of_may() {
+        assert!(!Holiday::on(date(2027, 4, 30)).is_may_day);
+        assert!(Holiday::on(date(2027, 5, 1)).is_may_day);
+        assert!(!Holiday::on(date(2027, 5, 2)).is_may_day);
+        assert!(!Holiday::on(date(2027, 6, 1)).is_may_day);
+        assert!(Holiday::on(date(2028, 5, 1)).is_may_day);
+    }
+
+    #[test]
+    fn test_forced_may_day_matches_the_real_day() {
+        let real = Holiday::on(date(2027, 5, 1));
+        let forced = Holiday::may_day();
+        assert!(forced.is_may_day);
+        assert_eq!(forced.is_spring, real.is_spring);
+        assert_eq!(forced.is_winter, real.is_winter);
+        assert!(forced.season == real.season);
     }
 }
