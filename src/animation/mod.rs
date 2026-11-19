@@ -1,5 +1,6 @@
 pub mod airplanes;
 pub mod birds;
+pub mod candlemas;
 pub mod cat;
 pub mod chimney;
 pub mod cloud_bank;
@@ -28,6 +29,7 @@ pub mod owl;
 pub mod postman;
 pub mod rainbow;
 pub mod raindrops;
+pub mod sky_sprite;
 pub mod snail;
 pub mod snow;
 pub mod snow_cover;
