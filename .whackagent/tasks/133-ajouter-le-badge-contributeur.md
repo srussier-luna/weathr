@@ -25,7 +25,7 @@ created: 2026-11-18
 - `git config user.name` = `srussier-luna` ou `bpisano` → au lancement, « Maître du temps » annoncé puis coché dans `b` avec son indice.
 - Autre nom, ou git indisponible → badge non gagné, case cachée, aucune erreur.
 - `drichard-luna` garde Vigie du ciel et n'a pas Maître du temps.
-- Écran Badges : total à 44.
+- Écran Badges : total + 1 (46 avec develop au 19/11).
 - `git` lancé une seule fois au démarrage pour les deux badges.
 - Tests unitaires : vrai pour chaque nom de la liste (espaces autour ignorés), faux pour un autre nom, vide ou absent.
 
