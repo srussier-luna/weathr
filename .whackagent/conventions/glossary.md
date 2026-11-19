@@ -30,6 +30,8 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret → [[mail]] |
 | Fête | jour férié | | `Holiday` | jour spécial qui décore la scène → [[animation]] |
 | Fête de la musique | | | `is_music_day` | 21 juin : notes aux fenêtres, chanteurs, Notes du ciel ; Badge dédié → [[animation]] |
+| Chandeleur | | | `is_candlemas` | 2 février : Crêpe géante à la place du soleil et de la lune ; Badge dédié → [[animation]] |
+| Crêpe géante | | | `GiantCrepe` | crêpe dorée ou pâle à la place du soleil et de la lune le 2 février ; se retourne |
 | Notes du ciel | dessin de notes, croches | | `SkyNotes` | croche et deux doubles croches, remplace soleil ou lune → [[animation]] |
 | Facteur | postier | | `Postman` | livre les Lettres à la boîte aux lettres |
 | Heure du Facteur | heure du courrier | | `mail_hour` | heure de la tournée, de 6 h à 14 h ; changée dans Réglages, effet le lendemain → [[mail]] |
@@ -43,11 +45,15 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Coffre | | | `chest` | coffre de Jeanne, à gauche du Puits |
 | Traces de boue | pas | | `footprints` | `:` marron de l'Arbre à la porte, Jours de jeu 8, 11 et 16 |
 | Traces mouillées | pas | | `wet_footprints` | `.` bleus du Puits à la porte, nuits 13 et 30 |
+| Clé | | | `key` | clé `o-m` jaune près de la boîte aux lettres, dès le Jour de jeu 17 |
 | Cabane | | | `treehouse` | cabane de Léo, dans le feuillage de l'Arbre |
 | Perséides | | | | étoiles filantes plus fréquentes la nuit, du 9 au 15 août ; Badge dédié |
 | Géminides | | | | étoiles filantes plus fréquentes la nuit, du 10 au 16 décembre ; Badge dédié |
 | Boîte pleine | | | | 7 Lettres du village non lues ; l'histoire se met en pause |
+| Chevron de courrier | | | `render_with_chevrons` | `«`/`»` animés au bord d'une Lettre ou de l'Album : il reste à voir → [[render]] |
 | Ruche | | | | cadeau de Nadia et Claire, entre le sapin et la mare |
+| Mare | flaque | | `puddle` | petite eau à droite du jardin, chez Coin-Coin et Rainette ; gèle en grand froid → [[scene]] |
+| Baignade | | | `Bathing` | Biscuit va à la Mare, s'éclabousse puis s'ébroue ; glisse si elle est gelée → [[animation]] |
 | Poulailler | | | | abri des poules la nuit et sous la pluie, au jardin et au Potager |
 | Carré | parcelle | case | | une des 9 planches du Potager : vide, plantée, fanée, mûre |
 | Jour de plante | | | | jour où weathr est ouvert ; fait pousser et faner les plantes du Potager |
