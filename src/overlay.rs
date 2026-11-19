@@ -23,8 +23,8 @@ const MAX_BUBBLE_WIDTH: u16 = 40;
 const BUBBLE_GAP: &str = ". .";
 const BUBBLE_TAIL: &str = "V";
 const TAIL_ROWS_ABOVE_SPEAKER: u16 = 2;
-const MAIL_CHEVRON: char = '»';
-const MAIL_CHEVRON_STEP_MILLIS: i64 = 500;
+const CHEVRON_STEP_MILLIS: i64 = 500;
+const CHEVRON_GAP: u16 = 1;
 
 type Piece = (u16, String, Color);
 
@@ -34,6 +34,21 @@ struct BoxArea {
     y: u16,
     width: u16,
     height: u16,
+}
+
+#[derive(Clone, Copy)]
+enum Side {
+    Left,
+    Right,
+}
+
+impl Side {
+    fn chevron(self) -> char {
+        match self {
+            Self::Left => '«',
+            Self::Right => '»',
+        }
+    }
 }
 
 pub enum Line {
@@ -244,20 +259,21 @@ pub fn render_view(renderer: &mut TerminalRenderer, view: &View) -> io::Result<(
     Ok(())
 }
 
-pub fn render_letter(
+pub fn render_with_chevrons(
     renderer: &mut TerminalRenderer,
     view: &View,
-    has_unread_mail: bool,
+    has_previous: bool,
+    has_next: bool,
 ) -> io::Result<()> {
     let area = render_view_box(renderer, view)?;
-    if !has_unread_mail {
-        return Ok(());
+    let tick = (Local::now().timestamp_millis() / CHEVRON_STEP_MILLIS) as usize;
+    let width = renderer.get_size().0;
+    for (side, is_shown) in [(Side::Left, has_previous), (Side::Right, has_next)] {
+        if is_shown && let Some((x, y)) = chevron_cell(area, side, width, tick) {
+            renderer.render_char(x, y, side.chevron(), Color::Yellow)?;
+        }
     }
-    let tick = (Local::now().timestamp_millis() / MAIL_CHEVRON_STEP_MILLIS) as usize;
-    match mail_chevron_cell(area, renderer.get_size().0, tick) {
-        Some((x, y)) => renderer.render_char(x, y, MAIL_CHEVRON, Color::Yellow),
-        None => Ok(()),
-    }
+    Ok(())
 }
 
 fn render_view_box(renderer: &mut TerminalRenderer, view: &View) -> io::Result<BoxArea> {
@@ -273,9 +289,19 @@ fn render_view_box(renderer: &mut TerminalRenderer, view: &View) -> io::Result<B
     )
 }
 
-fn mail_chevron_cell(area: BoxArea, terminal_width: u16, tick: usize) -> Option<(u16, u16)> {
-    let x = area.x + area.width;
-    (x + 1 < terminal_width).then(|| (x + (tick % 2) as u16, area.y + area.height / 2))
+fn chevron_cell(area: BoxArea, side: Side, terminal_width: u16, tick: usize) -> Option<(u16, u16)> {
+    let offset = CHEVRON_GAP + (tick % 2) as u16;
+    let x = match side {
+        Side::Left => area
+            .x
+            .checked_sub(CHEVRON_GAP + 2)
+            .map(|_| area.x - 1 - offset),
+        Side::Right => {
+            let right = area.x + area.width;
+            (right + CHEVRON_GAP + 1 < terminal_width).then_some(right + offset)
+        }
+    }?;
+    Some((x, area.y + area.height / 2))
 }
 
 pub fn render_bubble(
@@ -788,28 +814,31 @@ mod tests {
     }
 
     #[test]
-    fn test_mail_chevron_goes_back_and_forth_right_of_the_box_at_mid_height() {
+    fn test_chevrons_go_back_and_forth_one_column_off_the_box_at_mid_height() {
         let area = BoxArea {
             x: 7,
             y: 4,
             width: 66,
             height: 21,
         };
-        assert_eq!(mail_chevron_cell(area, 80, 0), Some((73, 14)));
-        assert_eq!(mail_chevron_cell(area, 80, 1), Some((74, 14)));
-        assert_eq!(mail_chevron_cell(area, 80, 2), Some((73, 14)));
+        assert_eq!(chevron_cell(area, Side::Right, 80, 0), Some((74, 14)));
+        assert_eq!(chevron_cell(area, Side::Right, 80, 1), Some((75, 14)));
+        assert_eq!(chevron_cell(area, Side::Right, 80, 2), Some((74, 14)));
+        assert_eq!(chevron_cell(area, Side::Left, 80, 0), Some((5, 14)));
+        assert_eq!(chevron_cell(area, Side::Left, 80, 1), Some((4, 14)));
     }
 
     #[test]
-    fn test_mail_chevron_hides_without_room_right_of_the_box() {
+    fn test_chevrons_hide_without_room_beside_the_box() {
         let area = |x, width| BoxArea {
             x,
             y: 2,
             width,
             height: 9,
         };
-        assert_eq!(mail_chevron_cell(area(2, 16), 20, 1), Some((19, 6)));
-        assert_eq!(mail_chevron_cell(area(3, 16), 20, 0), None);
-        assert_eq!(mail_chevron_cell(area(0, 20), 20, 0), None);
+        assert_eq!(chevron_cell(area(3, 14), Side::Right, 20, 1), Some((19, 6)));
+        assert_eq!(chevron_cell(area(2, 16), Side::Right, 20, 0), None);
+        assert_eq!(chevron_cell(area(3, 14), Side::Left, 20, 1), Some((0, 6)));
+        assert_eq!(chevron_cell(area(2, 16), Side::Left, 20, 0), None);
     }
 }

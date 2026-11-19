@@ -22,6 +22,8 @@ created: 2026-11-18
 - `c` → dernier non lu ouvert → plus de `»`.
 - Une Archive puis une Lettre non lue → sur l'Archive, `»` visible.
 - Relire un ancien courrier (`<`) alors que tout est lu → pas de `»`.
+- `»` un espace plus à droite du cadre qu'avant (feedback 2026-11-19).
+- Album : `«` à gauche du cadre sauf sur la 1re page, `»` à droite sauf sur la dernière, même animation, pour inciter à parcourir les pages.
 - Test : chevron selon le nombre de non lus ; `cargo fmt --check`, `cargo test` verts.
 
 ## Implementation
@@ -46,3 +48,10 @@ Round 1 — runtime check by the agent (pty 100x40, fresh `HOME`, seeded save at
 - ✅ Old mail reread (Left arrow) with all read → no `»`; footers unchanged.
 
 ## Feedback
+
+Round 2 — 2026-11-19. Asked: « met le un espace plus à droite, il faudrait la même chose sur archive à droite et à gauche sauf premier et dernier pour inciter à aller voir les onglets » ; screen = Album pages.
+- adjustment: chevron one column further right.
+- adjustment: Album chevrons `«` / `»` except first / last page.
+- Changes: `src/overlay.rs` `render_with_chevrons(view, has_previous, has_next)`, `chevron_cell`, `Side`, `CHEVRON_GAP = 1` (one empty column, then the back-and-forth); `src/app.rs` Letter and Album arms. Tests replaced for both sides.
+- Under 70 columns the right chevron no longer fits (needs 3 free columns): nothing drawn.
+- Review: deferred (→ /wa-validate). Verify: ✅ agent pty — mail `»` one column further; Album page 1 only `»`, pages 2–5 both, last only `«`.

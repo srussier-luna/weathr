@@ -911,12 +911,14 @@ impl App {
                     self.available_letters(),
                     self.progress.letters_read,
                 );
-                return overlay::render_letter(renderer, &view, has_unread_mail);
+                return overlay::render_with_chevrons(renderer, &view, false, has_unread_mail);
             }
             Some(Overlay::Album(page)) => {
                 let mut pages = self.album_pages();
-                let page = page.min(pages.len().saturating_sub(1));
-                pages.swap_remove(page)
+                let last = pages.len().saturating_sub(1);
+                let page = page.min(last);
+                let view = pages.swap_remove(page);
+                return overlay::render_with_chevrons(renderer, &view, page > 0, page < last);
             }
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
             Some(Overlay::NewBadge(badge) | Overlay::NoteBadge(badge)) => {
