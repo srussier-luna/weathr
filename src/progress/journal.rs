@@ -13,8 +13,8 @@ pub(super) fn path() -> Option<PathBuf> {
 }
 
 fn digest(bytes: &[u8]) -> u64 {
-    bytes.iter().fold(OFFSET_BASIS, |hash, byte| {
-        (hash ^ u64::from(*byte)).wrapping_mul(PRIME)
+    bytes.iter().fold(OFFSET_BASIS, |acc, byte| {
+        (acc ^ u64::from(*byte)).wrapping_mul(PRIME)
     })
 }
 

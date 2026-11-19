@@ -139,10 +139,10 @@ impl Progress {
         if let Some(content) = &content
             && let Some(progress) = parse(content)
         {
-            let out_of_sync = match &kept {
-                Some(kept) => !kept.holds(content),
-                None => journal.is_some() && progress.format >= FORMAT,
-            };
+            let out_of_sync = progress.format >= FORMAT
+                && kept
+                    .as_ref()
+                    .map_or(journal.is_some(), |kept| !kept.holds(content));
             let progress = match restored {
                 Some(restored) if out_of_sync => restored,
                 _ => progress,
@@ -659,14 +659,34 @@ mod tests {
     }
 
     #[test]
-    fn test_removed_format_line_comes_back_from_the_journal() {
+    fn test_save_without_format_line_is_kept_as_is() {
         let files = Files::new("format");
         files.save(&played(4));
         files.edit(",\n  \"format\": 1", "");
         let (progress, opening) = files.load();
+        files.save(&progress);
+        let (reloaded, reopening) = files.load();
 
-        assert_eq!(opening, out_of_sync());
+        assert_eq!(opening, Opening::default());
         assert_eq!(progress.letters_read, 4);
+        assert_eq!(reopening, Opening::default());
+        assert_eq!(reloaded.letters_read, 4);
+    }
+
+    #[test]
+    fn test_older_version_writing_after_a_save_stays_in_sync() {
+        let files = Files::new("older_version");
+        files.save(&played(4));
+        let older = serde_json::to_vec_pretty(&played(5)).unwrap();
+        fs::write(&files.save, older).unwrap();
+        let (progress, opening) = files.load();
+        files.save(&progress);
+        let (reloaded, reopening) = files.load();
+
+        assert_eq!(opening, Opening::default());
+        assert_eq!(progress.letters_read, 5);
+        assert_eq!(reopening, Opening::default());
+        assert_eq!(reloaded.letters_read, 5);
     }
 
     #[test]
@@ -778,6 +798,29 @@ mod tests {
         files.save(&played(6));
         let (progress, opening) = files.load();
 
+        assert_eq!(opening, Opening::default());
+        assert_eq!(progress.letters_read, 6);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_save_next_to_a_journal_that_cannot_change_stays_in_sync() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let files = Files::new("frozen");
+        files.save(&played(4));
+        let folder = files.journal.parent().unwrap();
+        fs::set_permissions(folder, fs::Permissions::from_mode(0o555)).unwrap();
+        let frozen = fs::write(folder.join("probe"), "").is_err();
+        files.save(&played(6));
+        let kept = files.journal.exists();
+        let (progress, opening) = files.load();
+        fs::set_permissions(folder, fs::Permissions::from_mode(0o755)).unwrap();
+        if !frozen {
+            return;
+        }
+
+        assert!(kept);
         assert_eq!(opening, Opening::default());
         assert_eq!(progress.letters_read, 6);
     }

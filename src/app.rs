@@ -21,7 +21,7 @@ use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, 
 use crate::story::content::letters::{self, Letter};
 use crate::story::content::{self, ReadContext};
 use crate::story::postman_note::{self, MailStep};
-use crate::story::reach::Reach;
+use crate::story::reach::{Reach, settle};
 use crate::story::{Entry, StoryClock, Thing, Timeline, pause, sources};
 use crate::updater;
 use crate::views;
@@ -283,14 +283,6 @@ fn launch_reach(village_count: usize, clock: &StoryClock, today: usize) -> Reach
         clock.start(),
         Local::now().date_naive(),
     )
-}
-
-fn settle(progress: &mut Progress, out_of_sync: bool, reach: &Reach) -> bool {
-    let changed = reach.fit(progress) || out_of_sync;
-    if changed {
-        progress.resyncs += 1;
-    }
-    changed
 }
 
 fn is_live_box_full(
@@ -1863,42 +1855,6 @@ mod tests {
         let overlay = next_overlay(opening_overlay(false, true, false), &mut pending);
         assert!(matches!(overlay, Some(Overlay::Welcome(_))));
         assert_eq!(pending.len(), 1);
-    }
-
-    #[test]
-    fn test_settle_adds_one_resync_at_most_per_launch() {
-        let start = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
-        let clock = StoryClock::new(start, 9);
-        let reach = Reach::on(
-            &build_timeline(60, &clock, 10),
-            10,
-            start,
-            clock.date_of(10),
-        );
-        let honest = || {
-            let mut progress = Progress::default();
-            progress.letters_read = 3;
-            progress.streak = 2;
-            progress
-        };
-
-        let mut progress = honest();
-        assert!(!settle(&mut progress, false, &reach));
-        assert_eq!(progress.resyncs, 0);
-
-        let mut progress = honest();
-        assert!(settle(&mut progress, true, &reach));
-        assert_eq!(progress.resyncs, 1);
-        assert_eq!(progress.letters_read, 3);
-
-        let mut progress = honest();
-        progress.letters_read = 900;
-        progress.streak = 400;
-        progress.resyncs = 2;
-        assert!(settle(&mut progress, true, &reach));
-        assert_eq!(progress.resyncs, 3);
-        assert_eq!(progress.streak, 10);
-        assert!(progress.letters_read < 900);
     }
 
     #[test]
