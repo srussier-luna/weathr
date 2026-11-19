@@ -51,6 +51,8 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Boîte pleine | | | | 7 Lettres du village non lues ; l'histoire se met en pause |
 | Chevron de courrier | | | `render_with_chevrons` | `«`/`»` animés au bord d'une Lettre ou de l'Album : il reste à voir → [[render]] |
 | Ruche | | | | cadeau de Nadia et Claire, entre le sapin et la mare |
+| Mare | flaque | | `puddle` | petite eau à droite du jardin, chez Coin-Coin et Rainette ; gèle en grand froid → [[scene]] |
+| Baignade | | | `Bathing` | Biscuit va à la Mare, s'éclabousse puis s'ébroue ; glisse si elle est gelée → [[animation]] |
 | Poulailler | | | | abri des poules la nuit et sous la pluie, au jardin et au Potager |
 | Carré | parcelle | case | | une des 9 planches du Potager : vide, plantée, fanée, mûre |
 | Jour de plante | | | | jour où weathr est ouvert ; fait pousser et faner les plantes du Potager |
