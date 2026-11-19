@@ -45,7 +45,7 @@ Static French content: correspondents' letters + days, `CITIES` (40 Cartes posta
 
 ## Progress — `src/progress.rs`
 
-`Progress` (`src/progress.rs:21`) = whole save, JSON in `<config>/weathr/progress.json`: start date, `letters_read`, badges, answers, streak, riddles, found objects, bottles, cached postcard/gazette weather, `notes_seen_on` (release notes, see [[updater]]), `mail_hour_change` (pending Heure du Facteur, see Timeline). All fields `#[serde(default)]` so old saves keep loading — keep so when adding fields. Saved eagerly after each change; `save` ignores write errors. `try_save` (`:90`) returns them, for Réglages; in-memory save (`--day`) → always error.
+`Progress` (`src/progress.rs:21`) = whole save, JSON in `<config>/weathr/progress.json`: start date, `letters_read`, badges, answers, streak, riddles, found objects, bottles, cached postcard/gazette weather, `notes_seen_on` (release notes, see [[updater]]), `mail_hour_change` (pending Heure du Facteur, see Timeline). All fields `#[serde(default)]` so old saves keep loading — keep so when adding fields. Safe write (#41): temp file + `sync_all` + rename. Unreadable progress.json is never overwritten: renamed `progress.json.abime-YYYY-MM-DD-HHMM` (`-2`, `-3`… if taken), new game, launch window « Sauvegarde » (`Overlay::Backup`) with the copy path. Saved eagerly after each change; `save` ignores write errors. `try_save` (`:90`) returns them, for Réglages; in-memory save (`--day`) → always error.
 
 ## Accueil — `src/welcome.rs`
 
