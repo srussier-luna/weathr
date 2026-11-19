@@ -1,10 +1,11 @@
+use super::clock::StoryClock;
 use super::content::chronicles::OBJECTS;
 use super::content::letters::{CREEPY_LETTER_COUNT, VILLAGE_LETTER_COUNT};
 use super::event::{Entry, Thing};
 use super::timeline::Timeline;
 use crate::badges;
 use crate::progress::Progress;
-use chrono::NaiveDate;
+use chrono::{Local, NaiveDate};
 use std::collections::BTreeSet;
 
 pub struct Reach {
@@ -87,10 +88,38 @@ impl Reach {
     }
 }
 
+pub(crate) fn launch_reach(village_count: usize, clock: &StoryClock, today: usize) -> Reach {
+    let next_day = today + 1;
+    Reach::on(
+        &Timeline::for_village(village_count, clock, next_day),
+        next_day,
+        clock.start(),
+        Local::now().date_naive(),
+    )
+}
+
+pub(crate) fn settle(progress: &mut Progress, out_of_sync: bool, reach: &Reach) -> bool {
+    let changed = reach.fit(progress) || out_of_sync;
+    if changed {
+        progress.resyncs += 1;
+    }
+    changed
+}
+
+pub(crate) fn settle_on_launch(
+    progress: &mut Progress,
+    out_of_sync: bool,
+    mail_hour: u32,
+    village_count: usize,
+) -> bool {
+    let clock = StoryClock::for_progress(progress, mail_hour);
+    let reach = launch_reach(village_count, &clock, clock.today());
+    settle(progress, out_of_sync, &reach)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::story::clock::StoryClock;
     use crate::story::sources;
 
     const VILLAGE_COUNT: usize = 60;
@@ -214,5 +243,41 @@ mod tests {
         progress.badges = badges(&["all_letters"]);
         assert!(reach_on(90).fit(&mut progress));
         assert!(progress.badges.is_empty());
+    }
+
+    #[test]
+    fn test_settle_adds_one_resync_at_most_per_launch() {
+        let start = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
+        let clock = StoryClock::new(start, 9);
+        let reach = Reach::on(
+            &Timeline::for_village(60, &clock, 10),
+            10,
+            start,
+            clock.date_of(10),
+        );
+        let honest = || {
+            let mut progress = Progress::default();
+            progress.letters_read = 3;
+            progress.streak = 2;
+            progress
+        };
+
+        let mut progress = honest();
+        assert!(!settle(&mut progress, false, &reach));
+        assert_eq!(progress.resyncs, 0);
+
+        let mut progress = honest();
+        assert!(settle(&mut progress, true, &reach));
+        assert_eq!(progress.resyncs, 1);
+        assert_eq!(progress.letters_read, 3);
+
+        let mut progress = honest();
+        progress.letters_read = 900;
+        progress.streak = 400;
+        progress.resyncs = 2;
+        assert!(settle(&mut progress, true, &reach));
+        assert_eq!(progress.resyncs, 3);
+        assert_eq!(progress.streak, 10);
+        assert!(progress.letters_read < 900);
     }
 }

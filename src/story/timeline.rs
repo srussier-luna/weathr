@@ -1,6 +1,6 @@
 use super::clock::StoryClock;
 use super::event::{Beat, Entry, StoryEvent, Thing};
-use super::sources::StorySource;
+use super::sources::{self, StorySource};
 
 pub struct Timeline {
     mail: Vec<(usize, Entry)>,
@@ -8,6 +8,10 @@ pub struct Timeline {
 }
 
 impl Timeline {
+    pub fn for_village(village_count: usize, clock: &StoryClock, today: usize) -> Self {
+        Self::new(&sources::registered(village_count), clock, today)
+    }
+
     pub fn new(sources: &[Box<dyn StorySource>], clock: &StoryClock, today: usize) -> Self {
         let mut beats: Vec<Beat> = sources
             .iter()

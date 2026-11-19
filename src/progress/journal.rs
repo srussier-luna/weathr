@@ -8,8 +8,18 @@ const DIGEST_LENGTH: usize = 16;
 const OFFSET_BASIS: u64 = 0xcbf2_9ce4_8422_2325;
 const PRIME: u64 = 0x0100_0000_01b3;
 
-pub(super) fn path() -> Option<PathBuf> {
+pub(crate) fn path() -> Option<PathBuf> {
     dirs::data_dir().map(|dir| dir.join(DIR).join(FILE))
+}
+
+pub(crate) fn pack(content: &[u8]) -> String {
+    format!("{:016x}{}", digest(content), encode(content))
+}
+
+pub(crate) fn unpack(text: &str) -> Option<Vec<u8>> {
+    let checked = read_digest(text)?;
+    let content = decode(text.get(DIGEST_LENGTH..)?)?;
+    (digest(&content) == checked).then_some(content)
 }
 
 fn digest(bytes: &[u8]) -> u64 {
@@ -32,9 +42,8 @@ fn decode(text: &str) -> Option<Vec<u8>> {
         .collect()
 }
 
-fn read_digest(text: &str, index: usize) -> Option<u64> {
-    let start = index * DIGEST_LENGTH;
-    u64::from_str_radix(text.get(start..start + DIGEST_LENGTH)?, 16).ok()
+fn read_digest(text: &str) -> Option<u64> {
+    u64::from_str_radix(text.get(..DIGEST_LENGTH)?, 16).ok()
 }
 
 pub(super) struct Journal {
@@ -45,10 +54,10 @@ pub(super) struct Journal {
 impl Journal {
     pub(super) fn read(path: &Path) -> Option<Self> {
         let text = fs::read_to_string(path).ok()?;
-        let previous = read_digest(&text, 0)?;
-        let checked = read_digest(&text, 1)?;
-        let current = decode(text.get(2 * DIGEST_LENGTH..)?)?;
-        (digest(&current) == checked).then_some(Self { previous, current })
+        Some(Self {
+            previous: read_digest(&text)?,
+            current: unpack(text.get(DIGEST_LENGTH..)?)?,
+        })
     }
 
     pub(super) fn record(path: &Path, on_disk: &[u8], current: &[u8]) -> io::Result<()> {
@@ -56,7 +65,7 @@ impl Journal {
             Some(kept) if !kept.holds(on_disk) => digest(&kept.current),
             _ => digest(on_disk),
         };
-        let text = format!("{previous:016x}{:016x}{}", digest(current), encode(current));
+        let text = format!("{previous:016x}{}", pack(current));
         super::replace_file(path, text.as_bytes())
     }
 
@@ -116,6 +125,18 @@ mod tests {
 
         assert!(damaged.is_none());
         assert!(garbled.is_none());
+    }
+
+    #[test]
+    fn test_packed_content_unpacks_only_when_untouched() {
+        let packed = pack(b"{\"streak\": 2}");
+        assert_eq!(unpack(&packed).as_deref(), Some(&b"{\"streak\": 2}"[..]));
+
+        let mut changed = packed.clone();
+        changed.replace_range(changed.len() - 2.., "7c");
+        assert!(unpack(&changed).is_none());
+        assert!(unpack(&packed[..packed.len() - 1]).is_none());
+        assert!(unpack("").is_none());
     }
 
     #[test]
