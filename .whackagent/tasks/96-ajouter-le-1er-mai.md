@@ -1,6 +1,6 @@
 ---
 issue: 96
-status: to-test
+status: to-close
 wiki: [[animation]], [[mail]]
 note: "1er mai : brin de muguet au jardin + Badge"
 created: 2026-11-18
@@ -38,6 +38,9 @@ Round 1 — /wa-autopilot 2026-11-19.
 - Build: `cargo build`, `cargo test` green · fmt OK · clippy: existing `double_must_use` only.
 
 ## Review
+
+Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- Clean, no finding (delta vs wa/95).
 
 ## Verification
 
