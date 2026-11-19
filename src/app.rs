@@ -54,8 +54,8 @@ const NEIGHBOUR_FIRST_LETTERS: [(Neighbour, usize); 5] = [
     (Neighbour::Gaston, 10),
     (Neighbour::Leo, 16),
 ];
-const FOOTPRINT_DAYS: [usize; 1] = [8];
-const WET_FOOTPRINT_DAYS: [usize; 3] = [13, 14, 30];
+const FOOTPRINT_DAYS: [usize; 3] = [8, 11, 16];
+const WET_FOOTPRINT_DAYS: [usize; 2] = [13, 30];
 
 fn count_read(timeline: &Timeline, progress: &Progress, kind: fn(&Entry) -> bool) -> usize {
     timeline
@@ -2057,25 +2057,65 @@ mod tests {
         assert!(Neighbour::ALL.iter().all(|guest| everyone.contains(guest)));
     }
 
+    const FOOTPRINT_MAIL: [(Entry, &str); 3] = [
+        (Entry::Main(7), "Regarde le sol"),
+        (Entry::Main(10), "Ces traces sont petites"),
+        (Entry::Main(15), "Pardon pour les traces de boue"),
+    ];
+
+    const WET_FOOTPRINT_MAIL: [(Entry, &str); 2] = [
+        (Entry::Creepy(2), "Les traces vont du puits à ta porte"),
+        (Entry::Marcel(2), "Des pas qui vont vers ta maison"),
+    ];
+
+    fn mail_text(entry: Entry) -> String {
+        match entry {
+            Entry::Main(index) => letters::defaults()[index].body.clone(),
+            Entry::Creepy(index) => letters::CREEPY_LETTERS[index].to_string(),
+            Entry::Marcel(index) => chronicles::MARCEL_LETTERS[index].to_string(),
+            other => panic!("no footprint mail in {other:?}"),
+        }
+    }
+
+    fn delivery_days(mail: &[(Entry, &str)]) -> Vec<usize> {
+        let timeline = timeline_on(120);
+        mail.iter()
+            .map(|(entry, _)| {
+                timeline
+                    .mail()
+                    .find(|(_, delivered)| delivered == entry)
+                    .map(|(day, _)| day)
+                    .unwrap()
+            })
+            .collect()
+    }
+
     #[test]
-    fn test_footprints_show_only_on_day_8() {
-        assert!(unlocks_on_day(8).footprints);
-        for day in [7, 9, 14, 61] {
-            assert!(!unlocks_on_day(day).footprints, "footprints on day {day}");
+    fn test_footprint_mail_talks_about_footprints() {
+        for (entry, quote) in FOOTPRINT_MAIL.iter().chain(&WET_FOOTPRINT_MAIL) {
+            assert!(mail_text(*entry).contains(quote), "{entry:?}");
         }
     }
 
     #[test]
-    fn test_wet_footprints_show_only_on_days_13_14_and_30() {
-        for day in [13, 14, 30] {
-            assert!(
-                unlocks_on_day(day).wet_footprints,
-                "wet footprints on day {day}"
+    fn test_footprints_show_only_on_the_days_their_mail_arrives() {
+        let days = delivery_days(&FOOTPRINT_MAIL);
+        for day in 1..=120 {
+            assert_eq!(
+                unlocks_on_day(day).footprints,
+                days.contains(&day),
+                "footprints on day {day}"
             );
         }
-        for day in [12, 15, 29, 31] {
-            assert!(
-                !unlocks_on_day(day).wet_footprints,
+    }
+
+    #[test]
+    fn test_wet_footprints_show_only_on_the_days_their_mail_arrives() {
+        let days = delivery_days(&WET_FOOTPRINT_MAIL);
+        for day in 1..=120 {
+            assert_eq!(
+                unlocks_on_day(day).wet_footprints,
+                days.contains(&day),
                 "wet footprints on day {day}"
             );
         }
