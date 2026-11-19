@@ -3,6 +3,7 @@ use crate::animation::{
     AnimationController,
     airplanes::AirplaneSystem,
     birds::BirdSystem,
+    candlemas::GiantCrepe,
     cat::Cat,
     chimney::ChimneySmoke,
     cloud_bank::CloudBank,
@@ -31,6 +32,7 @@ use crate::animation::{
     postman::Postman,
     rainbow::Rainbow,
     raindrops::RaindropSystem,
+    sky_sprite::{self, SkySprite},
     snail::Snail,
     snow::SnowSystem,
     snow_cover::SnowCover,
@@ -100,6 +102,7 @@ pub struct AnimationManager {
     halloween: Halloween,
     music_notes: MusicNotes,
     sky_notes: SkyNotes,
+    giant_crepe: GiantCrepe,
     spring: Spring,
     new_year_banner: NewYearBanner,
     rainbow: Rainbow,
@@ -154,6 +157,7 @@ impl AnimationManager {
             halloween: Halloween::new(),
             music_notes: MusicNotes::new(),
             sky_notes: SkyNotes::new(),
+            giant_crepe: GiantCrepe::new(),
             spring: Spring::new(),
             new_year_banner: NewYearBanner::new(),
             rainbow: Rainbow,
@@ -281,7 +285,7 @@ impl AnimationManager {
         // Calculate horizon_y early so it's available for all systems
         let ground_height = WorldScene::GROUND_HEIGHT;
         let horizon_y = term_height.saturating_sub(ground_height);
-        let shows_sky_notes = SkyNotes::shows(&state.holiday, horizon_y);
+        let shows_sky_sprite = self.sky_sprite(&state.holiday, horizon_y).is_some();
 
         if !conditions.is_day {
             self.star_system.set_sky(if !conditions.is_clear_sky() {
@@ -294,7 +298,7 @@ impl AnimationManager {
             self.star_system.update(term_width, term_height, &mut rng);
             self.star_system.render(renderer)?;
             self.moon_system.update(term_width, term_height);
-            if !shows_sky_notes {
+            if !shows_sky_sprite {
                 self.moon_system.render(renderer)?;
             }
 
@@ -319,7 +323,7 @@ impl AnimationManager {
             self.bird_system.render(renderer)?;
         }
 
-        if !shows_sky_notes
+        if !shows_sky_sprite
             && state.should_show_sun()
             && !conditions.is_raining
             && !conditions.is_thunderstorm
@@ -364,11 +368,7 @@ impl AnimationManager {
             self.cloud_bank.render(renderer, term_width, conditions)?;
         }
 
-        if shows_sky_notes {
-            self.render_sky_notes(renderer, state, conditions.is_day, term_width, horizon_y)?;
-        }
-
-        Ok(())
+        self.render_sky_sprite(renderer, state, conditions.is_day, term_width, horizon_y)
     }
 
     fn render_sun(
@@ -410,7 +410,17 @@ impl AnimationManager {
         garden::draw(renderer, x, y, &frame, color)
     }
 
-    fn render_sky_notes(
+    fn sky_sprite(&mut self, holiday: &Holiday, horizon_y: u16) -> Option<&mut dyn SkySprite> {
+        if SkyNotes::shows(holiday, horizon_y) {
+            Some(&mut self.sky_notes)
+        } else if GiantCrepe::shows(holiday, horizon_y) {
+            Some(&mut self.giant_crepe)
+        } else {
+            None
+        }
+    }
+
+    fn render_sky_sprite(
         &mut self,
         renderer: &mut TerminalRenderer,
         state: &AppState,
@@ -418,23 +428,23 @@ impl AnimationManager {
         term_width: u16,
         horizon_y: u16,
     ) -> io::Result<()> {
-        let width = SkyNotes::WIDTH;
-        let lowest = horizon_y.saturating_sub(SkyNotes::HEIGHT);
+        let moon = self.moon_system.position();
+        let Some(sprite) = self.sky_sprite(&state.holiday, horizon_y) else {
+            return Ok(());
+        };
+        let size = sprite.size();
         let (x, y) = if is_day {
-            match day_progress(
+            let progress = day_progress(
                 state.location.latitude,
                 state.location.longitude,
                 chrono::Utc::now(),
-            ) {
-                Some(progress) => on_sun_path(progress, width, lowest, term_width),
-                None => (term_width.saturating_sub(width) / 2, CloudBank::TOP),
-            }
+            );
+            sky_sprite::in_place_of_sun(progress, size, term_width, horizon_y)
         } else {
-            let (x, y) = self.moon_system.position();
-            (x.min(term_width.saturating_sub(width)), y.min(lowest))
+            sky_sprite::in_place_of_moon(moon, size, term_width, horizon_y)
         };
-        self.sky_notes.update();
-        self.sky_notes.render(renderer, x, y)
+        sprite.update();
+        sprite.render(renderer, x, y)
     }
 
     pub fn render_chimney_smoke(

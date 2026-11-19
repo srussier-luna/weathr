@@ -1,6 +1,6 @@
 ---
 issue: 95
-status: todo
+status: to-test
 wiki: [[animation]], [[mail]]
 note: "Chandeleur (2 février) : crêpes qui sautent à la fenêtre + Badge"
 created: 2026-11-18
@@ -30,8 +30,27 @@ created: 2026-11-18
 
 ## Implementation
 
+Round 1 — /wa-autopilot 2026-11-19.
+
+- New `src/animation/sky_sprite.rs`: trait `SkySprite { size, update, render }`, `fits`, `in_place_of_sun`, `in_place_of_moon`; `SkyNotes` implements it (behaviour and tests unchanged). Reused by #96.
+- New `src/animation/candlemas.rs`: `GiantCrepe` 19×7, opaque; golden side `Rgb(225,155,50)` with `o` `.`, pale side `Rgb(250,235,195)`; flip every ~5 s, ~0.5 s (half, thin, edge, thin, half).
+- `src/animation_manager.rs`: `sky_sprite()` picks the sprite of the day; no sun/moon when one shows.
+- `src/holiday.rs`: Chandeleur (2/02), `Holiday::candlemas()` (also winter, like a real 2/02). `src/main.rs`: `--chandeleur`.
+- `src/badges.rs`: `candlemas` « Chandeleur » (Fêtes, after Géminides), icon crêpe; total 43 → 44. `src/app.rs`: badge event, not in forced mode.
+- Not done (out of scope): Chandeleur in `--demo`, README Fêtes list, NOUVEAUTES.md, Encadré de Fête text (#94 not in develop yet).
+- Build: `cargo build`, `cargo test` (512) green · fmt OK · clippy: existing `double_must_use` only.
+
 ## Review
 
 ## Verification
+
+Round 1 — runtime check by the agent (pty 120×40, fresh `HOME`, `faketime` for real dates):
+
+- ✅ `--chandeleur --simulate clear`: crêpe on the sun's course, no sun; `--night`: in place of the moon.
+- ✅ Rain and snow: crêpe still visible.
+- ✅ Flip observed (~0.5 s, every ~5 s), golden ↔ pale.
+- ✅ Real 2/02: « Nouveau badge ! Chandeleur », `b` → ticked, Badges x/44; `--chandeleur` → no badge.
+- ✅ 1/02 and 3/02: normal sun and moon; `--music`: Notes du ciel unchanged; 70×20: no crash.
+- Note: `--night` alone needs `--simulate` to show night (existing behaviour).
 
 ## Feedback
