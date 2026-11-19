@@ -1,6 +1,6 @@
 ---
 issue: 126
-status: to-test
+status: to-close
 wiki: [[mail]], [[animation]], [[scene]], [[render]]
 note: "Découpé de #124 (parapluie « Ajouter la détection de triche »), sprint « Anti-triche ». Lit le compteur de triches de #125."
 created: 2026-11-17
@@ -54,6 +54,9 @@ created: 2026-11-17
 - Build : `cargo build`, `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use`, `cargo test` (544, 0 échec) verts.
 
 ## Review
+
+Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- 1 minor elegance finding (raw index + modulo for the disappointed line) fixed by autofix round 1 (line stored directly), texts unchanged, re-verified clean.
 
 ## Verification
 

@@ -680,7 +680,7 @@ mod tests {
     fn test_neighbours_note_is_signed_in_its_own_frame() {
         let announcement =
             neighbours_note_view(NeighboursNote::Announcement(Punishment::MailBan(3)));
-        let disappointed = neighbours_note_view(NeighboursNote::Disappointed(0));
+        let disappointed = neighbours_note_view(NeighboursNote::disappointed(&mut rand::rng()));
         for note in [&announcement, &disappointed] {
             assert_eq!(note.frame, Frame::Roofs);
             assert!(render(note).contains(&format!(

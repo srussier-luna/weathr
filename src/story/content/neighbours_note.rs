@@ -1,6 +1,6 @@
 use crate::badges;
 use crate::story::punishment::{BARE_VILLAGE_DAYS, Punishment};
-use rand::RngExt;
+use rand::seq::IndexedRandom;
 
 pub const SIGNATURE: &str = "— Tes voisins";
 
@@ -18,12 +18,12 @@ const DISAPPOINTED: [&str; 8] = [
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum NeighboursNote {
     Announcement(Punishment),
-    Disappointed(usize),
+    Disappointed(&'static str),
 }
 
 impl NeighboursNote {
     pub fn disappointed(rng: &mut impl rand::Rng) -> Self {
-        Self::Disappointed(rng.random_range(0..DISAPPOINTED.len()))
+        Self::Disappointed(DISAPPOINTED.choose(rng).copied().unwrap_or_default())
     }
 
     pub fn text(self) -> String {
@@ -38,7 +38,7 @@ impl NeighboursNote {
             Self::Announcement(Punishment::MailBan(days)) => format!(
                 "Tu as encore triché. Pendant {days} jours, le Facteur ne s'arrête plus chez toi, les Habitants boudent et le grand Arbre reste tout nu. Ensuite, l'histoire reprendra là où tu l'as laissée."
             ),
-            Self::Disappointed(line) => DISAPPOINTED[line % DISAPPOINTED.len()].to_string(),
+            Self::Disappointed(line) => line.to_string(),
         }
     }
 }
@@ -55,7 +55,7 @@ mod tests {
         ]
         .map(NeighboursNote::Announcement)
         .into_iter()
-        .chain((0..DISAPPOINTED.len()).map(NeighboursNote::Disappointed))
+        .chain(DISAPPOINTED.map(NeighboursNote::Disappointed))
         .collect()
     }
 
@@ -75,7 +75,7 @@ mod tests {
             let NeighboursNote::Disappointed(line) = NeighboursNote::disappointed(&mut rng) else {
                 panic!("not a disappointed note");
             };
-            assert!(line < DISAPPOINTED.len());
+            assert!(DISAPPOINTED.contains(&line));
         }
     }
 
