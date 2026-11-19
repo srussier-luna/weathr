@@ -39,6 +39,8 @@ Round 1 — /wa-autopilot 2026-11-19.
 
 ## Review
 
+Round validation 2 — 2026-11-19: #95 reworked in its review (`SkySpriteKind`); merged into #96 (d376b83), Muguet adapted (variant, `on` branch, match arm). Runtime re-run by the agent (Muguet day/night/rain, Crêpe, Notes du ciel). Re-verified clean.
+
 Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
 - Clean, no finding (delta vs wa/95).
 
