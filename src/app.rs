@@ -7,7 +7,7 @@ use crate::config::{Config, LocationDisplay, Setting};
 use crate::demo::{Demo, SCENE_DURATION};
 use crate::error::{GeolocationError, WeatherError};
 use crate::geolocation::{self, GeoLocation};
-use crate::holiday::{Holiday, MeteorShower};
+use crate::holiday::{Holiday, HolidayBox, MeteorShower};
 use crate::overlay;
 use crate::progress::Progress;
 use crate::rain_alert::{self, RainAlert};
@@ -19,8 +19,10 @@ use crate::scene::tree::Growth;
 use crate::settings::{self, AutoLocation, CitySearch, Row, Settings};
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Choice, Letter};
+use crate::story::content::recipes::{Diet, diet_for_key, diet_ids, diets_from_ids, toggle_diet};
 use crate::story::content::{self, ReadContext};
 use crate::story::postman_note::{self, MailStep};
+use crate::story::sources::Recipes;
 use crate::story::{Entry, StoryClock, Thing, Timeline, pause, sources};
 use crate::travel;
 use crate::updater;
@@ -289,6 +291,13 @@ fn opening_overlay(has_backup: bool, shows_welcome: bool, has_notes: bool) -> Op
     }
 }
 
+fn holiday_box_after_launch(
+    overlay: Option<Overlay>,
+    pending_holiday_box: &mut Option<&'static HolidayBox>,
+) -> Option<Overlay> {
+    overlay.or_else(|| pending_holiday_box.take().map(Overlay::HolidayBox))
+}
+
 fn backup_after_key(code: KeyCode, shows_welcome: bool, has_notes: bool) -> Option<Overlay> {
     match code {
         KeyCode::Esc | KeyCode::Enter => opening_overlay(false, shows_welcome, has_notes),
@@ -349,8 +358,23 @@ fn shows_every_habitant(is_forced: bool, day: Option<NonZeroU16>) -> bool {
     is_forced && day.is_none()
 }
 
-fn build_timeline(village_count: usize, clock: &StoryClock, today: usize) -> Timeline {
-    Timeline::new(&sources::registered(village_count), clock, today)
+fn build_timeline(
+    village_count: usize,
+    clock: &StoryClock,
+    today: usize,
+    recipes: Recipes,
+) -> Timeline {
+    Timeline::new(&sources::registered(village_count, recipes), clock, today)
+}
+
+fn freeze_recipes(progress: &mut Progress, clock: &StoryClock, today: usize) -> Recipes {
+    let recipes = Recipes::from_progress(progress);
+    if progress.diet_answered_day.is_some() && progress.diet_recipes_until != Some(today) {
+        progress.diet_recipes = recipes.deliveries(clock, today);
+        progress.diet_recipes_until = Some(today);
+        progress.save();
+    }
+    recipes
 }
 
 fn is_live_box_full(
@@ -481,6 +505,7 @@ enum Overlay {
     Backup { shows_welcome: bool },
     Bottle(usize),
     Help,
+    HolidayBox(&'static HolidayBox),
     Index(usize),
     NewBadge(Award),
     NoteBadge(Award),
@@ -538,6 +563,7 @@ pub struct App {
     toasts: VecDeque<String>,
     toast_until: Option<Instant>,
     pending_badges: VecDeque<Award>,
+    pending_holiday_box: Option<&'static HolidayBox>,
     session_start: Instant,
     star_watch: StarWatch,
     rain_receiver: Option<mpsc::Receiver<Option<RainAlert>>>,
@@ -554,6 +580,8 @@ pub struct App {
     city_search: Option<CitySearch>,
     location_detection: Option<oneshot::Receiver<Result<GeoLocation, GeolocationError>>>,
     shows_every_habitant: bool,
+    diet_draft: BTreeSet<Diet>,
+    diet_editor: Option<BTreeSet<Diet>>,
 }
 
 impl App {
@@ -622,12 +650,9 @@ impl App {
         let (mut progress, letters, clock, backup) = match simulation.day {
             Some(day) => {
                 let clock = StoryClock::frozen(Local::now().date_naive(), config.mail.hour, day);
-                (
-                    Progress::in_memory(clock.date_of(1)),
-                    letters::read(),
-                    clock,
-                    None,
-                )
+                let mut progress = Progress::in_memory(clock.date_of(1));
+                progress.diet_letter_day = Some(sources::diet_letter_day(1));
+                (progress, letters::read(), clock, None)
             }
             None => {
                 let (progress, backup) = Progress::load();
@@ -647,8 +672,17 @@ impl App {
         let rain_receiver =
             (!is_simulated).then(|| rain_alert::spawn(location.latitude, location.longitude));
         let timeline_day = story_today(&clock);
-        let timeline = build_timeline(letters.len(), &clock, timeline_day);
+        if progress.diet_letter_day.is_none() {
+            progress.diet_letter_day = Some(sources::diet_letter_day(timeline_day));
+            progress.save();
+        }
+        let recipes = freeze_recipes(&mut progress, &clock, timeline_day);
+        let timeline = build_timeline(letters.len(), &clock, timeline_day, recipes);
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
+
+        let pending_holiday_box = (!simulation.demo)
+            .then(|| simulation.holiday.unwrap_or_else(Holiday::today))
+            .and_then(|holiday| holiday.holiday_box());
 
         let is_forced = is_simulated || simulation.night;
         let user_name = updater::git_user_name();
@@ -676,6 +710,7 @@ impl App {
             toasts: VecDeque::new(),
             toast_until: None,
             pending_badges: trip.tier_cards.into(),
+            pending_holiday_box,
             session_start: Instant::now(),
             star_watch: StarWatch::default(),
             rain_receiver,
@@ -692,6 +727,8 @@ impl App {
             city_search: None,
             location_detection: None,
             shows_every_habitant: shows_every_habitant(is_forced, simulation.day),
+            diet_draft: BTreeSet::new(),
+            diet_editor: None,
         };
         app.refresh_unlocks();
         app.refresh_tree_growth();
@@ -814,6 +851,10 @@ impl App {
         }
     }
 
+    fn open_holiday_box(&mut self) {
+        self.overlay = holiday_box_after_launch(self.overlay, &mut self.pending_holiday_box);
+    }
+
     fn open_pending_badge(&mut self) {
         self.overlay = next_overlay(self.overlay, &mut self.pending_badges);
     }
@@ -919,6 +960,34 @@ impl App {
             self.progress.save();
             self.refresh_unlocks();
         }
+    }
+
+    fn is_diet_letter_waiting(&self) -> bool {
+        let Some(Overlay::Letter(index)) = self.overlay else {
+            return false;
+        };
+        self.progress.diet_answered_day.is_none()
+            && matches!(self.timeline.mail_at(index), Some((_, Entry::DietLetter)))
+    }
+
+    fn press_number(&mut self, key: char) {
+        if self.is_diet_letter_waiting() {
+            if let Some(diet) = diet_for_key(key) {
+                toggle_diet(&mut self.diet_draft, diet);
+            }
+            return;
+        }
+        match key {
+            '1' => self.press_option(1),
+            '2' => self.press_option(2),
+            _ => {}
+        }
+    }
+
+    fn send_diets(&mut self) {
+        self.progress.diet_answered_day = Some(story_today(&self.clock));
+        self.progress.diets = diet_ids(&self.diet_draft);
+        self.progress.save();
     }
 
     fn refresh_rain_alert(&mut self) {
@@ -1035,6 +1104,7 @@ impl App {
                 views::backup_view(backup)
             }
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
+            Some(Overlay::HolidayBox(holiday_box)) => views::holiday_box_view(holiday_box),
             Some(Overlay::NewBadge(award) | Overlay::NoteBadge(award)) => {
                 views::badge_card_view(award)
             }
@@ -1066,9 +1136,10 @@ impl App {
                     matches!(entry, Entry::Gazette(_))
                 }) > 0,
             ),
-            Some(Overlay::Settings(selected)) => match &self.city_search {
-                Some(search) => views::city_search_view(search),
-                None => views::settings_view(
+            Some(Overlay::Settings(selected)) => match (&self.city_search, &self.diet_editor) {
+                (Some(search), _) => views::city_search_view(search),
+                (None, Some(diets)) => views::diet_view(diets),
+                (None, None) => views::settings_view(
                     &self.settings(),
                     selected,
                     self.clock.mail_hour_on(Local::now().date_naive()) != self.clock.mail_hour(),
@@ -1117,6 +1188,7 @@ impl App {
             clock: &self.clock,
             reading_hour: Local::now().hour(),
             riddle_input: self.riddle_input.as_deref(),
+            diet_draft: &self.diet_draft,
         }
     }
 
@@ -1160,7 +1232,8 @@ impl App {
         self.hold_full_box();
         let today = story_today(&self.clock);
         if today != self.timeline_day {
-            self.timeline = build_timeline(self.letters.len(), &self.clock, today);
+            let recipes = freeze_recipes(&mut self.progress, &self.clock, today);
+            self.timeline = build_timeline(self.letters.len(), &self.clock, today, recipes);
             self.timeline_day = today;
             self.refresh_unlocks();
             self.refresh_tree_growth();
@@ -1323,7 +1396,7 @@ impl App {
                 self.overlay = Some(Overlay::Notes(first.saturating_add_signed(step).min(last)));
             }
             Some(Overlay::Settings(selected)) => {
-                let last = settings::ROWS.len() - 1;
+                let last = self.settings().rows().len() - 1;
                 self.overlay = Some(Overlay::Settings(
                     selected.saturating_add_signed(step).min(last),
                 ));
@@ -1362,6 +1435,7 @@ impl App {
                 | Overlay::PostmanNote,
             ) => self.overlay = closed_overlay(self.overlay),
             Some(Overlay::Settings(_)) => self.change_setting(1),
+            Some(Overlay::Letter(_)) if self.is_diet_letter_waiting() => self.send_diets(),
             _ => self.reread_selected(),
         }
     }
@@ -1398,6 +1472,10 @@ impl App {
             } else {
                 AutoLocation::Off
             },
+            diets: self
+                .progress
+                .diet_answered_day
+                .map(|_| diets_from_ids(&self.progress.diets)),
         }
     }
 
@@ -1405,10 +1483,34 @@ impl App {
         let Some(Overlay::Settings(selected)) = self.overlay else {
             return;
         };
-        match settings::ROWS[selected] {
+        let Some(row) = self.settings().rows().get(selected).copied() else {
+            return;
+        };
+        match row {
             Row::City => self.city_search = Some(CitySearch::default()),
             Row::AutoLocation => self.toggle_auto_location(),
+            Row::Diet => self.diet_editor = Some(diets_from_ids(&self.progress.diets)),
             row => self.step_setting(row, step),
+        }
+    }
+
+    fn handle_diet_key(&mut self, code: KeyCode) {
+        let Some(diets) = self.diet_editor.as_mut() else {
+            return;
+        };
+        match code {
+            KeyCode::Char(key) => {
+                if let Some(diet) = diet_for_key(key) {
+                    toggle_diet(diets, diet);
+                }
+            }
+            KeyCode::Enter => {
+                self.progress.diets = diet_ids(diets);
+                self.progress.save();
+                self.diet_editor = None;
+            }
+            KeyCode::Esc => self.diet_editor = None,
+            _ => {}
         }
     }
 
@@ -1695,6 +1797,7 @@ impl App {
             )?;
 
             self.collect_badges();
+            self.open_holiday_box();
             self.open_pending_badge();
             self.update_welcome(term_width, term_height);
             self.update_toasts();
@@ -1733,6 +1836,12 @@ impl App {
                     {
                         self.handle_city_key(key_event.code);
                     }
+                    Event::Key(key_event)
+                        if self.diet_editor.is_some()
+                            && !key_event.modifiers.contains(KeyModifiers::CONTROL) =>
+                    {
+                        self.handle_diet_key(key_event.code);
+                    }
                     Event::Key(key_event) => {
                         let previous = self.overlay;
                         let rows = overlay_rows(renderer.get_size().1);
@@ -1761,8 +1870,7 @@ impl App {
                                     _ => Some(Overlay::Badges),
                                 };
                             }
-                            KeyCode::Char('1') => self.press_option(1),
-                            KeyCode::Char('2') => self.press_option(2),
+                            KeyCode::Char(key @ '1'..='8') => self.press_number(key),
                             KeyCode::Char('a') | KeyCode::Char('A') => self.toggle_album(),
                             KeyCode::Char('h') | KeyCode::Char('H') => self.toggle_help(),
                             KeyCode::Char('s') | KeyCode::Char('S') => self.toggle_settings(),
@@ -1943,6 +2051,47 @@ mod tests {
         let overlay = next_overlay(opening_overlay(false, true, false), &mut pending);
         assert!(matches!(overlay, Some(Overlay::Welcome(_))));
         assert_eq!(pending.len(), 1);
+    }
+
+    fn holiday_box_title(overlay: Option<Overlay>) -> Option<&'static str> {
+        match overlay {
+            Some(Overlay::HolidayBox(holiday_box)) => Some(holiday_box.title),
+            _ => None,
+        }
+    }
+
+    #[test]
+    fn test_holiday_box_opens_after_the_launch_windows_and_before_badge_cards() {
+        let mut holiday_box = Holiday::music_day().holiday_box();
+        let mut badges: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["music_day"]).into();
+
+        let backup = holiday_box_after_launch(opening_overlay(true, true, true), &mut holiday_box);
+        assert!(matches!(
+            backup,
+            Some(Overlay::Backup {
+                shows_welcome: true
+            })
+        ));
+        let welcome =
+            holiday_box_after_launch(backup_after_key(KeyCode::Esc, true, true), &mut holiday_box);
+        assert!(matches!(welcome, Some(Overlay::Welcome(Step::Arriving))));
+        let notes = holiday_box_after_launch(notes_overlay(true), &mut holiday_box);
+        assert!(matches!(notes, Some(Overlay::Notes(0))));
+        assert!(holiday_box.is_some());
+
+        let shown = next_overlay(
+            holiday_box_after_launch(notes_overlay(false), &mut holiday_box),
+            &mut badges,
+        );
+        assert_eq!(holiday_box_title(shown), Some("Fête de la musique"));
+        assert_eq!(badges.len(), 1);
+
+        let closed = holiday_box_after_launch(closed_overlay(shown), &mut holiday_box);
+        assert!(closed.is_none());
+        assert_eq!(
+            card_id(next_overlay(closed, &mut badges)),
+            Some("music_day")
+        );
     }
 
     #[test]
@@ -2146,7 +2295,7 @@ mod tests {
     }
 
     fn timeline_on(day: usize) -> Timeline {
-        build_timeline(letters::defaults().len(), &clock(), day)
+        build_timeline(letters::defaults().len(), &clock(), day, Recipes::default())
     }
 
     fn unlocks_at(now: NaiveDateTime) -> Unlocks {
@@ -2384,7 +2533,7 @@ mod tests {
     #[test]
     fn test_frozen_clock_never_fills_the_box() {
         let frozen = StoryClock::frozen(date(2026, 10, 26), 9, NonZeroU16::new(7).unwrap());
-        let timeline = build_timeline(letters::defaults().len(), &frozen, 7);
+        let timeline = build_timeline(letters::defaults().len(), &frozen, 7, Recipes::default());
         assert!(!is_live_box_full(&frozen, &timeline, 7, 0));
     }
 

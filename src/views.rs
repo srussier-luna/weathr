@@ -1,17 +1,20 @@
 use crate::animation::lore::Unlocks;
 use crate::badges::Award;
+use crate::holiday::HolidayBox;
 use crate::overlay::{self, Frame, Line, View};
 use crate::progress::Progress;
 use crate::release_notes::Section;
-use crate::settings::{AutoLocation, CitySearch, ROWS, Row, SearchStatus, Settings};
+use crate::settings::{AutoLocation, CitySearch, Row, SearchStatus, Settings};
 use crate::story::Entry;
-use crate::story::content::chronicles::{
-    BOTTLE_MESSAGES, CHEST_SOUVENIRS, DRAWINGS, OBJECTS, RECIPES,
-};
+use crate::story::content::chronicles::{BOTTLE_MESSAGES, CHEST_SOUVENIRS, DRAWINGS, OBJECTS};
 use crate::story::content::letters::{Choice, answered_choices};
-use crate::story::content::{self, MONTHS, ReadContext, postcard_lines, postcard_title, text};
+use crate::story::content::recipes::{Diet, RECIPES, diet_labels};
+use crate::story::content::{
+    self, MONTHS, ReadContext, diet_checklist, postcard_lines, postcard_title, text,
+};
 use crate::weather::units::{precipitation_symbol, temperature_symbol, wind_speed_symbol};
 use chrono::{Datelike, NaiveDate};
+use std::collections::BTreeSet;
 use std::path::Path;
 
 const INDEX_FOOTER: &str = "[↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer";
@@ -19,12 +22,15 @@ const ALBUM_FOOTER: &str = "[<] [>] pages  [a] ou [Echap] fermer";
 const ANSWERS_FOOTER: &str =
     "[↑] [↓] choisir  [1] [2] changer  [<] [>] pages  [a] ou [Echap] fermer";
 const BOTTLE_FOOTER: &str = "[Echap] fermer";
+const HOLIDAY_BOX_FOOTER: &str = "[Echap] fermer";
 const BADGE_CARD_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const HELP_FOOTER: &str = "[h] ou [Echap] fermer";
 const SETTINGS_FOOTER: &str = "[↑] [↓] choisir  [<] [>] changer  [s] ou [Echap] fermer";
 const SETTINGS_LABEL_WIDTH: usize = 18;
 const CITY_SEARCH_FOOTER: &str = "[Entrée] chercher  [Echap] retour";
 const CITY_RESULTS_FOOTER: &str = "[↑] [↓] choisir  [Entrée] valider  [Echap] retour";
+const DIET_FOOTER: &str = "[1]…[8] cocher  [Entrée] valider  [Echap] retour";
+const LISTED_DIETS: usize = 2;
 const CLOSE_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const POSTMAN_NOTE_FOOTER: &str = "[c] suivante  [Echap] fermer";
 const SCROLL_HINT: &str = "[↑] [↓] défiler";
@@ -146,6 +152,15 @@ pub fn bottle_view(index: usize) -> View {
     }
 }
 
+pub fn holiday_box_view(holiday_box: &HolidayBox) -> View {
+    View {
+        title: holiday_box.title.to_string(),
+        lines: holiday_box.lines.iter().copied().map(text).collect(),
+        footer: HOLIDAY_BOX_FOOTER.to_string(),
+        frame: Frame::Plain,
+    }
+}
+
 fn medal([top, middle, bottom]: [&str; 3]) -> [String; 5] {
     [
         " .-\"\"\"-. ".to_string(),
@@ -220,7 +235,8 @@ pub fn help_view(unlocks: &Unlocks, has_gazette: bool) -> View {
 }
 
 pub fn settings_view(settings: &Settings, selected: usize, is_hour_for_tomorrow: bool) -> View {
-    let mut lines: Vec<Line> = ROWS
+    let mut lines: Vec<Line> = settings
+        .rows()
         .iter()
         .enumerate()
         .map(|(index, row)| {
@@ -279,6 +295,31 @@ fn settings_row(settings: &Settings, row: Row) -> (&'static str, String) {
             }
             .to_string(),
         ),
+        Row::Diet => (
+            "Régime",
+            settings
+                .diets
+                .as_ref()
+                .map(diet_summary)
+                .unwrap_or_default(),
+        ),
+    }
+}
+
+fn diet_summary(diets: &BTreeSet<Diet>) -> String {
+    match diets.len() {
+        0 => "aucun".to_string(),
+        count if count > LISTED_DIETS => format!("{count} Régimes"),
+        _ => diet_labels(diets),
+    }
+}
+
+pub fn diet_view(diets: &BTreeSet<Diet>) -> View {
+    View {
+        title: "Régime".to_string(),
+        lines: diet_checklist(diets),
+        footer: DIET_FOOTER.to_string(),
+        frame: Frame::Plain,
     }
 }
 
@@ -481,7 +522,7 @@ pub fn album_pages(
     let recipes: Vec<usize> = read_entries
         .iter()
         .filter_map(|(_, entry)| match entry {
-            Entry::Recipe(month) => Some(*month),
+            Entry::Recipe(index) | Entry::DietRecipe(index) => Some(*index),
             _ => None,
         })
         .collect();
@@ -550,11 +591,11 @@ pub fn album_pages(
         footer: ALBUM_FOOTER.to_string(),
         frame: Frame::Photo,
     }));
-    pages.extend(recipes.iter().map(|month| {
-        let (name, body) = RECIPES[*month];
+    pages.extend(recipes.iter().map(|index| {
+        let recipe = &RECIPES[*index];
         View {
-            title: format!("Album : recette, {name}"),
-            lines: vec![text(body)],
+            title: format!("Album : recette, {}", recipe.name),
+            lines: vec![text(recipe.body)],
             footer: ALBUM_FOOTER.to_string(),
             frame: Frame::Photo,
         }
@@ -582,6 +623,7 @@ pub fn album_pages(
 mod tests {
     use super::*;
     use crate::badges::{self, Tier};
+    use crate::holiday::Holiday;
     use crate::story::content::letters::CHOICES;
     use crate::story::content::save_golden::{SavedGame, courrier_fixture, render};
     use std::collections::BTreeMap;
@@ -807,6 +849,19 @@ mod tests {
     }
 
     #[test]
+    fn test_holiday_box_names_the_holiday_and_what_to_look_for() {
+        let music = Holiday::music_day().holiday_box().unwrap();
+        assert_eq!(
+            render(&holiday_box_view(music)),
+            "title: Fête de la musique\n\
+             text: Ce soir, le village chante.\n\
+             text: Ouvre l'œil\u{202F}: des notes s'échappent des fenêtres.\n\
+             footer: [Echap] fermer\n\
+             frame: Plain\n"
+        );
+    }
+
+    #[test]
     fn test_settings_view_points_at_the_selected_row() {
         let mut settings = Settings {
             units: crate::weather::WeatherUnits::default(),
@@ -814,10 +869,11 @@ mod tests {
             hide_hud: true,
             city: "Lyon".to_string(),
             auto_location: AutoLocation::Off,
+            diets: None,
         };
         let view = settings_view(&settings, 3, false);
         let lines = overlay::lay_out(&view.lines, 60);
-        assert_eq!(lines.len(), ROWS.len());
+        assert_eq!(lines.len(), 7);
         assert!(lines[0].starts_with("  Température") && lines[0].ends_with("°C"));
         assert!(lines[3].starts_with("> Heure du Facteur") && lines[3].ends_with("< 7 h >"));
         assert!(lines[4].ends_with("masquée"));
@@ -836,6 +892,40 @@ mod tests {
             lines.last().unwrap(),
             "Nouvelle heure du Facteur dès demain."
         );
+    }
+
+    #[test]
+    fn test_diet_row_sums_up_the_checked_diets() {
+        let mut settings = Settings {
+            units: crate::weather::WeatherUnits::default(),
+            mail_hour: 9,
+            hide_hud: false,
+            city: "Lyon".to_string(),
+            auto_location: AutoLocation::Off,
+            diets: Some(BTreeSet::new()),
+        };
+        let row = |settings: &Settings| {
+            overlay::lay_out(&settings_view(settings, 7, false).lines, 60)[7].clone()
+        };
+        assert!(row(&settings).starts_with("> Régime") && row(&settings).ends_with("< aucun >"));
+
+        settings.diets = Some(BTreeSet::from([Diet::Vegetarian, Diet::NoPork]));
+        assert!(row(&settings).ends_with("< végétarien, sans porc >"));
+
+        settings.diets = Some(BTreeSet::from([Diet::Vegan, Diet::NoPork, Diet::NoFruit]));
+        assert!(row(&settings).ends_with("< 3 Régimes >"));
+    }
+
+    #[test]
+    fn test_diet_view_reuses_the_letter_checklist() {
+        let diets = BTreeSet::from([Diet::NoFish]);
+        let view = diet_view(&diets);
+        assert_eq!(view.title, "Régime");
+        assert_eq!(
+            overlay::lay_out(&view.lines, 60)[2],
+            "[5] ✓ sans poisson    [6]   sans porc"
+        );
+        assert_eq!(view.footer, DIET_FOOTER);
     }
 
     #[test]
