@@ -48,6 +48,7 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Timeline | | | `Timeline` | événements de l'histoire classés par Jour de jeu |
 | Apparition | déblocage | | `Arrival` | objet ou Habitant qui arrive au jardin un Jour de jeu |
 | Habitant | animal | | | animal du jardin (Minouche, Biscuit…), arrive à sa 1re Lettre |
+| Chaton | | | `kittens` | les deux petits de Minouche, sur le toit près d'elle (dès le Jour de jeu 33) |
 | Recette | | | `Recipe` | Lettre de Rose avec une recette ; tous les 10 jours après sa question → [[mail]] |
 | Régime | régime alimentaire | | `diet` | ce que le joueur ne mange pas (8, cumulables) ; filtre les Recettes → [[mail]] |
 | Liste à cocher | | | `diet_checklist` | cases [1]…[8] des Régimes, dans la Lettre de Rose et les Réglages |

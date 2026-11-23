@@ -190,6 +190,20 @@ impl House {
         }
     }
 
+    pub fn roof_seat(&self, columns: Range<u16>) -> u16 {
+        let roof = &self.get_ascii()[..=self.eave_row() as usize];
+        columns
+            .filter_map(|x| {
+                roof.iter().position(|line| {
+                    line.as_bytes()
+                        .get(x as usize)
+                        .is_some_and(|&ch| ch != b' ')
+                })
+            })
+            .max()
+            .map_or(0, |row| row.saturating_sub(1) as u16)
+    }
+
     pub fn eave(&self) -> (u16, Range<u16>) {
         let row = self.eave_row();
         let line = self.get_ascii()[row as usize];

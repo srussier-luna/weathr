@@ -1,6 +1,6 @@
 ---
 issue: 148
-status: todo
+status: to-test
 wiki: [[animation]], [[scene]]
 note: "les chaton de minouche sont dans le vide"
 created: 2026-11-19
@@ -24,8 +24,21 @@ created: 2026-11-19
 
 ## Implementation
 
+Round 1 — /wa-autopilot 2026-11-23.
+
+- No roof right of Minouche on either house size → one kitten on each side: left one at the top of the slope (Minouche's row), right one lower down the slope (two rows below).
+- `src/scene/house.rs`: `House::roof_seat(columns)` = row right above the lowest roof point under those columns (rows down to the eave).
+- `src/animation/cat.rs`: `KITTEN`, `kitten_seats(house)` (x `perch_x - 5` and `perch_x + 3`), each kitten drawn separately; colours and visibility unchanged. Each kitten covers the last `_` of its roof row so no column floats.
+- Unchanged: Minouche herself still floats slightly above the roof (out of scope).
+- Build: `cargo build`, `cargo test` (718) green · fmt OK · clippy clean.
+
 ## Review
 
 ## Verification
+
+Round 1 — runtime check by the agent (pty, fresh `HOME`, `--silent --simulate clear --day 40`):
+
+- ✅ Small house 100x30 and large house 180x40: each kitten sits on the roof slope, no gap.
+- ✅ Rain: no kittens on the roof, Minouche at the window; bow and window unchanged.
 
 ## Feedback
