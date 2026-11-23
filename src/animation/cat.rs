@@ -23,6 +23,7 @@ const DAY_EYES: Color = Color::Rgb {
     b: 80,
 };
 const KITTEN: &str = "=^.^=";
+const RIGHT_KITTEN_OFFSET: u16 = 3;
 
 pub struct Cat {
     blink: Blink,
@@ -181,10 +182,12 @@ impl Cat {
     }
 }
 
-fn kitten_seats(house: &House) -> [(u16, u16); 2] {
+fn kitten_seats(house: &House) -> impl Iterator<Item = (u16, u16)> {
     let (perch_x, _) = house.roof_perch();
     let width = KITTEN.len() as u16;
-    [perch_x - width, perch_x + 3].map(|x| (x, house.roof_seat(x..x + width)))
+    [perch_x - width, perch_x + RIGHT_KITTEN_OFFSET]
+        .into_iter()
+        .filter_map(move |x| Some((x, house.roof_seat(x..x + width)?)))
 }
 
 fn bow_color(unlocks: &Unlocks) -> Color {
@@ -210,6 +213,7 @@ mod tests {
         for house in [House::for_terminal(80, 24), House::for_terminal(200, 40)] {
             let ascii = house.get_ascii();
             let (perch_x, perch_y) = house.roof_perch();
+            assert_eq!(kitten_seats(&house).count(), 2);
             for (x, y) in kitten_seats(&house) {
                 let below = ascii[y as usize + 1].as_bytes();
                 for column in x..x + KITTEN.len() as u16 {

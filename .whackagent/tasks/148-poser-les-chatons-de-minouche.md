@@ -1,6 +1,6 @@
 ---
 issue: 148
-status: to-test
+status: to-close
 wiki: [[animation]], [[scene]]
 note: "les chaton de minouche sont dans le vide"
 created: 2026-11-19
@@ -33,6 +33,9 @@ Round 1 — /wa-autopilot 2026-11-23.
 - Build: `cargo build`, `cargo test` (718) green · fmt OK · clippy clean.
 
 ## Review
+
+Round validation — one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- 2 minor elegance findings (`roof_seat` sentinel → `Option`, named right-kitten offset) fixed by autofix round 1, same screen output, re-verified clean.
 
 ## Verification
 

@@ -190,7 +190,7 @@ impl House {
         }
     }
 
-    pub fn roof_seat(&self, columns: Range<u16>) -> u16 {
+    pub fn roof_seat(&self, columns: Range<u16>) -> Option<u16> {
         let roof = &self.get_ascii()[..=self.eave_row() as usize];
         columns
             .filter_map(|x| {
@@ -201,7 +201,7 @@ impl House {
                 })
             })
             .max()
-            .map_or(0, |row| row.saturating_sub(1) as u16)
+            .map(|row| row.saturating_sub(1) as u16)
     }
 
     pub fn eave(&self) -> (u16, Range<u16>) {
@@ -387,6 +387,15 @@ mod tests {
             assert!(y > house.eave_row());
             let row = ascii[y as usize];
             assert!(matches!(&row[x as usize..=x as usize], "[" | "_"));
+        }
+    }
+
+    #[test]
+    fn test_roof_seat_without_roof_is_none() {
+        for house in [House::for_terminal(80, 24), House::for_terminal(200, 40)] {
+            let (peak_x, _) = house.peak();
+            assert!(house.roof_seat(peak_x..peak_x + 1).is_some());
+            assert_eq!(house.roof_seat(500..505), None);
         }
     }
 }
