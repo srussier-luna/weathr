@@ -1,10 +1,12 @@
+use super::clock::StoryClock;
 use super::content::chronicles::OBJECTS;
 use super::content::letters::{CREEPY_LETTER_COUNT, VILLAGE_LETTER_COUNT};
 use super::event::{Entry, Thing};
+use super::sources::Recipes;
 use super::timeline::Timeline;
 use crate::badges;
 use crate::progress::Progress;
-use chrono::NaiveDate;
+use chrono::{Local, NaiveDate};
 use std::collections::BTreeSet;
 
 pub struct Reach {
@@ -88,6 +90,21 @@ impl Reach {
     }
 }
 
+pub(crate) fn launch_reach(
+    village_count: usize,
+    clock: &StoryClock,
+    today: usize,
+    recipes: Recipes,
+) -> Reach {
+    let next_day = today + 1;
+    Reach::on(
+        &Timeline::for_village(village_count, clock, next_day, recipes),
+        next_day,
+        clock.start(),
+        Local::now().date_naive(),
+    )
+}
+
 pub(crate) fn settle(progress: &mut Progress, out_of_sync: bool, reach: &Reach) -> bool {
     let changed = reach.fit(progress) || out_of_sync;
     if changed {
@@ -96,11 +113,26 @@ pub(crate) fn settle(progress: &mut Progress, out_of_sync: bool, reach: &Reach) 
     changed
 }
 
+pub(crate) fn settle_on_launch(
+    progress: &mut Progress,
+    out_of_sync: bool,
+    mail_hour: u32,
+    village_count: usize,
+) -> bool {
+    let clock = StoryClock::for_progress(progress, mail_hour);
+    let reach = launch_reach(
+        village_count,
+        &clock,
+        clock.today(),
+        Recipes::from_progress(progress),
+    );
+    settle(progress, out_of_sync, &reach)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::story::clock::StoryClock;
-    use crate::story::sources::{self, Recipes};
+    use crate::story::sources;
 
     fn date(month: u32, day: u32) -> NaiveDate {
         NaiveDate::from_ymd_opt(2026, month, day).unwrap()

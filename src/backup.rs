@@ -1,6 +1,10 @@
-use crate::config::Config;
-use crate::progress::{check_restorable, progress_path, write_creating_dir, write_restored};
+use crate::config::{Config, Mail};
+use crate::progress::{
+    Progress, pack, progress_path, restorable, sync_path, unpack, write_creating_dir,
+};
 use crate::prompt::{PREFIX, confirm};
+use crate::story::content::letters;
+use crate::story::reach::settle_on_launch;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::fs;
@@ -12,6 +16,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 struct Paths {
     progress: PathBuf,
     config: PathBuf,
+    sync: Option<PathBuf>,
 }
 
 impl Paths {
@@ -19,14 +24,28 @@ impl Paths {
         Some(Self {
             progress: progress_path()?,
             config: Config::get_config_path().ok()?,
+            sync: sync_path(),
         })
+    }
+
+    fn settle(&self, progress: &mut Progress, out_of_sync: bool, village_count: usize) -> bool {
+        let mail_hour = Config::load_from_path(&self.config)
+            .map_or(Mail::default().hour, |config| config.mail.hour);
+        settle_on_launch(progress, out_of_sync, mail_hour, village_count)
+    }
+
+    fn save(&self, progress: &Progress) -> Result<(), &Path> {
+        progress
+            .save_to_path(&self.progress, self.sync.as_deref())
+            .map_err(|_| self.progress.as_path())
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum CollectError<'a> {
     NoProgress,
     Unreadable(&'a Path),
+    Unwritable(&'a Path),
 }
 
 enum Restore {
@@ -40,27 +59,36 @@ struct Backup {
     progress: Map<String, Value>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     config: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    sync: Option<String>,
 }
 
 impl Backup {
-    fn collect(paths: &Paths) -> Result<Self, CollectError<'_>> {
-        let progress = fs::read_to_string(&paths.progress).map_err(|error| match error.kind() {
+    fn collect(paths: &Paths, village_count: usize) -> Result<Self, CollectError<'_>> {
+        let unreadable = CollectError::Unreadable(&paths.progress);
+        let content = fs::read(&paths.progress).map_err(|error| match error.kind() {
             io::ErrorKind::NotFound => CollectError::NoProgress,
-            _ => CollectError::Unreadable(&paths.progress),
+            _ => unreadable,
         })?;
+        let _: Progress = serde_json::from_slice(&content).map_err(|_| unreadable)?;
+        let (mut progress, opening) = Progress::load_at(&paths.progress, paths.sync.as_deref());
+        if paths.settle(&mut progress, opening.out_of_sync, village_count) {
+            paths.save(&progress).map_err(CollectError::Unwritable)?;
+        }
+        let content = fs::read(&paths.progress).map_err(|_| unreadable)?;
         Ok(Self {
             version: VERSION.to_string(),
-            progress: serde_json::from_str(&progress)
-                .map_err(|_| CollectError::Unreadable(&paths.progress))?,
+            progress: serde_json::from_slice(&content).map_err(|_| unreadable)?,
             config: read_if_present(&paths.config)
                 .map_err(|_| CollectError::Unreadable(&paths.config))?,
+            sync: Some(pack(&content)),
         })
     }
 
-    fn read(file: &Path) -> io::Result<Self> {
+    fn read(file: &Path) -> io::Result<(Self, Progress, bool)> {
         let backup: Self = serde_json::from_str(&fs::read_to_string(file)?)?;
-        check_restorable(&backup.progress)?;
-        Ok(backup)
+        let (progress, out_of_sync) = backup.checked()?;
+        Ok((backup, progress, out_of_sync))
     }
 
     fn write(&self, file: &Path) -> io::Result<()> {
@@ -71,11 +99,30 @@ impl Backup {
         Some(self.version.as_str()).filter(|version| *version != VERSION)
     }
 
-    fn restore<'a>(&self, paths: &'a Paths) -> Result<(), &'a Path> {
+    fn checked(&self) -> serde_json::Result<(Progress, bool)> {
+        let kept = self.sync.as_deref().and_then(unpack).and_then(|content| {
+            let progress: Progress = serde_json::from_slice(&content).ok()?;
+            let fields: Map<String, Value> = serde_json::from_slice(&content).ok()?;
+            Some((progress, fields != self.progress))
+        });
+        match kept {
+            Some(kept) => Ok(kept),
+            None => Ok((restorable(&self.progress)?, true)),
+        }
+    }
+
+    fn restore<'a>(
+        &self,
+        mut progress: Progress,
+        out_of_sync: bool,
+        paths: &'a Paths,
+        village_count: usize,
+    ) -> Result<(), &'a Path> {
         if let Some(config) = self.config.as_deref().filter(|config| !config.is_empty()) {
             write_creating_dir(&paths.config, config).map_err(|_| paths.config.as_path())?;
         }
-        write_restored(&paths.progress, &self.progress).map_err(|_| paths.progress.as_path())
+        paths.settle(&mut progress, out_of_sync, village_count);
+        paths.save(&progress)
     }
 }
 
@@ -84,7 +131,7 @@ pub fn export(file: &Path) -> bool {
     let collected = paths
         .as_ref()
         .ok_or(CollectError::NoProgress)
-        .and_then(Backup::collect);
+        .and_then(|paths| Backup::collect(paths, letters::read().len()));
     let backup = match collected {
         Ok(backup) => backup,
         Err(CollectError::NoProgress) => {
@@ -93,6 +140,10 @@ pub fn export(file: &Path) -> bool {
         }
         Err(CollectError::Unreadable(path)) => {
             eprintln!("{PREFIX} Impossible de lire {}.", path.display());
+            return false;
+        }
+        Err(CollectError::Unwritable(path)) => {
+            eprintln!("{PREFIX} Impossible d'écrire {}.", path.display());
             return false;
         }
     };
@@ -105,7 +156,7 @@ pub fn export(file: &Path) -> bool {
 }
 
 pub fn import(file: &Path) -> bool {
-    let Ok(backup) = Backup::read(file) else {
+    let Ok((backup, progress, out_of_sync)) = Backup::read(file) else {
         eprintln!("{PREFIX} Sauvegarde illisible\u{202F}: {}", file.display());
         return false;
     };
@@ -119,7 +170,7 @@ pub fn import(file: &Path) -> bool {
         return false;
     };
 
-    match import_into(&backup, &paths) {
+    match import_into(&backup, progress, out_of_sync, &paths) {
         Ok(Restore::Done) => {
             println!("{PREFIX} Progression importée.");
             true
@@ -132,7 +183,12 @@ pub fn import(file: &Path) -> bool {
     }
 }
 
-fn import_into<'a>(backup: &Backup, paths: &'a Paths) -> Result<Restore, &'a Path> {
+fn import_into<'a>(
+    backup: &Backup,
+    progress: Progress,
+    out_of_sync: bool,
+    paths: &'a Paths,
+) -> Result<Restore, &'a Path> {
     if paths.progress.exists()
         && !confirm(
             "Ta progression et tes réglages actuels seront remplacés. Continuer\u{202F}?",
@@ -141,7 +197,9 @@ fn import_into<'a>(backup: &Backup, paths: &'a Paths) -> Result<Restore, &'a Pat
     {
         return Ok(Restore::Declined);
     }
-    backup.restore(paths).map(|()| Restore::Done)
+    backup
+        .restore(progress, out_of_sync, paths, letters::read().len())
+        .map(|()| Restore::Done)
 }
 
 fn read_if_present(path: &Path) -> io::Result<Option<String>> {
@@ -155,6 +213,7 @@ fn read_if_present(path: &Path) -> io::Result<Option<String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::story::content::letters::VILLAGE_LETTER_COUNT;
 
     const PROGRESS: &str = r#"{"started_on":"2026-09-01","letters_read":12,"badges":["first_rain","music_day"],"answers":{"3":1}}"#;
     const CONFIG: &str = "# Ma config\nhide_hud = false\n\n[location]\ncity = \"Lyon\"\n";
@@ -171,10 +230,12 @@ mod tests {
         }
 
         fn paths(&self, machine: &str) -> Paths {
-            let dir = self.0.join(machine).join("weathr");
+            let home = self.0.join(machine);
+            let dir = home.join("weathr");
             Paths {
                 progress: dir.join("progress.json"),
                 config: dir.join("config.toml"),
+                sync: Some(home.join("elsewhere").join("sync")),
             }
         }
 
@@ -196,6 +257,42 @@ mod tests {
         }
     }
 
+    fn played(paths: &Paths, letters_read: usize) {
+        let mut progress = Progress::default();
+        progress.started_on = Some("2026-09-01".to_string());
+        progress.letters_read = letters_read;
+        paths.save(&progress).unwrap();
+    }
+
+    fn export_to(paths: &Paths, file: &Path) {
+        Backup::collect(paths, VILLAGE_LETTER_COUNT)
+            .unwrap()
+            .write(file)
+            .unwrap();
+    }
+
+    fn import_from(file: &Path, paths: &Paths) {
+        let (backup, progress, out_of_sync) = Backup::read(file).unwrap();
+        backup
+            .restore(progress, out_of_sync, paths, VILLAGE_LETTER_COUNT)
+            .unwrap();
+    }
+
+    fn reopen(paths: &Paths) -> Progress {
+        let (mut progress, opening) = Progress::load_at(&paths.progress, paths.sync.as_deref());
+        assert!(!paths.settle(&mut progress, opening.out_of_sync, VILLAGE_LETTER_COUNT));
+        progress
+    }
+
+    fn edit_backup(file: &Path, change: impl FnOnce(&mut Map<String, Value>)) {
+        let mut backup: Map<String, Value> = json(&fs::read_to_string(file).unwrap())
+            .as_object()
+            .cloned()
+            .unwrap();
+        change(&mut backup);
+        fs::write(file, serde_json::to_string_pretty(&backup).unwrap()).unwrap();
+    }
+
     fn json(text: &str) -> Value {
         serde_json::from_str(text).unwrap()
     }
@@ -208,14 +305,146 @@ mod tests {
         let file = temp.file("s.json");
         seed(&old_mac, Some(CONFIG));
 
-        Backup::collect(&old_mac).unwrap().write(&file).unwrap();
-        Backup::read(&file).unwrap().restore(&new_mac).unwrap();
+        export_to(&old_mac, &file);
+        import_from(&file, &new_mac);
 
         assert_eq!(
-            json(&fs::read_to_string(&new_mac.progress).unwrap()),
-            json(PROGRESS)
+            fs::read(&new_mac.progress).unwrap(),
+            fs::read(&old_mac.progress).unwrap()
         );
         assert_eq!(fs::read_to_string(&new_mac.config).unwrap(), CONFIG);
+        let reopened = reopen(&new_mac);
+        assert_eq!(reopened.letters_read, 12);
+        assert_eq!(reopened.resyncs, 0);
+    }
+
+    #[test]
+    fn test_import_over_another_game_replaces_it_quietly() {
+        let temp = TempDir::new("over_a_game");
+        let old_mac = temp.paths("old");
+        let new_mac = temp.paths("new");
+        let file = temp.file("s.json");
+        seed(&old_mac, None);
+        played(&new_mac, 3);
+
+        export_to(&old_mac, &file);
+        import_from(&file, &new_mac);
+
+        let reopened = reopen(&new_mac);
+        assert_eq!(reopened.letters_read, 12);
+        assert_eq!(reopened.resyncs, 0);
+    }
+
+    #[test]
+    fn test_edited_backup_brings_back_the_exported_game() {
+        let temp = TempDir::new("edited");
+        let old_mac = temp.paths("old");
+        let new_mac = temp.paths("new");
+        let file = temp.file("s.json");
+        seed(&old_mac, None);
+
+        export_to(&old_mac, &file);
+        edit_backup(&file, |backup| {
+            backup["progress"]["letters_read"] = Value::from(17);
+        });
+        import_from(&file, &new_mac);
+
+        let reopened = reopen(&new_mac);
+        assert_eq!(reopened.letters_read, 12);
+        assert_eq!(reopened.resyncs, 1);
+    }
+
+    #[test]
+    fn test_backup_without_a_readable_copy_counts_once_and_fits_values() {
+        let temp = TempDir::new("no_copy");
+        let old_mac = temp.paths("old");
+        let file = temp.file("s.json");
+        seed(&old_mac, None);
+        export_to(&old_mac, &file);
+        let exported = fs::read_to_string(&file).unwrap();
+
+        let mut far_ahead: Progress = serde_json::from_str(PROGRESS).unwrap();
+        far_ahead.letters_read = 900;
+        old_mac.settle(&mut far_ahead, false, VILLAGE_LETTER_COUNT);
+        let reachable = far_ahead.letters_read;
+        assert!(reachable < 900);
+
+        let cases = [
+            ("removed", None, 12, 12),
+            ("damaged", Some("zz".to_string()), 12, 12),
+            (
+                "not_a_progress",
+                Some(pack(br#"{"letters_read":"douze"}"#)),
+                12,
+                12,
+            ),
+            ("removed_and_edited", None, 900, reachable),
+        ];
+        for (name, copy, letters_read, expected) in cases {
+            let new_mac = temp.paths(name);
+            fs::write(&file, &exported).unwrap();
+            edit_backup(&file, |backup| {
+                match copy {
+                    Some(copy) => backup["sync"] = Value::from(copy),
+                    None => {
+                        backup.remove("sync");
+                    }
+                }
+                backup["progress"]["letters_read"] = Value::from(letters_read);
+            });
+            import_from(&file, &new_mac);
+
+            let reopened = reopen(&new_mac);
+            assert_eq!(reopened.resyncs, 1, "{name}");
+            assert_eq!(reopened.letters_read, expected, "{name}");
+        }
+    }
+
+    #[test]
+    fn test_export_after_an_edit_carries_the_game_from_before() {
+        let temp = TempDir::new("edited_save");
+        let old_mac = temp.paths("old");
+        let new_mac = temp.paths("new");
+        let file = temp.file("s.json");
+        played(&old_mac, 12);
+        let text = fs::read_to_string(&old_mac.progress).unwrap();
+        fs::write(
+            &old_mac.progress,
+            text.replacen("\"letters_read\": 12", "\"letters_read\": 30", 1),
+        )
+        .unwrap();
+
+        export_to(&old_mac, &file);
+
+        let written = json(&fs::read_to_string(&file).unwrap());
+        assert_eq!(written["progress"]["letters_read"], 12);
+        assert_eq!(written["progress"]["resyncs"], 1);
+        assert_eq!(reopen(&old_mac).resyncs, 1);
+
+        import_from(&file, &new_mac);
+        let reopened = reopen(&new_mac);
+        assert_eq!(reopened.letters_read, 12);
+        assert_eq!(reopened.resyncs, 1);
+    }
+
+    #[test]
+    fn test_unreadable_progress_is_neither_exported_nor_touched() {
+        let temp = TempDir::new("unreadable");
+        let paths = temp.paths("mac");
+        write_creating_dir(&paths.progress, "{\"letters_read\": 1").unwrap();
+
+        assert!(Backup::collect(&paths, VILLAGE_LETTER_COUNT).is_err());
+        assert_eq!(
+            fs::read_to_string(&paths.progress).unwrap(),
+            "{\"letters_read\": 1"
+        );
+        assert_eq!(
+            fs::read_dir(paths.progress.parent().unwrap())
+                .unwrap()
+                .count(),
+            1
+        );
+        assert!(!paths.sync.unwrap().exists());
     }
 
     #[test]
@@ -225,12 +454,17 @@ mod tests {
         let file = temp.file("s.json");
         seed(&paths, Some(CONFIG));
 
-        Backup::collect(&paths).unwrap().write(&file).unwrap();
+        export_to(&paths, &file);
         let written = json(&fs::read_to_string(&file).unwrap());
 
         assert_eq!(written["version"], VERSION);
-        assert_eq!(written["progress"], json(PROGRESS));
+        assert_eq!(
+            written["progress"],
+            json(&fs::read_to_string(&paths.progress).unwrap())
+        );
+        assert_eq!(written["progress"]["letters_read"], 12);
         assert_eq!(written["config"], CONFIG);
+        assert!(written["sync"].is_string());
     }
 
     #[test]
@@ -241,7 +475,7 @@ mod tests {
         seed(&paths, Some(CONFIG));
         fs::write(&file, "old content").unwrap();
 
-        Backup::collect(&paths).unwrap().write(&file).unwrap();
+        export_to(&paths, &file);
 
         assert!(Backup::read(&file).is_ok());
     }
@@ -254,14 +488,14 @@ mod tests {
         let file = temp.file("s.json");
         seed(&old_mac, None);
 
-        Backup::collect(&old_mac).unwrap().write(&file).unwrap();
+        export_to(&old_mac, &file);
         assert!(
             json(&fs::read_to_string(&file).unwrap())
                 .get("config")
                 .is_none()
         );
 
-        Backup::read(&file).unwrap().restore(&new_mac).unwrap();
+        import_from(&file, &new_mac);
         assert!(new_mac.progress.exists());
         assert!(!new_mac.config.exists());
     }
@@ -275,8 +509,11 @@ mod tests {
         seed(&old_mac, Some(CONFIG));
         fs::create_dir_all(&new_mac.config).unwrap();
 
-        Backup::collect(&old_mac).unwrap().write(&file).unwrap();
-        let failed = Backup::read(&file).unwrap().restore(&new_mac).err();
+        export_to(&old_mac, &file);
+        let (backup, progress, out_of_sync) = Backup::read(&file).unwrap();
+        let failed = backup
+            .restore(progress, out_of_sync, &new_mac, VILLAGE_LETTER_COUNT)
+            .err();
 
         assert_eq!(failed, Some(new_mac.config.as_path()));
         assert!(!new_mac.progress.exists());
@@ -285,10 +522,12 @@ mod tests {
     #[test]
     fn test_export_without_progress_fails() {
         let temp = TempDir::new("no_progress");
+        let paths = temp.paths("mac");
         assert!(matches!(
-            Backup::collect(&temp.paths("mac")),
+            Backup::collect(&paths, VILLAGE_LETTER_COUNT),
             Err(CollectError::NoProgress)
         ));
+        assert!(!paths.progress.exists());
     }
 
     #[test]
@@ -297,7 +536,7 @@ mod tests {
         let paths = temp.paths("mac");
         write_creating_dir(&paths.progress, "pas du JSON").unwrap();
         assert!(matches!(
-            Backup::collect(&paths),
+            Backup::collect(&paths, VILLAGE_LETTER_COUNT),
             Err(CollectError::Unreadable(path)) if path == paths.progress
         ));
     }

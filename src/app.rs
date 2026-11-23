@@ -23,9 +23,9 @@ use crate::story::content::neighbours_note::NeighboursNote;
 use crate::story::content::recipes::{Diet, diet_for_key, diet_ids, diets_from_ids, toggle_diet};
 use crate::story::content::{self, ReadContext};
 use crate::story::postman_note::{self, MailStep};
-use crate::story::reach::{Reach, settle};
-use crate::story::sources::Recipes;
-use crate::story::{Entry, StoryClock, Thing, Timeline, pause, punishment, sources};
+use crate::story::reach::{launch_reach, settle};
+use crate::story::sources::{self, Recipes};
+use crate::story::{Entry, StoryClock, Thing, Timeline, pause, punishment};
 use crate::travel;
 use crate::updater;
 use crate::views;
@@ -382,30 +382,8 @@ fn push_toast(toasts: &mut VecDeque<String>, message: &str) {
     }
 }
 
-fn story_clock(progress: &Progress, mail_hour: u32) -> StoryClock {
-    let start = progress
-        .start_date()
-        .unwrap_or_else(|| Local::now().date_naive());
-    StoryClock::new(start, mail_hour)
-        .with_pauses(progress.paused_days.clone())
-        .with_previous_mail_hour(progress.previous_mail_hour())
-}
-
-fn story_today(clock: &StoryClock) -> usize {
-    clock.day_on(Local::now().naive_local())
-}
-
 fn shows_every_habitant(is_forced: bool, day: Option<NonZeroU16>) -> bool {
     is_forced && day.is_none()
-}
-
-fn build_timeline(
-    village_count: usize,
-    clock: &StoryClock,
-    today: usize,
-    recipes: Recipes,
-) -> Timeline {
-    Timeline::new(&sources::registered(village_count, recipes), clock, today)
 }
 
 fn freeze_recipes(progress: &mut Progress, clock: &StoryClock, today: usize) -> Recipes {
@@ -416,16 +394,6 @@ fn freeze_recipes(progress: &mut Progress, clock: &StoryClock, today: usize) -> 
         progress.save();
     }
     recipes
-}
-
-fn launch_reach(village_count: usize, clock: &StoryClock, today: usize, recipes: Recipes) -> Reach {
-    let next_day = today + 1;
-    Reach::on(
-        &build_timeline(village_count, clock, next_day, recipes),
-        next_day,
-        clock.start(),
-        Local::now().date_naive(),
-    )
 }
 
 fn is_live_box_full(
@@ -710,11 +678,11 @@ impl App {
             }
             None => {
                 let (progress, opening) = Progress::load();
-                let clock = story_clock(&progress, config.mail.hour);
+                let clock = StoryClock::for_progress(&progress, config.mail.hour);
                 (progress, letters::load(), clock, opening)
             }
         };
-        let timeline_day = story_today(&clock);
+        let timeline_day = clock.today();
         if simulation.day.is_none() {
             let reach = launch_reach(
                 letters.len(),
@@ -742,7 +710,7 @@ impl App {
             progress.save();
         }
         let recipes = freeze_recipes(&mut progress, &clock, timeline_day);
-        let timeline = build_timeline(letters.len(), &clock, timeline_day, recipes);
+        let timeline = Timeline::for_village(letters.len(), &clock, timeline_day, recipes);
         let (remote_sender, remote_receiver) = mpsc::channel(REMOTE_CHANNEL_SIZE);
 
         let pending_holiday_box = (!simulation.demo)
@@ -1044,7 +1012,7 @@ impl App {
     }
 
     fn available_letters(&self) -> usize {
-        self.timeline.delivered_by(story_today(&self.clock))
+        self.timeline.delivered_by(self.clock.today())
     }
 
     fn village_letter_number(&self, index: usize) -> Option<usize> {
@@ -1095,7 +1063,7 @@ impl App {
     }
 
     fn send_diets(&mut self) {
-        self.progress.diet_answered_day = Some(story_today(&self.clock));
+        self.progress.diet_answered_day = Some(self.clock.today());
         self.progress.diets = diet_ids(&self.diet_draft);
         self.progress.save();
     }
@@ -1343,11 +1311,11 @@ impl App {
 
     fn refresh_timeline(&mut self) {
         self.hold_full_box();
-        let today = story_today(&self.clock);
+        let today = self.clock.today();
         let is_new_day = today != self.timeline_day;
         if is_new_day {
             let recipes = freeze_recipes(&mut self.progress, &self.clock, today);
-            self.timeline = build_timeline(self.letters.len(), &self.clock, today, recipes);
+            self.timeline = Timeline::for_village(self.letters.len(), &self.clock, today, recipes);
             self.timeline_day = today;
         }
         let bare_village = self.is_village_bare();
@@ -2302,7 +2270,7 @@ mod tests {
     #[test]
     fn test_neighbours_note_announces_each_new_cheat_once() {
         let mut progress = cheater(1);
-        let mut clock = story_clock(&progress, 9);
+        let mut clock = StoryClock::for_progress(&progress, 9);
         let mut rng = rand::rng();
         let mut launch = |progress: &mut Progress, clock: &mut StoryClock, today| {
             neighbours_note_on_launch(None, progress, clock, today, &mut rng)
@@ -2327,7 +2295,7 @@ mod tests {
     fn test_neighbours_note_comes_back_disappointed_until_the_mail_returns() {
         let mut progress = cheater(3);
         progress.punished_cheats = 2;
-        let mut clock = story_clock(&progress, 9);
+        let mut clock = StoryClock::for_progress(&progress, 9);
         let mut rng = rand::rng();
         let mut launch = |progress: &mut Progress, clock: &mut StoryClock, today| {
             neighbours_note_on_launch(None, progress, clock, today, &mut rng)
@@ -2345,7 +2313,7 @@ mod tests {
         }
         assert_eq!(launch(&mut progress, &mut clock, date(2026, 10, 14)), None);
 
-        let relaunched = story_clock(&progress, 9);
+        let relaunched = StoryClock::for_progress(&progress, 9);
         assert_eq!(relaunched.day_of(date(2026, 10, 13)), 10);
         assert_eq!(relaunched.day_of(date(2026, 10, 14)), 11);
     }
@@ -2353,7 +2321,7 @@ mod tests {
     #[test]
     fn test_forced_day_never_punishes() {
         let mut progress = cheater(3);
-        let mut clock = story_clock(&progress, 9);
+        let mut clock = StoryClock::for_progress(&progress, 9);
         let note = neighbours_note_on_launch(
             NonZeroU16::new(43),
             &mut progress,
@@ -2545,7 +2513,7 @@ mod tests {
     }
 
     fn timeline_on(day: usize) -> Timeline {
-        build_timeline(letters::defaults().len(), &clock(), day, Recipes::default())
+        Timeline::for_village(letters::defaults().len(), &clock(), day, Recipes::default())
     }
 
     fn unlocks_at(now: NaiveDateTime) -> Unlocks {
@@ -2783,7 +2751,8 @@ mod tests {
     #[test]
     fn test_frozen_clock_never_fills_the_box() {
         let frozen = StoryClock::frozen(date(2026, 10, 26), 9, NonZeroU16::new(7).unwrap());
-        let timeline = build_timeline(letters::defaults().len(), &frozen, 7, Recipes::default());
+        let timeline =
+            Timeline::for_village(letters::defaults().len(), &frozen, 7, Recipes::default());
         assert!(!is_live_box_full(&frozen, &timeline, 7, 0));
     }
 
@@ -2792,7 +2761,7 @@ mod tests {
         let mut progress = Progress::default();
         progress.started_on = Some(Local::now().format(DATE_FORMAT).to_string());
         for mail_hour in [0, 23] {
-            assert_eq!(story_today(&story_clock(&progress, mail_hour)), 1);
+            assert_eq!(StoryClock::for_progress(&progress, mail_hour).today(), 1);
         }
     }
 
@@ -2801,7 +2770,7 @@ mod tests {
         let mut progress = Progress::default();
         progress.started_on = Some("2026-10-01".to_string());
         progress.set_previous_mail_hour(Some((date(2026, 10, 9), 9)));
-        let clock = story_clock(&progress, 11);
+        let clock = StoryClock::for_progress(&progress, 11);
         let at = |day, hour, minute| date(2026, 10, day).and_hms_opt(hour, minute, 0).unwrap();
         assert_eq!(clock.day_on(at(8, 10, 30)), 8);
         assert_eq!(clock.day_on(at(9, 10, 59)), 8);
