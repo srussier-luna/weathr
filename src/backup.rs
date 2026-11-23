@@ -1,6 +1,6 @@
 use crate::config::{Config, Mail};
 use crate::progress::{
-    Progress, check_restorable, pack, progress_path, sync_path, unpack, write_creating_dir,
+    Progress, pack, progress_path, restorable, sync_path, unpack, write_creating_dir,
 };
 use crate::prompt::{PREFIX, confirm};
 use crate::story::content::letters;
@@ -107,7 +107,7 @@ impl Backup {
         });
         match kept {
             Some(kept) => Ok(kept),
-            None => Ok((check_restorable(&self.progress)?, true)),
+            None => Ok((restorable(&self.progress)?, true)),
         }
     }
 

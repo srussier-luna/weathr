@@ -359,7 +359,7 @@ pub(crate) fn write_creating_dir(path: &Path, content: impl AsRef<[u8]>) -> io::
     saved
 }
 
-pub(crate) fn check_restorable(progress: &Map<String, Value>) -> serde_json::Result<Progress> {
+pub(crate) fn restorable(progress: &Map<String, Value>) -> serde_json::Result<Progress> {
     serde_json::from_value(Value::Object(progress.clone()))
 }
 
@@ -964,7 +964,7 @@ mod tests {
         let restored: Map<String, Value> =
             serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":"douze"}"#).unwrap();
 
-        assert!(check_restorable(&restored).is_err());
+        assert!(restorable(&restored).is_err());
     }
 
     #[test]
