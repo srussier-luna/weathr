@@ -179,7 +179,7 @@ pub fn sam_trail_line(sam_cities: usize) -> Option<String> {
     })
 }
 
-const SKY_LOOKOUT_LOGIN: &str = "drichard-luna";
+const SKY_LOOKOUT_NAME: &str = "Denis Richard";
 pub const CHEATER: &str = "cheater";
 
 const TIERS: [Tier; 5] = [
@@ -547,7 +547,7 @@ pub fn name(id: &str) -> &'static str {
 }
 
 pub fn is_sky_lookout(user_name: Option<&str>) -> bool {
-    is_listed(user_name, &[SKY_LOOKOUT_LOGIN])
+    is_listed(user_name, &[SKY_LOOKOUT_NAME])
 }
 
 pub fn is_time_master(user_name: Option<&str>) -> bool {
@@ -700,19 +700,25 @@ mod tests {
     }
 
     #[test]
-    fn test_sky_lookout_matches_exact_login() {
-        assert!(is_sky_lookout(Some("drichard-luna")));
+    fn test_sky_lookout_matches_exact_name() {
+        assert!(is_sky_lookout(Some("Denis Richard")));
     }
 
     #[test]
     fn test_sky_lookout_ignores_surrounding_whitespace() {
-        assert!(is_sky_lookout(Some("drichard-luna\n")));
-        assert!(is_sky_lookout(Some("drichard-luna ")));
+        assert!(is_sky_lookout(Some("Denis Richard\n")));
+        assert!(is_sky_lookout(Some(" Denis Richard ")));
     }
 
     #[test]
     fn test_sky_lookout_rejects_other_name() {
         assert!(!is_sky_lookout(Some("srussier-luna")));
+        assert!(!is_sky_lookout(Some("drichard-luna")));
+    }
+
+    #[test]
+    fn test_sky_lookout_does_not_grant_time_master() {
+        assert!(!is_time_master(Some("Denis Richard")));
     }
 
     #[test]
