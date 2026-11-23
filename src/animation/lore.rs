@@ -23,6 +23,8 @@ const TREEHOUSE_WIDTH: u16 = 16;
 const TREEHOUSE_MIN_CANOPY_WIDTH: u16 = 18;
 const CHEST: [&str; 3] = [" _______", "/_______\\", "[___$___]"];
 const _: () = assert!(CHEST[1].len() == garden::CHEST_WIDTH as usize);
+const KEY: &str = "o-m";
+const _: () = assert!(KEY.len() == garden::KEY_WIDTH as usize);
 const BALLOON: [&str; 4] = [" ,-. ", "(   )", " \\ / ", "  #  "];
 const BALLOON_SPEED: f32 = 0.06;
 const LANTERN_WINDOW: (u16, u16) = (8, 8);
@@ -115,14 +117,22 @@ pub struct Unlocks {
 
 impl Unlocks {
     pub fn with_every_habitant(self) -> Self {
+        self.with_habitants(true)
+    }
+
+    pub fn without_habitants(self) -> Self {
+        self.with_habitants(false)
+    }
+
+    fn with_habitants(self, are_home: bool) -> Self {
         Self {
-            cat: true,
-            dog: true,
-            owl: true,
-            duck: true,
-            snail: true,
-            squirrel: true,
-            frog: true,
+            cat: are_home,
+            dog: are_home,
+            owl: are_home,
+            duck: are_home,
+            snail: are_home,
+            squirrel: are_home,
+            frog: are_home,
             ..self
         }
     }
@@ -248,9 +258,9 @@ impl Lore {
         }
 
         if unlocks.key
-            && let Some(mailbox_x) = layout.plan.mailbox_x
+            && let Some(x) = layout.key_x()
         {
-            garden::draw(renderer, mailbox_x + 2, ground_y, &["o-m"], Color::Yellow)?;
+            garden::draw(renderer, x, ground_y, &[KEY], Color::Yellow)?;
         }
 
         if unlocks.choices.nuts

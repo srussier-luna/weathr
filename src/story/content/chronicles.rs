@@ -560,57 +560,6 @@ pub const RIDDLES: [Riddle; 30] = [
     ),
 ];
 
-pub const RECIPES: [(&str, &str); 12] = [
-    (
-        "Galette des rois",
-        "Deux pâtes feuilletées, 100 g de poudre d'amande, 80 g de sucre, 60 g de beurre mou, 1 œuf. Mélange le tout, étale sur la première pâte, cache la fève, couvre avec la seconde. Dore à l'œuf, 30 min à 200 °C. Qui trouve la fève fait la vaisselle.",
-    ),
-    (
-        "Crêpes de la Chandeleur",
-        "250 g de farine, 4 œufs, 50 cl de lait, une pincée de sel, 50 g de beurre fondu. Fouette, laisse reposer une heure si tu as la patience. Fais sauter la crêpe avec une pièce dans l'autre main, pour la chance.",
-    ),
-    (
-        "Pain perdu",
-        "Du pain rassis, 2 œufs, 25 cl de lait, du sucre, de la cannelle. Trempe les tranches, dore-les au beurre. Rien ne se perd chez Rose, surtout pas le pain.",
-    ),
-    (
-        "Gâteau au yaourt",
-        "1 pot de yaourt, 2 pots de sucre, 3 pots de farine, 3 œufs, un demi-pot d'huile, 1 sachet de levure. Mélange dans l'ordre, 35 min à 180 °C. Le pot sert de mesure : c'est tout le secret.",
-    ),
-    (
-        "Clafoutis aux cerises",
-        "500 g de cerises avec leurs noyaux (ça parfume), 3 œufs, 100 g de sucre, 80 g de farine, 30 cl de lait. Verse la pâte sur les cerises, 40 min à 180 °C.",
-    ),
-    (
-        "Tarte aux fraises",
-        "Une pâte sablée cuite à blanc, de la crème pâtissière, des fraises coupées en deux et rangées en rosace. À manger le jour même, ou pas du tout.",
-    ),
-    (
-        "Sorbet citron",
-        "4 citrons, 200 g de sucre, 50 cl d'eau. Fais un sirop, ajoute le jus, mets au congélateur et gratte à la fourchette toutes les heures. Léo appelle ça « la neige d'été ».",
-    ),
-    (
-        "Tarte aux mirabelles",
-        "Une pâte brisée, 1 kg de mirabelles dénoyautées et bien serrées, deux cuillères de sucre. 35 min à 200 °C. Paulo en a déjà mangé trois parts.",
-    ),
-    (
-        "Tarte aux pommes",
-        "Une pâte brisée, de la compote, des pommes en fines lamelles, une noisette de beurre, du sucre. 40 min à 180 °C. Jeanne dit que la mienne est presque aussi bonne que la sienne.",
-    ),
-    (
-        "Soupe de potiron",
-        "Un potiron, une pomme de terre, un oignon, un litre de bouillon, un peu de crème. Cuis 30 min, mixe. Garde l'écorce pour la lanterne d'Halloween.",
-    ),
-    (
-        "Gâteau de Savoie",
-        "4 œufs séparés, 125 g de sucre, 60 g de farine, 60 g de fécule. Blanchis les jaunes avec le sucre, ajoute farine et fécule, puis les blancs montés. 35 min à 170 °C. Léger comme un nuage de chez nous.",
-    ),
-    (
-        "Bûche de Noël",
-        "Un biscuit roulé, une crème au chocolat, du sucre glace pour la neige. Roule, couvre, strie à la fourchette pour faire l'écorce. Un champignon en meringue pour faire rire les enfants.",
-    ),
-];
-
 pub const DRAWINGS: [(usize, &[&str]); 3] = [
     (
         16,

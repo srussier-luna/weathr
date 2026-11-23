@@ -26,17 +26,26 @@ pub fn next_mail(
     })
 }
 
+pub fn has_unread_after(open_letter: usize, available: usize, letters_read: usize) -> bool {
+    available > letters_read.max(open_letter + 1)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::story::content::letters;
     use crate::story::pause::is_box_full;
-    use crate::story::{StoryClock, Timeline, sources};
+    use crate::story::sources::{self, Recipes};
+    use crate::story::{Entry, StoryClock, Timeline};
     use chrono::NaiveDate;
 
     fn timeline_on(day: usize) -> Timeline {
         let clock = StoryClock::new(NaiveDate::from_ymd_opt(2026, 10, 1).unwrap(), 9);
-        Timeline::new(&sources::registered(letters::defaults().len()), &clock, day)
+        Timeline::new(
+            &sources::registered(letters::defaults().len(), Recipes::default()),
+            &clock,
+            day,
+        )
     }
 
     #[test]
@@ -90,5 +99,27 @@ mod tests {
     #[test]
     fn test_empty_courrier_opens_nothing() {
         assert_eq!(next_mail(None, 0, 0, true), None);
+    }
+
+    #[test]
+    fn test_unread_mail_shows_after_each_letter_but_the_last() {
+        assert!(has_unread_after(1, 3, 2));
+        assert!(!has_unread_after(2, 3, 3));
+        assert!(!has_unread_after(0, 3, 3));
+        assert!(!has_unread_after(0, 0, 0));
+    }
+
+    #[test]
+    fn test_unread_mail_after_an_archive_shows() {
+        let timeline = timeline_on(40);
+        let archive = timeline
+            .mail()
+            .position(|(_, entry)| matches!(entry, Entry::Archive(_)))
+            .unwrap();
+        let available = timeline.delivered_by(40);
+
+        assert!(available > archive + 1);
+        assert!(has_unread_after(archive, available, archive + 1));
+        assert!(!has_unread_after(archive, available, available));
     }
 }

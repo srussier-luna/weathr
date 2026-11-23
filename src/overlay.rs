@@ -1,5 +1,6 @@
-use crate::badges::{BADGES, Badge, BadgeKind, KINDS};
+use crate::badges::{self, BADGES, Badge, BadgeKind, KINDS, SAM_TRAIL};
 use crate::render::TerminalRenderer;
+use chrono::Local;
 use crossterm::style::Color;
 use std::collections::BTreeSet;
 use std::io;
@@ -8,6 +9,7 @@ const MAX_BOX_WIDTH: u16 = 66;
 const MAX_BADGES_WIDTH: u16 = 80;
 const MAX_BADGE_COLUMNS: usize = 3;
 const HIDDEN_BADGE: &str = "???";
+const MARK_END: &str = "] ";
 const BADGES_FOOTER: &str = "[b] ou [Echap] fermer";
 const FOOTER_GAP: &str = "  ";
 const FOLDER_TAB: &str = "/  Archives  \\";
@@ -18,12 +20,39 @@ const FIRST_DROP: usize = 4;
 const DROP_GAP: usize = 7;
 const DROPS: [&str; 2] = ["'", "."];
 const WET_CUT: [&str; 3] = ["/", " /", "  /"];
+const FLOPPY_LABEL: &str = "-[#]";
+const ROOFS: &str = "/\\_";
 const MAX_BUBBLE_WIDTH: u16 = 40;
 const BUBBLE_GAP: &str = ". .";
 const BUBBLE_TAIL: &str = "V";
 const TAIL_ROWS_ABOVE_SPEAKER: u16 = 2;
+const CHEVRON_STEP_MILLIS: i64 = 500;
+const CHEVRON_GAP: u16 = 1;
 
 type Piece = (u16, String, Color);
+
+#[derive(Clone, Copy)]
+struct BoxArea {
+    x: u16,
+    y: u16,
+    width: u16,
+    height: u16,
+}
+
+#[derive(Clone, Copy)]
+enum Side {
+    Left,
+    Right,
+}
+
+impl Side {
+    fn chevron(self) -> char {
+        match self {
+            Self::Left => '«',
+            Self::Right => '»',
+        }
+    }
+}
 
 pub enum Line {
     Text(String),
@@ -47,6 +76,8 @@ pub enum Frame {
     Stars,
     Bubble,
     Notice,
+    Floppy,
+    Roofs,
 }
 
 impl Frame {
@@ -62,6 +93,8 @@ impl Frame {
             Self::Waves => (100, 180, 225),
             Self::Photo => (150, 210, 150),
             Self::Stars => (255, 210, 90),
+            Self::Floppy => (150, 165, 190),
+            Self::Roofs => (205, 95, 70),
         };
         Some(Color::Rgb { r, g, b })
     }
@@ -79,9 +112,13 @@ impl Frame {
 
     fn edges(self, row: usize, rows_below: Option<usize>) -> (u16, &'static str, &'static str) {
         match self {
-            Self::Plain | Self::Postcard | Self::Folder | Self::Photo | Self::Bubble => {
-                (0, "| ", " |")
-            }
+            Self::Plain
+            | Self::Postcard
+            | Self::Folder
+            | Self::Photo
+            | Self::Bubble
+            | Self::Floppy
+            | Self::Roofs => (0, "| ", " |"),
             Self::Parchment if row % 2 == 0 => (0, "(  ", "  )"),
             Self::Parchment => (1, ") ", " ("),
             Self::Wet => (
@@ -138,6 +175,14 @@ impl Frame {
             Self::Stars => vec![(0, "*~".chars().cycle().take(width).collect())],
             Self::Bubble => vec![(0, rule('.', "-", '.', width))],
             Self::Notice => vec![(0, rule('╔', "═", '╗', width))],
+            Self::Floppy => vec![(
+                0,
+                format!(
+                    "+{FLOPPY_LABEL}{}+",
+                    "-".repeat(width.saturating_sub(FLOPPY_LABEL.len() + 2))
+                ),
+            )],
+            Self::Roofs => vec![(0, ROOFS.chars().cycle().take(width).collect())],
         }
     }
 
@@ -157,10 +202,11 @@ impl Frame {
                     .collect::<String>();
                 vec![(0, format!("+{edge}'"))]
             }
-            Self::Folder => vec![(0, rule('|', "_", '|', width))],
+            Self::Folder | Self::Roofs => vec![(0, rule('|', "_", '|', width))],
             Self::Photo => vec![(0, rule('\\', "-", '/', width))],
             Self::Bubble => vec![(0, rule('\'', "-", '\'', width))],
             Self::Notice => vec![(0, rule('╚', "═", '╝', width))],
+            Self::Floppy => vec![(0, rule('+', "-", '+', width))],
             _ => self.top(width),
         }
     }
@@ -229,6 +275,28 @@ pub fn lay_out(lines: &[Line], width: usize) -> Vec<String> {
 }
 
 pub fn render_view(renderer: &mut TerminalRenderer, view: &View) -> io::Result<()> {
+    render_view_box(renderer, view)?;
+    Ok(())
+}
+
+pub fn render_with_chevrons(
+    renderer: &mut TerminalRenderer,
+    view: &View,
+    has_previous: bool,
+    has_next: bool,
+) -> io::Result<()> {
+    let area = render_view_box(renderer, view)?;
+    let tick = (Local::now().timestamp_millis() / CHEVRON_STEP_MILLIS) as usize;
+    let width = renderer.get_size().0;
+    for (side, is_shown) in [(Side::Left, has_previous), (Side::Right, has_next)] {
+        if is_shown && let Some((x, y)) = chevron_cell(area, side, width, tick) {
+            renderer.render_char(x, y, side.chevron(), Color::Yellow)?;
+        }
+    }
+    Ok(())
+}
+
+fn render_view_box(renderer: &mut TerminalRenderer, view: &View) -> io::Result<BoxArea> {
     let box_width = view.frame.fit(box_width(renderer));
     let lines = lay_out(&view.lines, view.frame.inner_width(box_width));
     render_box(
@@ -239,6 +307,18 @@ pub fn render_view(renderer: &mut TerminalRenderer, view: &View) -> io::Result<(
         &view.footer,
         box_width,
     )
+}
+
+fn chevron_cell(area: BoxArea, side: Side, terminal_width: u16, tick: usize) -> Option<(u16, u16)> {
+    let offset = CHEVRON_GAP + (tick % 2) as u16;
+    let x = match side {
+        Side::Left => (area.x > CHEVRON_GAP + 1).then(|| area.x - 1 - offset),
+        Side::Right => {
+            let right = area.x + area.width;
+            (right + CHEVRON_GAP + 1 < terminal_width).then_some(right + offset)
+        }
+    }?;
+    Some((x, area.y + area.height / 2))
 }
 
 pub fn render_bubble(
@@ -284,9 +364,38 @@ pub fn render_badges(
     renderer: &mut TerminalRenderer,
     earned: &BTreeSet<String>,
     streak: u32,
+    sam_cities: usize,
 ) -> io::Result<()> {
     let box_width = Frame::Stars.fit(MAX_BADGES_WIDTH.min(renderer.get_size().0.saturating_sub(4)));
-    let inner = Frame::Stars.inner_width(box_width);
+    render_box(
+        renderer,
+        Frame::Stars,
+        &badges_title(earned),
+        &badge_lines(
+            earned,
+            streak,
+            sam_cities,
+            Frame::Stars.inner_width(box_width),
+        ),
+        BADGES_FOOTER,
+        box_width,
+    )?;
+    Ok(())
+}
+
+fn badges_title(earned: &BTreeSet<String>) -> String {
+    let total_earned = badges::collection()
+        .filter(|badge| earned.contains(badge.id))
+        .count();
+    format!("Badges {}/{}", total_earned, badges::collection().count())
+}
+
+fn badge_lines(
+    earned: &BTreeSet<String>,
+    streak: u32,
+    sam_cities: usize,
+    inner: usize,
+) -> Vec<String> {
     let plural = if streak > 1 { "s" } else { "" };
     let mut lines = vec![format!("Série en cours : {streak} jour{plural} d'affilée")];
 
@@ -296,12 +405,24 @@ pub fn render_badges(
             .iter()
             .filter(|badge| earned.contains(badge.id))
             .count();
+        let is_demerit = kind == BadgeKind::Demerit;
+        if is_demerit && count == 0 {
+            continue;
+        }
         lines.push(String::new());
-        lines.push(format!("{} ({}/{})", kind.title(), count, badges.len()));
+        lines.push(if is_demerit {
+            kind.title().to_string()
+        } else {
+            format!("{} ({}/{})", kind.title(), count, badges.len())
+        });
 
-        let cells: Vec<String> = badges
+        let (own_rows, grid): (Vec<_>, Vec<_>) = badges
             .iter()
-            .map(|badge| badge_cell(badge, earned.contains(badge.id)))
+            .map(|badge| (*badge, earned.contains(badge.id)))
+            .partition(|(badge, is_earned)| *is_earned && badge.id == SAM_TRAIL.id);
+        let cells: Vec<String> = grid
+            .into_iter()
+            .map(|(badge, is_earned)| badge_cell(badge, is_earned, sam_cities))
             .collect();
         let longest_cell = cells
             .iter()
@@ -318,30 +439,52 @@ pub fn render_badges(
                 .collect();
             lines.push(line.trim_end().to_string());
         }
+        for (badge, is_earned) in own_rows {
+            lines.extend(wrap_cell(&badge_cell(badge, is_earned, sam_cities), inner));
+        }
     }
-
-    let total_earned = BADGES
-        .iter()
-        .filter(|badge| earned.contains(badge.id))
-        .count();
-    let title = format!("Badges {}/{}", total_earned, BADGES.len());
-    render_box(
-        renderer,
-        Frame::Stars,
-        &title,
-        &lines,
-        BADGES_FOOTER,
-        box_width,
-    )
+    lines
 }
 
-fn badge_cell(badge: &Badge, is_earned: bool) -> String {
+fn badge_cell(badge: &Badge, is_earned: bool, sam_cities: usize) -> String {
     let mark = if is_earned { 'x' } else { ' ' };
     match (is_earned, badge.kind, badge.hint) {
         (false, BadgeKind::Secret, _) => format!("[{mark}] {HIDDEN_BADGE}"),
+        (true, _, _) if badge.id == SAM_TRAIL.id => format!(
+            "[{mark}] {}",
+            badges::sam_trail_line(sam_cities).unwrap_or_else(|| badge.name.to_string())
+        ),
         (true, _, Some(hint)) => format!("[{mark}] {} ({hint})", badge.name),
         _ => format!("[{mark}] {}", badge.name),
     }
+}
+
+fn wrap_cell(cell: &str, width: usize) -> Vec<String> {
+    if cell.chars().count() <= width {
+        return vec![cell.to_string()];
+    }
+    let mark_width = cell
+        .find(MARK_END)
+        .map_or(0, |index| index + MARK_END.len());
+    let (mark, text) = cell.split_at(mark_width);
+    let indent = " ".repeat(mark_width);
+    let text_width = width.saturating_sub(mark_width);
+    let lines = match text.split_once(" (") {
+        Some((name, hint)) => [
+            wrap(name, text_width),
+            wrap(&format!("({hint}"), text_width),
+        ]
+        .concat(),
+        None => wrap(text, text_width),
+    };
+    lines
+        .into_iter()
+        .enumerate()
+        .map(|(index, line)| {
+            let prefix = if index == 0 { mark } else { &indent };
+            format!("{prefix}{line}")
+        })
+        .collect()
 }
 
 fn box_width(renderer: &TerminalRenderer) -> u16 {
@@ -363,12 +506,17 @@ fn render_box(
     lines: &[String],
     footer: &str,
     box_width: u16,
-) -> io::Result<()> {
+) -> io::Result<BoxArea> {
     let (width, height) = renderer.get_size();
     let rows = frame_rows(frame, title, lines, footer, box_width);
-    let x = width.saturating_sub(box_width) / 2;
-    let y = (height.saturating_sub(rows.len() as u16) / 2).max(2);
-    draw_rows(renderer, &rows, x, y)
+    let area = BoxArea {
+        x: width.saturating_sub(box_width) / 2,
+        y: (height.saturating_sub(rows.len() as u16) / 2).max(2),
+        width: box_width,
+        height: rows.len() as u16,
+    };
+    draw_rows(renderer, &rows, area.x, area.y)?;
+    Ok(area)
 }
 
 fn draw_rows(
@@ -491,18 +639,76 @@ mod tests {
     fn test_secret_badges_explain_themselves_once_earned() {
         let patience = BADGES.iter().find(|badge| badge.id == "patience").unwrap();
         let clear = BADGES.iter().find(|badge| badge.id == "clear").unwrap();
-        assert_eq!(badge_cell(patience, false), "[ ] ???");
+        assert_eq!(badge_cell(patience, false, 0), "[ ] ???");
         assert_eq!(
-            badge_cell(patience, true),
+            badge_cell(patience, true, 0),
             "[x] Patience (weathr ouvert 1 h d'affilée)"
         );
-        assert_eq!(badge_cell(clear, true), "[x] Ciel dégagé");
+        assert_eq!(badge_cell(clear, true, 0), "[x] Ciel dégagé");
         assert!(
             BADGES
                 .iter()
                 .filter(|badge| badge.kind == BadgeKind::Secret)
                 .all(|badge| badge.hint.is_some())
         );
+    }
+
+    #[test]
+    fn test_cheater_family_shows_only_once_earned_and_never_counts() {
+        let honest = BTreeSet::from(["rain".to_string()]);
+        let cheater = BTreeSet::from(["rain".to_string(), badges::CHEATER.to_string()]);
+        let total = BADGES.len() - 1;
+
+        let lines = badge_lines(&honest, 1, 0, 76);
+        assert!(!lines.iter().any(|line| line.contains("Mauvais points")));
+        assert!(!lines.iter().any(|line| line.contains("Tricheur")));
+        assert_eq!(badges_title(&honest), format!("Badges 1/{total}"));
+
+        let lines = badge_lines(&cheater, 1, 0, 76);
+        let family = lines
+            .iter()
+            .position(|line| line == "Mauvais points")
+            .unwrap();
+        assert_eq!(lines[family + 1], "[x] Tricheur (pris la main dans le sac)");
+        assert_eq!(badges_title(&cheater), format!("Badges 1/{total}"));
+    }
+
+    #[test]
+    fn test_sam_trail_shows_its_tier_once_earned() {
+        assert_eq!(badge_cell(&SAM_TRAIL, false, 0), "[ ] ???");
+        assert_eq!(
+            badge_cell(&SAM_TRAIL, true, 20),
+            "[x] Sur les traces de Sam · argent (20 villes, prochain palier\u{202F}: or à 30)"
+        );
+        assert_eq!(
+            badge_cell(&SAM_TRAIL, true, 40),
+            "[x] Sur les traces de Sam · platine (40 villes)"
+        );
+    }
+
+    #[test]
+    fn test_long_cell_puts_its_hint_under_the_name() {
+        let line = badge_cell(&SAM_TRAIL, true, 12);
+        assert_eq!(
+            wrap_cell(&line, 75),
+            [
+                "[x] Sur les traces de Sam · bronze",
+                "    (12 villes, prochain palier\u{202F}: argent à 15)"
+            ]
+        );
+        assert!(
+            wrap_cell(&line, 30)
+                .iter()
+                .all(|row| row.chars().count() <= 30)
+        );
+        assert_eq!(wrap_cell(&line, 77), [line]);
+    }
+
+    #[test]
+    fn test_travel_badges_show_their_name_only() {
+        let traveller = BADGES.iter().find(|badge| badge.id == "traveller").unwrap();
+        assert_eq!(badge_cell(traveller, false, 0), "[ ] Voyageur");
+        assert_eq!(badge_cell(traveller, true, 0), "[x] Voyageur");
     }
 
     #[test]
@@ -528,7 +734,7 @@ mod tests {
         }
     }
 
-    const FRAMES: [Frame; 12] = [
+    const FRAMES: [Frame; 14] = [
         Frame::Plain,
         Frame::Parchment,
         Frame::Wet,
@@ -541,6 +747,8 @@ mod tests {
         Frame::Stars,
         Frame::Bubble,
         Frame::Notice,
+        Frame::Floppy,
+        Frame::Roofs,
     ];
 
     fn draw(frame: Frame, title: &str, lines: &[&str], footer: &str, width: u16) -> Vec<String> {
@@ -703,6 +911,16 @@ mod tests {
         assert_eq!(notice[0], "╔══════════╗");
         assert_eq!(notice[1], "║ Pleine.  ║");
         assert_eq!(notice.last().unwrap(), "╚══════════╝");
+
+        let floppy = draw(Frame::Floppy, "Sauvegarde", &[], "", 16);
+        assert_eq!(floppy[0], "+-[#]----------+");
+        assert_eq!(floppy[1], "| Sauvegarde   |");
+        assert_eq!(floppy.last().unwrap(), "+--------------+");
+
+        let roofs = draw(Frame::Roofs, "", &["Tricher, c'est nul."], "", 24);
+        assert_eq!(roofs[0], "/\\_/\\_/\\_/\\_/\\_/\\_/\\_/\\_");
+        assert_eq!(roofs[1], "| Tricher, c'est nul.  |");
+        assert_eq!(roofs.last().unwrap(), "|______________________|");
     }
 
     #[test]
@@ -742,5 +960,34 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_chevrons_go_back_and_forth_one_column_off_the_box_at_mid_height() {
+        let area = BoxArea {
+            x: 7,
+            y: 4,
+            width: 66,
+            height: 21,
+        };
+        assert_eq!(chevron_cell(area, Side::Right, 80, 0), Some((74, 14)));
+        assert_eq!(chevron_cell(area, Side::Right, 80, 1), Some((75, 14)));
+        assert_eq!(chevron_cell(area, Side::Right, 80, 2), Some((74, 14)));
+        assert_eq!(chevron_cell(area, Side::Left, 80, 0), Some((5, 14)));
+        assert_eq!(chevron_cell(area, Side::Left, 80, 1), Some((4, 14)));
+    }
+
+    #[test]
+    fn test_chevrons_hide_without_room_beside_the_box() {
+        let area = |x, width| BoxArea {
+            x,
+            y: 2,
+            width,
+            height: 9,
+        };
+        assert_eq!(chevron_cell(area(3, 14), Side::Right, 20, 1), Some((19, 6)));
+        assert_eq!(chevron_cell(area(2, 16), Side::Right, 20, 0), None);
+        assert_eq!(chevron_cell(area(3, 14), Side::Left, 20, 1), Some((0, 6)));
+        assert_eq!(chevron_cell(area(2, 16), Side::Left, 20, 0), None);
     }
 }

@@ -1,4 +1,5 @@
-use chrono::{Duration, NaiveDate, NaiveDateTime};
+use crate::progress::Progress;
+use chrono::{Duration, Local, NaiveDate, NaiveDateTime};
 use std::collections::BTreeMap;
 use std::num::NonZeroU16;
 
@@ -20,6 +21,19 @@ impl StoryClock {
             frozen_day: None,
             pauses: BTreeMap::new(),
         }
+    }
+
+    pub fn for_progress(progress: &Progress, mail_hour: u32) -> Self {
+        let start = progress
+            .start_date()
+            .unwrap_or_else(|| Local::now().date_naive());
+        Self::new(start, mail_hour)
+            .with_pauses(progress.paused_days.clone())
+            .with_previous_mail_hour(progress.previous_mail_hour())
+    }
+
+    pub fn today(&self) -> usize {
+        self.day_on(Local::now().naive_local())
     }
 
     pub fn with_pauses(self, pauses: BTreeMap<usize, u32>) -> Self {
@@ -57,7 +71,11 @@ impl StoryClock {
     }
 
     pub fn pause(&mut self, day: usize) {
-        *self.pauses.entry(day).or_default() += 1;
+        self.pause_for(day, 1);
+    }
+
+    pub fn pause_for(&mut self, day: usize, days: u32) {
+        *self.pauses.entry(day).or_default() += days;
     }
 
     pub fn mail_hour(&self) -> u32 {

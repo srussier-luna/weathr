@@ -1,5 +1,14 @@
 # Nouveautés
 
+## 2026-11-23
+
+- Rose t'écrit : dis-lui ce que tu manges, ses recettes s'adapteront à ton assiette.
+- Envie de revenir sur un choix visuel ? Direction l'Album, tu peux le changer quand tu veux.
+- Biscuit fait trempette dans la mare. Et quand elle gèle, attention aux glissades !
+- Le 2 février, le ciel a un goût de beurre. Le 1er mai, il sent bon le muguet.
+- Tu voyages ? Le village le remarque, et ta curiosité pourrait bien être récompensée.
+- Tu changes d'ordi ? « weathr --export » et « weathr --import » emportent tout ton village.
+
 ## 2026-11-05
 
 - De nouvelles petites bouilles pourraient bien s'installer au jardin. Ouvre l'œil !

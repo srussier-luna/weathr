@@ -2,9 +2,11 @@ mod city;
 
 pub use city::{CitySearch, SearchStatus};
 
-use crate::config::Setting;
+use crate::config::{Setting, clamp_mail_hour};
+use crate::story::content::recipes::Diet;
 use crate::weather::WeatherUnits;
 use crate::weather::types::{PrecipitationUnit, TemperatureUnit, WindSpeedUnit};
+use std::collections::BTreeSet;
 use tokio::sync::oneshot;
 
 const TEMPERATURES: [TemperatureUnit; 2] = [TemperatureUnit::Celsius, TemperatureUnit::Fahrenheit];
@@ -15,7 +17,6 @@ const WIND_SPEEDS: [WindSpeedUnit; 4] = [
     WindSpeedUnit::Kn,
 ];
 const PRECIPITATIONS: [PrecipitationUnit; 2] = [PrecipitationUnit::Mm, PrecipitationUnit::Inch];
-const HOURS_PER_DAY: isize = 24;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Row {
@@ -26,9 +27,10 @@ pub enum Row {
     Hud,
     City,
     AutoLocation,
+    Diet,
 }
 
-pub const ROWS: [Row; 7] = [
+const ROWS: [Row; 8] = [
     Row::Temperature,
     Row::WindSpeed,
     Row::Precipitation,
@@ -36,6 +38,7 @@ pub const ROWS: [Row; 7] = [
     Row::Hud,
     Row::City,
     Row::AutoLocation,
+    Row::Diet,
 ];
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -52,9 +55,16 @@ pub struct Settings {
     pub hide_hud: bool,
     pub city: String,
     pub auto_location: AutoLocation,
+    pub diets: Option<BTreeSet<Diet>>,
 }
 
 impl Settings {
+    pub fn rows(&self) -> Vec<Row> {
+        ROWS.into_iter()
+            .filter(|row| *row != Row::Diet || self.diets.is_some())
+            .collect()
+    }
+
     pub fn stepped(&self, row: Row, step: isize) -> Option<Setting> {
         Some(match row {
             Row::Temperature => {
@@ -65,10 +75,14 @@ impl Settings {
                 Setting::Precipitation(cycle(&PRECIPITATIONS, self.units.precipitation, step))
             }
             Row::MailHour => {
-                Setting::MailHour((self.mail_hour as isize + step).rem_euclid(HOURS_PER_DAY) as u32)
+                let hour = clamp_mail_hour(self.mail_hour.saturating_add_signed(step as i32));
+                if hour == self.mail_hour {
+                    return None;
+                }
+                Setting::MailHour(hour)
             }
             Row::Hud => Setting::HideHud(!self.hide_hud),
-            Row::City | Row::AutoLocation => return None,
+            Row::City | Row::AutoLocation | Row::Diet => return None,
         })
     }
 
@@ -115,6 +129,7 @@ mod tests {
             hide_hud: false,
             city: "Lyon".to_string(),
             auto_location: AutoLocation::Off,
+            diets: None,
         }
     }
 
@@ -140,24 +155,41 @@ mod tests {
     }
 
     #[test]
-    fn test_mail_hour_wraps_around_the_day() {
+    fn test_mail_hour_stops_at_14() {
         let mut settings = settings();
-        settings.mail_hour = 23;
-        assert_eq!(
-            settings.stepped(Row::MailHour, 1),
-            Some(Setting::MailHour(0))
-        );
-        settings.mail_hour = 0;
+        settings.mail_hour = 14;
+        assert_eq!(settings.stepped(Row::MailHour, 1), None);
         assert_eq!(
             settings.stepped(Row::MailHour, -1),
-            Some(Setting::MailHour(23))
+            Some(Setting::MailHour(13))
         );
     }
 
     #[test]
-    fn test_location_rows_are_not_stepped() {
+    fn test_mail_hour_stops_at_6() {
+        let mut settings = settings();
+        settings.mail_hour = 6;
+        assert_eq!(settings.stepped(Row::MailHour, -1), None);
+        assert_eq!(
+            settings.stepped(Row::MailHour, 1),
+            Some(Setting::MailHour(7))
+        );
+    }
+
+    #[test]
+    fn test_location_and_diet_rows_are_not_stepped() {
         assert_eq!(settings().stepped(Row::City, 1), None);
         assert_eq!(settings().stepped(Row::AutoLocation, -1), None);
+        assert_eq!(settings().stepped(Row::Diet, 1), None);
+    }
+
+    #[test]
+    fn test_diet_row_appears_once_rose_has_an_answer() {
+        let mut settings = settings();
+        assert_eq!(settings.rows().last(), Some(&Row::AutoLocation));
+        settings.diets = Some(BTreeSet::new());
+        assert_eq!(settings.rows().last(), Some(&Row::Diet));
+        assert_eq!(settings.rows().len(), 8);
     }
 
     #[test]

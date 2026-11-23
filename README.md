@@ -79,6 +79,8 @@ weathr --simulate snow --night
 weathr --christmas
 weathr --fireworks
 weathr --music
+weathr --chandeleur    # crêpe géante dans le ciel
+weathr --muguet        # brin de muguet géant dans le ciel
 
 # Feuilles qui tombent et rafales
 weathr --simulate clear --leaves
@@ -107,6 +109,16 @@ weathr --silent          # pas de messages au démarrage
 
 `NO_COLOR=1 weathr` désactive les couleurs.
 
+### Changer de Mac
+
+```bash
+weathr --export ~/weathr.json   # sur l'ancien Mac
+weathr --import ~/weathr.json   # sur le nouveau
+```
+
+- La sauvegarde reprend `progress.json` et `config.toml` : lettres lues, badges, ville et réglages.
+- Fermer weathr avant `--import` : une partie ouverte réenregistre sa progression par-dessus.
+
 ## Le village
 
 ### Saisons et fêtes
@@ -116,6 +128,8 @@ weathr --silent          # pas de messages au démarrage
 - Noël (24–25 décembre) : sapin et cadeaux.
 - Nouvel An (± 7 jours) : bannière et feu d'artifice.
 - Pâques (± 7 jours) : décorations dans le jardin.
+- 2 février : une crêpe géante traverse le ciel.
+- 1er mai : un brin de muguet géant traverse le ciel.
 - 14 juillet : feu d'artifice la nuit.
 - Octobre : citrouilles et esprits d'Halloween.
 
@@ -194,7 +208,7 @@ wind_speed = "kmh"          # "kmh", "ms", "mph" ou "kn"
 precipitation = "mm"        # "mm" ou "inch"
 
 [courrier]
-# Heure d'arrivée du courrier (0 à 23)
+# Heure du Facteur (6 à 14)
 heure = 9
 ```
 
