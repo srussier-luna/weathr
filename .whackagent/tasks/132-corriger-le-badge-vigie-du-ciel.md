@@ -1,6 +1,6 @@
 ---
 issue: 132
-status: todo
+status: to-test
 wiki: [[mail]]
 note: "le joueur vgie n'as pas fonctionné"
 created: 2026-11-23
@@ -22,8 +22,18 @@ created: 2026-11-23
 
 ## Implementation
 
+Round 1 — /wa-autopilot 2026-11-23.
+
+- `src/badges.rs`: `SKY_LOOKOUT_LOGIN` renamed `SKY_LOOKOUT_NAME = "Denis Richard"`; still via `is_listed` (spaces around ignored, exact match). Tests: name with spaces, `drichard-luna` rejected, Vigie never grants Maître du temps.
+- Build: `cargo build`, `cargo test` green · fmt OK · clippy clean.
+
 ## Review
 
 ## Verification
+
+Round 1 — runtime check by the agent (pty, fresh `HOME`, temp `GIT_CONFIG_GLOBAL`):
+
+- ✅ `Denis Richard` → « Nouveau badge ! Vigie du ciel » at launch; `b` → ticked, Badges 2/49.
+- ✅ `drichard-luna` → no card, Secrets 0/10.
 
 ## Feedback
