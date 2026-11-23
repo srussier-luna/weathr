@@ -174,6 +174,9 @@ Inside autopilot: never ask (nobody watching) — freeze task, log open question
 - Versions: a release = merge `develop` → `main` (players install `main`), tagged `vX.Y.Z`. Sprints stay grouped by theme; the target version is a label on the issue:
   - `vX` (`v1`, `v2`, `v3`…) = any `X.y` release, e.g. `v2` = 2.0, 2.1…
   - `vX.Y` (`v1.6`…) = exactly that release.
+- **NEVER change the branch of the main checkout `~/Repos/weathr`: it always stays on `main`.** The installed `weathr` updates itself from it (`git pull` on its current branch, then `cargo build --release`); on any other branch, updates stop.
+  - Never `checkout`, `switch`, code, commit or test there. Every skill and subagent works in a worktree (`../.wa-worktrees/<key>`), in weathr-test or in weathr-develop, even when a skill says « main checkout ».
+  - Before any branch operation, check `git -C ~/Repos/weathr branch --show-current` = `main`. Not `main` → stop and tell the user.
 - `/wa-task` grill: always ask which version the task targets (`vX` or `vX.Y`), then put that label on the issue (create it if missing). Every open task carries one.
 - Never merge into `develop` a PR whose label targets a release not being prepared: `vX` waits for the first `X.y` release, `vX.Y` for `X.Y`.
 - Glossary and wiki: always write every glossary row (`+` / `~`) and every wiki page a task brings, at grill, close or wiki sync. Never ask for them.
