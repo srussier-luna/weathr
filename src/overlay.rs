@@ -21,6 +21,7 @@ const DROP_GAP: usize = 7;
 const DROPS: [&str; 2] = ["'", "."];
 const WET_CUT: [&str; 3] = ["/", " /", "  /"];
 const FLOPPY_LABEL: &str = "-[#]";
+const ROOFS: &str = "/\\_";
 const MAX_BUBBLE_WIDTH: u16 = 40;
 const BUBBLE_GAP: &str = ". .";
 const BUBBLE_TAIL: &str = "V";
@@ -76,6 +77,7 @@ pub enum Frame {
     Bubble,
     Notice,
     Floppy,
+    Roofs,
 }
 
 impl Frame {
@@ -92,6 +94,7 @@ impl Frame {
             Self::Photo => (150, 210, 150),
             Self::Stars => (255, 210, 90),
             Self::Floppy => (150, 165, 190),
+            Self::Roofs => (205, 95, 70),
         };
         Some(Color::Rgb { r, g, b })
     }
@@ -114,7 +117,8 @@ impl Frame {
             | Self::Folder
             | Self::Photo
             | Self::Bubble
-            | Self::Floppy => (0, "| ", " |"),
+            | Self::Floppy
+            | Self::Roofs => (0, "| ", " |"),
             Self::Parchment if row % 2 == 0 => (0, "(  ", "  )"),
             Self::Parchment => (1, ") ", " ("),
             Self::Wet => (
@@ -178,6 +182,7 @@ impl Frame {
                     "-".repeat(width.saturating_sub(FLOPPY_LABEL.len() + 2))
                 ),
             )],
+            Self::Roofs => vec![(0, ROOFS.chars().cycle().take(width).collect())],
         }
     }
 
@@ -197,7 +202,7 @@ impl Frame {
                     .collect::<String>();
                 vec![(0, format!("+{edge}'"))]
             }
-            Self::Folder => vec![(0, rule('|', "_", '|', width))],
+            Self::Folder | Self::Roofs => vec![(0, rule('|', "_", '|', width))],
             Self::Photo => vec![(0, rule('\\', "-", '/', width))],
             Self::Bubble => vec![(0, rule('\'', "-", '\'', width))],
             Self::Notice => vec![(0, rule('╚', "═", '╝', width))],
@@ -362,7 +367,35 @@ pub fn render_badges(
     sam_cities: usize,
 ) -> io::Result<()> {
     let box_width = Frame::Stars.fit(MAX_BADGES_WIDTH.min(renderer.get_size().0.saturating_sub(4)));
-    let inner = Frame::Stars.inner_width(box_width);
+    render_box(
+        renderer,
+        Frame::Stars,
+        &badges_title(earned),
+        &badge_lines(
+            earned,
+            streak,
+            sam_cities,
+            Frame::Stars.inner_width(box_width),
+        ),
+        BADGES_FOOTER,
+        box_width,
+    )?;
+    Ok(())
+}
+
+fn badges_title(earned: &BTreeSet<String>) -> String {
+    let total_earned = badges::collection()
+        .filter(|badge| earned.contains(badge.id))
+        .count();
+    format!("Badges {}/{}", total_earned, badges::collection().count())
+}
+
+fn badge_lines(
+    earned: &BTreeSet<String>,
+    streak: u32,
+    sam_cities: usize,
+    inner: usize,
+) -> Vec<String> {
     let plural = if streak > 1 { "s" } else { "" };
     let mut lines = vec![format!("Série en cours : {streak} jour{plural} d'affilée")];
 
@@ -372,8 +405,16 @@ pub fn render_badges(
             .iter()
             .filter(|badge| earned.contains(badge.id))
             .count();
+        let is_demerit = kind == BadgeKind::Demerit;
+        if is_demerit && count == 0 {
+            continue;
+        }
         lines.push(String::new());
-        lines.push(format!("{} ({}/{})", kind.title(), count, badges.len()));
+        lines.push(if is_demerit {
+            kind.title().to_string()
+        } else {
+            format!("{} ({}/{})", kind.title(), count, badges.len())
+        });
 
         let (own_rows, grid): (Vec<_>, Vec<_>) = badges
             .iter()
@@ -402,21 +443,7 @@ pub fn render_badges(
             lines.extend(wrap_cell(&badge_cell(badge, is_earned, sam_cities), inner));
         }
     }
-
-    let total_earned = BADGES
-        .iter()
-        .filter(|badge| earned.contains(badge.id))
-        .count();
-    let title = format!("Badges {}/{}", total_earned, BADGES.len());
-    render_box(
-        renderer,
-        Frame::Stars,
-        &title,
-        &lines,
-        BADGES_FOOTER,
-        box_width,
-    )?;
-    Ok(())
+    lines
 }
 
 fn badge_cell(badge: &Badge, is_earned: bool, sam_cities: usize) -> String {
@@ -627,6 +654,26 @@ mod tests {
     }
 
     #[test]
+    fn test_cheater_family_shows_only_once_earned_and_never_counts() {
+        let honest = BTreeSet::from(["rain".to_string()]);
+        let cheater = BTreeSet::from(["rain".to_string(), badges::CHEATER.to_string()]);
+        let total = BADGES.len() - 1;
+
+        let lines = badge_lines(&honest, 1, 0, 76);
+        assert!(!lines.iter().any(|line| line.contains("Mauvais points")));
+        assert!(!lines.iter().any(|line| line.contains("Tricheur")));
+        assert_eq!(badges_title(&honest), format!("Badges 1/{total}"));
+
+        let lines = badge_lines(&cheater, 1, 0, 76);
+        let family = lines
+            .iter()
+            .position(|line| line == "Mauvais points")
+            .unwrap();
+        assert_eq!(lines[family + 1], "[x] Tricheur (pris la main dans le sac)");
+        assert_eq!(badges_title(&cheater), format!("Badges 1/{total}"));
+    }
+
+    #[test]
     fn test_sam_trail_shows_its_tier_once_earned() {
         assert_eq!(badge_cell(&SAM_TRAIL, false, 0), "[ ] ???");
         assert_eq!(
@@ -687,7 +734,7 @@ mod tests {
         }
     }
 
-    const FRAMES: [Frame; 13] = [
+    const FRAMES: [Frame; 14] = [
         Frame::Plain,
         Frame::Parchment,
         Frame::Wet,
@@ -701,6 +748,7 @@ mod tests {
         Frame::Bubble,
         Frame::Notice,
         Frame::Floppy,
+        Frame::Roofs,
     ];
 
     fn draw(frame: Frame, title: &str, lines: &[&str], footer: &str, width: u16) -> Vec<String> {
@@ -868,6 +916,11 @@ mod tests {
         assert_eq!(floppy[0], "+-[#]----------+");
         assert_eq!(floppy[1], "| Sauvegarde   |");
         assert_eq!(floppy.last().unwrap(), "+--------------+");
+
+        let roofs = draw(Frame::Roofs, "", &["Tricher, c'est nul."], "", 24);
+        assert_eq!(roofs[0], "/\\_/\\_/\\_/\\_/\\_/\\_/\\_/\\_");
+        assert_eq!(roofs[1], "| Tricher, c'est nul.  |");
+        assert_eq!(roofs.last().unwrap(), "|______________________|");
     }
 
     #[test]
