@@ -2,6 +2,7 @@ pub mod chronicles;
 mod diet_letter;
 mod gazette;
 pub mod letters;
+pub mod neighbours_note;
 mod night_postscript;
 mod postcard;
 pub mod recipes;

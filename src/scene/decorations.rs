@@ -45,6 +45,7 @@ pub struct DecorationRenderConfig {
     pub is_snowing: bool,
     pub holiday: Holiday,
     pub tree_growth: Growth,
+    pub is_tree_bare: bool,
 }
 
 impl Decorations {
@@ -61,7 +62,13 @@ impl Decorations {
 
         // Render Tree (Left of house)
         if let Some(tree) = plan.tree {
-            tree.render(renderer, config.is_day, &config.holiday, config.is_snowing)?;
+            tree.render(
+                renderer,
+                config.is_day,
+                &config.holiday,
+                config.is_snowing,
+                config.is_tree_bare,
+            )?;
         }
 
         // Render Fence (Right of house)

@@ -7,6 +7,7 @@ pub enum BadgeKind {
     Rare,
     Loyalty,
     Secret,
+    Demerit,
 }
 
 impl BadgeKind {
@@ -17,6 +18,7 @@ impl BadgeKind {
             Self::Rare => "Rares",
             Self::Loyalty => "Fidélité",
             Self::Secret => "Secrets",
+            Self::Demerit => "Mauvais points",
         }
     }
 }
@@ -44,19 +46,29 @@ const fn badge(
     }
 }
 
-const fn secret(
+const fn hinted(
     id: &'static str,
     name: &'static str,
+    kind: BadgeKind,
     hint: &'static str,
     icon: [&'static str; 3],
 ) -> Badge {
     Badge {
         id,
         name,
-        kind: BadgeKind::Secret,
+        kind,
         hint: Some(hint),
         icon,
     }
+}
+
+const fn secret(
+    id: &'static str,
+    name: &'static str,
+    hint: &'static str,
+    icon: [&'static str; 3],
+) -> Badge {
+    hinted(id, name, BadgeKind::Secret, hint, icon)
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -168,6 +180,7 @@ pub fn sam_trail_line(sam_cities: usize) -> Option<String> {
 }
 
 const SKY_LOOKOUT_LOGIN: &str = "drichard-luna";
+pub const CHEATER: &str = "cheater";
 
 const TIERS: [Tier; 5] = [
     Tier::Chocolate,
@@ -186,15 +199,16 @@ pub const SAM_TRAIL: Badge = secret(
 
 const CONTRIBUTORS: [&str; 1] = ["bpisano"];
 
-pub const KINDS: [BadgeKind; 5] = [
+pub const KINDS: [BadgeKind; 6] = [
     BadgeKind::Weather,
     BadgeKind::Holiday,
     BadgeKind::Rare,
     BadgeKind::Loyalty,
     BadgeKind::Secret,
+    BadgeKind::Demerit,
 ];
 
-pub const BADGES: [Badge; 49] = [
+pub const BADGES: [Badge; 50] = [
     badge(
         "clear",
         "Ciel dégagé",
@@ -484,7 +498,20 @@ pub const BADGES: [Badge; 49] = [
         ["\\___/", " )_( ", "/___\\"],
     ),
     SAM_TRAIL,
+    hinted(
+        CHEATER,
+        "Tricheur",
+        BadgeKind::Demerit,
+        "pris la main dans le sac",
+        ["  ^  ", " /=\\ ", "(-_-)"],
+    ),
 ];
+
+pub fn collection() -> impl Iterator<Item = &'static Badge> {
+    BADGES
+        .iter()
+        .filter(|badge| badge.kind != BadgeKind::Demerit)
+}
 
 pub fn weather_badges() -> impl Iterator<Item = &'static Badge> {
     BADGES
@@ -544,6 +571,19 @@ mod tests {
                 badge.id
             );
         }
+    }
+
+    #[test]
+    fn test_cheater_badge_is_alone_in_its_family_and_out_of_the_collection() {
+        let demerits: Vec<_> = BADGES
+            .iter()
+            .filter(|badge| badge.kind == BadgeKind::Demerit)
+            .map(|badge| badge.id)
+            .collect();
+        assert_eq!(demerits, [CHEATER]);
+        assert!(find(CHEATER).is_some_and(|badge| badge.hint.is_some()));
+        assert_eq!(collection().count(), BADGES.len() - 1);
+        assert!(collection().all(|badge| badge.id != CHEATER));
     }
 
     #[test]
