@@ -1,6 +1,6 @@
 ---
 issue: 132
-status: to-test
+status: to-close
 wiki: [[mail]]
 note: "le joueur vgie n'as pas fonctionné"
 created: 2026-11-23
@@ -28,6 +28,9 @@ Round 1 — /wa-autopilot 2026-11-23.
 - Build: `cargo build`, `cargo test` green · fmt OK · clippy clean.
 
 ## Review
+
+Round validation — one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- Clean, no finding.
 
 ## Verification
 
