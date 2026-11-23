@@ -59,7 +59,132 @@ const fn secret(
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Tier {
+    Chocolate,
+    Bronze,
+    Silver,
+    Gold,
+    Platinum,
+}
+
+impl Tier {
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Chocolate => "chocolat",
+            Self::Bronze => "bronze",
+            Self::Silver => "argent",
+            Self::Gold => "or",
+            Self::Platinum => "platine",
+        }
+    }
+
+    pub fn threshold(&self) -> usize {
+        match self {
+            Self::Chocolate => 1,
+            Self::Bronze => 5,
+            Self::Silver => 15,
+            Self::Gold => 30,
+            Self::Platinum => 40,
+        }
+    }
+
+    pub fn reached(sam_cities: usize) -> Option<Self> {
+        TIERS
+            .into_iter()
+            .rev()
+            .find(|tier| sam_cities >= tier.threshold())
+    }
+
+    pub fn crossed(before: usize, after: usize) -> Vec<Self> {
+        TIERS
+            .into_iter()
+            .filter(|tier| (before + 1..=after).contains(&tier.threshold()))
+            .collect()
+    }
+
+    fn next(&self) -> Option<Self> {
+        TIERS
+            .into_iter()
+            .find(|tier| tier.threshold() > self.threshold())
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct Award {
+    pub badge: &'static Badge,
+    tier: Option<Tier>,
+}
+
+impl From<&'static Badge> for Award {
+    fn from(badge: &'static Badge) -> Self {
+        Self { badge, tier: None }
+    }
+}
+
+impl Award {
+    pub fn sam_trail(tier: Tier) -> Self {
+        Self {
+            badge: &SAM_TRAIL,
+            tier: Some(tier),
+        }
+    }
+
+    pub fn is_new_tier(&self) -> bool {
+        self.tier.is_some_and(|tier| tier != Tier::Chocolate)
+    }
+
+    pub fn name(&self) -> String {
+        self.tier
+            .map_or_else(|| self.badge.name.to_string(), sam_trail_name)
+    }
+
+    pub fn hint(&self) -> Option<String> {
+        match self.tier {
+            Some(tier) if self.is_new_tier() => {
+                Some(format!("{} villes de Sam visitées", tier.threshold()))
+            }
+            _ => self.badge.hint.map(str::to_string),
+        }
+    }
+}
+
+fn sam_trail_name(tier: Tier) -> String {
+    format!("{} · {}", SAM_TRAIL.name, tier.name())
+}
+
+pub fn sam_trail_line(sam_cities: usize) -> Option<String> {
+    let tier = Tier::reached(sam_cities)?;
+    let cities = if sam_cities > 1 { "villes" } else { "ville" };
+    let name = sam_trail_name(tier);
+    Some(match tier.next() {
+        Some(next) => format!(
+            "{name} ({sam_cities} {cities}, prochain palier\u{202F}: {} à {})",
+            next.name(),
+            next.threshold()
+        ),
+        None => format!("{name} ({sam_cities} {cities})"),
+    })
+}
+
 const SKY_LOOKOUT_LOGIN: &str = "drichard-luna";
+
+const TIERS: [Tier; 5] = [
+    Tier::Chocolate,
+    Tier::Bronze,
+    Tier::Silver,
+    Tier::Gold,
+    Tier::Platinum,
+];
+
+pub const SAM_TRAIL: Badge = secret(
+    "sam_trail",
+    "Sur les traces de Sam",
+    "visité la même ville que Sam",
+    ["   ::", " ::  ", "::   "],
+);
+
+const CONTRIBUTORS: [&str; 1] = ["bpisano"];
 
 pub const KINDS: [BadgeKind; 5] = [
     BadgeKind::Weather,
@@ -69,7 +194,7 @@ pub const KINDS: [BadgeKind; 5] = [
     BadgeKind::Secret,
 ];
 
-pub const BADGES: [Badge; 45] = [
+pub const BADGES: [Badge; 49] = [
     badge(
         "clear",
         "Ciel dégagé",
@@ -269,6 +394,18 @@ pub const BADGES: [Badge; 45] = [
         ["[===]", "|30 |", "|___|"],
     ),
     badge(
+        "traveller",
+        "Voyageur",
+        BadgeKind::Loyalty,
+        [" .-. ", "|===|", "|___|"],
+    ),
+    badge(
+        "backpacker",
+        "Baroudeur",
+        BadgeKind::Loyalty,
+        [" .-. ", "/[_]\\", "\\___/"],
+    ),
+    badge(
         "all_letters",
         "Toutes les lettres",
         BadgeKind::Loyalty,
@@ -340,6 +477,13 @@ pub const BADGES: [Badge; 45] = [
         "a repéré les nuages pressés",
         [" .-. ", "(___)", "  \\o "],
     ),
+    secret(
+        "time_master",
+        "Maître du temps",
+        "a mis le village à l'heure",
+        ["\\___/", " )_( ", "/___\\"],
+    ),
+    SAM_TRAIL,
 ];
 
 pub fn weather_badges() -> impl Iterator<Item = &'static Badge> {
@@ -376,7 +520,15 @@ pub fn name(id: &str) -> &'static str {
 }
 
 pub fn is_sky_lookout(user_name: Option<&str>) -> bool {
-    user_name.is_some_and(|name| name.trim() == SKY_LOOKOUT_LOGIN)
+    is_listed(user_name, &[SKY_LOOKOUT_LOGIN])
+}
+
+pub fn is_time_master(user_name: Option<&str>) -> bool {
+    is_listed(user_name, &CONTRIBUTORS)
+}
+
+fn is_listed(user_name: Option<&str>, logins: &[&str]) -> bool {
+    user_name.is_some_and(|name| logins.contains(&name.trim()))
 }
 
 #[cfg(test)]
@@ -391,6 +543,103 @@ mod tests {
                 "{}",
                 badge.id
             );
+        }
+    }
+
+    #[test]
+    fn test_tier_follows_sam_cities_count() {
+        let tiers: Vec<_> = [0, 1, 4, 5, 14, 15, 29, 30, 39, 40]
+            .into_iter()
+            .map(Tier::reached)
+            .collect();
+        assert_eq!(
+            tiers,
+            [
+                None,
+                Some(Tier::Chocolate),
+                Some(Tier::Chocolate),
+                Some(Tier::Bronze),
+                Some(Tier::Bronze),
+                Some(Tier::Silver),
+                Some(Tier::Silver),
+                Some(Tier::Gold),
+                Some(Tier::Gold),
+                Some(Tier::Platinum),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_crossed_tiers_are_the_new_ones_only() {
+        assert_eq!(Tier::crossed(0, 1), [Tier::Chocolate]);
+        assert_eq!(Tier::crossed(4, 5), [Tier::Bronze]);
+        assert!(Tier::crossed(5, 5).is_empty());
+        assert!(Tier::crossed(5, 6).is_empty());
+        assert_eq!(Tier::crossed(0, 5), [Tier::Chocolate, Tier::Bronze]);
+        assert_eq!(Tier::crossed(39, 40), [Tier::Platinum]);
+    }
+
+    #[test]
+    fn test_sam_trail_line_shows_tier_and_next_one() {
+        assert_eq!(sam_trail_line(0), None);
+        assert_eq!(
+            sam_trail_line(1).as_deref(),
+            Some("Sur les traces de Sam · chocolat (1 ville, prochain palier\u{202F}: bronze à 5)")
+        );
+        assert_eq!(
+            sam_trail_line(12).as_deref(),
+            Some(
+                "Sur les traces de Sam · bronze (12 villes, prochain palier\u{202F}: argent à 15)"
+            )
+        );
+        assert_eq!(
+            sam_trail_line(20).as_deref(),
+            Some("Sur les traces de Sam · argent (20 villes, prochain palier\u{202F}: or à 30)")
+        );
+        assert_eq!(
+            sam_trail_line(40).as_deref(),
+            Some("Sur les traces de Sam · platine (40 villes)")
+        );
+    }
+
+    #[test]
+    fn test_first_tier_is_a_new_badge_then_new_tiers() {
+        let chocolate = Award::sam_trail(Tier::Chocolate);
+        assert!(!chocolate.is_new_tier());
+        assert_eq!(chocolate.name(), "Sur les traces de Sam · chocolat");
+        assert_eq!(
+            chocolate.hint().as_deref(),
+            Some("visité la même ville que Sam")
+        );
+
+        let bronze = Award::sam_trail(Tier::Bronze);
+        assert!(bronze.is_new_tier());
+        assert_eq!(bronze.name(), "Sur les traces de Sam · bronze");
+        assert_eq!(bronze.hint().as_deref(), Some("5 villes de Sam visitées"));
+    }
+
+    #[test]
+    fn test_plain_badge_award_keeps_its_name_and_hint() {
+        let patience = Award::from(find("patience").unwrap());
+        assert!(!patience.is_new_tier());
+        assert_eq!(patience.name(), "Patience");
+        assert_eq!(
+            patience.hint().as_deref(),
+            Some("weathr ouvert 1 h d'affilée")
+        );
+    }
+
+    #[test]
+    fn test_sam_trail_is_one_secret_badge() {
+        let sam_trail = BADGES.iter().filter(|badge| badge.id == SAM_TRAIL.id);
+        assert_eq!(sam_trail.count(), 1);
+        assert!(find(SAM_TRAIL.id).is_some_and(|badge| badge.kind == BadgeKind::Secret));
+    }
+
+    #[test]
+    fn test_travel_badges_are_loyalty_badges() {
+        for id in ["traveller", "backpacker"] {
+            assert!(find(id).is_some_and(|badge| badge.kind == BadgeKind::Loyalty));
         }
     }
 
@@ -430,5 +679,27 @@ mod tests {
     fn test_sky_lookout_rejects_missing_name() {
         assert!(!is_sky_lookout(None));
         assert!(!is_sky_lookout(Some("")));
+    }
+
+    #[test]
+    fn test_time_master_matches_each_contributor() {
+        assert!(is_time_master(Some("bpisano")));
+    }
+
+    #[test]
+    fn test_time_master_ignores_surrounding_whitespace() {
+        assert!(is_time_master(Some(" bpisano\n")));
+    }
+
+    #[test]
+    fn test_time_master_rejects_other_name() {
+        assert!(!is_time_master(Some("srussier-luna")));
+        assert!(!is_time_master(Some("drichard-luna")));
+    }
+
+    #[test]
+    fn test_time_master_rejects_missing_name() {
+        assert!(!is_time_master(None));
+        assert!(!is_time_master(Some("")));
     }
 }

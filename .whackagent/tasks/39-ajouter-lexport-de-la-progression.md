@@ -1,6 +1,6 @@
 ---
 issue: 39
-status: to-test
+status: to-close
 wiki: [[architecture]], [[mail]], [[updater]]
 note: "weathr --export / --import pour changer de Mac sans perdre Lettres et Badges"
 created: 2026-10-26
@@ -60,6 +60,9 @@ Round 1 — /wa-autopilot 2026-11-18 (branch merged with origin/develop first).
 - Build: `cargo build` no warning · `cargo test` green (bin 340, 9 new `backup::` tests) · `cargo fmt --check` OK · clippy: only the existing `double_must_use`.
 
 ## Review
+
+Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- 6 findings (1 major: raw OS errors) fixed in 3 autofix rounds: French messages « Aucune progression à sauvegarder. » / « Impossible de lire <chemin>. » / « Impossible d'écrire <chemin>. », shared `src/prompt.rs` (PREFIX, confirm), shared `progress::write_creating_dir`, `enum Restore`, config written before progress, update prompt with U+202F. Re-verified clean. Code changed since the user's test: error messages only.
 
 ## Verification
 

@@ -2,6 +2,7 @@ use super::clock::StoryClock;
 use super::content::chronicles::OBJECTS;
 use super::content::letters::{CREEPY_LETTER_COUNT, VILLAGE_LETTER_COUNT};
 use super::event::{Entry, Thing};
+use super::sources::Recipes;
 use super::timeline::Timeline;
 use crate::badges;
 use crate::progress::Progress;
@@ -33,7 +34,7 @@ impl Reach {
         let has_arrived = |thing| timeline.arrived_by(day).any(|arrived| arrived == thing);
         Self {
             letters,
-            days: u32::try_from((today - start).num_days().max(0) + 1).unwrap_or(u32::MAX),
+            days: u32::try_from((today - start).num_days().max(0) + 2).unwrap_or(u32::MAX),
             gazettes: timeline
                 .first_mail(letters)
                 .iter()
@@ -60,14 +61,12 @@ impl Reach {
         if !self.bottles {
             progress.bottles.clear();
         }
-        let earnable = self.earnable(progress);
-        progress
-            .badges
-            .retain(|id| !earnable.contains(&(id.as_str(), false)));
+        let unmet = self.unmet(progress);
+        progress.badges.retain(|id| !unmet.contains(&id.as_str()));
         counts(progress) != before
     }
 
-    fn earnable(&self, progress: &Progress) -> [(&'static str, bool); 10] {
+    fn unmet(&self, progress: &Progress) -> Vec<&'static str> {
         let has_every_weather =
             badges::weather_badges().all(|badge| progress.badges.contains(badge.id));
         [
@@ -85,13 +84,21 @@ impl Reach {
             ("summer_holidays", progress.postman_note_day.is_some()),
             ("full_weather", has_every_weather),
         ]
+        .into_iter()
+        .filter_map(|(id, met)| (!met).then_some(id))
+        .collect()
     }
 }
 
-pub(crate) fn launch_reach(village_count: usize, clock: &StoryClock, today: usize) -> Reach {
+pub(crate) fn launch_reach(
+    village_count: usize,
+    clock: &StoryClock,
+    today: usize,
+    recipes: Recipes,
+) -> Reach {
     let next_day = today + 1;
     Reach::on(
-        &Timeline::for_village(village_count, clock, next_day),
+        &Timeline::for_village(village_count, clock, next_day, recipes),
         next_day,
         clock.start(),
         Local::now().date_naive(),
@@ -113,7 +120,12 @@ pub(crate) fn settle_on_launch(
     village_count: usize,
 ) -> bool {
     let clock = StoryClock::for_progress(progress, mail_hour);
-    let reach = launch_reach(village_count, &clock, clock.today());
+    let reach = launch_reach(
+        village_count,
+        &clock,
+        clock.today(),
+        Recipes::from_progress(progress),
+    );
     settle(progress, out_of_sync, &reach)
 }
 
@@ -122,8 +134,6 @@ mod tests {
     use super::*;
     use crate::story::sources;
 
-    const VILLAGE_COUNT: usize = 60;
-
     fn date(month: u32, day: u32) -> NaiveDate {
         NaiveDate::from_ymd_opt(2026, month, day).unwrap()
     }
@@ -131,7 +141,11 @@ mod tests {
     fn reach_on(day: usize) -> Reach {
         let start = date(9, 1);
         let clock = StoryClock::new(start, 9);
-        let timeline = Timeline::new(&sources::registered(VILLAGE_COUNT), &clock, day);
+        let timeline = Timeline::new(
+            &sources::registered(VILLAGE_LETTER_COUNT, Recipes::default()),
+            &clock,
+            day,
+        );
         Reach::on(&timeline, day, start, clock.date_of(day))
     }
 
@@ -168,6 +182,29 @@ mod tests {
     }
 
     #[test]
+    fn test_diet_letter_counts_among_the_delivered_ones() {
+        let start = date(9, 1);
+        let clock = StoryClock::new(start, 9);
+        let timeline = Timeline::new(
+            &sources::registered(VILLAGE_LETTER_COUNT, Recipes::default()),
+            &clock,
+            10,
+        );
+        let delivered = timeline.delivered_by(10);
+        let mut progress = Progress::default();
+        progress.letters_read = delivered;
+
+        assert!(
+            timeline
+                .first_mail(delivered)
+                .iter()
+                .any(|(_, entry)| *entry == Entry::DietLetter)
+        );
+        assert!(!reach_on(10).fit(&mut progress));
+        assert_eq!(progress.letters_read, delivered);
+    }
+
+    #[test]
     fn test_letters_read_stop_at_the_delivered_ones() {
         let reach = reach_on(10);
         let mut progress = Progress::default();
@@ -182,7 +219,54 @@ mod tests {
         let mut progress = Progress::default();
         progress.streak = 40;
         assert!(reach_on(12).fit(&mut progress));
-        assert_eq!(progress.streak, 12);
+        assert_eq!(progress.streak, 13);
+    }
+
+    #[test]
+    fn test_streak_one_day_ahead_of_the_local_date_is_kept() {
+        let mut progress = Progress::default();
+        progress.streak = 3;
+        progress.badges = badges(&["streak_3"]);
+        assert!(!reach_on(2).fit(&mut progress));
+        assert_eq!(progress.streak, 3);
+        assert_eq!(progress.badges, badges(&["streak_3"]));
+    }
+
+    #[test]
+    fn test_reach_rules_follow_the_current_content() {
+        assert_eq!(VILLAGE_LETTER_COUNT, 60);
+        assert_eq!(CREEPY_LETTER_COUNT, 15);
+        assert_eq!(OBJECTS.len(), 25);
+        assert_eq!(badges::weather_badges().count(), 14);
+    }
+
+    #[test]
+    fn test_settle_adds_one_resync_at_most_per_launch() {
+        let reach = reach_on(10);
+        let honest = || {
+            let mut progress = Progress::default();
+            progress.letters_read = 3;
+            progress.streak = 2;
+            progress
+        };
+
+        let mut progress = honest();
+        assert!(!settle(&mut progress, false, &reach));
+        assert_eq!(progress.resyncs, 0);
+
+        let mut progress = honest();
+        assert!(settle(&mut progress, true, &reach));
+        assert_eq!(progress.resyncs, 1);
+        assert_eq!(progress.letters_read, 3);
+
+        let mut progress = honest();
+        progress.letters_read = 900;
+        progress.streak = 400;
+        progress.resyncs = 2;
+        assert!(settle(&mut progress, true, &reach));
+        assert_eq!(progress.resyncs, 3);
+        assert_eq!(progress.streak, 11);
+        assert!(progress.letters_read < 900);
     }
 
     #[test]
@@ -243,41 +327,5 @@ mod tests {
         progress.badges = badges(&["all_letters"]);
         assert!(reach_on(90).fit(&mut progress));
         assert!(progress.badges.is_empty());
-    }
-
-    #[test]
-    fn test_settle_adds_one_resync_at_most_per_launch() {
-        let start = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
-        let clock = StoryClock::new(start, 9);
-        let reach = Reach::on(
-            &Timeline::for_village(60, &clock, 10),
-            10,
-            start,
-            clock.date_of(10),
-        );
-        let honest = || {
-            let mut progress = Progress::default();
-            progress.letters_read = 3;
-            progress.streak = 2;
-            progress
-        };
-
-        let mut progress = honest();
-        assert!(!settle(&mut progress, false, &reach));
-        assert_eq!(progress.resyncs, 0);
-
-        let mut progress = honest();
-        assert!(settle(&mut progress, true, &reach));
-        assert_eq!(progress.resyncs, 1);
-        assert_eq!(progress.letters_read, 3);
-
-        let mut progress = honest();
-        progress.letters_read = 900;
-        progress.streak = 400;
-        progress.resyncs = 2;
-        assert!(settle(&mut progress, true, &reach));
-        assert_eq!(progress.resyncs, 3);
-        assert_eq!(progress.streak, 10);
-        assert!(progress.letters_read < 900);
     }
 }

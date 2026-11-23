@@ -43,6 +43,8 @@ Assumes binary built from local clone of this fork.
 | `--silent` | no info output, **and no update prompt** |
 | `--day <N>` | preview the story on Jour de jeu N (1–65535) in a fresh in-memory game, real save untouched, see [[mail]] |
 | `--completions <shell>` | print completions, exit |
+| `--export <FICHIER>` | write a Sauvegarde (version, progress.json, config.toml text) to the file, exit (#39, `src/backup.rs`) |
+| `--import <FICHIER>` | restore a Sauvegarde, `[o/N]` when a progress already exists, warning if another version; unreadable → « Sauvegarde illisible », exit 1 (#39) |
 | `--update` | update now, exit |
 | `--diagnostic` | check the install (git, cargo, source clone, Open-Meteo + git fetch, config dir, progress.json, binary dir), print one `✓`/`✗` line each with a fix hint, exit 0 if all ✓ else 1; no TUI |
 

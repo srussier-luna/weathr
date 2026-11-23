@@ -13,6 +13,7 @@ mod geolocation;
 mod holiday;
 mod overlay;
 mod progress;
+mod prompt;
 mod rain_alert;
 mod release_notes;
 mod remote_weather;
@@ -20,6 +21,7 @@ mod render;
 mod scene;
 mod settings;
 mod story;
+mod travel;
 mod updater;
 mod views;
 mod weather;
@@ -321,6 +323,7 @@ async fn main() -> io::Result<()> {
         eprintln!("Warning: No location set, defaulting to Berlin (52.52, 13.41).");
     }
 
+    let mut launch_location = None;
     // Auto-detect location if enabled
     if config.location.auto {
         info(config.silent, "Auto-detecting location...");
@@ -345,7 +348,8 @@ async fn main() -> io::Result<()> {
                 }
                 config.location.latitude = geo_loc.latitude;
                 config.location.longitude = geo_loc.longitude;
-                config.location.city = geo_loc.city;
+                config.location.city = geo_loc.city.clone();
+                launch_location = Some(geo_loc);
             }
             Err(e) => {
                 eprintln!("{}", e.user_friendly_message());
@@ -412,6 +416,7 @@ async fn main() -> io::Result<()> {
             demo: cli.demo,
             day: cli.day,
         },
+        launch_location.as_ref(),
         cli.leaves,
         term_width,
         term_height,

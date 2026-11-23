@@ -30,7 +30,12 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Écho | | | `echoes` | phrase d'une Lettre suivante qui rappelle la réponse à une Question |
 | Bouteille | message à la mer | | `bottle` | message dérivant sur la rivière |
 | Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret → [[mail]] |
+| Ville visitée | | | `visited_cities` | ville détectée par la position auto ; compte pour Voyageur et Baroudeur |
+| Ville de Sam | | | `sam_cities` | ville d'une Carte postale où la position auto est passée (10 km) |
+| Palier | | niveau | `tier` | rang du badge de Sam : chocolat, bronze, argent, or, platine |
+| Carte de badge | | | `Award` | carte « Nouveau badge ! » ou « Nouveau palier ! » au lancement |
 | Fête | jour férié | | `Holiday` | jour spécial qui décore la scène → [[animation]] |
+| Encadré de Fête | | | `HolidayBox` | fenêtre au lancement un jour de Fête : nom et ce qu'il faut guetter → [[render]] |
 | Fête de la musique | | | `is_music_day` | 21 juin : notes aux fenêtres, chanteurs, Notes du ciel ; Badge dédié → [[animation]] |
 | Chandeleur | | | `is_candlemas` | 2 février : Crêpe géante à la place du soleil et de la lune ; Badge dédié → [[animation]] |
 | Crêpe géante | | | `GiantCrepe` | crêpe dorée ou pâle à la place du soleil et de la lune le 2 février ; se retourne |
@@ -43,6 +48,9 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Timeline | | | `Timeline` | événements de l'histoire classés par Jour de jeu |
 | Apparition | déblocage | | `Arrival` | objet ou Habitant qui arrive au jardin un Jour de jeu |
 | Habitant | animal | | | animal du jardin (Minouche, Biscuit…), arrive à sa 1re Lettre |
+| Recette | | | `Recipe` | Lettre de Rose avec une recette ; tous les 10 jours après sa question → [[mail]] |
+| Régime | régime alimentaire | | `diet` | ce que le joueur ne mange pas (8, cumulables) ; filtre les Recettes → [[mail]] |
+| Liste à cocher | | | `diet_checklist` | cases [1]…[8] des Régimes, dans la Lettre de Rose et les Réglages |
 | Voisin | | | | personne d'une autre maison du village (Sam, Nadia et Claire…) |
 | Arbre | | | `Tree` | grand arbre à gauche de la maison, pousse du jour 1 au jour 12 |
 | Puits | | | `well` | vieux puits réparé, à gauche du grand Arbre |

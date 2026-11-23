@@ -23,8 +23,8 @@ pub(crate) fn unpack(text: &str) -> Option<Vec<u8>> {
 }
 
 fn digest(bytes: &[u8]) -> u64 {
-    bytes.iter().fold(OFFSET_BASIS, |hash, byte| {
-        (hash ^ u64::from(*byte)).wrapping_mul(PRIME)
+    bytes.iter().fold(OFFSET_BASIS, |acc, byte| {
+        (acc ^ u64::from(*byte)).wrapping_mul(PRIME)
     })
 }
 
@@ -66,7 +66,7 @@ impl Journal {
             _ => digest(on_disk),
         };
         let text = format!("{previous:016x}{}", pack(current));
-        super::replace_file(path, text.as_bytes())
+        super::write_creating_dir(path, text)
     }
 
     pub(super) fn holds(&self, content: &[u8]) -> bool {

@@ -1,14 +1,16 @@
 use crate::config::{Config, Mail};
-use crate::progress::{Progress, pack, progress_path, sync_path, unpack};
+use crate::progress::{
+    Progress, check_restorable, pack, progress_path, sync_path, unpack, write_creating_dir,
+};
+use crate::prompt::{PREFIX, confirm};
 use crate::story::content::letters;
 use crate::story::reach::settle_on_launch;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::fs;
-use std::io::{self, Write};
+use std::io;
 use std::path::{Path, PathBuf};
 
-const PREFIX: &str = "[weathr]";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 struct Paths {
@@ -18,10 +20,10 @@ struct Paths {
 }
 
 impl Paths {
-    fn local() -> io::Result<Self> {
-        Ok(Self {
-            progress: progress_path().ok_or(io::ErrorKind::NotFound)?,
-            config: Config::get_config_path().map_err(io::Error::other)?,
+    fn local() -> Option<Self> {
+        Some(Self {
+            progress: progress_path()?,
+            config: Config::get_config_path().ok()?,
             sync: sync_path(),
         })
     }
@@ -32,9 +34,23 @@ impl Paths {
         settle_on_launch(progress, out_of_sync, mail_hour, village_count)
     }
 
-    fn save(&self, progress: &Progress) -> io::Result<()> {
-        progress.save_to_path(&self.progress, self.sync.as_deref())
+    fn save(&self, progress: &Progress) -> Result<(), &Path> {
+        progress
+            .save_to_path(&self.progress, self.sync.as_deref())
+            .map_err(|_| self.progress.as_path())
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum CollectError<'a> {
+    NoProgress,
+    Unreadable(&'a Path),
+    Unwritable(&'a Path),
+}
+
+enum Restore {
+    Done,
+    Declined,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -48,17 +64,23 @@ struct Backup {
 }
 
 impl Backup {
-    fn collect(paths: &Paths, village_count: usize) -> io::Result<Self> {
-        let _: Progress = serde_json::from_slice(&fs::read(&paths.progress)?)?;
+    fn collect(paths: &Paths, village_count: usize) -> Result<Self, CollectError<'_>> {
+        let unreadable = CollectError::Unreadable(&paths.progress);
+        let content = fs::read(&paths.progress).map_err(|error| match error.kind() {
+            io::ErrorKind::NotFound => CollectError::NoProgress,
+            _ => unreadable,
+        })?;
+        let _: Progress = serde_json::from_slice(&content).map_err(|_| unreadable)?;
         let (mut progress, opening) = Progress::load_at(&paths.progress, paths.sync.as_deref());
         if paths.settle(&mut progress, opening.out_of_sync, village_count) {
-            paths.save(&progress)?;
+            paths.save(&progress).map_err(CollectError::Unwritable)?;
         }
-        let content = fs::read(&paths.progress)?;
+        let content = fs::read(&paths.progress).map_err(|_| unreadable)?;
         Ok(Self {
             version: VERSION.to_string(),
-            progress: serde_json::from_slice(&content)?,
-            config: read_if_present(&paths.config)?,
+            progress: serde_json::from_slice(&content).map_err(|_| unreadable)?,
+            config: read_if_present(&paths.config)
+                .map_err(|_| CollectError::Unreadable(&paths.config))?,
             sync: Some(pack(&content)),
         })
     }
@@ -77,7 +99,7 @@ impl Backup {
         Some(self.version.as_str()).filter(|version| *version != VERSION)
     }
 
-    fn checked(&self) -> io::Result<(Progress, bool)> {
+    fn checked(&self) -> serde_json::Result<(Progress, bool)> {
         let kept = self.sync.as_deref().and_then(unpack).and_then(|content| {
             let progress: Progress = serde_json::from_slice(&content).ok()?;
             let fields: Map<String, Value> = serde_json::from_slice(&content).ok()?;
@@ -85,22 +107,19 @@ impl Backup {
         });
         match kept {
             Some(kept) => Ok(kept),
-            None => Ok((
-                serde_json::from_value(Value::Object(self.progress.clone()))?,
-                true,
-            )),
+            None => Ok((check_restorable(&self.progress)?, true)),
         }
     }
 
-    fn restore(
+    fn restore<'a>(
         &self,
         mut progress: Progress,
         out_of_sync: bool,
-        paths: &Paths,
+        paths: &'a Paths,
         village_count: usize,
-    ) -> io::Result<()> {
+    ) -> Result<(), &'a Path> {
         if let Some(config) = self.config.as_deref().filter(|config| !config.is_empty()) {
-            write_creating_dir(&paths.config, config)?;
+            write_creating_dir(&paths.config, config).map_err(|_| paths.config.as_path())?;
         }
         paths.settle(&mut progress, out_of_sync, village_count);
         paths.save(&progress)
@@ -108,19 +127,32 @@ impl Backup {
 }
 
 pub fn export(file: &Path) -> bool {
-    match Paths::local()
-        .and_then(|paths| Backup::collect(&paths, letters::read().len()))
-        .and_then(|backup| backup.write(file))
-    {
-        Ok(()) => {
-            println!("{PREFIX} Sauvegarde écrite dans {}.", file.display());
-            true
+    let paths = Paths::local();
+    let collected = paths
+        .as_ref()
+        .ok_or(CollectError::NoProgress)
+        .and_then(|paths| Backup::collect(paths, letters::read().len()));
+    let backup = match collected {
+        Ok(backup) => backup,
+        Err(CollectError::NoProgress) => {
+            eprintln!("{PREFIX} Aucune progression à sauvegarder.");
+            return false;
         }
-        Err(error) => {
-            eprintln!("{PREFIX} {error}");
-            false
+        Err(CollectError::Unreadable(path)) => {
+            eprintln!("{PREFIX} Impossible de lire {}.", path.display());
+            return false;
         }
+        Err(CollectError::Unwritable(path)) => {
+            eprintln!("{PREFIX} Impossible d'écrire {}.", path.display());
+            return false;
+        }
+    };
+    if backup.write(file).is_err() {
+        eprintln!("{PREFIX} Impossible d'écrire {}.", file.display());
+        return false;
     }
+    println!("{PREFIX} Sauvegarde écrite dans {}.", file.display());
+    true
 }
 
 pub fn import(file: &Path) -> bool {
@@ -133,42 +165,41 @@ pub fn import(file: &Path) -> bool {
             "{PREFIX} Sauvegarde faite avec weathr {version}, tu as la {VERSION}\u{202F}: des données peuvent manquer."
         );
     }
+    let Some(paths) = Paths::local() else {
+        eprintln!("{PREFIX} Impossible d'écrire la progression.");
+        return false;
+    };
 
-    let restored = Paths::local().and_then(|paths| {
-        if paths.progress.exists() && !confirm_replacement() {
-            return Ok(false);
-        }
-        backup
-            .restore(progress, out_of_sync, &paths, letters::read().len())
-            .map(|()| true)
-    });
-    match restored {
-        Ok(true) => {
+    match import_into(&backup, progress, out_of_sync, &paths) {
+        Ok(Restore::Done) => {
             println!("{PREFIX} Progression importée.");
             true
         }
-        Ok(false) => true,
-        Err(error) => {
-            eprintln!("{PREFIX} {error}");
+        Ok(Restore::Declined) => true,
+        Err(path) => {
+            eprintln!("{PREFIX} Impossible d'écrire {}.", path.display());
             false
         }
     }
 }
 
-fn confirm_replacement() -> bool {
-    print!(
-        "{PREFIX} Ta progression et tes réglages actuels seront remplacés. Continuer\u{202F}? [o/N] "
-    );
-    let _ = io::stdout().flush();
-    let mut answer = String::new();
-    io::stdin().read_line(&mut answer).is_ok() && accepts(&answer)
-}
-
-fn accepts(answer: &str) -> bool {
-    matches!(
-        answer.trim().to_lowercase().as_str(),
-        "o" | "oui" | "y" | "yes"
-    )
+fn import_into<'a>(
+    backup: &Backup,
+    progress: Progress,
+    out_of_sync: bool,
+    paths: &'a Paths,
+) -> Result<Restore, &'a Path> {
+    if paths.progress.exists()
+        && !confirm(
+            "Ta progression et tes réglages actuels seront remplacés. Continuer\u{202F}?",
+            false,
+        )
+    {
+        return Ok(Restore::Declined);
+    }
+    backup
+        .restore(progress, out_of_sync, paths, letters::read().len())
+        .map(|()| Restore::Done)
 }
 
 fn read_if_present(path: &Path) -> io::Result<Option<String>> {
@@ -177,13 +208,6 @@ fn read_if_present(path: &Path) -> io::Result<Option<String>> {
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
         Err(error) => Err(error),
     }
-}
-
-fn write_creating_dir(path: &Path, content: &str) -> io::Result<()> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)?;
-    }
-    fs::write(path, content)
 }
 
 #[cfg(test)]
@@ -477,11 +501,44 @@ mod tests {
     }
 
     #[test]
+    fn test_failed_config_write_leaves_progress_untouched() {
+        let temp = TempDir::new("config_fails");
+        let old_mac = temp.paths("old");
+        let new_mac = temp.paths("new");
+        let file = temp.file("s.json");
+        seed(&old_mac, Some(CONFIG));
+        fs::create_dir_all(&new_mac.config).unwrap();
+
+        export_to(&old_mac, &file);
+        let (backup, progress, out_of_sync) = Backup::read(&file).unwrap();
+        let failed = backup
+            .restore(progress, out_of_sync, &new_mac, VILLAGE_LETTER_COUNT)
+            .err();
+
+        assert_eq!(failed, Some(new_mac.config.as_path()));
+        assert!(!new_mac.progress.exists());
+    }
+
+    #[test]
     fn test_export_without_progress_fails() {
         let temp = TempDir::new("no_progress");
         let paths = temp.paths("mac");
-        assert!(Backup::collect(&paths, VILLAGE_LETTER_COUNT).is_err());
+        assert!(matches!(
+            Backup::collect(&paths, VILLAGE_LETTER_COUNT),
+            Err(CollectError::NoProgress)
+        ));
         assert!(!paths.progress.exists());
+    }
+
+    #[test]
+    fn test_export_of_a_corrupt_progress_names_the_file() {
+        let temp = TempDir::new("corrupt_progress");
+        let paths = temp.paths("mac");
+        write_creating_dir(&paths.progress, "pas du JSON").unwrap();
+        assert!(matches!(
+            Backup::collect(&paths, VILLAGE_LETTER_COUNT),
+            Err(CollectError::Unreadable(path)) if path == paths.progress
+        ));
     }
 
     #[test]
@@ -493,15 +550,11 @@ mod tests {
 
     #[test]
     fn test_same_version_is_not_reported() {
-        let temp = TempDir::new("same_version");
-        let paths = temp.paths("mac");
-        seed(&paths, None);
-        assert_eq!(
-            Backup::collect(&paths, VILLAGE_LETTER_COUNT)
-                .unwrap()
-                .other_version(),
-            None
-        );
+        let backup: Backup = serde_json::from_str(&format!(
+            r#"{{"version":"{VERSION}","progress":{{"letters_read":3}}}}"#
+        ))
+        .unwrap();
+        assert_eq!(backup.other_version(), None);
     }
 
     #[test]
@@ -518,7 +571,7 @@ mod tests {
                 r#"{"version":"1.7.0","progress":[1,2]}"#,
             ),
             (
-                "progress_mistyped.json",
+                "progress_wrong_type.json",
                 r#"{"version":"1.7.0","progress":{"letters_read":"douze"}}"#,
             ),
         ];
@@ -528,15 +581,5 @@ mod tests {
             assert!(Backup::read(&file).is_err(), "{name}");
         }
         assert!(Backup::read(&temp.file("missing.json")).is_err());
-    }
-
-    #[test]
-    fn test_only_an_explicit_yes_replaces_the_progress() {
-        for answer in ["o\n", "oui", "Y", " yes \n"] {
-            assert!(accepts(answer), "{answer:?}");
-        }
-        for answer in ["", "\n", "n", "non", "no", "ok"] {
-            assert!(!accepts(answer), "{answer:?}");
-        }
     }
 }
