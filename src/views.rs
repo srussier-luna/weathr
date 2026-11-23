@@ -1,5 +1,5 @@
 use crate::animation::lore::Unlocks;
-use crate::badges::Award;
+use crate::badges::{self, Award};
 use crate::holiday::HolidayBox;
 use crate::overlay::{self, Frame, Line, View};
 use crate::progress::Progress;
@@ -8,10 +8,12 @@ use crate::settings::{AutoLocation, CitySearch, Row, SearchStatus, Settings};
 use crate::story::Entry;
 use crate::story::content::chronicles::{BOTTLE_MESSAGES, CHEST_SOUVENIRS, DRAWINGS, OBJECTS};
 use crate::story::content::letters::{Choice, answered_choices};
+use crate::story::content::neighbours_note::{self, NeighboursNote};
 use crate::story::content::recipes::{Diet, RECIPES, diet_labels};
 use crate::story::content::{
     self, MONTHS, ReadContext, diet_checklist, postcard_lines, postcard_title, text,
 };
+use crate::story::punishment::Punishment;
 use crate::weather::units::{precipitation_symbol, temperature_symbol, wind_speed_symbol};
 use chrono::{Datelike, NaiveDate};
 use std::collections::BTreeSet;
@@ -130,6 +132,27 @@ pub fn restored_view() -> View {
         "Ta progression n'a pas pu être lue. Ta partie reprend à la dernière sauvegarde."
             .to_string(),
     )
+}
+
+pub fn neighbours_note_view(note: NeighboursNote) -> View {
+    let mut lines = Vec::new();
+    if note == NeighboursNote::Announcement(Punishment::Cheater)
+        && let Some(cheater) = badges::find(badges::CHEATER)
+    {
+        lines.extend(medal(cheater.icon).into_iter().map(Line::Centered));
+        lines.push(Line::Blank);
+    }
+    lines.extend([
+        text(note.text()),
+        Line::Blank,
+        text(neighbours_note::SIGNATURE),
+    ]);
+    View {
+        title: String::new(),
+        lines,
+        footer: CLOSE_FOOTER.to_string(),
+        frame: Frame::Roofs,
+    }
 }
 
 pub fn full_box_index_view(
@@ -696,6 +719,40 @@ mod tests {
              blank\n\
              text: — Le Facteur\n"
         )));
+    }
+
+    #[test]
+    fn test_neighbours_note_is_signed_in_its_own_frame() {
+        let announcement =
+            neighbours_note_view(NeighboursNote::Announcement(Punishment::MailBan(3)));
+        let disappointed = neighbours_note_view(NeighboursNote::disappointed(&mut rand::rng()));
+        for note in [&announcement, &disappointed] {
+            assert_eq!(note.frame, Frame::Roofs);
+            assert!(render(note).contains(&format!(
+                "blank\ntext: {}\nfooter: {CLOSE_FOOTER}\n",
+                neighbours_note::SIGNATURE
+            )));
+        }
+        assert!(render(&announcement).contains("3 jours"));
+    }
+
+    #[test]
+    fn test_cheater_announcement_shows_the_badge_medal() {
+        let medal_lines = |note| {
+            neighbours_note_view(note)
+                .lines
+                .iter()
+                .filter(|line| matches!(line, Line::Centered(_)))
+                .count()
+        };
+        assert_eq!(
+            medal_lines(NeighboursNote::Announcement(Punishment::Cheater)),
+            5
+        );
+        assert_eq!(
+            medal_lines(NeighboursNote::Announcement(Punishment::BareVillage)),
+            0
+        );
     }
 
     #[test]

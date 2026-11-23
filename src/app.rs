@@ -19,12 +19,13 @@ use crate::scene::tree::Growth;
 use crate::settings::{self, AutoLocation, CitySearch, Row, Settings};
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Choice, Letter};
+use crate::story::content::neighbours_note::NeighboursNote;
 use crate::story::content::recipes::{Diet, diet_for_key, diet_ids, diets_from_ids, toggle_diet};
 use crate::story::content::{self, ReadContext};
 use crate::story::postman_note::{self, MailStep};
 use crate::story::reach::{launch_reach, settle};
 use crate::story::sources::{self, Recipes};
-use crate::story::{Entry, StoryClock, Thing, Timeline, pause};
+use crate::story::{Entry, StoryClock, Thing, Timeline, pause, punishment};
 use crate::travel;
 use crate::updater;
 use crate::views;
@@ -277,17 +278,46 @@ fn welcome_on_launch(progress: &Progress, launch: Launch) -> bool {
     !progress.welcome_seen && !matches!(launch, Launch::Suppressed)
 }
 
+fn neighbours_note_on_launch(
+    day: Option<NonZeroU16>,
+    progress: &mut Progress,
+    clock: &mut StoryClock,
+    mail_date: NaiveDate,
+    rng: &mut impl rand::Rng,
+) -> Option<NeighboursNote> {
+    if day.is_some() {
+        return None;
+    }
+    match punishment::sentence(progress, clock, mail_date) {
+        Some(punishment) => Some(NeighboursNote::Announcement(punishment)),
+        None => punishment::is_mail_banned(progress, mail_date)
+            .then(|| NeighboursNote::disappointed(rng)),
+    }
+}
+
 fn notes_overlay(has_notes: bool) -> Option<Overlay> {
     has_notes.then_some(Overlay::Notes(0))
 }
 
-fn opening_overlay(has_backup: bool, shows_welcome: bool, has_notes: bool) -> Option<Overlay> {
+fn after_welcome(has_neighbours_note: bool, has_notes: bool) -> Option<Overlay> {
+    if has_neighbours_note {
+        Some(Overlay::NeighboursNote)
+    } else {
+        notes_overlay(has_notes)
+    }
+}
+
+fn opening_overlay(
+    has_backup: bool,
+    shows_welcome: bool,
+    after_welcome: Option<Overlay>,
+) -> Option<Overlay> {
     if has_backup {
         Some(Overlay::Backup { shows_welcome })
     } else if shows_welcome {
         Some(Overlay::Welcome(Step::Arriving))
     } else {
-        notes_overlay(has_notes)
+        after_welcome
     }
 }
 
@@ -298,10 +328,21 @@ fn holiday_box_after_launch(
     overlay.or_else(|| pending_holiday_box.take().map(Overlay::HolidayBox))
 }
 
-fn backup_after_key(code: KeyCode, shows_welcome: bool, has_notes: bool) -> Option<Overlay> {
+fn backup_after_key(
+    code: KeyCode,
+    shows_welcome: bool,
+    after_welcome: Option<Overlay>,
+) -> Option<Overlay> {
     match code {
-        KeyCode::Esc | KeyCode::Enter => opening_overlay(false, shows_welcome, has_notes),
+        KeyCode::Esc | KeyCode::Enter => opening_overlay(false, shows_welcome, after_welcome),
         _ => Some(Overlay::Backup { shows_welcome }),
+    }
+}
+
+fn neighbours_note_after_key(code: KeyCode, has_notes: bool) -> Option<Overlay> {
+    match code {
+        KeyCode::Esc | KeyCode::Enter => notes_overlay(has_notes),
+        _ => Some(Overlay::NeighboursNote),
     }
 }
 
@@ -485,6 +526,7 @@ enum Overlay {
     Help,
     HolidayBox(&'static HolidayBox),
     Index(usize),
+    NeighboursNote,
     NewBadge(Award),
     NoteBadge(Award),
     Notes(usize),
@@ -533,6 +575,8 @@ pub struct App {
     timeline: Timeline,
     release_notes: Vec<Section>,
     recovery: Option<Recovery>,
+    neighbours_note: Option<NeighboursNote>,
+    bare_village: bool,
     overlay: Option<Overlay>,
     is_simulated: bool,
     awards_badges: bool,
@@ -674,6 +718,7 @@ impl App {
             .and_then(|holiday| holiday.holiday_box());
 
         let is_forced = is_simulated || simulation.night;
+        let has_backup = opening.recovery.is_some();
         let user_name = updater::git_user_name();
         let mut app = Self {
             state,
@@ -689,13 +734,11 @@ impl App {
             letters,
             clock,
             timeline,
-            overlay: opening_overlay(
-                opening.recovery.is_some(),
-                shows_welcome,
-                !release_notes.is_empty(),
-            ),
+            overlay: None,
             release_notes,
             recovery: opening.recovery,
+            neighbours_note: None,
+            bare_village: false,
             is_simulated: is_forced,
             awards_badges: simulation.day.is_none(),
             is_sky_lookout: badges::is_sky_lookout(user_name.as_deref()),
@@ -723,6 +766,20 @@ impl App {
             diet_draft: BTreeSet::new(),
             diet_editor: None,
         };
+        app.hold_full_box();
+        let mail_date = app.mail_date();
+        app.neighbours_note = neighbours_note_on_launch(
+            simulation.day,
+            &mut app.progress,
+            &mut app.clock,
+            mail_date,
+            &mut rand::rng(),
+        );
+        if matches!(app.neighbours_note, Some(NeighboursNote::Announcement(_))) {
+            app.progress.save();
+        }
+        app.overlay = opening_overlay(has_backup, shows_welcome, app.after_welcome());
+        app.bare_village = app.is_village_bare();
         app.refresh_unlocks();
         app.refresh_tree_growth();
         app.refresh_timeline();
@@ -755,14 +812,14 @@ impl App {
             .saturating_sub(self.progress.letters_read);
         let is_mail_waiting = unread > 0 && !self.hides_mail();
         self.animations.set_mail_waiting(is_mail_waiting);
-        self.animations
-            .set_story_frozen(self.clock.is_frozen() || self.is_box_full());
-        let earned = badges::BADGES
-            .iter()
+        self.animations.set_story_frozen(
+            self.clock.is_frozen() || self.is_box_full() || self.is_mail_banned(),
+        );
+        let earned = badges::collection()
             .filter(|badge| self.progress.badges.contains(badge.id))
             .count();
         self.state
-            .set_progress_summary(is_mail_waiting, earned, badges::BADGES.len());
+            .set_progress_summary(is_mail_waiting, earned, badges::collection().count());
     }
 
     fn collect_badges(&mut self) {
@@ -874,15 +931,26 @@ impl App {
 
     fn press_backup_key(&mut self, code: KeyCode) {
         if let Some(Overlay::Backup { shows_welcome }) = self.overlay {
-            self.overlay = backup_after_key(code, shows_welcome, !self.release_notes.is_empty());
+            self.overlay = backup_after_key(code, shows_welcome, self.after_welcome());
         }
+    }
+
+    fn press_neighbours_note_key(&mut self, code: KeyCode) {
+        self.overlay = neighbours_note_after_key(code, !self.release_notes.is_empty());
+    }
+
+    fn after_welcome(&self) -> Option<Overlay> {
+        after_welcome(
+            self.neighbours_note.is_some(),
+            !self.release_notes.is_empty(),
+        )
     }
 
     fn end_welcome(&mut self) {
         self.progress.welcome_seen = true;
         self.progress.save();
         self.animations.postman_leave();
-        self.overlay = notes_overlay(!self.release_notes.is_empty());
+        self.overlay = self.after_welcome();
     }
 
     fn has_read_all_letters(&self) -> bool {
@@ -913,8 +981,25 @@ impl App {
     }
 
     fn refresh_unlocks(&mut self) {
-        self.animations.set_unlocks(self.unlocks());
+        let unlocks = self.unlocks();
+        self.animations.set_unlocks(if self.bare_village {
+            unlocks.without_habitants()
+        } else {
+            unlocks
+        });
         self.animations.set_guests(self.guests());
+    }
+
+    fn mail_date(&self) -> NaiveDate {
+        self.clock.mail_date(Local::now().naive_local())
+    }
+
+    fn is_mail_banned(&self) -> bool {
+        punishment::is_mail_banned(&self.progress, self.mail_date())
+    }
+
+    fn is_village_bare(&self) -> bool {
+        punishment::is_village_bare(&self.progress, self.timeline_day, self.mail_date())
     }
 
     fn is_box_full(&self) -> bool {
@@ -1096,6 +1181,10 @@ impl App {
                 None => return Ok(()),
             },
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
+            Some(Overlay::NeighboursNote) => match self.neighbours_note {
+                Some(note) => views::neighbours_note_view(note),
+                None => return Ok(()),
+            },
             Some(Overlay::HolidayBox(holiday_box)) => views::holiday_box_view(holiday_box),
             Some(Overlay::NewBadge(award) | Overlay::NoteBadge(award)) => {
                 views::badge_card_view(award)
@@ -1223,10 +1312,15 @@ impl App {
     fn refresh_timeline(&mut self) {
         self.hold_full_box();
         let today = self.clock.today();
-        if today != self.timeline_day {
+        let is_new_day = today != self.timeline_day;
+        if is_new_day {
             let recipes = freeze_recipes(&mut self.progress, &self.clock, today);
             self.timeline = Timeline::for_village(self.letters.len(), &self.clock, today, recipes);
             self.timeline_day = today;
+        }
+        let bare_village = self.is_village_bare();
+        if is_new_day || bare_village != self.bare_village {
+            self.bare_village = bare_village;
             self.refresh_unlocks();
             self.refresh_tree_growth();
         }
@@ -1243,6 +1337,7 @@ impl App {
     fn refresh_tree_growth(&mut self) {
         let growth = self.tree_growth();
         self.scene.set_tree_growth(growth);
+        self.scene.set_bare_tree(self.bare_village);
         self.animations.set_tree_growth(growth);
     }
 
@@ -1855,6 +1950,9 @@ impl App {
                             _ if matches!(self.overlay, Some(Overlay::Backup { .. })) => {
                                 self.press_backup_key(key_event.code);
                             }
+                            _ if matches!(self.overlay, Some(Overlay::NeighboursNote)) => {
+                                self.press_neighbours_note_key(key_event.code);
+                            }
                             KeyCode::Char('c') | KeyCode::Char('C') => self.press_mail(),
                             KeyCode::Char('b') | KeyCode::Char('B') => {
                                 self.overlay = match self.overlay {
@@ -1900,6 +1998,7 @@ mod tests {
     use super::*;
     use crate::config::LocationDisplay;
     use crate::progress::DATE_FORMAT;
+    use crate::story::punishment::Punishment;
     use crate::weather::WeatherUnits;
     use chrono::{NaiveDate, NaiveDateTime};
 
@@ -2030,17 +2129,17 @@ mod tests {
     #[test]
     fn test_notes_wait_for_the_welcome_and_badge_cards_too() {
         assert!(matches!(
-            opening_overlay(false, true, true),
+            opening_overlay(false, true, notes_overlay(true)),
             Some(Overlay::Welcome(Step::Arriving))
         ));
         assert!(matches!(
-            opening_overlay(false, false, true),
+            opening_overlay(false, false, notes_overlay(true)),
             Some(Overlay::Notes(0))
         ));
-        assert!(opening_overlay(false, false, false).is_none());
+        assert!(opening_overlay(false, false, notes_overlay(false)).is_none());
 
         let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["rain"]).into();
-        let overlay = next_overlay(opening_overlay(false, true, false), &mut pending);
+        let overlay = next_overlay(opening_overlay(false, true, None), &mut pending);
         assert!(matches!(overlay, Some(Overlay::Welcome(_))));
         assert_eq!(pending.len(), 1);
     }
@@ -2057,15 +2156,20 @@ mod tests {
         let mut holiday_box = Holiday::music_day().holiday_box();
         let mut badges: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["music_day"]).into();
 
-        let backup = holiday_box_after_launch(opening_overlay(true, true, true), &mut holiday_box);
+        let backup = holiday_box_after_launch(
+            opening_overlay(true, true, notes_overlay(true)),
+            &mut holiday_box,
+        );
         assert!(matches!(
             backup,
             Some(Overlay::Backup {
                 shows_welcome: true
             })
         ));
-        let welcome =
-            holiday_box_after_launch(backup_after_key(KeyCode::Esc, true, true), &mut holiday_box);
+        let welcome = holiday_box_after_launch(
+            backup_after_key(KeyCode::Esc, true, notes_overlay(true)),
+            &mut holiday_box,
+        );
         assert!(matches!(welcome, Some(Overlay::Welcome(Step::Arriving))));
         let notes = holiday_box_after_launch(notes_overlay(true), &mut holiday_box);
         assert!(matches!(notes, Some(Overlay::Notes(0))));
@@ -2089,7 +2193,10 @@ mod tests {
     #[test]
     fn test_backup_box_opens_before_the_welcome_and_the_notes() {
         let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["rain"]).into();
-        let overlay = next_overlay(opening_overlay(true, false, true), &mut pending);
+        let overlay = next_overlay(
+            opening_overlay(true, false, notes_overlay(true)),
+            &mut pending,
+        );
         assert!(matches!(
             overlay,
             Some(Overlay::Backup {
@@ -2099,20 +2206,139 @@ mod tests {
         assert_eq!(pending.len(), 1);
 
         assert!(matches!(
-            backup_after_key(KeyCode::Char('h'), false, true),
+            backup_after_key(KeyCode::Char('h'), false, notes_overlay(true)),
             Some(Overlay::Backup { .. })
         ));
         for code in [KeyCode::Esc, KeyCode::Enter] {
             assert!(matches!(
-                backup_after_key(code, false, true),
+                backup_after_key(code, false, notes_overlay(true)),
                 Some(Overlay::Notes(0))
             ));
         }
         assert!(matches!(
-            backup_after_key(KeyCode::Esc, true, true),
+            backup_after_key(KeyCode::Esc, true, notes_overlay(true)),
             Some(Overlay::Welcome(Step::Arriving))
         ));
-        assert!(backup_after_key(KeyCode::Enter, false, false).is_none());
+        assert!(backup_after_key(KeyCode::Enter, false, None).is_none());
+    }
+
+    #[test]
+    fn test_neighbours_note_opens_after_backup_and_welcome_before_the_notes() {
+        assert!(matches!(
+            after_welcome(true, true),
+            Some(Overlay::NeighboursNote)
+        ));
+        assert!(matches!(
+            after_welcome(false, true),
+            Some(Overlay::Notes(0))
+        ));
+        assert!(after_welcome(false, false).is_none());
+
+        assert!(matches!(
+            opening_overlay(false, false, after_welcome(true, true)),
+            Some(Overlay::NeighboursNote)
+        ));
+        assert!(matches!(
+            opening_overlay(false, true, after_welcome(true, true)),
+            Some(Overlay::Welcome(_))
+        ));
+        assert!(matches!(
+            backup_after_key(KeyCode::Enter, false, after_welcome(true, true)),
+            Some(Overlay::NeighboursNote)
+        ));
+
+        assert!(matches!(
+            neighbours_note_after_key(KeyCode::Char('c'), true),
+            Some(Overlay::NeighboursNote)
+        ));
+        for code in [KeyCode::Esc, KeyCode::Enter] {
+            assert!(matches!(
+                neighbours_note_after_key(code, true),
+                Some(Overlay::Notes(0))
+            ));
+            assert!(neighbours_note_after_key(code, false).is_none());
+        }
+    }
+
+    fn cheater(cheats: u32) -> Progress {
+        let mut progress = Progress::default();
+        progress.started_on = Some("2026-10-01".to_string());
+        progress.resyncs = cheats;
+        progress
+    }
+
+    #[test]
+    fn test_neighbours_note_announces_each_new_cheat_once() {
+        let mut progress = cheater(1);
+        let mut clock = StoryClock::for_progress(&progress, 9);
+        let mut rng = rand::rng();
+        let mut launch = |progress: &mut Progress, clock: &mut StoryClock, today| {
+            neighbours_note_on_launch(None, progress, clock, today, &mut rng)
+        };
+
+        assert_eq!(
+            launch(&mut progress, &mut clock, date(2026, 10, 10)),
+            Some(NeighboursNote::Announcement(Punishment::Cheater))
+        );
+        assert_eq!(launch(&mut progress, &mut clock, date(2026, 10, 10)), None);
+        assert!(progress.badges.contains(badges::CHEATER));
+
+        progress.resyncs = 2;
+        assert_eq!(
+            launch(&mut progress, &mut clock, date(2026, 10, 11)),
+            Some(NeighboursNote::Announcement(Punishment::BareVillage))
+        );
+        assert_eq!(launch(&mut progress, &mut clock, date(2026, 10, 12)), None);
+    }
+
+    #[test]
+    fn test_neighbours_note_comes_back_disappointed_until_the_mail_returns() {
+        let mut progress = cheater(3);
+        progress.punished_cheats = 2;
+        let mut clock = StoryClock::for_progress(&progress, 9);
+        let mut rng = rand::rng();
+        let mut launch = |progress: &mut Progress, clock: &mut StoryClock, today| {
+            neighbours_note_on_launch(None, progress, clock, today, &mut rng)
+        };
+
+        assert_eq!(
+            launch(&mut progress, &mut clock, date(2026, 10, 10)),
+            Some(NeighboursNote::Announcement(Punishment::MailBan(3)))
+        );
+        for day in [10, 11, 13] {
+            assert!(matches!(
+                launch(&mut progress, &mut clock, date(2026, 10, day)),
+                Some(NeighboursNote::Disappointed(_))
+            ));
+        }
+        assert_eq!(launch(&mut progress, &mut clock, date(2026, 10, 14)), None);
+
+        let relaunched = StoryClock::for_progress(&progress, 9);
+        assert_eq!(relaunched.day_of(date(2026, 10, 13)), 10);
+        assert_eq!(relaunched.day_of(date(2026, 10, 14)), 11);
+    }
+
+    #[test]
+    fn test_forced_day_never_punishes() {
+        let mut progress = cheater(3);
+        let mut clock = StoryClock::for_progress(&progress, 9);
+        let note = neighbours_note_on_launch(
+            NonZeroU16::new(43),
+            &mut progress,
+            &mut clock,
+            date(2026, 10, 10),
+            &mut rand::rng(),
+        );
+        assert_eq!(note, None);
+        assert_eq!(progress.punished_cheats, 0);
+        assert!(progress.badges.is_empty());
+        assert!(progress.paused_days.is_empty());
+        assert!(clock.pauses().is_empty());
+        assert!(!punishment::is_village_bare(
+            &progress,
+            10,
+            date(2026, 10, 10)
+        ));
     }
 
     #[test]

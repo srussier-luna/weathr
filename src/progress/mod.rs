@@ -125,6 +125,12 @@ pub struct Progress {
     pub diet_recipes_until: Option<usize>,
     #[serde(default)]
     pub resyncs: u32,
+    #[serde(default)]
+    pub punished_cheats: u32,
+    #[serde(default)]
+    pub bare_village_until: Option<usize>,
+    #[serde(default)]
+    mail_ban_until: Option<String>,
     #[serde(default, skip_serializing)]
     format: u32,
     #[serde(skip)]
@@ -290,6 +296,14 @@ impl Progress {
 
     pub fn mark_pause_checked(&mut self, date: NaiveDate) {
         self.pause_checked_on = Some(date.format(DATE_FORMAT).to_string());
+    }
+
+    pub fn mail_ban_end(&self) -> Option<NaiveDate> {
+        self.mail_ban_until.as_deref().and_then(parse_date)
+    }
+
+    pub fn set_mail_ban_end(&mut self, date: NaiveDate) {
+        self.mail_ban_until = Some(date.format(DATE_FORMAT).to_string());
     }
 
     pub fn previous_mail_hour(&self) -> Option<(NaiveDate, u32)> {
@@ -469,6 +483,29 @@ mod tests {
         let loaded: Progress = serde_json::from_str(&saved).unwrap();
         assert_eq!(loaded.paused_days, BTreeMap::from([(7, 15)]));
         assert_eq!(loaded.pause_checked_date(), Some(date));
+    }
+
+    #[test]
+    fn test_save_without_punishment_fields_loads_unpunished() {
+        let progress: Progress =
+            serde_json::from_str(r#"{"started_on":"2026-09-01","resyncs":2}"#).unwrap();
+        assert_eq!(progress.punished_cheats, 0);
+        assert_eq!(progress.bare_village_until, None);
+        assert_eq!(progress.mail_ban_end(), None);
+    }
+
+    #[test]
+    fn test_punishments_round_trip() {
+        let mut progress = Progress::default();
+        let date = NaiveDate::from_ymd_opt(2026, 11, 20).unwrap();
+        progress.punished_cheats = 3;
+        progress.bare_village_until = Some(19);
+        progress.set_mail_ban_end(date);
+        let saved = serde_json::to_string(&progress).unwrap();
+        let loaded: Progress = serde_json::from_str(&saved).unwrap();
+        assert_eq!(loaded.punished_cheats, 3);
+        assert_eq!(loaded.bare_village_until, Some(19));
+        assert_eq!(loaded.mail_ban_end(), Some(date));
     }
 
     #[test]

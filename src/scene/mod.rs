@@ -16,6 +16,7 @@ pub struct WorldScene {
     ground: ground::Ground,
     decorations: decorations::Decorations,
     tree_growth: tree::Growth,
+    is_tree_bare: bool,
     width: u16,
     height: u16,
 }
@@ -33,6 +34,7 @@ impl WorldScene {
             ground,
             decorations,
             tree_growth: tree::Growth::default(),
+            is_tree_bare: false,
             width,
             height,
         }
@@ -46,6 +48,10 @@ impl WorldScene {
 
     pub fn set_tree_growth(&mut self, growth: tree::Growth) {
         self.tree_growth = growth;
+    }
+
+    pub fn set_bare_tree(&mut self, is_bare: bool) {
+        self.is_tree_bare = is_bare;
     }
 
     pub fn render(
@@ -104,6 +110,7 @@ impl WorldScene {
                 is_snowing: conditions.is_snowing,
                 holiday: *holiday,
                 tree_growth: self.tree_growth,
+                is_tree_bare: self.is_tree_bare,
             },
         )?;
 
