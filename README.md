@@ -79,6 +79,8 @@ weathr --simulate snow --night
 weathr --christmas
 weathr --fireworks
 weathr --music
+weathr --chandeleur    # crêpe géante dans le ciel
+weathr --muguet        # brin de muguet géant dans le ciel
 
 # Feuilles qui tombent et rafales
 weathr --simulate clear --leaves
@@ -126,6 +128,8 @@ weathr --import ~/weathr.json   # sur le nouveau
 - Noël (24–25 décembre) : sapin et cadeaux.
 - Nouvel An (± 7 jours) : bannière et feu d'artifice.
 - Pâques (± 7 jours) : décorations dans le jardin.
+- 2 février : une crêpe géante traverse le ciel.
+- 1er mai : un brin de muguet géant traverse le ciel.
 - 14 juillet : feu d'artifice la nuit.
 - Octobre : citrouilles et esprits d'Halloween.
 
