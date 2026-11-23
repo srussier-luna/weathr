@@ -1,6 +1,6 @@
 use super::clock::StoryClock;
 use super::event::{Beat, Entry, StoryEvent, Thing};
-use super::sources::StorySource;
+use super::sources::{self, Recipes, StorySource};
 
 pub struct Timeline {
     mail: Vec<(usize, Entry)>,
@@ -8,6 +8,15 @@ pub struct Timeline {
 }
 
 impl Timeline {
+    pub fn for_village(
+        village_count: usize,
+        clock: &StoryClock,
+        today: usize,
+        recipes: Recipes,
+    ) -> Self {
+        Self::new(&sources::registered(village_count, recipes), clock, today)
+    }
+
     pub fn new(sources: &[Box<dyn StorySource>], clock: &StoryClock, today: usize) -> Self {
         let mut beats: Vec<Beat> = sources
             .iter()
@@ -73,7 +82,8 @@ impl Timeline {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::story::sources;
+    use crate::progress::Progress;
+    use crate::story::sources::{self, Recipes};
     use chrono::NaiveDate;
     use std::num::NonZeroU16;
 
@@ -85,7 +95,11 @@ mod tests {
 
     fn timeline(start: NaiveDate, today: usize) -> Timeline {
         let clock = StoryClock::new(start, 0);
-        Timeline::new(&sources::registered(VILLAGE_COUNT), &clock, today)
+        Timeline::new(
+            &sources::registered(VILLAGE_COUNT, Recipes::default()),
+            &clock,
+            today,
+        )
     }
 
     #[test]
@@ -100,6 +114,36 @@ mod tests {
             }
         }
         assert_eq!(rendered, include_str!("testdata/timeline_golden.txt"));
+    }
+
+    #[test]
+    fn test_save_on_day_29_gets_rose_letter_next_without_moving_older_mail() {
+        let clock = StoryClock::new(date(2026, 9, 1), 0);
+        let with_letter_on = |letter_day: usize| {
+            let mut progress = Progress::default();
+            progress.diet_letter_day = Some(letter_day);
+            let recipes = Recipes::from_progress(&progress);
+            Timeline::new(&sources::registered(VILLAGE_COUNT, recipes), &clock, 40)
+        };
+        let before_update = with_letter_on(usize::MAX);
+        let updated = with_letter_on(sources::diet_letter_day(29));
+
+        let read = before_update.delivered_by(29);
+        assert_eq!(updated.delivered_by(29), read);
+        assert_eq!(updated.first_mail(read), before_update.first_mail(read));
+        let day_30: Vec<Entry> = updated
+            .mail()
+            .filter(|(day, _)| *day == 30)
+            .map(|(_, entry)| entry)
+            .collect();
+        assert_eq!(day_30.last(), Some(&Entry::DietLetter));
+        assert_eq!(
+            updated
+                .mail()
+                .filter(|(_, entry)| *entry == Entry::DietLetter)
+                .count(),
+            1
+        );
     }
 
     #[test]
@@ -163,7 +207,11 @@ mod tests {
         let frozen = StoryClock::frozen(today, 9, NonZeroU16::new(12).unwrap());
         let late = date(2026, 10, 27).and_hms_opt(10, 0, 0).unwrap();
         let day = frozen.day_on(late);
-        let preview = Timeline::new(&sources::registered(VILLAGE_COUNT), &frozen, day);
+        let preview = Timeline::new(
+            &sources::registered(VILLAGE_COUNT, Recipes::default()),
+            &frozen,
+            day,
+        );
 
         let expected = timeline(frozen.date_of(1), 12)
             .mail()
@@ -193,7 +241,7 @@ mod tests {
     #[test]
     fn test_registering_a_source_adds_its_beats() {
         let clock = StoryClock::new(date(2026, 10, 22), 0);
-        let mut registered = sources::registered(VILLAGE_COUNT);
+        let mut registered = sources::registered(VILLAGE_COUNT, Recipes::default());
         registered.push(Box::new(Dummy));
         let timeline = Timeline::new(&registered, &clock, 10);
 

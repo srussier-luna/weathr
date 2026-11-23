@@ -7,7 +7,9 @@ const FILE_HEADER: &str = "# Lettres de weathr : une nouvelle lettre arrive chaq
 # Tu peux réécrire les textes librement ou ajouter des lettres après la dernière.
 ";
 
-const DEFAULT_LETTERS: [(&str, &str); 60] = [
+pub const VILLAGE_LETTER_COUNT: usize = 60;
+
+const DEFAULT_LETTERS: [(&str, &str); VILLAGE_LETTER_COUNT] = [
     (
         "Rose, la boulangère",
         "Bienvenue dans la maison au bout du chemin ! Ici, tout le monde se connaît. Je passe chaque matin avec mon panier de croissants : si tu sens une odeur de beurre, c'est moi. Je suis sourde : inutile de sonner chez moi, fais-moi plutôt signe par la fenêtre. Gaston, le facteur, t'apportera une lettre par jour. C'est la tradition du village.",
@@ -464,6 +466,15 @@ pub fn echo_for(
         .copied()
 }
 
+pub fn answered_choices(
+    answers: &std::collections::BTreeMap<String, u8>,
+) -> impl Iterator<Item = (&'static Choice, usize)> {
+    CHOICES.iter().filter_map(|choice| {
+        let option = usize::from(*answers.get(choice.id)?).checked_sub(1)?;
+        (option < choice.options.len()).then_some((choice, option))
+    })
+}
+
 pub struct Letter {
     pub sender: String,
     pub body: String,
@@ -578,6 +589,25 @@ mod tests {
         let answers = std::collections::BTreeMap::from([("bow".to_string(), 2)]);
         assert_eq!(echo_for(6, &answers), Some(CHOICES[0].echoes[1]));
         assert_eq!(echo_for(13, &answers), None);
+    }
+
+    #[test]
+    fn test_answered_choices_follow_question_order_and_skip_unknown_answers() {
+        let answers = std::collections::BTreeMap::from([
+            ("well".to_string(), 2),
+            ("bow".to_string(), 1),
+            ("bell".to_string(), 3),
+            ("owl".to_string(), 0),
+            ("nobody".to_string(), 1),
+        ]);
+        let answered: Vec<(&str, usize)> = answered_choices(&answers)
+            .map(|(choice, option)| (choice.id, option))
+            .collect();
+        assert_eq!(answered, [("bow", 0), ("well", 1)]);
+        assert_eq!(
+            answered_choices(&std::collections::BTreeMap::new()).count(),
+            0
+        );
     }
 
     #[test]

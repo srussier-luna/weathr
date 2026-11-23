@@ -2,6 +2,7 @@ mod animation;
 mod animation_manager;
 mod app;
 mod app_state;
+mod backup;
 mod badges;
 mod cache;
 mod config;
@@ -12,6 +13,7 @@ mod geolocation;
 mod holiday;
 mod overlay;
 mod progress;
+mod prompt;
 mod rain_alert;
 mod release_notes;
 mod remote_weather;
@@ -19,6 +21,7 @@ mod render;
 mod scene;
 mod settings;
 mod story;
+mod travel;
 mod updater;
 mod views;
 mod weather;
@@ -33,7 +36,7 @@ use crossterm::{
     terminal::{LeaveAlternateScreen, disable_raw_mode},
 };
 use render::TerminalRenderer;
-use std::{io, num::NonZeroU16, panic};
+use std::{io, num::NonZeroU16, panic, path::PathBuf};
 
 const LONG_VERSION: &str = concat!(
     env!("CARGO_PKG_VERSION"),
@@ -90,6 +93,18 @@ struct Cli {
     #[arg(long, help = "Simulate June 21st Music Day (notes from the windows)")]
     music: bool,
 
+    #[arg(
+        long = "chandeleur",
+        help = "Simulate February 2nd Candlemas (a giant crêpe in the sky)"
+    )]
+    candlemas: bool,
+
+    #[arg(
+        long = "muguet",
+        help = "Simulate May 1st (a giant lily of the valley in the sky)"
+    )]
+    may_day: bool,
+
     #[arg(long, help = "Cycle through every weather scene, 1 second each")]
     demo: bool,
 
@@ -140,6 +155,21 @@ struct Cli {
         help = "Check git, cargo, the source clone, the network and file rights, then say what to fix"
     )]
     diagnostic: bool,
+
+    #[arg(
+        long,
+        value_name = "FICHIER",
+        conflicts_with = "import",
+        help = "Save your progress and settings to a backup file, to move to another Mac"
+    )]
+    export: Option<PathBuf>,
+
+    #[arg(
+        long,
+        value_name = "FICHIER",
+        help = "Restore the progress and settings saved by --export (close weathr first)"
+    )]
+    import: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -213,6 +243,21 @@ async fn main() -> io::Result<()> {
         }
         return Ok(());
     }
+
+    if let Some(file) = &cli.export {
+        if !backup::export(file) {
+            std::process::exit(1);
+        }
+        return Ok(());
+    }
+
+    if let Some(file) = &cli.import {
+        if !backup::import(file) {
+            std::process::exit(1);
+        }
+        return Ok(());
+    }
+
     if !cli.silent {
         updater::offer_update().await;
     }
@@ -278,6 +323,7 @@ async fn main() -> io::Result<()> {
         eprintln!("Warning: No location set, defaulting to Berlin (52.52, 13.41).");
     }
 
+    let mut launch_location = None;
     // Auto-detect location if enabled
     if config.location.auto {
         info(config.silent, "Auto-detecting location...");
@@ -302,7 +348,8 @@ async fn main() -> io::Result<()> {
                 }
                 config.location.latitude = geo_loc.latitude;
                 config.location.longitude = geo_loc.longitude;
-                config.location.city = geo_loc.city;
+                config.location.city = geo_loc.city.clone();
+                launch_location = Some(geo_loc);
             }
             Err(e) => {
                 eprintln!("{}", e.user_friendly_message());
@@ -359,12 +406,17 @@ async fn main() -> io::Result<()> {
                 Some(holiday::Holiday::neighbours_party())
             } else if cli.music {
                 Some(holiday::Holiday::music_day())
+            } else if cli.candlemas {
+                Some(holiday::Holiday::candlemas())
+            } else if cli.may_day {
+                Some(holiday::Holiday::may_day())
             } else {
                 None
             },
             demo: cli.demo,
             day: cli.day,
         },
+        launch_location.as_ref(),
         cli.leaves,
         term_width,
         term_height,

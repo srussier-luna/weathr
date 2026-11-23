@@ -3,6 +3,7 @@ use crate::holiday::{Holiday, Season};
 use crate::render::TerminalRenderer;
 use chrono::Local;
 use crossterm::style::Color;
+use std::cmp::Ordering;
 use std::io;
 
 const TOP_MARGIN: u16 = 7;
@@ -17,6 +18,7 @@ const FIR_NOTCH: u16 = 2;
 const BAUBLE_DENSITY: f32 = 0.12;
 const SNOWY_ROW_STEP: u16 = 4;
 const BLINK_MILLIS: i64 = 500;
+const TWIG_DENSITY: f32 = 0.1;
 const LIGHTS: [Color; 4] = [Color::Red, Color::Yellow, Color::Cyan, Color::Magenta];
 const FIR_GREEN: Color = Color::Rgb {
     r: 20,
@@ -135,9 +137,12 @@ impl Tree {
         is_day: bool,
         holiday: &Holiday,
         is_snowing: bool,
+        is_bare: bool,
     ) -> io::Result<()> {
-        let is_fir = holiday.is_december || holiday.season == Season::Winter;
-        if is_fir {
+        let is_fir = !is_bare && (holiday.is_december || holiday.season == Season::Winter);
+        if is_bare {
+            self.render_branches(renderer, is_day)?;
+        } else if is_fir {
             self.render_fir(renderer, holiday.is_december, is_day, is_snowing)?;
         } else {
             for row in 0..self.canopy_height {
@@ -215,6 +220,34 @@ impl Tree {
                     ('*', dim(FIR_GREEN, is_day))
                 };
                 renderer.render_char(x, y, ch, color)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn branch(&self, x: u16, row: u16) -> Option<char> {
+        let center = self.center_x();
+        let spread = (self.canopy_height - row) * self.width / (2 * self.canopy_height);
+        let is_limb = x == center - spread || x == center + spread;
+        let is_twig = scatter(x.wrapping_mul(31).wrapping_add(row), 47) < TWIG_DENSITY;
+        if !is_limb && !is_twig && x != center {
+            return None;
+        }
+        Some(match x.cmp(&center) {
+            Ordering::Less => '\\',
+            Ordering::Equal => '|',
+            Ordering::Greater => '/',
+        })
+    }
+
+    fn render_branches(&self, renderer: &mut TerminalRenderer, is_day: bool) -> io::Result<()> {
+        let color = dim(TRUNK_COLOR, is_day);
+        for row in 0..self.canopy_height {
+            let (start, end) = self.canopy_span(row);
+            for x in start..end {
+                if let Some(ch) = self.branch(x, row) {
+                    renderer.render_char(x, self.top_y + row, ch, color)?;
+                }
             }
         }
         Ok(())
@@ -331,6 +364,28 @@ mod tests {
         let low_horizon = TOP_MARGIN + MIN_HEIGHT + 2;
         let tree = Tree::grown(HOUSE_X, low_horizon, Growth::Third).unwrap();
         assert_eq!(tree.height(), MIN_HEIGHT);
+    }
+
+    #[test]
+    fn test_bare_tree_keeps_its_branches_and_drops_its_leaves() {
+        let tree = grown(Growth::Full);
+        let mut branches = 0;
+        let mut gaps = 0;
+        for row in 0..tree.canopy_height {
+            let (start, end) = tree.canopy_span(row);
+            assert_eq!(tree.branch(tree.center_x(), row), Some('|'));
+            for x in start..end {
+                match tree.branch(x, row) {
+                    Some(ch) => {
+                        assert!(['\\', '|', '/'].contains(&ch), "{ch}");
+                        branches += 1;
+                    }
+                    None => gaps += 1,
+                }
+            }
+        }
+        assert!(branches > tree.canopy_height as usize);
+        assert!(gaps > branches);
     }
 
     #[test]

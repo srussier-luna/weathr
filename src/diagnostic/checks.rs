@@ -244,11 +244,9 @@ pub fn progress_file(path: Option<&Path>, file: ProgressFile) -> Check {
             format!("illisible ({error})"),
             format!("vérifie les droits de {path}"),
         ),
-        ProgressFile::Invalid => Check::problem(
-            "progress.json",
-            "JSON mal formé",
-            format!("corrige {path} ou supprime-le (ta partie repartira de zéro)"),
-        ),
+        ProgressFile::Invalid => {
+            Check::problem("progress.json", "JSON mal formé", "relance weathr")
+        }
     }
 }
 
@@ -349,13 +347,13 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_progress_points_to_the_file() {
+    fn test_invalid_progress_asks_for_a_relaunch() {
         let check = progress_file(
             Some(Path::new("/home/weathr/progress.json")),
             ProgressFile::Invalid,
         );
         assert_eq!(problem(&check), "JSON mal formé");
-        assert!(fix(&check).contains("/home/weathr/progress.json"));
+        assert_eq!(fix(&check), "relance weathr");
     }
 
     #[test]

@@ -38,6 +38,7 @@ mod tests {
     use crate::progress::Progress;
     use crate::story::clock::StoryClock;
     use chrono::NaiveDate;
+    use std::collections::BTreeSet;
 
     fn has_line(view: &View, expected: &str) -> bool {
         view.lines
@@ -57,6 +58,7 @@ mod tests {
                 clock: &clock,
                 reading_hour,
                 riddle_input: None,
+                diet_draft: &BTreeSet::new(),
             };
             NightPostscript::new(VillageLetter::new(2, "3/10".to_string())).compose(&ctx)
         };

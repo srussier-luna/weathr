@@ -15,6 +15,7 @@ const MAX_RETRIES: u32 = 3;
 const INITIAL_RETRY_DELAY_MS: u64 = 500;
 const CORE_LOCATION_CLI: &str = "CoreLocationCLI";
 const CORE_LOCATION_TIMEOUT: Duration = Duration::from_secs(10);
+const EARTH_RADIUS_KM: f64 = 6371.0;
 
 static LAST_NOMINATIM_REQUEST: Mutex<Option<Instant>> = Mutex::new(None);
 
@@ -29,6 +30,16 @@ pub struct GeoLocation {
     pub latitude: f64,
     pub longitude: f64,
     pub city: Option<String>,
+}
+
+pub fn distance_km(from: (f64, f64), to: (f64, f64)) -> f64 {
+    let (latitude, longitude) = (from.0.to_radians(), from.1.to_radians());
+    let (other_latitude, other_longitude) = (to.0.to_radians(), to.1.to_radians());
+    let haversine = ((other_latitude - latitude) / 2.0).sin().powi(2)
+        + latitude.cos()
+            * other_latitude.cos()
+            * ((other_longitude - longitude) / 2.0).sin().powi(2);
+    2.0 * EARTH_RADIUS_KM * haversine.sqrt().min(1.0).asin()
 }
 
 pub async fn detect_location() -> Result<GeoLocation, GeolocationError> {
@@ -369,6 +380,25 @@ mod tests {
     #[test]
     fn test_no_result_gives_no_place() {
         assert!(parsed("[]").is_empty());
+    }
+
+    #[test]
+    fn test_distance_between_paris_and_lyon_is_about_392_km() {
+        let distance = distance_km((48.8566, 2.3522), (45.7640, 4.8357));
+        assert!((distance - 392.0).abs() < 2.0, "{distance}");
+    }
+
+    #[test]
+    fn test_distance_to_the_same_point_is_zero() {
+        assert_eq!(distance_km((38.72, -9.14), (38.72, -9.14)), 0.0);
+    }
+
+    #[test]
+    fn test_distance_is_symmetric_across_the_date_line() {
+        let east = distance_km((0.0, 179.95), (0.0, -179.95));
+        let west = distance_km((0.0, -179.95), (0.0, 179.95));
+        assert_eq!(east, west);
+        assert!(east < 12.0, "{east}");
     }
 
     #[test]
