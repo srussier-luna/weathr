@@ -107,6 +107,16 @@ weathr --silent          # pas de messages au démarrage
 
 `NO_COLOR=1 weathr` désactive les couleurs.
 
+### Changer de Mac
+
+```bash
+weathr --export ~/weathr.json   # sur l'ancien Mac
+weathr --import ~/weathr.json   # sur le nouveau
+```
+
+- La sauvegarde reprend `progress.json` et `config.toml` : lettres lues, badges, ville et réglages.
+- Fermer weathr avant `--import` : une partie ouverte réenregistre sa progression par-dessus.
+
 ## Le village
 
 ### Saisons et fêtes

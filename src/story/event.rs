@@ -9,6 +9,8 @@ pub enum Entry {
     Recipe(usize),
     Postcard(usize),
     Creepy(usize),
+    DietLetter,
+    DietRecipe(usize),
 }
 
 impl Entry {
@@ -20,9 +22,10 @@ impl Entry {
             Self::Marcel(_) => 3,
             Self::Archive(_) => 4,
             Self::Gazette(_) => 5,
-            Self::Recipe(_) => 6,
+            Self::Recipe(_) | Self::DietRecipe(_) => 6,
             Self::Postcard(_) => 7,
             Self::Creepy(_) => 8,
+            Self::DietLetter => 9,
         }
     }
 }

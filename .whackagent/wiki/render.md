@@ -61,3 +61,7 @@ Status line built in `AppState::update_cached_info` (`src/app_state.rs:192`), re
 
 - `overlay::render_with_chevrons(view, has_previous, has_next)` draws a yellow `«` left / `»` right of the box, mid-height, one empty column (`CHEVRON_GAP`) then a back-and-forth every 500 ms; no room → nothing (under 70 columns the right one does not fit).
 - Lettre: `»` while unread mail remains after the open one (`postman_note::has_unread_after`). Album: `«` except on page 1, `»` except on the last page.
+
+## Encadré de Fête (#94)
+
+- `Overlay::HolidayBox` (`holiday_box_view`, `Frame::Plain`, `[Echap] fermer`), shown at every launch on a Fête day after the other launch windows and before Badge cards. Data: `HOLIDAY_BOXES` in `src/holiday.rs` (13: Fêtes, Chandeleur, 1er mai, Perséides, Géminides); one box per launch, a one-day Fête wins over a longer one. Not in `--demo`.

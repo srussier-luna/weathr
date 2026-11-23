@@ -75,7 +75,7 @@ pub fn is_village_bare(progress: &Progress, day: usize, mail_date: NaiveDate) ->
 mod tests {
     use super::*;
     use crate::story::pause;
-    use crate::story::sources;
+    use crate::story::sources::{self, Recipes};
     use crate::story::timeline::Timeline;
     use std::collections::BTreeMap;
 
@@ -98,7 +98,12 @@ mod tests {
     }
 
     fn delivered(clock: &StoryClock, today: usize) -> usize {
-        Timeline::new(&sources::registered(VILLAGE_COUNT), clock, today).delivered_by(today)
+        Timeline::new(
+            &sources::registered(VILLAGE_COUNT, Recipes::default()),
+            clock,
+            today,
+        )
+        .delivered_by(today)
     }
 
     #[test]
@@ -236,7 +241,11 @@ mod tests {
         let mut progress = caught(3, 2);
         let mut clock = clock();
         sentence(&mut progress, &mut clock, date(10, 10));
-        let timeline = Timeline::new(&sources::registered(VILLAGE_COUNT), &clock, 10);
+        let timeline = Timeline::new(
+            &sources::registered(VILLAGE_COUNT, Recipes::default()),
+            &clock,
+            10,
+        );
         assert!(pause::is_box_full(&timeline, 10, 0));
 
         let checked = progress.pause_checked_date();

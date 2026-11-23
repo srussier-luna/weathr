@@ -1,6 +1,6 @@
 ---
 issue: 125
-status: to-test
+status: to-close
 wiki:
 note: "Découpé de #124 (parapluie « Ajouter la détection de triche »), sprint « Anti-triche ». Punitions : #126."
 created: 2026-11-17
@@ -24,6 +24,9 @@ created: 2026-11-17
 - Build : `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use`, `cargo test` verts.
 
 ## Review
+
+Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- Détails hors du dépôt. Constats corrigés en 2 tours, revérifié propre. Code modifié depuis le test : conseil de `--diagnostic` pour un fichier de progression illisible.
 
 ## Verification
 

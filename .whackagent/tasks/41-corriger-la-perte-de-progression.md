@@ -1,6 +1,6 @@
 ---
 issue: 41
-status: to-test
+status: to-close
 wiki: [[mail]], [[render]]
 note: "Protéger la progression : si progress.json est abîmé, weathr repart de zéro sans prévenir et écrase le fichier ; garder une copie de secours et afficher un message"
 created: 2026-10-27
@@ -50,6 +50,9 @@ created: 2026-10-27
 - Build : `cargo build`, `cargo fmt -- --check`, `cargo clippy --all-targets -- -D warnings -A clippy::double_must_use`, `cargo test` (492, 0 échec) verts.
 
 ## Review
+
+Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- 3 minor findings fixed in 2 autofix rounds: same-minute copies get -2, -3… (never overwritten), readable bool order, shared `CLOSE_FOOTER`. Re-verified clean.
 
 ## Verification
 

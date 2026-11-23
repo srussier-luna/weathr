@@ -1,19 +1,22 @@
 use crate::animation::lore::Unlocks;
-use crate::badges::{self, Badge};
+use crate::badges::{self, Award};
+use crate::holiday::HolidayBox;
 use crate::overlay::{self, Frame, Line, View};
 use crate::progress::Progress;
 use crate::release_notes::Section;
-use crate::settings::{AutoLocation, CitySearch, ROWS, Row, SearchStatus, Settings};
+use crate::settings::{AutoLocation, CitySearch, Row, SearchStatus, Settings};
 use crate::story::Entry;
-use crate::story::content::chronicles::{
-    BOTTLE_MESSAGES, CHEST_SOUVENIRS, DRAWINGS, OBJECTS, RECIPES,
-};
+use crate::story::content::chronicles::{BOTTLE_MESSAGES, CHEST_SOUVENIRS, DRAWINGS, OBJECTS};
 use crate::story::content::letters::{Choice, answered_choices};
 use crate::story::content::neighbours_note::{self, NeighboursNote};
-use crate::story::content::{self, MONTHS, ReadContext, postcard_lines, postcard_title, text};
+use crate::story::content::recipes::{Diet, RECIPES, diet_labels};
+use crate::story::content::{
+    self, MONTHS, ReadContext, diet_checklist, postcard_lines, postcard_title, text,
+};
 use crate::story::punishment::Punishment;
 use crate::weather::units::{precipitation_symbol, temperature_symbol, wind_speed_symbol};
 use chrono::{Datelike, NaiveDate};
+use std::collections::BTreeSet;
 use std::path::Path;
 
 const INDEX_FOOTER: &str = "[↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer";
@@ -21,16 +24,17 @@ const ALBUM_FOOTER: &str = "[<] [>] pages  [a] ou [Echap] fermer";
 const ANSWERS_FOOTER: &str =
     "[↑] [↓] choisir  [1] [2] changer  [<] [>] pages  [a] ou [Echap] fermer";
 const BOTTLE_FOOTER: &str = "[Echap] fermer";
+const HOLIDAY_BOX_FOOTER: &str = "[Echap] fermer";
 const BADGE_CARD_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const HELP_FOOTER: &str = "[h] ou [Echap] fermer";
 const SETTINGS_FOOTER: &str = "[↑] [↓] choisir  [<] [>] changer  [s] ou [Echap] fermer";
 const SETTINGS_LABEL_WIDTH: usize = 18;
 const CITY_SEARCH_FOOTER: &str = "[Entrée] chercher  [Echap] retour";
 const CITY_RESULTS_FOOTER: &str = "[↑] [↓] choisir  [Entrée] valider  [Echap] retour";
-const NOTES_FOOTER: &str = "[Entrée] ou [Echap] fermer";
+const DIET_FOOTER: &str = "[1]…[8] cocher  [Entrée] valider  [Echap] retour";
+const LISTED_DIETS: usize = 2;
+const CLOSE_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const POSTMAN_NOTE_FOOTER: &str = "[c] suivante  [Echap] fermer";
-const BACKUP_FOOTER: &str = "[Entrée] ou [Echap] fermer";
-const NEIGHBOURS_NOTE_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const SCROLL_HINT: &str = "[↑] [↓] défiler";
 const HELP_KEY_WIDTH: usize = 10;
 const NOTES_BULLET: &str = "- ";
@@ -111,7 +115,7 @@ fn backup_box(line: String) -> View {
     View {
         title: "Sauvegarde".to_string(),
         lines: vec![text(line)],
-        footer: BACKUP_FOOTER.to_string(),
+        footer: CLOSE_FOOTER.to_string(),
         frame: Frame::Floppy,
     }
 }
@@ -146,7 +150,7 @@ pub fn neighbours_note_view(note: NeighboursNote) -> View {
     View {
         title: String::new(),
         lines,
-        footer: NEIGHBOURS_NOTE_FOOTER.to_string(),
+        footer: CLOSE_FOOTER.to_string(),
         frame: Frame::Roofs,
     }
 }
@@ -182,6 +186,15 @@ pub fn bottle_view(index: usize) -> View {
     }
 }
 
+pub fn holiday_box_view(holiday_box: &HolidayBox) -> View {
+    View {
+        title: holiday_box.title.to_string(),
+        lines: holiday_box.lines.iter().copied().map(text).collect(),
+        footer: HOLIDAY_BOX_FOOTER.to_string(),
+        frame: Frame::Plain,
+    }
+}
+
 fn medal([top, middle, bottom]: [&str; 3]) -> [String; 5] {
     [
         " .-\"\"\"-. ".to_string(),
@@ -192,15 +205,20 @@ fn medal([top, middle, bottom]: [&str; 3]) -> [String; 5] {
     ]
 }
 
-pub fn badge_card_view(badge: &Badge) -> View {
+pub fn badge_card_view(award: Award) -> View {
+    let title = if award.is_new_tier() {
+        "Nouveau palier\u{202F}!"
+    } else {
+        "Nouveau badge\u{202F}!"
+    };
     let mut lines = vec![Line::Blank];
-    lines.extend(medal(badge.icon).into_iter().map(Line::Centered));
+    lines.extend(medal(award.badge.icon).into_iter().map(Line::Centered));
     lines.extend([
         Line::Blank,
-        Line::Centered("Nouveau badge\u{202F}!".to_string()),
-        Line::Centered(badge.name.to_string()),
+        Line::Centered(title.to_string()),
+        Line::Centered(award.name()),
     ]);
-    lines.extend(badge.hint.map(|hint| Line::Centered(hint.to_string())));
+    lines.extend(award.hint().map(Line::Centered));
     View {
         title: String::new(),
         lines,
@@ -251,7 +269,8 @@ pub fn help_view(unlocks: &Unlocks, has_gazette: bool) -> View {
 }
 
 pub fn settings_view(settings: &Settings, selected: usize, is_hour_for_tomorrow: bool) -> View {
-    let mut lines: Vec<Line> = ROWS
+    let mut lines: Vec<Line> = settings
+        .rows()
         .iter()
         .enumerate()
         .map(|(index, row)| {
@@ -310,6 +329,31 @@ fn settings_row(settings: &Settings, row: Row) -> (&'static str, String) {
             }
             .to_string(),
         ),
+        Row::Diet => (
+            "Régime",
+            settings
+                .diets
+                .as_ref()
+                .map(diet_summary)
+                .unwrap_or_default(),
+        ),
+    }
+}
+
+fn diet_summary(diets: &BTreeSet<Diet>) -> String {
+    match diets.len() {
+        0 => "aucun".to_string(),
+        count if count > LISTED_DIETS => format!("{count} Régimes"),
+        _ => diet_labels(diets),
+    }
+}
+
+pub fn diet_view(diets: &BTreeSet<Diet>) -> View {
+    View {
+        title: "Régime".to_string(),
+        lines: diet_checklist(diets),
+        footer: DIET_FOOTER.to_string(),
+        frame: Frame::Plain,
     }
 }
 
@@ -417,7 +461,7 @@ pub fn notes_view(sections: &[Section], first: usize, rows: usize, width: usize)
         notes_lines(sections, width),
         first,
         rows,
-        NOTES_FOOTER,
+        CLOSE_FOOTER,
         NOTES_FRAME,
     )
 }
@@ -512,7 +556,7 @@ pub fn album_pages(
     let recipes: Vec<usize> = read_entries
         .iter()
         .filter_map(|(_, entry)| match entry {
-            Entry::Recipe(month) => Some(*month),
+            Entry::Recipe(index) | Entry::DietRecipe(index) => Some(*index),
             _ => None,
         })
         .collect();
@@ -581,11 +625,11 @@ pub fn album_pages(
         footer: ALBUM_FOOTER.to_string(),
         frame: Frame::Photo,
     }));
-    pages.extend(recipes.iter().map(|month| {
-        let (name, body) = RECIPES[*month];
+    pages.extend(recipes.iter().map(|index| {
+        let recipe = &RECIPES[*index];
         View {
-            title: format!("Album : recette, {name}"),
-            lines: vec![text(body)],
+            title: format!("Album : recette, {}", recipe.name),
+            lines: vec![text(recipe.body)],
             footer: ALBUM_FOOTER.to_string(),
             frame: Frame::Photo,
         }
@@ -612,7 +656,8 @@ pub fn album_pages(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::badges;
+    use crate::badges::{self, Tier};
+    use crate::holiday::Holiday;
     use crate::story::content::letters::CHOICES;
     use crate::story::content::save_golden::{SavedGame, courrier_fixture, render};
     use std::collections::BTreeMap;
@@ -684,7 +729,7 @@ mod tests {
         for note in [&announcement, &disappointed] {
             assert_eq!(note.frame, Frame::Roofs);
             assert!(render(note).contains(&format!(
-                "blank\ntext: {}\nfooter: {NEIGHBOURS_NOTE_FOOTER}\n",
+                "blank\ntext: {}\nfooter: {CLOSE_FOOTER}\n",
                 neighbours_note::SIGNATURE
             )));
         }
@@ -812,7 +857,7 @@ mod tests {
                 "- Ancienne"
             ]
         );
-        assert_eq!(view.footer, NOTES_FOOTER);
+        assert_eq!(view.footer, CLOSE_FOOTER);
     }
 
     #[test]
@@ -822,7 +867,7 @@ mod tests {
         );
         let (height, width) = (3, 20);
 
-        assert_eq!(notes_view(&sections, 0, 20, width).footer, NOTES_FOOTER);
+        assert_eq!(notes_view(&sections, 0, 20, width).footer, CLOSE_FOOTER);
         let top = notes_view(&sections, 0, height, width);
         assert_eq!(
             rows(&top),
@@ -842,12 +887,12 @@ mod tests {
 
     #[test]
     fn test_badge_card_names_the_badge_and_its_secret_condition() {
-        let rain = badge_card_view(badges::find("rain").unwrap());
+        let rain = badge_card_view(badges::find("rain").unwrap().into());
         assert_eq!(rain.frame, Frame::Stars);
         assert_eq!(centered(&rain)[1], "/ (___) \\");
         assert_eq!(centered(&rain)[5..], ["Nouveau badge\u{202F}!", "Pluie"]);
 
-        let patience = badge_card_view(badges::find("patience").unwrap());
+        let patience = badge_card_view(badges::find("patience").unwrap().into());
         assert_eq!(
             centered(&patience)[5..],
             [
@@ -859,6 +904,43 @@ mod tests {
     }
 
     #[test]
+    fn test_sam_trail_card_is_a_new_badge_then_a_new_tier() {
+        let chocolate = badge_card_view(Award::sam_trail(Tier::Chocolate));
+        assert_eq!(
+            centered(&chocolate)[5..],
+            [
+                "Nouveau badge\u{202F}!",
+                "Sur les traces de Sam · chocolat",
+                "visité la même ville que Sam"
+            ]
+        );
+
+        let bronze = badge_card_view(Award::sam_trail(Tier::Bronze));
+        assert_eq!(centered(&bronze)[..5], centered(&chocolate)[..5]);
+        assert_eq!(
+            centered(&bronze)[5..],
+            [
+                "Nouveau palier\u{202F}!",
+                "Sur les traces de Sam · bronze",
+                "5 villes de Sam visitées"
+            ]
+        );
+    }
+
+    #[test]
+    fn test_holiday_box_names_the_holiday_and_what_to_look_for() {
+        let music = Holiday::music_day().holiday_box().unwrap();
+        assert_eq!(
+            render(&holiday_box_view(music)),
+            "title: Fête de la musique\n\
+             text: Ce soir, le village chante.\n\
+             text: Ouvre l'œil\u{202F}: des notes s'échappent des fenêtres.\n\
+             footer: [Echap] fermer\n\
+             frame: Plain\n"
+        );
+    }
+
+    #[test]
     fn test_settings_view_points_at_the_selected_row() {
         let mut settings = Settings {
             units: crate::weather::WeatherUnits::default(),
@@ -866,10 +948,11 @@ mod tests {
             hide_hud: true,
             city: "Lyon".to_string(),
             auto_location: AutoLocation::Off,
+            diets: None,
         };
         let view = settings_view(&settings, 3, false);
         let lines = overlay::lay_out(&view.lines, 60);
-        assert_eq!(lines.len(), ROWS.len());
+        assert_eq!(lines.len(), 7);
         assert!(lines[0].starts_with("  Température") && lines[0].ends_with("°C"));
         assert!(lines[3].starts_with("> Heure du Facteur") && lines[3].ends_with("< 7 h >"));
         assert!(lines[4].ends_with("masquée"));
@@ -888,6 +971,40 @@ mod tests {
             lines.last().unwrap(),
             "Nouvelle heure du Facteur dès demain."
         );
+    }
+
+    #[test]
+    fn test_diet_row_sums_up_the_checked_diets() {
+        let mut settings = Settings {
+            units: crate::weather::WeatherUnits::default(),
+            mail_hour: 9,
+            hide_hud: false,
+            city: "Lyon".to_string(),
+            auto_location: AutoLocation::Off,
+            diets: Some(BTreeSet::new()),
+        };
+        let row = |settings: &Settings| {
+            overlay::lay_out(&settings_view(settings, 7, false).lines, 60)[7].clone()
+        };
+        assert!(row(&settings).starts_with("> Régime") && row(&settings).ends_with("< aucun >"));
+
+        settings.diets = Some(BTreeSet::from([Diet::Vegetarian, Diet::NoPork]));
+        assert!(row(&settings).ends_with("< végétarien, sans porc >"));
+
+        settings.diets = Some(BTreeSet::from([Diet::Vegan, Diet::NoPork, Diet::NoFruit]));
+        assert!(row(&settings).ends_with("< 3 Régimes >"));
+    }
+
+    #[test]
+    fn test_diet_view_reuses_the_letter_checklist() {
+        let diets = BTreeSet::from([Diet::NoFish]);
+        let view = diet_view(&diets);
+        assert_eq!(view.title, "Régime");
+        assert_eq!(
+            overlay::lay_out(&view.lines, 60)[2],
+            "[5] ✓ sans poisson    [6]   sans porc"
+        );
+        assert_eq!(view.footer, DIET_FOOTER);
     }
 
     #[test]

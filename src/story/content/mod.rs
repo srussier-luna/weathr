@@ -1,9 +1,11 @@
 pub mod chronicles;
+mod diet_letter;
 mod gazette;
 pub mod letters;
 pub mod neighbours_note;
 mod night_postscript;
 mod postcard;
+pub mod recipes;
 mod village;
 mod written;
 
@@ -13,15 +15,19 @@ use crate::overlay::{Frame, Line, View};
 use crate::progress::Progress;
 use chronicles::{
     ARCHIVES, CITIES, MARCEL_LETTERS, MARCEL_SENDER, NEIGHBOURS_LETTERS, NEIGHBOURS_SENDER,
-    RECIPES, SAM_LETTERS, SAM_SENDER,
+    SAM_LETTERS, SAM_SENDER,
 };
+use diet_letter::DietLetter;
 use gazette::Gazette;
 use letters::{CREEPY_LETTERS, CREEPY_SENDER, Letter};
 use night_postscript::NightPostscript;
 use postcard::Postcard;
+use recipes::{Diet, RECIPES, ROSE_SENDER};
+use std::collections::BTreeSet;
 use village::VillageLetter;
 use written::Written;
 
+pub use diet_letter::diet_checklist;
 pub use night_postscript::is_night_hour;
 pub use postcard::{postcard_lines, postcard_title};
 
@@ -51,6 +57,7 @@ pub struct ReadContext<'a> {
     pub clock: &'a StoryClock,
     pub reading_hour: u32,
     pub riddle_input: Option<&'a str>,
+    pub diet_draft: &'a BTreeSet<Diet>,
 }
 
 pub trait MailContent {
@@ -75,10 +82,11 @@ fn series(entry: Entry) -> Option<Series> {
         | Entry::Sam(_)
         | Entry::Neighbours(_)
         | Entry::Marcel(_)
-        | Entry::Creepy(_) => Series::Letter,
+        | Entry::Creepy(_)
+        | Entry::DietLetter => Series::Letter,
         Entry::Postcard(_) => Series::Postcard,
         Entry::Archive(_) => Series::Archive,
-        Entry::Recipe(_) => Series::Recipe,
+        Entry::Recipe(_) | Entry::DietRecipe(_) => Series::Recipe,
         Entry::Gazette(_) => return None,
     })
 }
@@ -137,11 +145,21 @@ fn content_for(day: usize, entry: Entry, counter: String) -> Box<dyn MailContent
         }
         Entry::Gazette(week) => Box::new(Gazette::new(week, day)),
         Entry::Recipe(month) => {
-            let (name, body) = RECIPES[month];
+            let recipe = &RECIPES[month];
             Box::new(Written::new(
-                format!("Recette du mois {counter} : {name}"),
-                body,
-                "Rose, la boulangère",
+                format!("Recette du mois {counter} : {}", recipe.name),
+                recipe.body,
+                ROSE_SENDER,
+                Frame::Recipe,
+            ))
+        }
+        Entry::DietLetter => Box::new(DietLetter::new(counter)),
+        Entry::DietRecipe(index) => {
+            let recipe = &RECIPES[index];
+            Box::new(Written::new(
+                format!("Recette {counter}\u{202F}: {}", recipe.name),
+                recipe.body,
+                ROSE_SENDER,
                 Frame::Recipe,
             ))
         }
@@ -156,7 +174,9 @@ pub fn label(entry: Entry, ctx: &ReadContext) -> String {
         Entry::Marcel(_) => MARCEL_SENDER.to_string(),
         Entry::Archive(index) => format!("Archives : {}", ARCHIVES[index].0),
         Entry::Gazette(_) => "La Gazette du lundi".to_string(),
-        Entry::Recipe(month) => format!("Recette du mois : {}", RECIPES[month].0),
+        Entry::Recipe(month) => format!("Recette du mois : {}", RECIPES[month].name),
+        Entry::DietRecipe(index) => format!("Recette\u{202F}: {}", RECIPES[index].name),
+        Entry::DietLetter => ROSE_SENDER.to_string(),
         Entry::Postcard(index) => format!("Carte postale : {}", CITIES[index % CITIES.len()].name),
         Entry::Creepy(_) => CREEPY_SENDER.to_string(),
     }
@@ -166,10 +186,13 @@ pub fn label(entry: Entry, ctx: &ReadContext) -> String {
 pub(crate) mod save_golden {
     use super::ReadContext;
     use super::letters::{self, Letter};
+    use super::recipes::Diet;
     use crate::overlay::{Line, View};
     use crate::progress::Progress;
-    use crate::story::{StoryClock, Timeline, sources};
+    use crate::story::sources::{self, Recipes};
+    use crate::story::{StoryClock, Timeline};
     use chrono::NaiveDate;
+    use std::collections::BTreeSet;
 
     const SAVE: &str = r#"{
   "started_on": "2026-09-01",
@@ -181,6 +204,7 @@ pub(crate) mod save_golden {
 }"#;
     const FIXTURE: &str = include_str!("../testdata/save_37_golden.txt");
     const FIRST_ENTRY: &str = "== entry 0 night false\n";
+    static NO_DIET: BTreeSet<Diet> = BTreeSet::new();
 
     pub struct SavedGame {
         pub letters: Vec<Letter>,
@@ -193,7 +217,7 @@ pub(crate) mod save_golden {
     impl SavedGame {
         pub fn load() -> Self {
             let letters = letters::defaults();
-            let progress: Progress = serde_json::from_str(SAVE).unwrap();
+            let mut progress: Progress = serde_json::from_str(SAVE).unwrap();
             let clock = StoryClock::new(progress.start_date().unwrap(), 0);
             let today = clock.day_on(
                 NaiveDate::from_ymd_opt(2026, 10, 26)
@@ -201,7 +225,12 @@ pub(crate) mod save_golden {
                     .and_hms_opt(12, 0, 0)
                     .unwrap(),
             );
-            let timeline = Timeline::new(&sources::registered(letters.len()), &clock, today);
+            progress
+                .diet_letter_day
+                .get_or_insert(sources::diet_letter_day(today));
+            let recipes = Recipes::from_progress(&progress);
+            let timeline =
+                Timeline::new(&sources::registered(letters.len(), recipes), &clock, today);
             let available = timeline.delivered_by(today);
             Self {
                 letters,
@@ -219,6 +248,7 @@ pub(crate) mod save_golden {
                 clock: &self.clock,
                 reading_hour,
                 riddle_input: None,
+                diet_draft: &NO_DIET,
             }
         }
     }
@@ -366,5 +396,24 @@ mod tests {
         assert!(titles[4].starts_with("Recette du mois 1/2 : "));
         assert!(titles[7].starts_with("Archives de la mairie 3/3 : "));
         assert!(titles[9].starts_with("Carte postale 3/3 : "));
+    }
+
+    #[test]
+    fn test_rose_letter_and_reserve_recipes_join_their_series() {
+        let titles = titles(&[
+            Entry::Main(0),
+            Entry::Recipe(0),
+            Entry::DietLetter,
+            Entry::DietRecipe(2),
+        ]);
+        assert_eq!(
+            titles,
+            [
+                "Lettre 1/2",
+                "Recette du mois 1/2 : Galette des rois",
+                "Lettre 2/2",
+                "Recette 2/2\u{202F}: Pain perdu",
+            ]
+        );
     }
 }
