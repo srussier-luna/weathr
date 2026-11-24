@@ -42,16 +42,37 @@ pub fn distance_km(from: (f64, f64), to: (f64, f64)) -> f64 {
     2.0 * EARTH_RADIUS_KM * haversine.sqrt().min(1.0).asin()
 }
 
-pub async fn detect_location() -> Result<GeoLocation, GeolocationError> {
-    if let Some(location) = detect_device_location().await {
-        return Ok(location);
+#[derive(Debug, Clone)]
+pub struct DetectedLocation {
+    pub location: GeoLocation,
+    pub is_from_device: bool,
+}
+
+pub async fn detect_location() -> Result<DetectedLocation, GeolocationError> {
+    detect_from(detect_device_location(), async {
+        if let Some(cached) = cache::load_cached_location().await {
+            return Ok(cached);
+        }
+        detect_location_with_retry().await
+    })
+    .await
+}
+
+async fn detect_from(
+    device: impl Future<Output = Option<GeoLocation>>,
+    fallback: impl Future<Output = Result<GeoLocation, GeolocationError>>,
+) -> Result<DetectedLocation, GeolocationError> {
+    if let Some(location) = device.await {
+        return Ok(DetectedLocation {
+            location,
+            is_from_device: true,
+        });
     }
 
-    if let Some(cached) = cache::load_cached_location().await {
-        return Ok(cached);
-    }
-
-    detect_location_with_retry().await
+    fallback.await.map(|location| DetectedLocation {
+        location,
+        is_from_device: false,
+    })
 }
 
 async fn detect_device_location() -> Option<GeoLocation> {
@@ -241,12 +262,15 @@ async fn wait_for_nominatim() {
     tokio::time::sleep_until(start.into()).await;
 }
 
-pub async fn detect_location_with_city(language: &str) -> Result<GeoLocation, GeolocationError> {
-    let mut location = detect_location().await?;
+pub async fn detect_location_with_city(
+    language: &str,
+) -> Result<DetectedLocation, GeolocationError> {
+    let mut detected = detect_location().await?;
+    let location = &mut detected.location;
     if location.city.is_none() {
         location.city = reverse_geocode(location.latitude, location.longitude, language).await;
     }
-    Ok(location)
+    Ok(detected)
 }
 
 #[derive(Debug, Clone)]
@@ -412,6 +436,46 @@ mod tests {
             parsed(&format!("[{}]", results.join(","))).len(),
             MAX_CITY_RESULTS
         );
+    }
+
+    fn paris() -> GeoLocation {
+        GeoLocation {
+            latitude: 48.8566,
+            longitude: 2.3522,
+            city: Some("Paris".to_string()),
+        }
+    }
+
+    #[test]
+    fn test_device_output_gives_position_and_city() {
+        let location = parse_device_location("48.8566 2.3522 Saint-Denis\n").unwrap();
+        assert_eq!((location.latitude, location.longitude), (48.8566, 2.3522));
+        assert_eq!(location.city.as_deref(), Some("Saint-Denis"));
+    }
+
+    #[test]
+    fn test_device_output_without_position_gives_nothing() {
+        assert!(parse_device_location("").is_none());
+        assert!(parse_device_location("denied").is_none());
+    }
+
+    #[tokio::test]
+    async fn test_device_position_is_from_device() {
+        let detected = detect_from(async { Some(paris()) }, async {
+            unreachable!("the device answered")
+        })
+        .await
+        .unwrap();
+        assert!(detected.is_from_device);
+    }
+
+    #[tokio::test]
+    async fn test_fallback_position_is_not_from_device() {
+        let detected = detect_from(async { None }, async { Ok(paris()) })
+            .await
+            .unwrap();
+        assert!(!detected.is_from_device);
+        assert_eq!(detected.location.city.as_deref(), Some("Paris"));
     }
 
     #[tokio::test]

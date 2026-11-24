@@ -329,7 +329,8 @@ async fn main() -> io::Result<()> {
     if config.location.auto {
         info(config.silent, "Auto-detecting location...");
         match geolocation::detect_location().await {
-            Ok(geo_loc) => {
+            Ok(detected) => {
+                let geo_loc = &detected.location;
                 if let Some(city) = &geo_loc.city {
                     info(
                         config.silent,
@@ -350,7 +351,7 @@ async fn main() -> io::Result<()> {
                 config.location.latitude = geo_loc.latitude;
                 config.location.longitude = geo_loc.longitude;
                 config.location.city = geo_loc.city.clone();
-                launch_location = Some(geo_loc);
+                launch_location = Some(detected);
             }
             Err(e) => {
                 eprintln!("{}", e.user_friendly_message());
