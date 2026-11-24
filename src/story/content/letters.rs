@@ -1,5 +1,6 @@
+use super::previous_letters::PREVIOUS_LETTERS;
+use crate::progress::write_creating_dir;
 use std::fs;
-use std::io;
 use std::path::{Path, PathBuf};
 
 const FILE_HEADER: &str = "# Lettres de weathr : une nouvelle lettre arrive chaque jour.
@@ -491,20 +492,37 @@ pub fn defaults() -> Vec<Letter> {
 }
 
 pub fn load() -> Vec<Letter> {
-    let letters = read();
-    if let Some(path) = letters_path()
-        && !path.exists()
-    {
-        let _ = write_defaults(&path, &letters);
+    match letters_path() {
+        Some(path) => load_from(&path),
+        None => defaults(),
+    }
+}
+
+pub fn read() -> Vec<Letter> {
+    let content = letters_path().and_then(|path| fs::read_to_string(path).ok());
+    merged(&content.as_deref().map(parse).unwrap_or_default())
+}
+
+fn load_from(path: &Path) -> Vec<Letter> {
+    let content = fs::read_to_string(path).ok();
+    let blocks = content.as_deref().map(parse).unwrap_or_default();
+    let letters = merged(&blocks);
+    let rewritten = match content.as_deref() {
+        Some(content) => blocks
+            .iter()
+            .any(Block::is_outdated)
+            .then(|| refreshed(content, &blocks)),
+        None => (!path.exists()).then(|| rendered(&letters)),
+    };
+    if let Some(rewritten) = rewritten {
+        let _ = write_creating_dir(path, rewritten);
     }
     letters
 }
 
-pub fn read() -> Vec<Letter> {
+fn merged(blocks: &[Block]) -> Vec<Letter> {
     let mut letters = defaults();
-    if let Some(content) = letters_path().and_then(|path| fs::read_to_string(path).ok()) {
-        apply_overrides(&mut letters, &content);
-    }
+    apply_overrides(&mut letters, blocks);
     letters
 }
 
@@ -512,10 +530,7 @@ fn letters_path() -> Option<PathBuf> {
     dirs::config_dir().map(|dir| dir.join("weathr").join("lettres.txt"))
 }
 
-fn write_defaults(path: &Path, letters: &[Letter]) -> io::Result<()> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)?;
-    }
+fn rendered(letters: &[Letter]) -> String {
     let mut content = String::from(FILE_HEADER);
     for (index, letter) in letters.iter().enumerate() {
         content.push_str(&format!(
@@ -525,14 +540,51 @@ fn write_defaults(path: &Path, letters: &[Letter]) -> io::Result<()> {
             letter.body
         ));
     }
-    fs::write(path, content)
+    content
 }
 
-fn apply_overrides(letters: &mut Vec<Letter>, content: &str) {
-    for (number, letter) in parse(content) {
-        if number == 0 || letter.body.is_empty() {
+/// Swaps only the outdated blocks for the current defaults: the player's
+/// comments, edits and ignored blocks stay byte for byte.
+fn refreshed(content: &str, blocks: &[Block]) -> String {
+    let lines: Vec<&str> = content.lines().collect();
+    let mut text = String::with_capacity(content.len());
+    let mut push = |line: &str| {
+        text.push_str(line);
+        text.push('\n');
+    };
+    let mut next = 0;
+    for block in blocks.iter().filter(|block| block.is_outdated()) {
+        let (sender, body) = DEFAULT_LETTERS[block.number - 1];
+        let blank_tail = lines[block.header + 1..block.end]
+            .iter()
+            .rev()
+            .take_while(|line| line.trim().is_empty())
+            .count();
+        lines[next..block.header].iter().for_each(|line| push(line));
+        push(&format!("=== {} | {sender}", block.number));
+        body.lines().for_each(&mut push);
+        lines[block.end - blank_tail..block.end]
+            .iter()
+            .for_each(|line| push(line));
+        next = block.end;
+    }
+    lines[next..].iter().for_each(|line| push(line));
+    if !content.ends_with('\n') {
+        text.pop();
+    }
+    text
+}
+
+fn apply_overrides(letters: &mut Vec<Letter>, blocks: &[Block]) {
+    for block in blocks {
+        let number = block.number;
+        if number == 0 || block.letter.body.is_empty() || block.is_outdated() {
             continue;
         }
+        let letter = Letter {
+            sender: block.letter.sender.clone(),
+            body: block.letter.body.clone(),
+        };
         if number <= letters.len() {
             letters[number - 1] = letter;
         } else if number == letters.len() + 1 {
@@ -541,39 +593,67 @@ fn apply_overrides(letters: &mut Vec<Letter>, content: &str) {
     }
 }
 
-fn parse(content: &str) -> Vec<(usize, Letter)> {
-    let mut parsed = Vec::new();
-    let mut current: Option<(usize, String, Vec<&str>)> = None;
+/// One `=== N | sender` block of the letters file; `header..end` are its
+/// line indices, header included.
+struct Block {
+    number: usize,
+    letter: Letter,
+    header: usize,
+    end: usize,
+}
 
-    for line in content.lines() {
+impl Block {
+    /// A letter still carrying its pre-#173 default was never edited by the
+    /// player: the current default must replace it.
+    fn is_outdated(&self) -> bool {
+        let Some(index) = self.number.checked_sub(1) else {
+            return false;
+        };
+        match (PREVIOUS_LETTERS.get(index), DEFAULT_LETTERS.get(index)) {
+            (Some(previous), Some(current)) => {
+                previous != current
+                    && (self.letter.sender.as_str(), self.letter.body.as_str()) == *previous
+            }
+            _ => false,
+        }
+    }
+}
+
+fn parse(content: &str) -> Vec<Block> {
+    let mut parsed = Vec::new();
+    let mut current: Option<(usize, usize, String, Vec<&str>)> = None;
+
+    for (index, line) in content.lines().enumerate() {
         if let Some(header) = line.strip_prefix("=== ") {
-            if let Some(letter) = current.take() {
-                parsed.push(finish(letter));
+            if let Some(block) = current.take() {
+                parsed.push(finish(block, index));
             }
             let (number, sender) = header.split_once('|').unwrap_or((header, ""));
             current = number
                 .trim()
                 .parse()
                 .ok()
-                .map(|number| (number, sender.trim().to_string(), Vec::new()));
-        } else if let Some((_, _, body)) = current.as_mut() {
+                .map(|number| (number, index, sender.trim().to_string(), Vec::new()));
+        } else if let Some((_, _, _, body)) = current.as_mut() {
             body.push(line);
         }
     }
-    if let Some(letter) = current.take() {
-        parsed.push(finish(letter));
+    if let Some(block) = current.take() {
+        parsed.push(finish(block, content.lines().count()));
     }
     parsed
 }
 
-fn finish((number, sender, body): (usize, String, Vec<&str>)) -> (usize, Letter) {
-    (
+fn finish((number, header, sender, body): (usize, usize, String, Vec<&str>), end: usize) -> Block {
+    Block {
         number,
-        Letter {
+        letter: Letter {
             sender,
             body: body.join("\n").trim().to_string(),
         },
-    )
+        header,
+        end,
+    }
 }
 
 #[cfg(test)]
@@ -618,12 +698,163 @@ mod tests {
         }];
         apply_overrides(
             &mut letters,
-            "# commentaire\n=== 1 | B\nDeux\n\nlignes\n=== 2 | C\nTrois\n=== 9 | D\nIgnorée\n",
+            &parse(
+                "# commentaire\n=== 1 | B\nDeux\n\nlignes\n=== 2 | C\nTrois\n=== 9 | D\nIgnorée\n",
+            ),
         );
 
         assert_eq!(letters.len(), 2);
         assert_eq!(letters[0].sender, "B");
         assert_eq!(letters[0].body, "Deux\n\nlignes");
         assert_eq!(letters[1].body, "Trois");
+    }
+
+    #[test]
+    fn test_rewrite_keeps_senders_and_the_riddle() {
+        for (index, (current, previous)) in
+            DEFAULT_LETTERS.iter().zip(&PREVIOUS_LETTERS).enumerate()
+        {
+            assert_eq!(current.0, previous.0, "letter {}", index + 1);
+        }
+        assert_eq!(DEFAULT_LETTERS[4], PREVIOUS_LETTERS[4]);
+        assert!(
+            DEFAULT_LETTERS[7]
+                .1
+                .starts_with("Bravo, c'était le grand arbre.")
+        );
+    }
+
+    fn previous_file(edit: impl FnOnce(&mut Vec<Letter>)) -> PathBuf {
+        let mut letters: Vec<Letter> = PREVIOUS_LETTERS
+            .iter()
+            .map(|(sender, body)| Letter {
+                sender: sender.to_string(),
+                body: body.to_string(),
+            })
+            .collect();
+        edit(&mut letters);
+        let path = temp_path();
+        write_creating_dir(&path, rendered(&letters)).unwrap();
+        path
+    }
+
+    fn temp_path() -> PathBuf {
+        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let id = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        std::env::temp_dir()
+            .join(format!("weathr_test_letters_{}_{id}", std::process::id()))
+            .join("lettres.txt")
+    }
+
+    fn file_letters(path: &Path) -> Vec<(usize, Letter)> {
+        parse(&fs::read_to_string(path).unwrap())
+            .into_iter()
+            .map(|block| (block.number, block.letter))
+            .collect()
+    }
+
+    fn remove(path: &Path) {
+        let _ = fs::remove_dir_all(path.parent().unwrap());
+    }
+
+    #[test]
+    fn test_untouched_previous_letter_takes_the_new_text_in_game_and_file() {
+        let path = previous_file(|_| {});
+
+        let letters = load_from(&path);
+
+        assert_eq!(letters[0].body, DEFAULT_LETTERS[0].1);
+        let written = fs::read_to_string(&path).unwrap();
+        assert!(written.starts_with(FILE_HEADER));
+        let blocks = parse(&written);
+        assert_eq!(blocks[0].letter.body, DEFAULT_LETTERS[0].1);
+        assert!(blocks.iter().all(|block| !block.is_outdated()));
+        remove(&path);
+    }
+
+    #[test]
+    fn test_letter_edited_by_the_player_stays_in_game_and_file() {
+        let path = previous_file(|letters| letters[3].body = "Mon banc à moi.".to_string());
+
+        let letters = load_from(&path);
+
+        assert_eq!(letters[3].body, "Mon banc à moi.");
+        assert_eq!(letters[0].body, DEFAULT_LETTERS[0].1);
+        let written = file_letters(&path);
+        assert_eq!(written[3].1.sender, "Paulo, le pêcheur");
+        assert_eq!(written[3].1.body, "Mon banc à moi.");
+        remove(&path);
+    }
+
+    #[test]
+    fn test_appended_letter_stays_in_game_and_file() {
+        let path = previous_file(|letters| {
+            letters.push(Letter {
+                sender: "Moi".to_string(),
+                body: "Une lettre en plus.".to_string(),
+            })
+        });
+
+        let letters = load_from(&path);
+
+        assert_eq!(letters.len(), VILLAGE_LETTER_COUNT + 1);
+        assert_eq!(letters[VILLAGE_LETTER_COUNT].body, "Une lettre en plus.");
+        let written = file_letters(&path);
+        assert_eq!(written.len(), VILLAGE_LETTER_COUNT + 1);
+        assert_eq!(written[VILLAGE_LETTER_COUNT].0, VILLAGE_LETTER_COUNT + 1);
+        assert_eq!(written[VILLAGE_LETTER_COUNT].1.body, "Une lettre en plus.");
+        remove(&path);
+    }
+
+    #[test]
+    fn test_missing_file_gets_the_defaults() {
+        let path = temp_path();
+
+        let letters = load_from(&path);
+
+        assert_eq!(letters.len(), VILLAGE_LETTER_COUNT);
+        let written = file_letters(&path);
+        assert_eq!(written.len(), VILLAGE_LETTER_COUNT);
+        for ((number, letter), (sender, body)) in written.iter().zip(&DEFAULT_LETTERS) {
+            assert_eq!(
+                (letter.sender.as_str(), letter.body.as_str()),
+                (*sender, *body),
+                "{number}"
+            );
+        }
+        remove(&path);
+    }
+
+    #[test]
+    fn test_up_to_date_file_is_left_alone() {
+        let path = temp_path();
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        let content = "# mes notes\n=== 4 | Paulo, le pêcheur\nMon banc à moi.\n";
+        fs::write(&path, content).unwrap();
+
+        let letters = load_from(&path);
+
+        assert_eq!(letters[3].body, "Mon banc à moi.");
+        assert_eq!(fs::read_to_string(&path).unwrap(), content);
+        remove(&path);
+    }
+
+    #[test]
+    fn test_rewrite_changes_only_the_outdated_blocks() {
+        let path = temp_path();
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        let (sender, previous) = PREVIOUS_LETTERS[0];
+        let kept = "=== 4 | Paulo, le pêcheur\nMon banc à moi.\n\n=== 61 | Moi\nEn plus.\n\n=== 70 | Loin\nIgnorée\n=== 5 | Vide\n\n";
+        let content = format!("# mes notes\n=== 1 | {sender}\n{previous}\n\n{kept}");
+        fs::write(&path, &content).unwrap();
+
+        load_from(&path);
+
+        let expected = format!(
+            "# mes notes\n=== 1 | {sender}\n{}\n\n{kept}",
+            DEFAULT_LETTERS[0].1
+        );
+        assert_eq!(fs::read_to_string(&path).unwrap(), expected);
+        remove(&path);
     }
 }
