@@ -1,10 +1,10 @@
 pub const SAM_SENDER: &str = "Sam, le voisin du moulin";
 pub const SAM_LETTERS: [&str; 5] = [
-    "Bonjour d'en face ! Je suis Sam, j'habite le vieux moulin au bord de la rivière. Je dessinais des cartes, autrefois. Aujourd'hui, je les regarde surtout. Ton jardin figure sur trois de mes plans, tu savais ?",
-    "Rose m'a vendu un croissant brûlé, je l'ai mangé quand même. Le soir, je trace des routes sur de vieilles cartes, vers des villes que je n'ai jamais vues.",
-    "J'ai retrouvé une carte du monde de mon grand-père, couverte de petites croix. Chaque croix est une ville qu'il rêvait de voir. Il n'en a vu aucune.",
-    "Paulo dit que les rêves se fanent comme les fleurs qu'on oublie d'arroser. Il a raison, pour une fois. J'ai acheté une valise. Elle est encore vide.",
-    "Je pars demain. Je vais suivre les croix de mon grand-père, une par une. Je t'enverrai une carte postale chaque semaine, avec le temps qu'il fait là-bas. Garde un œil sur mon moulin.",
+    "Bonjour d'en face\u{202F}! Moi c'est Sam, le vieux moulin au bord de la rivière. Je dessinais des cartes, avant. Maintenant je les regarde, surtout. Tu savais\u{202F}? Ton jardin est sur trois de mes plans. Sur le plus vieux, ta maison n'a même pas de cheminée.",
+    "Rose m'a vendu un croissant brûlé. Le moins brûlé, d'après elle. Je l'ai mangé en traçant une route au crayon, d'ici jusqu'à Valparaíso. Onze centimètres sur ma carte. Vu comme ça, ça paraît faisable, non\u{202F}?",
+    "Quarante petites croix. C'est ce qu'il y a sur la carte du monde de mon grand-père, retrouvée au grenier. Chaque croix, une ville qu'il voulait voir. Il n'en a vu aucune, tu savais\u{202F}? Celle de Lisbonne, il l'a appuyée si fort que le papier est troué.",
+    "J'ai acheté une valise. Marron, avec des coins en cuir. Elle est encore vide, au milieu du moulin. Paulo est passé, il l'a regardée longtemps et il a dit\u{202F}: «\u{202F}Faut la remplir.\u{202F}» C'est la plus longue phrase qu'il m'ait jamais dite.",
+    "Je pars demain, par le car de 6 h 10. Je vais suivre les croix de mon grand-père, une par une. Chaque semaine, je t'envoie une carte postale avec le temps qu'il fait là-bas. Tu me diras s'il fait meilleur chez toi\u{202F}? Garde un œil sur mon moulin. La porte du bas ferme mal, faut la soulever un peu.",
 ];
 
 pub const NEIGHBOURS_SENDER: &str = "Nadia et Claire, les apicultrices";
