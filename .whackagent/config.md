@@ -10,6 +10,8 @@ pr_screenshots:                # PR screenshots of changed screens, at /wa-valid
                                # Ignore verify.mode: taken even under autopilot / off.
   mode: auto                   # auto — UI changed → new screens shot, changed screens before/after · off
   width: 250                   # px in PR body, height auto (250 = iPhone)
+  replay: off                  # iOS: on — one XCUITest per task in <App>Screenshots, replayed before/after
+                               # (needs the target, wa-setup) · off — agent drives the app tap by tap
 primary_language: generic        # swift | typescript | generic | ...
 project_kind: cli              # app | package | cli | server  (pick architecture module)
 
@@ -83,6 +85,17 @@ build:                         # how THIS project build — project beat plugin 
                                # for Apple targets, `swift build` for SwiftPM, project runner otherwise.
   test_command: "cargo test"   # e.g. "make test". Empty → language default (`swift test`, …).
 
+lint:                          # strict linter wired into the build: violation = build error
+  tool: none                   # swiftlint | eslint | ruff | golangci-lint | clippy | detekt | none
+                               # set by /wa-setup. Rules: project's linter config (from the
+                               # plugin templates, yours to edit). Agents never disable a rule.
+  fix_command: ""              # autofix before build, e.g. "make lint-fix". Empty → tool default.
+
+archtest:                      # architecture rules as unit tests: violation = red test
+  tool: none                   # harmonize | none. Set by /wa-setup. Rules: Architecture/ package
+                               # (from the plugin templates, yours to edit). Agents never touch it.
+  command: ""                  # e.g. "make archtest". Empty → swift test --package-path Architecture
+
 verify:                        # runtime check — implementer drive app it built
   mode: autopilot              # WHO exercise app after green build:
                                #   autopilot — agent drive it in /wa-autopilot only (nobody
@@ -99,6 +112,9 @@ verify:                        # runtime check — implementer drive app it buil
 
 commit:
   auto_commit_after_validation: false   # Claude may commit once YOU validate feature?
+  steps: on                    # on — /wa-close rewrites the task history as build steps, one commit
+                               # per Changes line, each building alone (force push own branch) · off
+                               # — round commits kept. Not asked at setup.
                                # (name kept for old configs: gate commit /wa-close make)
                                # github backend: ignored — every round commit + push (board need it)
                                # no author here, ever: commit use git config user.name/email
