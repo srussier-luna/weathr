@@ -1,0 +1,248 @@
+<title>Voix des Lettres · v3</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600&family=Fraunces:opsz,wght@9..144,600&display=swap">
+<style>
+/* Layout: persona list (left) · persona sheet + letter before/after (center) · controls (right). Rules below. Stacks on phone. */
+:root {
+  --page: #f1efe9; --panel: #ffffff; --ink: #22232a; --muted: #5f6270; --line: #dcd8cd; --accent: #7a4f1d;
+  --term-bg: #fbfaf5; --parch: #8a6a2b; --c-text: #22232a; --c-dim: #8d8f99; --hot: #b03a7a; --good: #2f7a4a; --bad: #a0412e;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --sans: Inter, system-ui, sans-serif;
+  --display: Fraunces, Georgia, serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #15161a; --panel: #1d1f25; --ink: #e6e4de; --muted: #a2a3ad; --line: #30323a; --accent: #e0b070;
+  --term-bg: #0e0f12; --parch: #d9b26a; --c-text: #e6e4de; --c-dim: #6a6c76; --hot: #ff79c0; --good: #7fd19b; --bad: #ff8c73;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --page: #15161a; --panel: #1d1f25; --ink: #e6e4de; --muted: #a2a3ad; --line: #30323a; --accent: #e0b070;
+  --term-bg: #0e0f12; --parch: #d9b26a; --c-text: #e6e4de; --c-dim: #6a6c76; --hot: #ff79c0; --good: #7fd19b; --bad: #ff8c73;
+  color-scheme: dark }
+:root[data-theme="light"] { color-scheme: light }
+body { background: var(--page); color: var(--ink); font-family: var(--sans); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 24px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 20px; grid-template-columns: 210px minmax(0, 1fr) 240px; }
+@media (max-width: 1000px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
+header, .rules { grid-column: 1 / -1; }
+h1 { font: 600 26px var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 600 19px var(--display); margin: 0; }
+h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 6px; }
+.sub { color: var(--muted); margin: 6px 0 0; font-size: 14px; max-width: 75ch; }
+
+.people { display: flex; flex-direction: column; gap: 2px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px; align-self: start; }
+.people button { text-align: left; font: 14px var(--sans); color: var(--ink); background: transparent; border: 0; padding: 7px 9px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+.people button small { color: var(--muted); font-size: 12px; }
+.people button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); font-weight: 600; }
+@media (max-width: 1000px) { .people { flex-direction: row; flex-wrap: wrap; } .people button small { display: none; } }
+
+.main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.sheet { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sheet .head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.sheet .role { color: var(--muted); font-size: 14px; }
+.sheet ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5; }
+.sheet .expr { font-family: var(--display); font-size: 16px; color: var(--accent); }
+.sheet .never li { color: var(--bad); }
+@media (max-width: 640px) { .sheet { grid-template-columns: minmax(0, 1fr); } }
+
+.letters { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.letters.one { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 760px) { .letters { grid-template-columns: minmax(0, 1fr); } }
+.letter { background: var(--term-bg); border: 1px solid var(--parch); border-radius: 2px; padding: 14px 16px 12px; font: 13px/1.6 var(--mono); color: var(--c-text); position: relative; min-width: 0; }
+.letter::before { content: attr(data-label); position: absolute; top: -9px; left: 12px; background: var(--page); padding: 0 6px; font: 600 11px var(--sans); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.letter.after::before { color: var(--good); }
+.letter .from { color: var(--parch); font-weight: 700; margin-bottom: 8px; }
+.letter p { margin: 0 0 8px; white-space: pre-wrap; }
+.letter .ps { color: var(--c-dim); }
+.letter mark { background: color-mix(in srgb, var(--accent) 22%, transparent); color: inherit; border-radius: 2px; padding: 0 1px; }
+.why { font-size: 13px; color: var(--muted); margin: 0; line-height: 1.5; }
+.why b { color: var(--ink); }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 14px; align-self: start; }
+.ctl label.t { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; letter-spacing: .02em; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.seg button { font: 12px var(--sans); padding: 5px 9px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.rules { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+.rules ol { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
+@media (max-width: 760px) { .rules ol { grid-template-columns: minmax(0, 1fr); } }
+.rules li { font-size: 14px; line-height: 1.5; }
+.rules li span { display: block; color: var(--muted); font-size: 13px; }
+.rules code { font-family: var(--mono); font-size: 12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Voix des Lettres · v3</h1>
+    <p class="sub">Une fiche par personnage, et une de ses vraies Lettres avant et après réécriture. Les Énigmes ne changent pas. Les Cadeaux, les Questions et la révélation de Jeanne restent à leur place.</p>
+  </header>
+
+  <nav class="people" id="people" aria-label="Personnages"></nav>
+
+  <main class="main">
+    <section class="sheet" id="sheet"></section>
+    <section class="letters" id="letters"></section>
+    <p class="why" id="why"></p>
+  </main>
+
+  <aside class="panel" aria-label="Réglages du proto">
+    <div class="ctl"><label class="t">Thème</label><div class="seg" data-ctl="theme"><button data-v="auto">Auto</button><button data-v="light">Clair</button><button data-v="dark">Sombre</button></div></div>
+    <div class="ctl"><label class="t">Lettre</label><div class="seg" data-ctl="view"><button data-v="both">Avant / après</button><button data-v="before">Avant</button><button data-v="after">Après</button></div></div>
+    <div class="ctl"><label class="t">Tic de langage</label><div class="seg" data-ctl="expr"><button data-v="on">Avec</button><button data-v="off">Sans</button></div></div>
+  </aside>
+
+  <section class="rules">
+    <h2>Règles communes</h2>
+    <ol>
+      <li>Écris comme on parle. <span>Phrases courtes, et l'oral selon la voix : « sonne pas », « y a du courrier ».</span></li>
+      <li>Pas de mode d'emploi. <span>Un mécanisme du jeu se dit une seule fois, avec les mots du personnage : « drapeau levé, y a du courrier ».</span></li>
+      <li>Pas de morale ni de formule de conte. <span>On coupe « C'est la tradition du village. », « ça ne coûte rien ».</span></li>
+      <li>Varie les débuts. <span>L'onomatopée (Miaou, Wouf) une fois sur trois au plus. Une Lettre peut commencer en pleine pensée.</span></li>
+      <li>Varie la longueur. <span>De deux lignes pour Gustave à six pour Gaston. Jamais toutes pareilles.</span></li>
+      <li>Un détail concret par Lettre. <span>Un nom, un objet, un chiffre (« 147 noisettes », « grand-tante Lucienne ») plutôt qu'une généralité.</span></li>
+      <li>Les personnages parlent les uns des autres. <span>Avec un avis : Minouche méprise Biscuit, Coin-Coin et Rainette se chamaillent.</span></li>
+      <li>Un tic de langage, glissé dans la phrase. <span>Jamais en signature à la fin. Une fois par Lettre au plus, et pas dans toutes.</span></li>
+      <li>Pas de liste de trois à chaque phrase. <span>Le rythme en trois temps sonne écrit par une machine.</span></li>
+      <li>Les Énigmes de L'encre bleue ne changent pas. <span>Ni le texte ni la réponse. Les Cadeaux, les Questions et leurs Échos restent dans leur Lettre.</span></li>
+    </ol>
+  </section>
+</div>
+
+<script>
+const P = [
+  { id: "rose", name: "Rose", role: "la boulangère", n: 5,
+    voice: ["Sourde : écrit comme sur son carnet, court et direct", "Chaleureuse sans chichis, parle beurre et four", "Finit souvent par un P.S. gourmand"],
+    expr: "« hein »", never: ["Phrases longues et polies", "Se plaindre de sa surdité"],
+    before: "Bienvenue dans la maison au bout du chemin ! Ici, tout le monde se connaît. Je passe chaque matin avec mon panier de croissants : si tu sens une odeur de beurre, c'est moi. Je suis sourde : inutile de sonner chez moi, fais-moi plutôt signe par la fenêtre. Gaston, le facteur, t'apportera une lettre par jour. C'est la tradition du village.",
+    after: "Bienvenue au bout du chemin ! Moi c'est Rose, la boulangère. Le matin, si ça sent le beurre chaud devant chez toi, c'est que je passe avec mon panier. Sonne pas{{, hein}}, je suis sourde : un signe par la fenêtre, c'est parfait. Gaston t'apportera une lettre par jour, il adore ça.", ps: "P.S. Je t'ai gardé un croissant. Le moins brûlé.",
+    why: "On coupe <b>« C'est la tradition du village »</b> et <b>« Ici, tout le monde se connaît »</b>, des phrases de conte. Le P.S. lui donne une voix. Le rôle de Gaston et la surdité restent." },
+  { id: "gaston", name: "Gaston", role: "le facteur", n: 4,
+    voice: ["Bavard, part en digressions puis se reprend", "Trente ans de vélo, connaît tous les ragots", "Familier, oral, beaucoup de « franchement »"],
+    expr: "« Bref. »", never: ["Aller droit au but", "Une Lettre de deux lignes"],
+    before: "Trente ans que je fais la tournée à vélo ! Ta boîte aux lettres est ma préférée : elle grince joliment. Quand son drapeau rouge est levé, c'est qu'une lettre t'attend.",
+    after: "Trente ans de tournée, et je te le dis franchement : ta boîte aux lettres, c'est ma préférée. Elle grince comme la porte de ma grand-tante Lucienne, paix à son âme. {{Bref. }}Quand le petit drapeau rouge est levé, y a du courrier. Baissé, y en a pas. C'est pas sorcier, mais tu serais surpris du nombre de gens qui regardent jamais.",
+    why: "Le drapeau rouge (mécanisme) est dit <b>comme Gaston le dirait</b>, plus comme une notice. La digression sur Lucienne montre qu'il est bavard." },
+  { id: "paulo", name: "Paulo", role: "le pêcheur", n: 3,
+    voice: ["Taiseux : phrases très courtes", "Fautes d'orthographe, apostrophes oubliées (Jeanne le dit)", "Ne parle pas de ses sentiments, les montre"],
+    expr: "« voila »", never: ["Un mot compliqué", "Une phrase de plus de dix mots"],
+    before: "J'avais trop de bois flotté dans ma cabane, alors je t'ai fabriqué un banc. Je l'ai posé devant ta maison. On y voit très bien le coucher du soleil. Paulo, ton voisin de la rivière.",
+    after: "Javais trop de bois flotté dans la cabane. Alors je tai fait un banc{{, voila}}. Il est devant chez toi. Le soir on voit le soleil tomber dans la rivière. cest beau.\nPaulo",
+    why: "Plus tard, Jeanne dit que Paulo écrit <b>« avec des fautes d'orthographe, comme avant »</b>. Ses Lettres doivent le montrer dès le début. Le banc (Cadeau) reste annoncé." },
+  { id: "odile", name: "Odile", role: "la maire", n: 5,
+    voice: ["Ton officiel qui déborde de bonne humeur", "Parle « conseil municipal », « ordre du jour »", "Humour pince-sans-rire sur son propre sérieux"],
+    expr: "« En somme »", never: ["Familiarités (« salut »)", "Avouer qu'elle ne sait pas"],
+    before: "Le village prépare sa grande fête. Il reste beaucoup à faire : réparer le vieux puits, décorer les maisons, trouver de la musique. Chaque habitant peut aider, et ta maison compte beaucoup pour nous.",
+    after: "Le conseil municipal (c'est-à-dire moi, Rose, et Gaston quand il a le temps) a voté à l'unanimité : le village fera sa grande fête cette année. À l'ordre du jour : le vieux puits à réparer, des décorations partout, et de la musique. Ta maison est au cœur du projet. {{En somme, ce}}{{!Ce}} n'est pas une faveur, c'est une réquisition amicale.\nOdile, maire",
+    why: "La liste de trois reste, puisque c'est un ordre du jour : chez Odile, ça a du sens. <b>« Ta maison compte beaucoup pour nous »</b> devient une blague administrative." },
+  { id: "leo", name: "Léo", role: "le petit voisin", n: 3,
+    voice: ["Huit ans, enthousiaste, enchaîne avec « et »", "Questions directes, double point d'interrogation", "Parle de Mamie tout le temps"],
+    expr: "« franchement »", never: ["Vocabulaire d'adulte", "Formules de politesse"],
+    before: "Bonjour, c'est Léo, celui qui saute dans les flaques chez toi. Pardon pour les traces de boue. Mamie dit que ta maison était la sienne, avant. Je peux continuer à venir jouer ?",
+    after: "Salut c'est Léo ! Celui qui saute dans tes flaques. Pardon pour la boue, mais {{franchement }}tes flaques sont les meilleures du village. Mamie dit que ta maison c'était la sienne avant. C'est vrai ?? Je peux continuer à venir jouer ? Dis oui.",
+    why: "Un enfant ne dit pas <b>« celui qui saute dans les flaques chez toi »</b> avec cette syntaxe. « Dis oui. » est un vrai réflexe d'enfant." },
+  { id: "jeanne", name: "Jeanne", role: "l'encre bleue, après la révélation", n: 8,
+    voice: ["Avant la révélation : brève, mystérieuse, jamais de « je » inutile", "Après : tendre, un peu vieillie, phrases soignées", "Les Énigmes ne changent pas"],
+    expr: "« mon petit »", never: ["Abréviations, oral relâché", "Tout dire d'un coup"],
+    before: "Tu as sûrement deviné. Je m'appelle Jeanne, je suis la mamie de Léo. Paulo et moi, nous nous sommes aimés quand nous étions jeunes, puis la vie nous a séparés.",
+    after: "Tu as sûrement deviné{{, mon petit}}. Je m'appelle Jeanne, je suis la mamie de Léo. J'écris à l'encre bleue parce que c'est la seule qui ne bave pas sur mon vieux papier. Paulo et moi, on s'est aimés, il y a longtemps. Et puis la vie a fait ce qu'elle fait.",
+    why: "La révélation reste à sa place. Le détail de l'encre explique le surnom. <b>« la vie nous a séparés »</b> sonnait comme un roman, « la vie a fait ce qu'elle fait » sonne comme quelqu'un qui parle." },
+  { id: "encre", name: "L'encre bleue", role: "avant la révélation", n: 12,
+    voice: ["Brève, mystérieuse, ne dit jamais qui elle est", "Phrases courtes, impératifs doux", "Les Énigmes ne changent pas"],
+    expr: "« Regarde bien. »", never: ["Son nom", "Une phrase drôle"],
+    before: "Autrefois, dans ta maison, quelqu'un posait une lanterne bleue à la fenêtre pour guider un pêcheur qui rentrait tard.",
+    after: "Autrefois, quelqu'un posait une lanterne bleue à ta fenêtre. Un pêcheur rentrait tard. La lumière le ramenait. {{Regarde bien la fenêtre du haut.}}",
+    why: "On coupe la phrase en trois : chez elle, le mystère vient du rythme. <b>« pour guider »</b> expliquait trop." },
+  { id: "minouche", name: "Minouche", role: "la chatte du toit", n: 4,
+    voice: ["Hautaine, se croit astrologue (étoiles, pendule)", "Méprise Biscuit avec élégance", "Signe d'une initiale"],
+    expr: "« évidemment »", never: ["S'excuser", "Admettre qu'elle aime quelqu'un"],
+    before: "Rose m'a offert un nœud. Les astres l'avaient annoncé : je suis désormais la chatte la plus élégante du village. Biscuit est jaloux, mais Biscuit ne lit pas les étoiles. Regarde bien mon oreille !",
+    after: "Rose m'a offert un nœud. Les astres l'avaient prédit{{, évidemment}} : je suis officiellement la chatte la plus élégante du village. Biscuit est jaloux. Biscuit ne lit pas les étoiles. Biscuit lit à peine sa gamelle. Regarde mon oreille. Longuement.\n— M.",
+    why: "Le point d'exclamation sonnait enjoué, alors que Minouche est hautaine. <b>« Longuement. »</b> et la gamelle donnent son mépris. Le nœud (Cadeau) reste annoncé." },
+  { id: "biscuit", name: "Biscuit", role: "le chien", n: 4,
+    voice: ["Excité, phrases hachées, majuscules", "Fier de rien, oublie ce qu'il disait", "Wouf au début ou à la fin, pas les deux"],
+    expr: "« trop bien »", never: ["Subtilité", "Phrases subordonnées"],
+    before: "J'ai trouvé un os énorme en creusant près de ma niche ! Je l'ai laissé dehors pour que tout le monde l'admire. Personne n'y touche. Wouf.",
+    after: "J'ai trouvé un os. Un ÉNORME os. {{Trop bien. }}En creusant près de ma niche. Je l'ai laissé dehors pour que tout le monde le voie. Personne n'y touche. Normal. Tu l'as vu ? Il est beau hein. Wouf.",
+    why: "<b>« pour que tout le monde l'admire »</b> est trop recherché pour Biscuit. Les phrases hachées et la question au joueur font chien content." },
+  { id: "hulotte", name: "Hulotte", role: "le hibou", n: 3,
+    voice: ["Lent, posé, observe les humains de haut", "Phrases calmes, chutes sèches", "Juge les humains « compliqués »"],
+    expr: "« Hou. »", never: ["Exclamations", "Se presser"],
+    before: "Hou hou. Je veille dans le grand arbre la nuit. Je vois tout : les chauves-souris, les étoiles filantes, et parfois une petite lumière bleue qui n'est pas une étoile.",
+    after: "La nuit, je veille dans le grand arbre. Je vois passer les chauves-souris, les étoiles filantes, les rêves des chats. Et parfois, une petite lumière bleue. {{Hou. }}Ce n'est pas une étoile. Les étoiles ne clignent pas comme ça.",
+    why: "L'onomatopée part du début, puisqu'elle peut finir la Lettre. La lumière bleue (indice) reste. <b>« Les étoiles ne clignent pas comme ça »</b> montre qu'il observe." },
+  { id: "coincoin", name: "Coin-Coin", role: "le canard", n: 2,
+    voice: ["Fier de sa mare, mauvaise foi", "Rivalité avec Rainette", "Fausse modestie"],
+    expr: "« je dis ça, je dis rien »", never: ["Complimenter Rainette"],
+    before: "Coin ! La mare au bout de ton jardin est la plus belle de la région quand il pleut. Je la partage avec la grenouille, mais elle chante faux.",
+    after: "Ta mare, quand il pleut, c'est la plus belle de la région. Je ne dis pas ça parce que j'y vis. Bon, un peu. Je la partage avec la grenouille. Elle chante faux{{, je dis ça je dis rien}}.", why: "La mauvaise foi (<b>« Bon, un peu. »</b>) prépare la réponse de Rainette." },
+  { id: "rainette", name: "Rainette", role: "la grenouille", n: 2,
+    voice: ["Diva, se croit artiste", "Répond au canard", "Onomatopées en majuscules"],
+    expr: "« naturellement »", never: ["Douter de son talent"],
+    before: "Je ne chante pas faux, c'est le canard qui n'a pas d'oreille. Quand il pleut, je saute dans la mare : plouf ! C'est mon meilleur numéro.",
+    after: "Je ne chante pas faux{{, naturellement}}. C'est le canard qui n'a pas d'oreille. Quand il pleut, je saute dans la mare : PLOUF. Mon grand numéro.", why: "Elle était déjà bien. On resserre seulement." },
+  { id: "noisette", name: "Noisette", role: "l'écureuil", n: 2,
+    voice: ["Tête en l'air, se corrige en cours de phrase", "Possessive avec ses noisettes", "Tchic au début ou à la fin"],
+    expr: "« tchic »", never: ["Se souvenir de quelque chose"],
+    before: "Tchic tchic ! J'ai caché 147 noisettes dans ton arbre. Je ne me souviens plus où. Si tu en trouves une, elle est à moi.",
+    after: "J'ai caché 147 noisettes dans ton arbre. {{Tchic. }}Ou 148. Je sais plus où. Si t'en trouves une, elle est à moi. Si t'en trouves deux, elles sont à moi aussi{{, tchic}}.", why: "<b>« Ou 148. »</b> montre qu'elle a la tête en l'air. On lui donne de l'oral." },
+  { id: "gustave", name: "Gustave", role: "l'escargot", n: 2,
+    voice: ["Lent, n'a jamais hâte", "Lettres très courtes", "Repousse tout à plus tard"],
+    expr: "« rien ne presse »", never: ["Une Lettre longue", "Une date précise"],
+    before: "Je suis arrivé à la boîte aux lettres ! Il m'a fallu des semaines. Maintenant, je repars vers la mare. À dans un mois.",
+    after: "Arrivé à ta boîte aux lettres. Il m'a fallu des semaines. La vue est belle d'ici. Je repars vers la mare demain. Ou après-demain{{, rien ne presse}}.", why: "Le point d'exclamation partait : un escargot ne s'excite pas. « Ou après-demain. » montre sa lenteur." },
+  { id: "voisin13", name: "Le voisin du n°13", role: "celui qui n'existe pas", n: 15,
+    voice: ["Poli, calme, jamais menaçant : c'est ce qui fait peur", "Connaît des détails intimes de ta maison", "Chiffres trop précis, souvent 13"],
+    expr: "« C'est normal. »", never: ["Une exclamation", "Une menace directe", "Une explication"],
+    before: "Bonjour. J'habite au numéro 13, juste derrière chez toi. Tu ne vois pas ma maison d'ici, c'est normal. Je voulais simplement te dire que la lumière de ta cuisine est très jolie, le soir.",
+    after: "Bonjour. J'habite au numéro 13, juste derrière chez toi. Tu ne vois pas ma maison d'ici. {{C'est normal. }}Je voulais simplement te dire que la lumière de ta cuisine est très jolie, le soir. Surtout vers 22 h 13.",
+    why: "Sa voix marche déjà : elle sert de modèle. On ajoute seulement <b>l'heure trop précise</b>." },
+  { id: "sam", name: "Sam", role: "le voisin du moulin, en voyage", n: 5,
+    voice: ["Rêveur, ancien cartographe", "Parle en lieux, routes et croix sur la carte", "Pose des questions sans attendre la réponse"],
+    expr: "« tu savais ? »", never: ["Se plaindre", "Parler de ce qu'il a laissé derrière lui"],
+    before: "Bonjour d'en face ! Je suis Sam, j'habite le vieux moulin au bord de la rivière. Je dessinais des cartes, autrefois. Aujourd'hui, je les regarde surtout. Ton jardin figure sur trois de mes plans, tu savais ?",
+    after: "Bonjour d'en face ! Moi c'est Sam, le vieux moulin au bord de la rivière. Je dessinais des cartes, avant. Maintenant je les regarde, surtout. Ton jardin est sur trois de mes plans{{, tu savais ?}}{{!.}}",
+    why: "Déjà proche. <b>« figure sur »</b> et « autrefois » faisaient écrit, alors on passe à l'oral. Les Cartes postales gardent leur voix." },
+  { id: "apicultrices", name: "Nadia et Claire", role: "les apicultrices", n: 5,
+    voice: ["Duo : « on », se taquinent en écrivant", "Claire fonce, Nadia doute", "Tendres, drôles, concrètes (ruches, miel)"],
+    expr: "« Claire dit… Nadia dit… »", never: ["Une seule voix", "Être d'accord sur tout"],
+    before: "Bonjour ! Nous sommes Nadia et Claire. On vient d'emménager dans la maison derrière le verger, avec nos quatre ruches. Si tu vois des abeilles dans ton jardin, ce sont les nôtres : elles adorent ton arbre.",
+    after: "Coucou ! Nadia et Claire, les nouvelles de la maison derrière le verger. On est arrivées avec quatre ruches (Claire en voulait six). Si tu vois des abeilles chez toi, ce sont les nôtres : elles adorent ton arbre. {{Claire dit qu'elles ont bon goût. Nadia dit qu'elles sont juste gourmandes.}}",
+    why: "La Lettre du mariage (« Claire dit que ça porte bonheur. Nadia dit surtout que ça mouille. ») trouve déjà leur voix. On en fait <b>leur tic</b>." },
+  { id: "marcel", name: "Marcel", role: "le garde champêtre", n: 5,
+    voice: ["Écrit comme un rapport de ronde : heure, faits, style télégraphique", "Nerveux, nie ce qu'il vient de dire", "Vingt-deux ans de rondes"],
+    expr: "« Rien à signaler. »", never: ["Admettre qu'il a peur", "Une phrase longue"],
+    before: "Ronde de cette nuit : de la boue près du puits, encore. Des pas qui vont vers ta maison, aucun qui en revient. Ce sont sûrement les miens. J'ai dû mal compter.",
+    after: "Ronde de 0 h 40. Boue près du puits, encore. Des pas vers ta maison, aucun qui revient. Sûrement les miens. J'ai dû mal compter. {{Rien à signaler.}}",
+    why: "Le style rapport lui donne une voix propre. <b>« Rien à signaler »</b> juste après des pas inquiétants, c'est toute sa nervosité." },
+];
+const S = { theme: "auto", view: "both", expr: "on", who: "rose" };
+const esc = t => t.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+function letter(p, kind) {
+  const tic = (t, on) => t.replace(/\{\{(!?)(.*?)\}\}/g, (_, neg, x) => (neg ? !on : on) ? (neg ? x : `<mark>${x}</mark>`) : "");
+  const raw = kind === "before" ? "" : tic(p.after.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])), S.expr === "on");
+  const ps = kind === "after" && p.ps ? `<p class="ps">${esc(p.ps)}</p>` : "";
+  return `<article class="letter ${kind}" data-label="${kind === "before" ? "Avant" : "Après"}"><div class="from">${esc(p.name)}, ${esc(p.role)}</div><p>${kind === "before" ? esc(p.before) : raw}</p>${ps}</article>`;
+}
+
+function render() {
+  const root = document.documentElement;
+  if (S.theme === "auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", S.theme);
+  const p = P.find(x => x.id === S.who);
+  document.getElementById("people").innerHTML = P.map(x => `<button data-who="${x.id}" aria-pressed="${x.id === S.who}">${esc(x.name)} <small>${x.n} Lettres</small></button>`).join("");
+  document.getElementById("sheet").innerHTML = `
+    <div class="head"><h2>${esc(p.name)}</h2><span class="role">${esc(p.role)} · ${p.n} Lettres</span></div>
+    <div><h3>Sa voix</h3><ul>${p.voice.map(v => `<li>${esc(v)}</li>`).join("")}</ul></div>
+    <div><h3>Son tic de langage</h3><div class="expr">${esc(p.expr)}</div><h3 style="margin-top:12px">Ne dit jamais</h3><ul class="never">${p.never.map(v => `<li>${esc(v)}</li>`).join("")}</ul></div>`;
+  const L = document.getElementById("letters");
+  L.className = "letters" + (S.view === "both" ? "" : " one");
+  L.innerHTML = (S.view !== "after" ? letter(p, "before") : "") + (S.view !== "before" ? letter(p, "after") : "");
+  document.getElementById("why").innerHTML = p.why;
+  document.querySelectorAll(".seg").forEach(seg => seg.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(S[seg.dataset.ctl] === b.dataset.v))));
+}
+document.getElementById("people").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { S.who = b.dataset.who; render(); } });
+document.querySelector(".panel").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S[b.parentElement.dataset.ctl] = b.dataset.v; render(); });
+render();
+</script>

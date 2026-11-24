@@ -53,6 +53,7 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Régime | régime alimentaire | | `diet` | ce que le joueur ne mange pas (8, cumulables) ; filtre les Recettes → [[mail]] |
 | Liste à cocher | | | `diet_checklist` | cases [1]…[8] des Régimes, dans la Lettre de Rose et les Réglages |
 | Voisin | | | | personne d'une autre maison du village (Sam, Nadia et Claire…) |
+| Tic de langage | expression | | | mot propre à un personnage, glissé dans ses Lettres, jamais en signature (« tchic » de Noisette) → [[letters]] |
 | Arbre | | | `Tree` | grand arbre à gauche de la maison, pousse du jour 1 au jour 12 |
 | Puits | | | `well` | vieux puits réparé, à gauche du grand Arbre |
 | Coffre | | | `chest` | coffre de Jeanne, à gauche du Puits |

@@ -41,21 +41,22 @@ footer: [↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer
 frame: Plain
 == entry 0 night false
 title: Lettre 1/84
-text: Bienvenue dans la maison au bout du chemin ! Ici, tout le monde se connaît. Je passe chaque matin avec mon panier de croissants : si tu sens une odeur de beurre, c'est moi. Je suis sourde : inutile de sonner chez moi, fais-moi plutôt signe par la fenêtre. Gaston, le facteur, t'apportera une lettre par jour. C'est la tradition du village.
+text: Bienvenue au bout du chemin ! Moi c'est Rose, la boulangère. Le matin, si ça sent le beurre chaud devant chez toi, c'est que je passe avec mon panier. Sonne pas, hein, je suis sourde : un signe par la fenêtre, c'est parfait. Gaston t'apportera une lettre par jour, il adore ça.
+text: P.-S. Je t'ai gardé un croissant. Le moins brûlé.
 blank
 text: — Rose, la boulangère
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 1 night false
 title: Lettre 2/84
-text: Tu ne me connais pas, mais je connais très bien ta maison. Chaque pierre, chaque fenêtre. Elle cache un secret depuis longtemps. Si tu veux le découvrir, lis bien chacune de mes lettres.
+text: Tu ne me connais pas. Moi, je connais ta maison. Chaque pierre, la marche qui grince, la fenêtre qui ferme mal. Elle garde un secret depuis longtemps. Si tu veux le trouver, lis mes lettres. Toutes.
 blank
 text: — L'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 2 night false
 title: Lettre 3/84
-text: Miaou. Je suis la chatte qui dort sur ton toit. Ce toit est à moi depuis six hivers, je te le prête. D'ici, je lis les étoiles : ce mois-ci, elles te sont favorables. Quand il pleut, je rentre par la fenêtre, ne t'inquiète pas. Signé d'une patte.
+text: Le toit de ta maison est à moi depuis six hivers. Je te le prête. De là-haut, je lis les étoiles : ce mois-ci, elles te sont favorables, ce qui m'étonne un peu. Quand il pleut, j'entre par ta fenêtre. Inutile de la fermer, je sais l'ouvrir.
 blank
 text: — Minouche, la chatte du toit
 blank
@@ -65,7 +66,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 3 night false
 title: Lettre 4/84
-text: J'avais trop de bois flotté dans ma cabane, alors je t'ai fabriqué un banc. Je l'ai posé devant ta maison. On y voit très bien le coucher du soleil. Paulo, ton voisin de la rivière.
+text: Javais trop de bois flotté dans la cabane. Alors je tai fait un banc, voilà. Il est devant chez toi. Le soir on voit le soleil tomber dans la rivière. Cest beau.
 blank
 text: — Paulo, le pêcheur
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -86,7 +87,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 6 night false
 title: Lettre 7/84
-text: Rose m'a offert un nœud. Les astres l'avaient annoncé : je suis désormais la chatte la plus élégante du village. Biscuit est jaloux, mais Biscuit ne lit pas les étoiles. Regarde bien mon oreille !
+text: Rose m'a offert un nœud. Les astres l'avaient prédit, évidemment : je suis officiellement la chatte la plus élégante du village. Biscuit est jaloux. Biscuit ne lit pas les étoiles. Biscuit lit à peine sa gamelle. Regarde mon oreille. Longuement.
 blank
 text: Il est bleu, comme tu me l'as conseillé.
 blank
@@ -95,7 +96,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 7 night false
 title: Lettre 8/84
-text: Le village prépare sa grande fête. Il reste beaucoup à faire : réparer le vieux puits, décorer les maisons, trouver de la musique. Chaque habitant peut aider, et ta maison compte beaucoup pour nous.
+text: Le conseil municipal (c'est-à-dire moi, Rose, et Gaston quand il a le temps) a voté à l'unanimité : le village fera sa grande fête cette année. À l'ordre du jour : le vieux puits à réparer, des décorations partout, et de la musique. Ta maison est au cœur du projet. En somme, ce n'est pas une faveur, c'est une réquisition amicale.
 blank
 text: — Odile, la maire
 blank
@@ -116,21 +117,21 @@ footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
 frame: Newspaper
 == entry 9 night false
 title: Lettre 9/84
-text: Bravo, c'était le grand arbre. Cette nuit, quelqu'un a marché dans ton jardin. Regarde le sol : les traces mènent quelque part.
+text: Bravo, c'était le grand arbre. Cette nuit, quelqu'un est passé dans ton jardin. Regarde le sol, près des racines. Les traces vont quelque part.
 blank
 text: — L'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 10 night false
 title: Lettre 10/84
-text: Bonjour d'en face ! Je suis Sam, j'habite le vieux moulin au bord de la rivière. Je dessinais des cartes, autrefois. Aujourd'hui, je les regarde surtout. Ton jardin figure sur trois de mes plans, tu savais ?
+text: Bonjour d'en face ! Moi c'est Sam, le vieux moulin au bord de la rivière. Je dessinais des cartes, avant. Maintenant je les regarde, surtout. Tu savais ? Ton jardin est sur trois de mes plans. Sur le plus vieux, ta maison n'a même pas de cheminée.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 11 night false
 title: Lettre 11/84
-text: Wouf ! C'est moi qui dors dans la niche. Je n'ai rien vu cette nuit, je dormais. Enfin, presque. J'ai entendu des petits pas, très légers, puis un rire.
+text: La niche, c'est chez moi. Cette nuit j'ai rien vu. Je dormais. Enfin, presque. J'ai entendu des petits pas. Tout légers. Et après, un rire. Un rire de quelqu'un de PETIT.
 blank
 text: — Biscuit, le chien
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -144,7 +145,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 13 night false
 title: Lettre 13/84
-text: Trente ans que je fais la tournée à vélo ! Ta boîte aux lettres est ma préférée : elle grince joliment. Quand son drapeau rouge est levé, c'est qu'une lettre t'attend.
+text: Trente ans de tournée, et je vais pas te mentir : ta boîte aux lettres, c'est ma préférée. Elle grince comme la porte de ma grand-tante Lucienne, paix à son âme. Bref. Quand le petit drapeau rouge est levé, y a du courrier. Baissé, y en a pas. C'est pas sorcier, mais tu serais surpris du nombre de gens qui regardent jamais.
 blank
 text: — Gaston, le facteur
 blank
@@ -154,21 +155,21 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 14 night false
 title: Lettre 14/84
-text: Ces traces sont petites. Elles appartiennent à quelqu'un qui aime grimper aux arbres et sauter dans les flaques. Il en sait plus qu'il ne le dit.
+text: Ces traces sont petites. Celui qui les a laissées grimpe aux arbres et saute dans les flaques. Il en sait plus qu'il ne le dit.
 blank
 text: — L'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 15 night false
 title: Lettre 15/84
-text: Bonjour ! Nous sommes Nadia et Claire. On vient d'emménager dans la maison derrière le verger, avec nos quatre ruches. Si tu vois des abeilles dans ton jardin, ce sont les nôtres : elles adorent ton arbre.
+text: Coucou ! Nadia et Claire, les nouvelles de la maison derrière le verger. On est arrivées avec quatre ruches (Claire en voulait six). Si tu vois des abeilles chez toi, ce sont les nôtres. Elles adorent ton arbre : Claire dit qu'elles ont bon goût, Nadia dit qu'elles sont juste gourmandes. Le premier pot est pour toi.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 16 night false
 title: Lettre 16/84
-text: Hou hou. Je veille dans le grand arbre la nuit. Je vois tout : les chauves-souris, les étoiles filantes, et parfois une petite lumière bleue qui n'est pas une étoile.
+text: La nuit, je veille dans le grand arbre. Je vois passer les chauves-souris, les étoiles filantes, les rêves des chats. Et parfois, une petite lumière bleue. Hou. Ce n'est pas une étoile. Les étoiles ne clignent pas comme ça.
 blank
 text: — Hulotte, le hibou
 blank
@@ -178,14 +179,14 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 17 night false
 title: Lettre 17/84
-text: Bonsoir. Marcel, garde champêtre. Je fais ma ronde chaque nuit, de la mairie jusqu'au bout de ton chemin. Si tu vois une lanterne passer derrière ta haie vers minuit, c'est moi. En général, rien à signaler.
+text: Bonsoir. Marcel, garde champêtre. Ronde chaque nuit, de la mairie au bout de ton chemin. Si tu vois une lanterne derrière ta haie vers minuit, c'est moi. Rien à signaler. Sauf ta haie, qui déborde de quarante centimètres. Je note pas. Pour cette fois.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 18 night false
 title: Lettre 18/84
-text: Grâce aux voisins, le vieux puits de ton jardin est réparé ! Autrefois, on y faisait des vœux. Fais-en un, ça ne coûte rien.
+text: Communiqué de la mairie : le vieux puits de ton jardin est réparé. Paulo a remonté les pierres, Gaston a fourni la corde, et moi j'ai supervisé, ce qui est le plus fatigant. Autrefois, on y faisait des vœux. Je ne te l'impose pas. Je ne te l'interdis pas non plus. Le puits est à toi.
 blank
 text: Son toit est en tuiles rouges, comme tu l'as voulu.
 blank
@@ -201,14 +202,14 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 20 night false
 title: Lettre 20/84
-text: Le puits, oui. Il y a longtemps, quelqu'un y a jeté une pièce en faisant un vœu : que cette maison reste heureuse. Ce vœu, c'est moi qui l'ai fait.
+text: Le puits, oui. Il y a longtemps, quelqu'un y a jeté une pièce. Le vœu tenait en quelques mots : que cette maison reste heureuse. Ce vœu, c'est moi qui l'ai fait.
 blank
 text: — L'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 21 night false
 title: Lettre 21/84
-text: Rose m'a vendu un croissant brûlé, je l'ai mangé quand même. Le soir, je trace des routes sur de vieilles cartes, vers des villes que je n'ai jamais vues.
+text: Rose m'a vendu un croissant brûlé. Le moins brûlé, d'après elle. Je l'ai mangé en traçant une route au crayon, d'ici jusqu'à Valparaíso. Onze centimètres sur ma carte. Vu comme ça, ça paraît faisable, non ?
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -229,14 +230,14 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Newspaper
 == entry 23 night false
 title: Lettre 22/84
-text: J'ai trouvé un os énorme en creusant près de ma niche ! Je l'ai laissé dehors pour que tout le monde l'admire. Personne n'y touche. Wouf.
+text: J'ai trouvé un os. Un ÉNORME os. Trop bien. En creusant près de ma niche. Je l'ai laissé dehors pour que tout le monde le voie. Personne n'y touche. Normal. Tu l'as vu ? Il est beau. Wouf.
 blank
 text: — Biscuit, le chien
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 24 night false
 title: Lettre 23/84
-text: Bonjour, c'est Léo, celui qui saute dans les flaques chez toi. Pardon pour les traces de boue. Mamie dit que ta maison était la sienne, avant. Je peux continuer à venir jouer ?
+text: Salut c'est Léo ! Celui qui saute dans tes flaques. Pardon pour la boue, mais franchement tes flaques sont les meilleures du village. Mamie dit que ta maison c'était la sienne avant. C'est vrai ?? Je peux continuer à venir jouer ? Dis oui.
 blank
 pre: Mon dessin de ta maison :
 pre:     /\      ~~
@@ -254,7 +255,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 25 night false
 title: Lettre 24/84
-text: Sous ta boîte aux lettres, j'ai laissé une petite clé. Garde-la bien. Elle n'ouvre aucune porte de la maison.
+text: J'ai laissé une petite clé sous ta boîte aux lettres. Garde-la. Elle n'ouvre aucune porte de la maison.
 blank
 text: — L'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -268,21 +269,21 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 27 night false
 title: Lettre 26/84
-text: Coin ! La mare au bout de ton jardin est la plus belle de la région quand il pleut. Je la partage avec la grenouille, mais elle chante faux.
+text: Ta mare, quand il pleut, c'est la plus belle de la région. Je ne dis pas ça parce que j'y vis. Bon, un peu. Je la partage avec la grenouille. Elle chante faux, je dis ça, je dis rien. Même les têtards ont déménagé.
 blank
 text: — Coin-Coin, le canard
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 28 night false
 title: Lettre 27/84
-text: Rose nous apprend quelques mots en langue des signes. Claire a retenu « miel » et « merci ». Nadia confond encore les deux, ce qui donne des conversations très polies.
+text: Rose nous apprend la langue des signes, le jeudi, entre deux fournées. Claire a retenu « miel » et « merci » dès la première leçon. Nadia confond encore les deux. Du coup, elle remercie tout le monde pour le miel. Même Gaston, qui n'avait rien demandé.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 29 night false
 title: Lettre 28/84
-text: Léo m'a commandé un gâteau « pour fêter la cabane », en langue des signes, rien que ça ! Il apprend vite. Une cabane ? Dans l'arbre ? Je crois qu'un projet se prépare en cachette.
+text: Léo m'a commandé un gâteau « pour fêter la cabane ». En langue des signes, s'il te plaît ! Il a appris ça tout seul, ce petit. Une cabane ? Dans le grand arbre, je parie. Ils croient que je vois rien. Je suis sourde, pas aveugle.
 blank
 text: — Rose, la boulangère
 blank
@@ -292,28 +293,28 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 30 night false
 title: Lettre 29/84
-text: La clé et le grand arbre vont ensemble. Mais il faut encore attendre. Les bonnes choses arrivent lentement, comme les escargots.
+text: La clé et le grand arbre vont ensemble. Pas tout de suite. Il faut attendre, longtemps. Un escargot est déjà en route vers ta boîte aux lettres. Il arrivera avant la suite.
 blank
 text: — L'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 31 night false
 title: Lettre 30/84
-text: J'ai retrouvé une carte du monde de mon grand-père, couverte de petites croix. Chaque croix est une ville qu'il rêvait de voir. Il n'en a vu aucune.
+text: Quarante petites croix. C'est ce qu'il y a sur la carte du monde de mon grand-père, retrouvée au grenier. Chaque croix, une ville qu'il voulait voir. Il n'en a vu aucune, tu savais ? Celle de Lisbonne, il l'a appuyée si fort que le papier est troué.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 32 night false
 title: Lettre 31/84
-text: Je suis parti de la mare il y a trois jours. J'arriverai à la boîte aux lettres… un jour. Ne m'attends pas pour le dîner.
+text: Parti de la mare il y a trois jours. J'arriverai à ta boîte aux lettres un jour, rien ne presse. Commence à dîner sans moi.
 blank
 text: — Gustave, l'escargot
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 33 night false
 title: Lettre 32/84
-text: On m'a dit que tu posais des questions sur une maison numéro 13. Je fais cette ronde depuis vingt-deux ans. Le village a toujours eu douze maisons. Toujours.
+text: Paraît que tu poses des questions sur un numéro 13. Vingt-deux ans que je fais cette ronde. Le village a toujours eu douze maisons. Je les compte tous les soirs. Douze.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -340,14 +341,14 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 36 night false
 title: Lettre 34/84
-text: Avec Léo, on a construit une cabane dans le grand arbre. Il y a une échelle, un toit et une fenêtre pour surveiller la rivière. Interdite aux adultes, paraît-il.
+text: Avec Léo on a fait une cabane. Dans le grand arbre. Une échelle. Un toit. Une fenêtre sur la rivière. Jai pas le droit dy monter. Cest Léo qui la dit. Cest notre cabane quand même.
 blank
 text: — Paulo, le pêcheur
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 37 night false
 title: Lettre 35/84
-text: Autrefois, dans ta maison, quelqu'un posait une lanterne bleue à la fenêtre pour guider un pêcheur qui rentrait tard.
+text: Autrefois, quelqu'un posait une lanterne bleue à ta fenêtre. Un pêcheur rentrait tard. La lumière le ramenait. Regarde bien la fenêtre du haut.
 blank
 text: — L'encre bleue
 blank
@@ -357,21 +358,21 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 38 night false
 title: Lettre 36/84
-text: Mon cousin le grand-duc est venu me rendre visite. Il trouve ton arbre très confortable et compte rester. Nous serons deux à veiller. Hou hou.
+text: Mon cousin le grand-duc est arrivé hier soir. Il trouve ton arbre confortable. Il reste. Il ne m'a pas demandé mon avis. Il a pris la branche du haut, celle que je préférais.
 blank
 text: — Hulotte, le hibou
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 39 night false
 title: Lettre 37/84
-text: Il pleuvait si fort ce matin que mon vélo flottait presque. Le canard m'a doublé. Bizarre : ta boîte aux lettres était déjà ouverte, et toute humide à l'intérieur.
+text: Quelle saucée ce matin. Mon vélo flottait presque, et ton canard m'a doublé, je te jure, avec un petit air supérieur. Ça m'a rappelé l'hiver où j'avais fini la tournée dans les bottes de pêche de Paulo. Bref. Ta boîte aux lettres était déjà ouverte quand je suis arrivé. Toute mouillée à l'intérieur. Comme si quelqu'un avait mis la main dedans avant moi.
 blank
 text: — Gaston, le facteur
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 40 night false
 title: Lettre 38/84
-text: Premier pot de miel ! On en a déposé un sur ta boîte aux lettres. Rose en a pris dix pour ses gâteaux. Marcel n'en veut pas : il dit que nos abeilles évitent le n°13 et que ce n'est pas bon signe.
+text: Premier pot de miel. Il t'attend sur ta boîte aux lettres. Rose en a pris dix pour ses gâteaux, Claire voulait lui en vendre vingt. Marcel n'en veut pas. Il dit que nos abeilles évitent le n°13 et que c'est mauvais signe. Nadia a regardé : c'est vrai qu'elles font un détour. Claire trouve qu'il se fait des idées.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -385,21 +386,21 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 42 night false
 title: Lettre 40/84
-text: Ce soir, regarde la petite fenêtre en haut à gauche. La lanterne bleue est revenue. Quelqu'un pense encore au pêcheur.
+text: Ce soir, la petite fenêtre en haut à gauche. Regarde-la. La lanterne bleue est revenue. Quelqu'un pense encore au pêcheur.
 blank
 text: — L'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 43 night false
 title: Lettre 41/84
-text: Paulo dit que les rêves se fanent comme les fleurs qu'on oublie d'arroser. Il a raison, pour une fois. J'ai acheté une valise. Elle est encore vide.
+text: J'ai acheté une valise. Marron, avec des coins en cuir. Elle est encore vide, au milieu du moulin. Paulo est passé, il l'a regardée longtemps et il a dit : « Faut la remplir. » C'est la plus longue phrase qu'il m'ait jamais dite.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 44 night false
 title: Lettre 42/84
-text: Tchic tchic ! J'ai caché 147 noisettes dans ton arbre. Je ne me souviens plus où. Si tu en trouves une, elle est à moi.
+text: J'ai caché 147 noisettes dans ton arbre. Tchic. Ou 148. Je sais plus où. Si t'en trouves une, elle est à moi. Si t'en trouves deux, elles sont à moi aussi.
 blank
 text: — Noisette, l'écureuil
 blank
@@ -409,7 +410,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 45 night false
 title: Lettre 43/84
-text: La fête approche. Chaque maison doit apporter une décoration. La tienne aura des guirlandes, j'ai déjà prévenu Rose.
+text: Point suivant de l'ordre du jour : les décorations. Chaque maison en fournit une, c'est voté. Les guirlandes, c'est réglé avec Rose, qui a dit oui avant la fin de ma phrase. Reste ta façade, et sur ce point le conseil tient à recueillir ton avis.
 blank
 text: — Odile, la maire
 blank
@@ -439,7 +440,7 @@ footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
 frame: Newspaper
 == entry 48 night false
 title: Lettre 44/84
-text: Le pêcheur s'appelle Paulo. Il ne sait pas que c'est moi qui écris. Garde le secret encore un peu.
+text: Le pêcheur s'appelle Paulo. Il ne sait pas que c'est moi qui t'écris. Il ne doit pas le savoir. Pas encore.
 blank
 text: — L'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -453,7 +454,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 50 night false
 title: Lettre 46/84
-text: Je ne chante pas faux, c'est le canard qui n'a pas d'oreille. Quand il pleut, je saute dans la mare : plouf ! C'est mon meilleur numéro.
+text: Je ne chante pas faux, naturellement. C'est le canard qui n'a pas d'oreille. Quand il pleut, je saute dans la mare : PLOUF. Mon grand numéro.
 blank
 text: — Rainette, la grenouille
 blank
@@ -463,14 +464,14 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 51 night false
 title: Lettre 47/84
-text: Ronde de cette nuit : de la boue près du puits, encore. Des pas qui vont vers ta maison, aucun qui en revient. Ce sont sûrement les miens. J'ai dû mal compter.
+text: Ronde de 0 h 40. Boue près du puits, encore. Rien à signaler. Des pas vers ta maison, aucun qui revient. Sûrement les miens. J'ai dû mal compter.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 52 night false
 title: Lettre 48/84
-text: Avec Léo, on a accroché une guirlande lumineuse sous ton porche. Elle s'allume le soir. Tout le village la voit depuis la route !
+text: Léo et moi, on a accroché une guirlande lumineuse sous ton porche. Il tenait l'escabeau, moi je tenais Léo. Elle s'allume à la tombée du jour. On la voit depuis la route, même Gaston s'est arrêté pour la regarder.
 blank
 text: — Rose, la boulangère
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -484,14 +485,14 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Recipe
 == entry 54 night false
 title: Lettre 49/84
-text: J'ai habité ta maison pendant cinquante ans. J'y ai été très heureuse. J'ai laissé quelque chose pour la personne qui vivrait là après moi.
+text: Cinquante ans. C'est le temps que j'ai passé dans ta maison. J'y ai été heureuse. En partant, j'ai laissé quelque chose pour celui ou celle qui viendrait après moi.
 blank
 text: — L'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 55 night false
 title: Lettre 50/84
-text: Grande nouvelle : j'ai eu deux chatons ! Ils sont nés une nuit de pleine lune, ce qui fait d'eux des chatons très sages. L'un a une tache en forme d'étoile. Biscuit fait semblant de ne pas les aimer.
+text: J'ai eu deux chatons. Une nuit de pleine lune, évidemment, ce qui en fait des chatons très sages. L'un a une tache en forme d'étoile sur le front. Biscuit fait semblant de ne pas les aimer. Il les a reniflés onze fois.
 blank
 text: — Minouche, la chatte du toit
 blank
@@ -501,7 +502,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 56 night false
 title: Lettre 51/84
-text: Je pars demain. Je vais suivre les croix de mon grand-père, une par une. Je t'enverrai une carte postale chaque semaine, avec le temps qu'il fait là-bas. Garde un œil sur mon moulin.
+text: Je pars demain, par le car de 6 h 10. Je vais suivre les croix de mon grand-père, une par une. Chaque semaine, je t'envoie une carte postale avec le temps qu'il fait là-bas. Tu me diras s'il fait meilleur chez toi ? Garde un œil sur mon moulin. La porte du bas ferme mal, faut la soulever un peu.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -515,7 +516,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 58 night false
 title: Lettre 53/84
-text: Mamie s'appelle Jeanne. Elle habite la maison de retraite au bord de la rivière. Elle me demande toujours des nouvelles de ta maison, du grand arbre et du puits.
+text: Ma mamie elle s'appelle Jeanne et elle habite la maison de retraite au bord de la rivière. Et quand je vais la voir elle me pose plein de questions sur ta maison. Sur le grand arbre et sur le puits. Même sur la fenêtre du haut ! Pourquoi ?? C'est juste une fenêtre.
 blank
 pre: Minouche et ses chatons :
 pre:   /\_/\    /\_/\   /\_/\
@@ -534,7 +535,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Folder
 == entry 60 night false
 title: Lettre 54/84
-text: Au pied du grand arbre, j'ai tracé une croix. Ne creuse pas encore. Attends ma dernière lettre.
+text: J'ai tracé une croix au pied du grand arbre. Ne creuse pas. Pas encore. Attends ma dernière lettre.
 blank
 text: — L'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -554,21 +555,21 @@ footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
 frame: Newspaper
 == entry 62 night false
 title: Lettre 55/84
-text: Il y a une croix rouge par terre près de l'arbre. Je voulais creuser, mais Minouche m'a regardé très sévèrement. Je n'ai pas creusé. Presque pas.
+text: Une croix ROUGE. Par terre. Près de l'arbre. Trop bien, une croix ! Je voulais creuser. Mais Minouche m'a regardé. Avec ses yeux. J'ai pas creusé. Presque pas.
 blank
 text: — Biscuit, le chien
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 63 night false
 title: Lettre 56/84
-text: Ce soir, cela fait dix ans que nous sommes mariées. C'est Odile qui nous a mariées, à la mairie, sous une pluie battante. Claire dit que ça porte bonheur. Nadia dit surtout que ça mouille. On fête ça avec une tarte au miel.
+text: Dix ans ce soir. C'est Odile qui nous a mariées, à la mairie, sous une pluie battante, l'écharpe tricolore trempée. Claire dit que ça porte bonheur, Nadia dit surtout que ça mouille. On fête ça avec une tarte au miel. Claire l'a sortie du four trop tôt, on ne lui dira pas.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 64 night false
 title: Lettre 57/84
-text: Les lettres à l'encre bleue arrivent avec un timbre de la maison de retraite. Les autres, celles sans timbre, je ne sais pas qui les dépose. Je ne distribue rien au numéro 13. Il n'y a pas de numéro 13.
+text: Je vais te dire un truc, mais tu le répètes pas. Les lettres à l'encre bleue ont un timbre de la maison de retraite. Je reconnais le tampon, c'est le même que pour la tante d'Odile. Les autres, celles sans timbre, je sais pas qui les dépose. Pas moi, en tout cas. Et je distribue rien au numéro 13. Y a pas de numéro 13. Trente ans que je compte les boîtes, y en a douze.
 blank
 text: — Gaston, le facteur
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -582,21 +583,21 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 66 night false
 title: Lettre 59/84
-text: Tu as sûrement deviné. Je m'appelle Jeanne, je suis la mamie de Léo. Paulo et moi, nous nous sommes aimés quand nous étions jeunes, puis la vie nous a séparés.
+text: Tu as sûrement deviné, mon petit. Je m'appelle Jeanne, je suis la mamie de Léo. J'écris à l'encre bleue parce que c'est la seule qui ne bave pas sur mon vieux papier. Paulo et moi, on s'est aimés, il y a longtemps. Et puis la vie a fait ce qu'elle fait.
 blank
 text: — Jeanne, l'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 67 night false
 title: Lettre 60/84
-text: Cette nuit, j'ai vu Paulo regarder longtemps la lanterne bleue depuis la rivière. Les humains sont compliqués. Hou.
+text: Cette nuit, Paulo est resté longtemps au bord de la rivière. Il regardait la lanterne bleue. Il n'a pas lancé sa ligne une seule fois. Les humains sont compliqués.
 blank
 text: — Hulotte, le hibou
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 68 night false
 title: Lettre 61/84
-text: Pour la fête, le village a loué une montgolfière ! Elle passera au-dessus de ta maison les jours de beau temps. Lève les yeux et fais-lui signe : le pilote adore ça.
+text: Décision du conseil, adoptée à une voix contre zéro : le village a loué une montgolfière pour la fête. Elle passera au-dessus de ta maison les jours de beau temps. Le pilote s'appelle Bernard et il salue tout ce qui bouge. En somme, si tu lui fais signe, tu fais partie du spectacle.
 blank
 text: — Odile, la maire
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -618,7 +619,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Postcard
 == entry 71 night false
 title: Lettre 62/84
-text: Dans le coffre sous l'arbre, il y a nos lettres d'amour, des photos du village et une recette de Rose quand elle avait dix ans.
+text: Sous l'arbre, il y a un coffre. Dedans, nos lettres d'amour, à Paulo et à moi, et des photos du village quand il n'avait pas encore de route. Il y a aussi une recette de Rose. Elle avait dix ans, et déjà des idées sur le beurre.
 blank
 text: — Jeanne, l'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -632,7 +633,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 73 night false
 title: Lettre 64/84
-text: Coin coin ! Des canetons sont nés au bord de la mare. Ils me suivent partout, même sous la pluie. Surtout sous la pluie.
+text: Je suis papa. Des canetons, nés ce matin au bord de la mare. Ils me suivent partout, même sous la pluie. Surtout sous la pluie. Ils ont mon talent pour la nage. La grenouille dit qu'ils ont surtout mes pieds.
 blank
 text: — Coin-Coin, le canard
 blank
@@ -655,28 +656,28 @@ footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
 frame: Newspaper
 == entry 75 night false
 title: Lettre 65/84
-text: Une dame m'a écrit à l'encre bleue. Son écriture me rappelle quelqu'un. Il y a très longtemps, je rentrais tard de la pêche, et une lanterne bleue m'attendait…
+text: Une dame ma écrit. À lencre bleue. Je connais cette écriture. Avant je rentrais tard de la pêche. Il y avait une lanterne bleue à la fenêtre. Pour moi. Jai pas dormi.
 blank
 text: — Paulo, le pêcheur
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 76 night false
 title: Lettre 66/84
-text: Paulo a reçu ma lettre. Il m'a répondu, avec des fautes d'orthographe, comme avant. J'ai pleuré de joie. Merci d'avoir gardé la lanterne.
+text: Paulo a reçu ma lettre. Il m'a répondu, avec des fautes d'orthographe, comme avant. Trois lignes, et j'ai pleuré comme une sotte. Merci d'avoir gardé la lanterne.
 blank
 text: — Jeanne, l'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 77 night false
 title: Lettre 67/84
-text: Je compte les maisons à chaque ronde. Douze. Cette nuit, j'ai compté treize fenêtres allumées. J'ai recommencé : douze. Je n'ai rien noté dans le registre. Il vaut mieux ne rien noter.
+text: Ronde de 23 h 15. Compté les maisons, comme chaque soir. Douze. Au retour, treize fenêtres allumées. Recompté : douze. Pas noté au registre. Odile dit de tout noter. Pas ça. C'était la buée sur ma lanterne.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 78 night false
 title: Lettre 68/84
-text: J'ai retrouvé une noisette ! Ah non, c'est un bouton. Ça compte quand même. Tchic.
+text: J'ai retrouvé une noisette. Ah non. C'est un bouton. Ça compte quand même, je le garde.
 blank
 text: — Noisette, l'écureuil
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -690,7 +691,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 80 night false
 title: Lettre 70/84
-text: Gros secret : Paulo m'a commandé un gâteau en forme de cœur. Sur mon carnet, j'ai écrit « Pour qui ? ». Il a rougi et il est reparti sans répondre.
+text: Gros secret. Paulo m'a commandé un gâteau en forme de cœur. Paulo ! Un cœur ! J'ai écrit « Pour qui ? » sur mon carnet. Il est devenu rouge comme une framboise et il est reparti sans répondre. Il a même oublié sa monnaie.
 blank
 text: — Rose, la boulangère
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -704,14 +705,14 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Folder
 == entry 82 night false
 title: Lettre 71/84
-text: Bientôt, je viendrai au village pour la fête. Ce sera la première fois depuis des années que je reverrai ma maison. Ta maison.
+text: Je viendrai au village pour la fête. Cela fait des années que je n'ai pas revu ma maison. Ta maison, pardon. J'ai encore du mal à le dire.
 blank
 text: — Jeanne, l'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 83 night false
 title: Lettre 72/84
-text: Une ruche a essaimé ce matin : tout un nuage d'abeilles s'est posé dans ton arbre. Claire est montée les chercher avec un carton, Nadia tenait l'échelle et donnait des conseils. Si une abeille se perd chez toi, ne t'inquiète pas, elle sait rentrer.
+text: Une ruche a essaimé ce matin. Tout le nuage d'abeilles s'est posé dans ton arbre, sur la troisième branche. Claire est montée avec un carton avant qu'on trouve les gants. Nadia tenait l'échelle et donnait des conseils, que personne n'a suivis. Si une abeille traîne chez toi, t'inquiète pas, elle connaît le chemin.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -726,14 +727,14 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Postcard
 == entry 85 night false
 title: Lettre 73/84
-text: Je suis arrivé à la boîte aux lettres ! Il m'a fallu des semaines. Maintenant, je repars vers la mare. À dans un mois.
+text: Arrivé à ta boîte aux lettres. Il m'a fallu des semaines. La vue est belle d'ici. Je repars vers la mare demain. Ou après-demain.
 blank
 text: — Gustave, l'escargot
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 86 night false
 title: Lettre 74/84
-text: J'ai installé une girouette sur ton toit, cadeau des anciens du village. Elle indique le vent. Sauf la nuit : la nuit, elle tourne vers le puits, même quand il n'y a pas un souffle.
+text: J'ai monté une girouette sur ton toit, cadeau des anciens du village. Le cousin d'Odile me tenait l'échelle en me parlant de sa hanche, une heure au moins. Elle indique le vent, la girouette, pas la hanche. Sauf la nuit. La nuit, elle tourne vers le puits, même quand y a pas un souffle.
 blank
 text: — Gaston, le facteur
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -760,21 +761,21 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 89 night false
 title: Lettre 76/84
-text: La clé sous la boîte aux lettres ouvre le coffre. Le jour de la fête, nous l'ouvrirons ensemble, avec Paulo et Léo.
+text: La petite clé sous ta boîte aux lettres, c'est celle du coffre. Je l'ai gardée sur moi pendant quarante ans. Le jour de la fête, nous l'ouvrirons ensemble, avec Paulo et Léo.
 blank
 text: — Jeanne, l'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 90 night false
 title: Lettre 77/84
-text: Les canetons veulent apprendre à sauter comme moi. Ils tombent tous dans la mare. C'est normal, c'est une mare.
+text: Les canetons veulent sauter comme moi. Je leur donne des cours. Ils tombent tous dans la mare. En même temps, c'est une mare.
 blank
 text: — Rainette, la grenouille
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 91 night false
 title: Lettre 78/84
-text: On a préparé les décorations pour la fête. Mamie arrive bientôt !
+text: On a fait les décorations pour la fête avec Rose et j'ai eu de la colle partout, même dans les cheveux. Mamie arrive bientôt !!
 blank
 pre: La fête dans ton jardin :
 pre:   v v v v v v v v v
@@ -794,7 +795,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Folder
 == entry 93 night false
 title: Lettre 79/84
-text: Il y a une dernière chose dans le coffre : une lettre écrite il y a quarante ans pour la personne qui habiterait ma maison. Pour toi.
+text: Il reste une chose dans le coffre. Une lettre, écrite il y a quarante ans, pour la personne qui habiterait ma maison après moi. Je ne savais pas qui ce serait. C'est toi.
 blank
 text: — Jeanne, l'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -808,7 +809,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 95 night false
 title: Lettre 81/84
-text: Mes chatons ont appris à grimper sur la cheminée. Ils disent que, de là-haut, on entend mieux les étoiles. Je fais semblant de ne pas les connaître.
+text: Mes chatons grimpent sur la cheminée, maintenant. Ils prétendent que de là-haut on entend mieux les étoiles. On n'entend pas les étoiles. Je fais semblant de ne pas les connaître.
 blank
 text: — Minouche, la chatte du toit
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -823,21 +824,21 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Postcard
 == entry 97 night false
 title: Lettre 82/84
-text: Tout le village est prêt. La fête aura lieu dans ton jardin, sous le grand arbre. Rose apporte les gâteaux, Paulo s'occupe de la musique. Il ne manque plus que toi.
+text: Dernière séance du conseil avant la fête. Lieu : ton jardin, sous le grand arbre. Gâteaux : Rose. Musique : Paulo, qui a promis de ne pas chanter. Il ne manque plus que toi, et Gaston, en retard à sa propre réunion.
 blank
 text: — Odile, la maire
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 98 night false
 title: Lettre 83/84
-text: Demain, je viens. J'ai sorti ma plus belle robe bleue. Paulo dit qu'il apportera des fleurs de la rivière.
+text: Demain, je viens. J'ai sorti ma robe bleue, la belle, et je l'ai essayée deux fois. Paulo dit qu'il apportera des fleurs de la rivière. À mon âge, mon petit, on a encore le trac.
 blank
 text: — Jeanne, l'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 99 night false
 title: Lettre 84/84
-text: La fête approche, alors un conseil. Le soir, si on frappe trois coups à ta porte, ne réponds pas. Nous avons tous appris à ne pas répondre. Moi aussi, j'ai appris.
+text: La fête approche. Un conseil, un seul. Le soir, si on frappe trois coups à ta porte, réponds pas. Tout le village a appris à pas répondre. Moi aussi, j'ai appris. Ma première année de ronde. Je dors très bien, merci.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -857,7 +858,8 @@ footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
 frame: Newspaper
 == entry 0 night true
 title: Lettre 1/84
-text: Bienvenue dans la maison au bout du chemin ! Ici, tout le monde se connaît. Je passe chaque matin avec mon panier de croissants : si tu sens une odeur de beurre, c'est moi. Je suis sourde : inutile de sonner chez moi, fais-moi plutôt signe par la fenêtre. Gaston, le facteur, t'apportera une lettre par jour. C'est la tradition du village.
+text: Bienvenue au bout du chemin ! Moi c'est Rose, la boulangère. Le matin, si ça sent le beurre chaud devant chez toi, c'est que je passe avec mon panier. Sonne pas, hein, je suis sourde : un signe par la fenêtre, c'est parfait. Gaston t'apportera une lettre par jour, il adore ça.
+text: P.-S. Je t'ai gardé un croissant. Le moins brûlé.
 blank
 text: P.-S. (d'une autre écriture, au crayon) : tu as oublié d'éteindre en bas.
 blank
@@ -866,7 +868,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 1 night true
 title: Lettre 2/84
-text: Tu ne me connais pas, mais je connais très bien ta maison. Chaque pierre, chaque fenêtre. Elle cache un secret depuis longtemps. Si tu veux le découvrir, lis bien chacune de mes lettres.
+text: Tu ne me connais pas. Moi, je connais ta maison. Chaque pierre, la marche qui grince, la fenêtre qui ferme mal. Elle garde un secret depuis longtemps. Si tu veux le trouver, lis mes lettres. Toutes.
 blank
 text: P.-S. : ne lis pas cette lettre près de la fenêtre.
 blank
@@ -875,7 +877,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 2 night true
 title: Lettre 3/84
-text: Miaou. Je suis la chatte qui dort sur ton toit. Ce toit est à moi depuis six hivers, je te le prête. D'ici, je lis les étoiles : ce mois-ci, elles te sont favorables. Quand il pleut, je rentre par la fenêtre, ne t'inquiète pas. Signé d'une patte.
+text: Le toit de ta maison est à moi depuis six hivers. Je te le prête. De là-haut, je lis les étoiles : ce mois-ci, elles te sont favorables, ce qui m'étonne un peu. Quand il pleut, j'entre par ta fenêtre. Inutile de la fermer, je sais l'ouvrir.
 blank
 text: P.-S. : le chien a aboyé à 3 h 13. Tu l'as entendu ?
 blank
@@ -887,7 +889,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 3 night true
 title: Lettre 4/84
-text: J'avais trop de bois flotté dans ma cabane, alors je t'ai fabriqué un banc. Je l'ai posé devant ta maison. On y voit très bien le coucher du soleil. Paulo, ton voisin de la rivière.
+text: Javais trop de bois flotté dans la cabane. Alors je tai fait un banc, voilà. Il est devant chez toi. Le soir on voit le soleil tomber dans la rivière. Cest beau.
 blank
 text: P.-S. : quelqu'un a lu cette lettre avant toi.
 blank
@@ -912,7 +914,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 6 night true
 title: Lettre 7/84
-text: Rose m'a offert un nœud. Les astres l'avaient annoncé : je suis désormais la chatte la plus élégante du village. Biscuit est jaloux, mais Biscuit ne lit pas les étoiles. Regarde bien mon oreille !
+text: Rose m'a offert un nœud. Les astres l'avaient prédit, évidemment : je suis officiellement la chatte la plus élégante du village. Biscuit est jaloux. Biscuit ne lit pas les étoiles. Biscuit lit à peine sa gamelle. Regarde mon oreille. Longuement.
 blank
 text: Il est bleu, comme tu me l'as conseillé.
 blank
@@ -923,7 +925,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 7 night true
 title: Lettre 8/84
-text: Le village prépare sa grande fête. Il reste beaucoup à faire : réparer le vieux puits, décorer les maisons, trouver de la musique. Chaque habitant peut aider, et ta maison compte beaucoup pour nous.
+text: Le conseil municipal (c'est-à-dire moi, Rose, et Gaston quand il a le temps) a voté à l'unanimité : le village fera sa grande fête cette année. À l'ordre du jour : le vieux puits à réparer, des décorations partout, et de la musique. Ta maison est au cœur du projet. En somme, ce n'est pas une faveur, c'est une réquisition amicale.
 blank
 text: P.-S. : ferme bien la porte du jardin, cette nuit.
 blank
@@ -946,7 +948,7 @@ footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
 frame: Newspaper
 == entry 9 night true
 title: Lettre 9/84
-text: Bravo, c'était le grand arbre. Cette nuit, quelqu'un a marché dans ton jardin. Regarde le sol : les traces mènent quelque part.
+text: Bravo, c'était le grand arbre. Cette nuit, quelqu'un est passé dans ton jardin. Regarde le sol, près des racines. Les traces vont quelque part.
 blank
 text: P.-S. : tu entends le puits ?
 blank
@@ -955,14 +957,14 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 10 night true
 title: Lettre 10/84
-text: Bonjour d'en face ! Je suis Sam, j'habite le vieux moulin au bord de la rivière. Je dessinais des cartes, autrefois. Aujourd'hui, je les regarde surtout. Ton jardin figure sur trois de mes plans, tu savais ?
+text: Bonjour d'en face ! Moi c'est Sam, le vieux moulin au bord de la rivière. Je dessinais des cartes, avant. Maintenant je les regarde, surtout. Tu savais ? Ton jardin est sur trois de mes plans. Sur le plus vieux, ta maison n'a même pas de cheminée.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 11 night true
 title: Lettre 11/84
-text: Wouf ! C'est moi qui dors dans la niche. Je n'ai rien vu cette nuit, je dormais. Enfin, presque. J'ai entendu des petits pas, très légers, puis un rire.
+text: La niche, c'est chez moi. Cette nuit j'ai rien vu. Je dormais. Enfin, presque. J'ai entendu des petits pas. Tout légers. Et après, un rire. Un rire de quelqu'un de PETIT.
 blank
 text: P.-S. : je t'ai vu lire.
 blank
@@ -978,7 +980,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 13 night true
 title: Lettre 13/84
-text: Trente ans que je fais la tournée à vélo ! Ta boîte aux lettres est ma préférée : elle grince joliment. Quand son drapeau rouge est levé, c'est qu'une lettre t'attend.
+text: Trente ans de tournée, et je vais pas te mentir : ta boîte aux lettres, c'est ma préférée. Elle grince comme la porte de ma grand-tante Lucienne, paix à son âme. Bref. Quand le petit drapeau rouge est levé, y a du courrier. Baissé, y en a pas. C'est pas sorcier, mais tu serais surpris du nombre de gens qui regardent jamais.
 blank
 text: P.-S. : va dormir. Moi, je reste.
 blank
@@ -990,7 +992,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 14 night true
 title: Lettre 14/84
-text: Ces traces sont petites. Elles appartiennent à quelqu'un qui aime grimper aux arbres et sauter dans les flaques. Il en sait plus qu'il ne le dit.
+text: Ces traces sont petites. Celui qui les a laissées grimpe aux arbres et saute dans les flaques. Il en sait plus qu'il ne le dit.
 blank
 text: P.-S. (d'une autre écriture, au crayon) : tu as oublié d'éteindre en bas.
 blank
@@ -999,14 +1001,14 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 15 night true
 title: Lettre 15/84
-text: Bonjour ! Nous sommes Nadia et Claire. On vient d'emménager dans la maison derrière le verger, avec nos quatre ruches. Si tu vois des abeilles dans ton jardin, ce sont les nôtres : elles adorent ton arbre.
+text: Coucou ! Nadia et Claire, les nouvelles de la maison derrière le verger. On est arrivées avec quatre ruches (Claire en voulait six). Si tu vois des abeilles chez toi, ce sont les nôtres. Elles adorent ton arbre : Claire dit qu'elles ont bon goût, Nadia dit qu'elles sont juste gourmandes. Le premier pot est pour toi.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 16 night true
 title: Lettre 16/84
-text: Hou hou. Je veille dans le grand arbre la nuit. Je vois tout : les chauves-souris, les étoiles filantes, et parfois une petite lumière bleue qui n'est pas une étoile.
+text: La nuit, je veille dans le grand arbre. Je vois passer les chauves-souris, les étoiles filantes, les rêves des chats. Et parfois, une petite lumière bleue. Hou. Ce n'est pas une étoile. Les étoiles ne clignent pas comme ça.
 blank
 text: P.-S. : ne lis pas cette lettre près de la fenêtre.
 blank
@@ -1018,14 +1020,14 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 17 night true
 title: Lettre 17/84
-text: Bonsoir. Marcel, garde champêtre. Je fais ma ronde chaque nuit, de la mairie jusqu'au bout de ton chemin. Si tu vois une lanterne passer derrière ta haie vers minuit, c'est moi. En général, rien à signaler.
+text: Bonsoir. Marcel, garde champêtre. Ronde chaque nuit, de la mairie au bout de ton chemin. Si tu vois une lanterne derrière ta haie vers minuit, c'est moi. Rien à signaler. Sauf ta haie, qui déborde de quarante centimètres. Je note pas. Pour cette fois.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 18 night true
 title: Lettre 18/84
-text: Grâce aux voisins, le vieux puits de ton jardin est réparé ! Autrefois, on y faisait des vœux. Fais-en un, ça ne coûte rien.
+text: Communiqué de la mairie : le vieux puits de ton jardin est réparé. Paulo a remonté les pierres, Gaston a fourni la corde, et moi j'ai supervisé, ce qui est le plus fatigant. Autrefois, on y faisait des vœux. Je ne te l'impose pas. Je ne te l'interdis pas non plus. Le puits est à toi.
 blank
 text: Son toit est en tuiles rouges, comme tu l'as voulu.
 blank
@@ -1043,7 +1045,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 20 night true
 title: Lettre 20/84
-text: Le puits, oui. Il y a longtemps, quelqu'un y a jeté une pièce en faisant un vœu : que cette maison reste heureuse. Ce vœu, c'est moi qui l'ai fait.
+text: Le puits, oui. Il y a longtemps, quelqu'un y a jeté une pièce. Le vœu tenait en quelques mots : que cette maison reste heureuse. Ce vœu, c'est moi qui l'ai fait.
 blank
 text: P.-S. : quelqu'un a lu cette lettre avant toi.
 blank
@@ -1052,7 +1054,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 21 night true
 title: Lettre 21/84
-text: Rose m'a vendu un croissant brûlé, je l'ai mangé quand même. Le soir, je trace des routes sur de vieilles cartes, vers des villes que je n'ai jamais vues.
+text: Rose m'a vendu un croissant brûlé. Le moins brûlé, d'après elle. Je l'ai mangé en traçant une route au crayon, d'ici jusqu'à Valparaíso. Onze centimètres sur ma carte. Vu comme ça, ça paraît faisable, non ?
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1073,7 +1075,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Newspaper
 == entry 23 night true
 title: Lettre 22/84
-text: J'ai trouvé un os énorme en creusant près de ma niche ! Je l'ai laissé dehors pour que tout le monde l'admire. Personne n'y touche. Wouf.
+text: J'ai trouvé un os. Un ÉNORME os. Trop bien. En creusant près de ma niche. Je l'ai laissé dehors pour que tout le monde le voie. Personne n'y touche. Normal. Tu l'as vu ? Il est beau. Wouf.
 blank
 text: P.-S. : il y a de la boue sur ton paillasson. Elle n'est pas à toi.
 blank
@@ -1082,7 +1084,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 24 night true
 title: Lettre 23/84
-text: Bonjour, c'est Léo, celui qui saute dans les flaques chez toi. Pardon pour les traces de boue. Mamie dit que ta maison était la sienne, avant. Je peux continuer à venir jouer ?
+text: Salut c'est Léo ! Celui qui saute dans tes flaques. Pardon pour la boue, mais franchement tes flaques sont les meilleures du village. Mamie dit que ta maison c'était la sienne avant. C'est vrai ?? Je peux continuer à venir jouer ? Dis oui.
 blank
 pre: Mon dessin de ta maison :
 pre:     /\      ~~
@@ -1102,7 +1104,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 25 night true
 title: Lettre 24/84
-text: Sous ta boîte aux lettres, j'ai laissé une petite clé. Garde-la bien. Elle n'ouvre aucune porte de la maison.
+text: J'ai laissé une petite clé sous ta boîte aux lettres. Garde-la. Elle n'ouvre aucune porte de la maison.
 blank
 text: P.-S. : ferme bien la porte du jardin, cette nuit.
 blank
@@ -1118,7 +1120,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 27 night true
 title: Lettre 26/84
-text: Coin ! La mare au bout de ton jardin est la plus belle de la région quand il pleut. Je la partage avec la grenouille, mais elle chante faux.
+text: Ta mare, quand il pleut, c'est la plus belle de la région. Je ne dis pas ça parce que j'y vis. Bon, un peu. Je la partage avec la grenouille. Elle chante faux, je dis ça, je dis rien. Même les têtards ont déménagé.
 blank
 text: P.-S. : tu entends le puits ?
 blank
@@ -1127,14 +1129,14 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 28 night true
 title: Lettre 27/84
-text: Rose nous apprend quelques mots en langue des signes. Claire a retenu « miel » et « merci ». Nadia confond encore les deux, ce qui donne des conversations très polies.
+text: Rose nous apprend la langue des signes, le jeudi, entre deux fournées. Claire a retenu « miel » et « merci » dès la première leçon. Nadia confond encore les deux. Du coup, elle remercie tout le monde pour le miel. Même Gaston, qui n'avait rien demandé.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 29 night true
 title: Lettre 28/84
-text: Léo m'a commandé un gâteau « pour fêter la cabane », en langue des signes, rien que ça ! Il apprend vite. Une cabane ? Dans l'arbre ? Je crois qu'un projet se prépare en cachette.
+text: Léo m'a commandé un gâteau « pour fêter la cabane ». En langue des signes, s'il te plaît ! Il a appris ça tout seul, ce petit. Une cabane ? Dans le grand arbre, je parie. Ils croient que je vois rien. Je suis sourde, pas aveugle.
 blank
 text: P.-S. : je t'ai vu lire.
 blank
@@ -1146,7 +1148,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 30 night true
 title: Lettre 29/84
-text: La clé et le grand arbre vont ensemble. Mais il faut encore attendre. Les bonnes choses arrivent lentement, comme les escargots.
+text: La clé et le grand arbre vont ensemble. Pas tout de suite. Il faut attendre, longtemps. Un escargot est déjà en route vers ta boîte aux lettres. Il arrivera avant la suite.
 blank
 text: P.-S. : va dormir. Moi, je reste.
 blank
@@ -1155,14 +1157,14 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 31 night true
 title: Lettre 30/84
-text: J'ai retrouvé une carte du monde de mon grand-père, couverte de petites croix. Chaque croix est une ville qu'il rêvait de voir. Il n'en a vu aucune.
+text: Quarante petites croix. C'est ce qu'il y a sur la carte du monde de mon grand-père, retrouvée au grenier. Chaque croix, une ville qu'il voulait voir. Il n'en a vu aucune, tu savais ? Celle de Lisbonne, il l'a appuyée si fort que le papier est troué.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 32 night true
 title: Lettre 31/84
-text: Je suis parti de la mare il y a trois jours. J'arriverai à la boîte aux lettres… un jour. Ne m'attends pas pour le dîner.
+text: Parti de la mare il y a trois jours. J'arriverai à ta boîte aux lettres un jour, rien ne presse. Commence à dîner sans moi.
 blank
 text: P.-S. (d'une autre écriture, au crayon) : tu as oublié d'éteindre en bas.
 blank
@@ -1171,7 +1173,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 33 night true
 title: Lettre 32/84
-text: On m'a dit que tu posais des questions sur une maison numéro 13. Je fais cette ronde depuis vingt-deux ans. Le village a toujours eu douze maisons. Toujours.
+text: Paraît que tu poses des questions sur un numéro 13. Vingt-deux ans que je fais cette ronde. Le village a toujours eu douze maisons. Je les compte tous les soirs. Douze.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1198,7 +1200,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 36 night true
 title: Lettre 34/84
-text: Avec Léo, on a construit une cabane dans le grand arbre. Il y a une échelle, un toit et une fenêtre pour surveiller la rivière. Interdite aux adultes, paraît-il.
+text: Avec Léo on a fait une cabane. Dans le grand arbre. Une échelle. Un toit. Une fenêtre sur la rivière. Jai pas le droit dy monter. Cest Léo qui la dit. Cest notre cabane quand même.
 blank
 text: P.-S. : ne lis pas cette lettre près de la fenêtre.
 blank
@@ -1207,7 +1209,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 37 night true
 title: Lettre 35/84
-text: Autrefois, dans ta maison, quelqu'un posait une lanterne bleue à la fenêtre pour guider un pêcheur qui rentrait tard.
+text: Autrefois, quelqu'un posait une lanterne bleue à ta fenêtre. Un pêcheur rentrait tard. La lumière le ramenait. Regarde bien la fenêtre du haut.
 blank
 text: P.-S. : le chien a aboyé à 3 h 13. Tu l'as entendu ?
 blank
@@ -1219,7 +1221,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 38 night true
 title: Lettre 36/84
-text: Mon cousin le grand-duc est venu me rendre visite. Il trouve ton arbre très confortable et compte rester. Nous serons deux à veiller. Hou hou.
+text: Mon cousin le grand-duc est arrivé hier soir. Il trouve ton arbre confortable. Il reste. Il ne m'a pas demandé mon avis. Il a pris la branche du haut, celle que je préférais.
 blank
 text: P.-S. : quelqu'un a lu cette lettre avant toi.
 blank
@@ -1228,7 +1230,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 39 night true
 title: Lettre 37/84
-text: Il pleuvait si fort ce matin que mon vélo flottait presque. Le canard m'a doublé. Bizarre : ta boîte aux lettres était déjà ouverte, et toute humide à l'intérieur.
+text: Quelle saucée ce matin. Mon vélo flottait presque, et ton canard m'a doublé, je te jure, avec un petit air supérieur. Ça m'a rappelé l'hiver où j'avais fini la tournée dans les bottes de pêche de Paulo. Bref. Ta boîte aux lettres était déjà ouverte quand je suis arrivé. Toute mouillée à l'intérieur. Comme si quelqu'un avait mis la main dedans avant moi.
 blank
 text: P.-S. : il y a de la boue sur ton paillasson. Elle n'est pas à toi.
 blank
@@ -1237,7 +1239,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 40 night true
 title: Lettre 38/84
-text: Premier pot de miel ! On en a déposé un sur ta boîte aux lettres. Rose en a pris dix pour ses gâteaux. Marcel n'en veut pas : il dit que nos abeilles évitent le n°13 et que ce n'est pas bon signe.
+text: Premier pot de miel. Il t'attend sur ta boîte aux lettres. Rose en a pris dix pour ses gâteaux, Claire voulait lui en vendre vingt. Marcel n'en veut pas. Il dit que nos abeilles évitent le n°13 et que c'est mauvais signe. Nadia a regardé : c'est vrai qu'elles font un détour. Claire trouve qu'il se fait des idées.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1251,7 +1253,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 42 night true
 title: Lettre 40/84
-text: Ce soir, regarde la petite fenêtre en haut à gauche. La lanterne bleue est revenue. Quelqu'un pense encore au pêcheur.
+text: Ce soir, la petite fenêtre en haut à gauche. Regarde-la. La lanterne bleue est revenue. Quelqu'un pense encore au pêcheur.
 blank
 text: P.-S. : treize.
 blank
@@ -1260,14 +1262,14 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 43 night true
 title: Lettre 41/84
-text: Paulo dit que les rêves se fanent comme les fleurs qu'on oublie d'arroser. Il a raison, pour une fois. J'ai acheté une valise. Elle est encore vide.
+text: J'ai acheté une valise. Marron, avec des coins en cuir. Elle est encore vide, au milieu du moulin. Paulo est passé, il l'a regardée longtemps et il a dit : « Faut la remplir. » C'est la plus longue phrase qu'il m'ait jamais dite.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 44 night true
 title: Lettre 42/84
-text: Tchic tchic ! J'ai caché 147 noisettes dans ton arbre. Je ne me souviens plus où. Si tu en trouves une, elle est à moi.
+text: J'ai caché 147 noisettes dans ton arbre. Tchic. Ou 148. Je sais plus où. Si t'en trouves une, elle est à moi. Si t'en trouves deux, elles sont à moi aussi.
 blank
 text: P.-S. : ferme bien la porte du jardin, cette nuit.
 blank
@@ -1279,7 +1281,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 45 night true
 title: Lettre 43/84
-text: La fête approche. Chaque maison doit apporter une décoration. La tienne aura des guirlandes, j'ai déjà prévenu Rose.
+text: Point suivant de l'ordre du jour : les décorations. Chaque maison en fournit une, c'est voté. Les guirlandes, c'est réglé avec Rose, qui a dit oui avant la fin de ma phrase. Reste ta façade, et sur ce point le conseil tient à recueillir ton avis.
 blank
 text: P.-S. : tu entends le puits ?
 blank
@@ -1311,7 +1313,7 @@ footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
 frame: Newspaper
 == entry 48 night true
 title: Lettre 44/84
-text: Le pêcheur s'appelle Paulo. Il ne sait pas que c'est moi qui écris. Garde le secret encore un peu.
+text: Le pêcheur s'appelle Paulo. Il ne sait pas que c'est moi qui t'écris. Il ne doit pas le savoir. Pas encore.
 blank
 text: P.-S. : je t'ai vu lire.
 blank
@@ -1327,7 +1329,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 50 night true
 title: Lettre 46/84
-text: Je ne chante pas faux, c'est le canard qui n'a pas d'oreille. Quand il pleut, je saute dans la mare : plouf ! C'est mon meilleur numéro.
+text: Je ne chante pas faux, naturellement. C'est le canard qui n'a pas d'oreille. Quand il pleut, je saute dans la mare : PLOUF. Mon grand numéro.
 blank
 text: P.-S. : va dormir. Moi, je reste.
 blank
@@ -1339,14 +1341,14 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 51 night true
 title: Lettre 47/84
-text: Ronde de cette nuit : de la boue près du puits, encore. Des pas qui vont vers ta maison, aucun qui en revient. Ce sont sûrement les miens. J'ai dû mal compter.
+text: Ronde de 0 h 40. Boue près du puits, encore. Rien à signaler. Des pas vers ta maison, aucun qui revient. Sûrement les miens. J'ai dû mal compter.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 52 night true
 title: Lettre 48/84
-text: Avec Léo, on a accroché une guirlande lumineuse sous ton porche. Elle s'allume le soir. Tout le village la voit depuis la route !
+text: Léo et moi, on a accroché une guirlande lumineuse sous ton porche. Il tenait l'escabeau, moi je tenais Léo. Elle s'allume à la tombée du jour. On la voit depuis la route, même Gaston s'est arrêté pour la regarder.
 blank
 text: P.-S. (d'une autre écriture, au crayon) : tu as oublié d'éteindre en bas.
 blank
@@ -1362,7 +1364,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Recipe
 == entry 54 night true
 title: Lettre 49/84
-text: J'ai habité ta maison pendant cinquante ans. J'y ai été très heureuse. J'ai laissé quelque chose pour la personne qui vivrait là après moi.
+text: Cinquante ans. C'est le temps que j'ai passé dans ta maison. J'y ai été heureuse. En partant, j'ai laissé quelque chose pour celui ou celle qui viendrait après moi.
 blank
 text: P.-S. : ne lis pas cette lettre près de la fenêtre.
 blank
@@ -1371,7 +1373,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 55 night true
 title: Lettre 50/84
-text: Grande nouvelle : j'ai eu deux chatons ! Ils sont nés une nuit de pleine lune, ce qui fait d'eux des chatons très sages. L'un a une tache en forme d'étoile. Biscuit fait semblant de ne pas les aimer.
+text: J'ai eu deux chatons. Une nuit de pleine lune, évidemment, ce qui en fait des chatons très sages. L'un a une tache en forme d'étoile sur le front. Biscuit fait semblant de ne pas les aimer. Il les a reniflés onze fois.
 blank
 text: P.-S. : le chien a aboyé à 3 h 13. Tu l'as entendu ?
 blank
@@ -1383,7 +1385,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 56 night true
 title: Lettre 51/84
-text: Je pars demain. Je vais suivre les croix de mon grand-père, une par une. Je t'enverrai une carte postale chaque semaine, avec le temps qu'il fait là-bas. Garde un œil sur mon moulin.
+text: Je pars demain, par le car de 6 h 10. Je vais suivre les croix de mon grand-père, une par une. Chaque semaine, je t'envoie une carte postale avec le temps qu'il fait là-bas. Tu me diras s'il fait meilleur chez toi ? Garde un œil sur mon moulin. La porte du bas ferme mal, faut la soulever un peu.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1397,7 +1399,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 58 night true
 title: Lettre 53/84
-text: Mamie s'appelle Jeanne. Elle habite la maison de retraite au bord de la rivière. Elle me demande toujours des nouvelles de ta maison, du grand arbre et du puits.
+text: Ma mamie elle s'appelle Jeanne et elle habite la maison de retraite au bord de la rivière. Et quand je vais la voir elle me pose plein de questions sur ta maison. Sur le grand arbre et sur le puits. Même sur la fenêtre du haut ! Pourquoi ?? C'est juste une fenêtre.
 blank
 pre: Minouche et ses chatons :
 pre:   /\_/\    /\_/\   /\_/\
@@ -1418,7 +1420,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Folder
 == entry 60 night true
 title: Lettre 54/84
-text: Au pied du grand arbre, j'ai tracé une croix. Ne creuse pas encore. Attends ma dernière lettre.
+text: J'ai tracé une croix au pied du grand arbre. Ne creuse pas. Pas encore. Attends ma dernière lettre.
 blank
 text: P.-S. : il y a de la boue sur ton paillasson. Elle n'est pas à toi.
 blank
@@ -1440,7 +1442,7 @@ footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
 frame: Newspaper
 == entry 62 night true
 title: Lettre 55/84
-text: Il y a une croix rouge par terre près de l'arbre. Je voulais creuser, mais Minouche m'a regardé très sévèrement. Je n'ai pas creusé. Presque pas.
+text: Une croix ROUGE. Par terre. Près de l'arbre. Trop bien, une croix ! Je voulais creuser. Mais Minouche m'a regardé. Avec ses yeux. J'ai pas creusé. Presque pas.
 blank
 text: P.-S. : treize.
 blank
@@ -1449,14 +1451,14 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 63 night true
 title: Lettre 56/84
-text: Ce soir, cela fait dix ans que nous sommes mariées. C'est Odile qui nous a mariées, à la mairie, sous une pluie battante. Claire dit que ça porte bonheur. Nadia dit surtout que ça mouille. On fête ça avec une tarte au miel.
+text: Dix ans ce soir. C'est Odile qui nous a mariées, à la mairie, sous une pluie battante, l'écharpe tricolore trempée. Claire dit que ça porte bonheur, Nadia dit surtout que ça mouille. On fête ça avec une tarte au miel. Claire l'a sortie du four trop tôt, on ne lui dira pas.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 64 night true
 title: Lettre 57/84
-text: Les lettres à l'encre bleue arrivent avec un timbre de la maison de retraite. Les autres, celles sans timbre, je ne sais pas qui les dépose. Je ne distribue rien au numéro 13. Il n'y a pas de numéro 13.
+text: Je vais te dire un truc, mais tu le répètes pas. Les lettres à l'encre bleue ont un timbre de la maison de retraite. Je reconnais le tampon, c'est le même que pour la tante d'Odile. Les autres, celles sans timbre, je sais pas qui les dépose. Pas moi, en tout cas. Et je distribue rien au numéro 13. Y a pas de numéro 13. Trente ans que je compte les boîtes, y en a douze.
 blank
 text: P.-S. : ferme bien la porte du jardin, cette nuit.
 blank
@@ -1472,7 +1474,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 66 night true
 title: Lettre 59/84
-text: Tu as sûrement deviné. Je m'appelle Jeanne, je suis la mamie de Léo. Paulo et moi, nous nous sommes aimés quand nous étions jeunes, puis la vie nous a séparés.
+text: Tu as sûrement deviné, mon petit. Je m'appelle Jeanne, je suis la mamie de Léo. J'écris à l'encre bleue parce que c'est la seule qui ne bave pas sur mon vieux papier. Paulo et moi, on s'est aimés, il y a longtemps. Et puis la vie a fait ce qu'elle fait.
 blank
 text: P.-S. : tu entends le puits ?
 blank
@@ -1481,7 +1483,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 67 night true
 title: Lettre 60/84
-text: Cette nuit, j'ai vu Paulo regarder longtemps la lanterne bleue depuis la rivière. Les humains sont compliqués. Hou.
+text: Cette nuit, Paulo est resté longtemps au bord de la rivière. Il regardait la lanterne bleue. Il n'a pas lancé sa ligne une seule fois. Les humains sont compliqués.
 blank
 text: P.-S. : je t'ai vu lire.
 blank
@@ -1490,7 +1492,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 68 night true
 title: Lettre 61/84
-text: Pour la fête, le village a loué une montgolfière ! Elle passera au-dessus de ta maison les jours de beau temps. Lève les yeux et fais-lui signe : le pilote adore ça.
+text: Décision du conseil, adoptée à une voix contre zéro : le village a loué une montgolfière pour la fête. Elle passera au-dessus de ta maison les jours de beau temps. Le pilote s'appelle Bernard et il salue tout ce qui bouge. En somme, si tu lui fais signe, tu fais partie du spectacle.
 blank
 text: P.-S. : va dormir. Moi, je reste.
 blank
@@ -1514,7 +1516,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Postcard
 == entry 71 night true
 title: Lettre 62/84
-text: Dans le coffre sous l'arbre, il y a nos lettres d'amour, des photos du village et une recette de Rose quand elle avait dix ans.
+text: Sous l'arbre, il y a un coffre. Dedans, nos lettres d'amour, à Paulo et à moi, et des photos du village quand il n'avait pas encore de route. Il y a aussi une recette de Rose. Elle avait dix ans, et déjà des idées sur le beurre.
 blank
 text: P.-S. (d'une autre écriture, au crayon) : tu as oublié d'éteindre en bas.
 blank
@@ -1530,7 +1532,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 73 night true
 title: Lettre 64/84
-text: Coin coin ! Des canetons sont nés au bord de la mare. Ils me suivent partout, même sous la pluie. Surtout sous la pluie.
+text: Je suis papa. Des canetons, nés ce matin au bord de la mare. Ils me suivent partout, même sous la pluie. Surtout sous la pluie. Ils ont mon talent pour la nage. La grenouille dit qu'ils ont surtout mes pieds.
 blank
 text: P.-S. : ne lis pas cette lettre près de la fenêtre.
 blank
@@ -1555,7 +1557,7 @@ footer: [e] répondre à l'énigme  [c] suivante  [<] [>]  [Echap]
 frame: Newspaper
 == entry 75 night true
 title: Lettre 65/84
-text: Une dame m'a écrit à l'encre bleue. Son écriture me rappelle quelqu'un. Il y a très longtemps, je rentrais tard de la pêche, et une lanterne bleue m'attendait…
+text: Une dame ma écrit. À lencre bleue. Je connais cette écriture. Avant je rentrais tard de la pêche. Il y avait une lanterne bleue à la fenêtre. Pour moi. Jai pas dormi.
 blank
 text: P.-S. : le chien a aboyé à 3 h 13. Tu l'as entendu ?
 blank
@@ -1564,7 +1566,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 76 night true
 title: Lettre 66/84
-text: Paulo a reçu ma lettre. Il m'a répondu, avec des fautes d'orthographe, comme avant. J'ai pleuré de joie. Merci d'avoir gardé la lanterne.
+text: Paulo a reçu ma lettre. Il m'a répondu, avec des fautes d'orthographe, comme avant. Trois lignes, et j'ai pleuré comme une sotte. Merci d'avoir gardé la lanterne.
 blank
 text: P.-S. : quelqu'un a lu cette lettre avant toi.
 blank
@@ -1573,14 +1575,14 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 77 night true
 title: Lettre 67/84
-text: Je compte les maisons à chaque ronde. Douze. Cette nuit, j'ai compté treize fenêtres allumées. J'ai recommencé : douze. Je n'ai rien noté dans le registre. Il vaut mieux ne rien noter.
+text: Ronde de 23 h 15. Compté les maisons, comme chaque soir. Douze. Au retour, treize fenêtres allumées. Recompté : douze. Pas noté au registre. Odile dit de tout noter. Pas ça. C'était la buée sur ma lanterne.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 78 night true
 title: Lettre 68/84
-text: J'ai retrouvé une noisette ! Ah non, c'est un bouton. Ça compte quand même. Tchic.
+text: J'ai retrouvé une noisette. Ah non. C'est un bouton. Ça compte quand même, je le garde.
 blank
 text: P.-S. : il y a de la boue sur ton paillasson. Elle n'est pas à toi.
 blank
@@ -1596,7 +1598,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 80 night true
 title: Lettre 70/84
-text: Gros secret : Paulo m'a commandé un gâteau en forme de cœur. Sur mon carnet, j'ai écrit « Pour qui ? ». Il a rougi et il est reparti sans répondre.
+text: Gros secret. Paulo m'a commandé un gâteau en forme de cœur. Paulo ! Un cœur ! J'ai écrit « Pour qui ? » sur mon carnet. Il est devenu rouge comme une framboise et il est reparti sans répondre. Il a même oublié sa monnaie.
 blank
 text: P.-S. : treize.
 blank
@@ -1612,7 +1614,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Folder
 == entry 82 night true
 title: Lettre 71/84
-text: Bientôt, je viendrai au village pour la fête. Ce sera la première fois depuis des années que je reverrai ma maison. Ta maison.
+text: Je viendrai au village pour la fête. Cela fait des années que je n'ai pas revu ma maison. Ta maison, pardon. J'ai encore du mal à le dire.
 blank
 text: P.-S. : ferme bien la porte du jardin, cette nuit.
 blank
@@ -1621,7 +1623,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 83 night true
 title: Lettre 72/84
-text: Une ruche a essaimé ce matin : tout un nuage d'abeilles s'est posé dans ton arbre. Claire est montée les chercher avec un carton, Nadia tenait l'échelle et donnait des conseils. Si une abeille se perd chez toi, ne t'inquiète pas, elle sait rentrer.
+text: Une ruche a essaimé ce matin. Tout le nuage d'abeilles s'est posé dans ton arbre, sur la troisième branche. Claire est montée avec un carton avant qu'on trouve les gants. Nadia tenait l'échelle et donnait des conseils, que personne n'a suivis. Si une abeille traîne chez toi, t'inquiète pas, elle connaît le chemin.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1636,7 +1638,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Postcard
 == entry 85 night true
 title: Lettre 73/84
-text: Je suis arrivé à la boîte aux lettres ! Il m'a fallu des semaines. Maintenant, je repars vers la mare. À dans un mois.
+text: Arrivé à ta boîte aux lettres. Il m'a fallu des semaines. La vue est belle d'ici. Je repars vers la mare demain. Ou après-demain.
 blank
 text: P.-S. : tu entends le puits ?
 blank
@@ -1645,7 +1647,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 86 night true
 title: Lettre 74/84
-text: J'ai installé une girouette sur ton toit, cadeau des anciens du village. Elle indique le vent. Sauf la nuit : la nuit, elle tourne vers le puits, même quand il n'y a pas un souffle.
+text: J'ai monté une girouette sur ton toit, cadeau des anciens du village. Le cousin d'Odile me tenait l'échelle en me parlant de sa hanche, une heure au moins. Elle indique le vent, la girouette, pas la hanche. Sauf la nuit. La nuit, elle tourne vers le puits, même quand y a pas un souffle.
 blank
 text: P.-S. : je t'ai vu lire.
 blank
@@ -1674,7 +1676,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 89 night true
 title: Lettre 76/84
-text: La clé sous la boîte aux lettres ouvre le coffre. Le jour de la fête, nous l'ouvrirons ensemble, avec Paulo et Léo.
+text: La petite clé sous ta boîte aux lettres, c'est celle du coffre. Je l'ai gardée sur moi pendant quarante ans. Le jour de la fête, nous l'ouvrirons ensemble, avec Paulo et Léo.
 blank
 text: P.-S. : va dormir. Moi, je reste.
 blank
@@ -1683,7 +1685,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 90 night true
 title: Lettre 77/84
-text: Les canetons veulent apprendre à sauter comme moi. Ils tombent tous dans la mare. C'est normal, c'est une mare.
+text: Les canetons veulent sauter comme moi. Je leur donne des cours. Ils tombent tous dans la mare. En même temps, c'est une mare.
 blank
 text: P.-S. (d'une autre écriture, au crayon) : tu as oublié d'éteindre en bas.
 blank
@@ -1692,7 +1694,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 91 night true
 title: Lettre 78/84
-text: On a préparé les décorations pour la fête. Mamie arrive bientôt !
+text: On a fait les décorations pour la fête avec Rose et j'ai eu de la colle partout, même dans les cheveux. Mamie arrive bientôt !!
 blank
 pre: La fête dans ton jardin :
 pre:   v v v v v v v v v
@@ -1714,7 +1716,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Folder
 == entry 93 night true
 title: Lettre 79/84
-text: Il y a une dernière chose dans le coffre : une lettre écrite il y a quarante ans pour la personne qui habiterait ma maison. Pour toi.
+text: Il reste une chose dans le coffre. Une lettre, écrite il y a quarante ans, pour la personne qui habiterait ma maison après moi. Je ne savais pas qui ce serait. C'est toi.
 blank
 text: P.-S. : le chien a aboyé à 3 h 13. Tu l'as entendu ?
 blank
@@ -1730,7 +1732,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Wet
 == entry 95 night true
 title: Lettre 81/84
-text: Mes chatons ont appris à grimper sur la cheminée. Ils disent que, de là-haut, on entend mieux les étoiles. Je fais semblant de ne pas les connaître.
+text: Mes chatons grimpent sur la cheminée, maintenant. Ils prétendent que de là-haut on entend mieux les étoiles. On n'entend pas les étoiles. Je fais semblant de ne pas les connaître.
 blank
 text: P.-S. : quelqu'un a lu cette lettre avant toi.
 blank
@@ -1747,7 +1749,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Postcard
 == entry 97 night true
 title: Lettre 82/84
-text: Tout le village est prêt. La fête aura lieu dans ton jardin, sous le grand arbre. Rose apporte les gâteaux, Paulo s'occupe de la musique. Il ne manque plus que toi.
+text: Dernière séance du conseil avant la fête. Lieu : ton jardin, sous le grand arbre. Gâteaux : Rose. Musique : Paulo, qui a promis de ne pas chanter. Il ne manque plus que toi, et Gaston, en retard à sa propre réunion.
 blank
 text: P.-S. : il y a de la boue sur ton paillasson. Elle n'est pas à toi.
 blank
@@ -1756,7 +1758,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 98 night true
 title: Lettre 83/84
-text: Demain, je viens. J'ai sorti ma plus belle robe bleue. Paulo dit qu'il apportera des fleurs de la rivière.
+text: Demain, je viens. J'ai sorti ma robe bleue, la belle, et je l'ai essayée deux fois. Paulo dit qu'il apportera des fleurs de la rivière. À mon âge, mon petit, on a encore le trac.
 blank
 text: P.-S. : treize.
 blank
@@ -1765,7 +1767,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 99 night true
 title: Lettre 84/84
-text: La fête approche, alors un conseil. Le soir, si on frappe trois coups à ta porte, ne réponds pas. Nous avons tous appris à ne pas répondre. Moi aussi, j'ai appris.
+text: La fête approche. Un conseil, un seul. Le soir, si on frappe trois coups à ta porte, réponds pas. Tout le village a appris à pas répondre. Moi aussi, j'ai appris. Ma première année de ronde. Je dors très bien, merci.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer

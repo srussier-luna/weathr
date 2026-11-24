@@ -5,6 +5,7 @@ pub mod letters;
 pub mod neighbours_note;
 mod night_postscript;
 mod postcard;
+mod previous_letters;
 pub mod recipes;
 mod village;
 mod written;
