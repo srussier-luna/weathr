@@ -81,12 +81,12 @@ review:
                                # report which ran.
 
 build:                         # how THIS project build — project beat plugin default
-  command: "cargo build"       # e.g. "ign app", "make build", "./scripts/build.sh". Empty → XcodeBuildMCP
+  command: "cargo clippy --all-targets && cargo build" # e.g. "ign app", "make build", "./scripts/build.sh". Empty → XcodeBuildMCP
                                # for Apple targets, `swift build` for SwiftPM, project runner otherwise.
   test_command: "cargo test"   # e.g. "make test". Empty → language default (`swift test`, …).
 
 lint:                          # strict linter wired into the build: violation = build error
-  tool: none                   # swiftlint | eslint | ruff | golangci-lint | clippy | detekt | none
+  tool: clippy                 # swiftlint | eslint | ruff | golangci-lint | clippy | detekt | none
                                # set by /wa-setup. Rules: project's linter config (from the
                                # plugin templates, yours to edit). Agents never disable a rule.
   fix_command: ""              # autofix before build, e.g. "make lint-fix". Empty → tool default.
@@ -185,7 +185,7 @@ Inside autopilot: never ask (nobody watching) — freeze task, log open question
 
 ## Project notes
 
-- Rust (edition 2024) TUI binary: `generic` module, no Rust-specific one. Proof = `cargo build` + `cargo test` — no CI, no fmt, no clippy.
+- Rust (edition 2024) TUI binary: `generic` module, no Rust-specific one. Proof = `cargo clippy --all-targets` + `cargo build` + `cargo test` — no CI, no fmt.
 - Fork of Veirt/weathr, customized with French village story. UI strings French, `tu`.
 - Versions: a release = merge `develop` → `main` (players install `main`), tagged `vX.Y.Z`. Sprints stay grouped by theme; the target version is a label on the issue:
   - `vX` (`v1`, `v2`, `v3`…) = any `X.y` release, e.g. `v2` = 2.0, 2.1…
