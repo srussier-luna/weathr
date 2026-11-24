@@ -8,7 +8,7 @@ use crate::demo::{Demo, SCENE_DURATION};
 use crate::error::{GeolocationError, WeatherError};
 use crate::geolocation::{self, GeoLocation};
 use crate::holiday::{Holiday, HolidayBox, MeteorShower};
-use crate::hud::{self, Placed, toolbar, weather_bar::WeatherBar};
+use crate::hud::{self, Placed, toast, toolbar, weather_bar::WeatherBar};
 use crate::overlay;
 use crate::progress::{Opening, Progress, Recovery};
 use crate::rain_alert::{self, RainAlert};
@@ -46,7 +46,6 @@ use tokio::sync::{mpsc, oneshot};
 const REFRESH_INTERVAL: Duration = Duration::from_secs(300);
 const INPUT_POLL_FPS: u64 = 30;
 const FRAME_DURATION: Duration = Duration::from_millis(1000 / INPUT_POLL_FPS);
-const TOAST_DURATION: Duration = Duration::from_secs(4);
 const PATIENCE: Duration = Duration::from_secs(60 * 60);
 const STARS_FOR_HUNTER: u32 = 3;
 const REMOTE_CHECK_FRAMES: u32 = 300;
@@ -594,7 +593,7 @@ pub struct App {
     is_sky_lookout: bool,
     is_time_master: bool,
     toasts: VecDeque<String>,
-    toast_until: Option<Instant>,
+    toast_started: Option<Instant>,
     pending_badges: VecDeque<Award>,
     pending_holiday_box: Option<&'static HolidayBox>,
     session_start: Instant,
@@ -756,7 +755,7 @@ impl App {
             is_sky_lookout: badges::is_sky_lookout(user_name.as_deref()),
             is_time_master: badges::is_time_master(user_name.as_deref()),
             toasts: VecDeque::new(),
-            toast_until: None,
+            toast_started: None,
             pending_badges: trip.tier_cards.into(),
             pending_holiday_box,
             session_start: Instant::now(),
@@ -1147,24 +1146,25 @@ impl App {
         }
     }
 
-    fn update_toasts(&mut self) {
+    fn update_toasts(&mut self, terminal_width: u16) {
         let now = Instant::now();
-        if self.toast_until.is_some_and(|until| now >= until) {
+        if let (Some(message), Some(started)) = (self.toasts.front(), self.toast_started)
+            && toast::is_over(message, now - started, terminal_width)
+        {
             self.toasts.pop_front();
-            self.toast_until = None;
+            self.toast_started = None;
         }
-        if self.toast_until.is_none() && !self.toasts.is_empty() {
-            self.toast_until = Some(now + TOAST_DURATION);
+        if self.toast_started.is_none() && !self.toasts.is_empty() {
+            self.toast_started = Some(now);
         }
     }
 
     fn render_overlays(&self, renderer: &mut TerminalRenderer) -> io::Result<()> {
-        if let Some(message) = self.toasts.front()
-            && self.toast_until.is_some()
-        {
-            let length = message.chars().count() as u16;
-            let x = renderer.get_size().0.saturating_sub(length) / 2;
-            renderer.render_line_colored(x, 0, message, crossterm::style::Color::Yellow)?;
+        if let (Some(message), Some(started)) = (self.toasts.front(), self.toast_started) {
+            let (width, height) = renderer.get_size();
+            for placed in toast::lay_out(message, started.elapsed(), width, height) {
+                render_placed(renderer, &placed)?;
+            }
         }
 
         let view = match self.overlay {
@@ -1899,7 +1899,7 @@ impl App {
             self.open_holiday_box();
             self.open_pending_badge();
             self.update_welcome(term_width, term_height);
-            self.update_toasts();
+            self.update_toasts(term_width);
             self.refresh_rain_alert();
             self.receive_city_search();
             self.receive_location_detection();

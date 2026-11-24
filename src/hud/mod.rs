@@ -1,3 +1,4 @@
+pub mod toast;
 pub mod toolbar;
 pub mod weather_bar;
 
