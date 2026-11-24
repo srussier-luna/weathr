@@ -28,6 +28,13 @@ impl Entry {
             Self::DietLetter => 9,
         }
     }
+
+    pub fn recipe_index(&self) -> Option<usize> {
+        match self {
+            Self::Recipe(index) | Self::DietRecipe(index) => Some(*index),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

@@ -1,6 +1,6 @@
 ---
 issue: 157
-status: to-test
+status: to-close
 wiki: [[mail]], [[render]]
 note: ajoute une section commun pour y mettre boussole, Voyageur, première énigme, 10 enigmes, facteur et Bonhomme de neige et Bouteille à la mer / ajoute une section epic pour toutes les enigme, ajoute un badge toutes les recette et met y aussi toutes les lettres / baroudeur va dans rare
 created: 2026-11-24
@@ -44,6 +44,16 @@ created: 2026-11-24
 - Preuve : clippy sans nouveau warning, build OK, `cargo test` tout vert.
 
 ## Review
+
+### Round validation — 2026-11-24
+- LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓
+- 🟠 `test_loyalty_keeps_only_the_streaks` listait Fidélité à l'identique, cassé par #154 → vérifie maintenant que chaque Badge Fidélité est un jour d'affilée. Corrigé.
+- 🟡 Filtre des Recettes copié dans `app.rs` et `views.rs` → `Entry::recipe_index`. Corrigé.
+- 🟡 Recettes reçues collectées sans Régime répondu → retour anticipé. Corrigé.
+- 🟡 Glossaire : rangée Badge sans Commun / Épique, lien `[[mail]]` manquant sur Épique. Corrigé.
+- 🟡 Assertion Baroudeur en double dans les tests. Supprimée.
+- Autofix : 1 tour, relecture finale propre. clippy (hors `double_must_use` déjà sur develop), build, 729 tests verts.
+- Wiki : [[mail]] (rangées, Épique).
 
 ## Verification
 

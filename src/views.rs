@@ -555,10 +555,7 @@ pub fn album_pages(
         .collect();
     let recipes: Vec<usize> = read_entries
         .iter()
-        .filter_map(|(_, entry)| match entry {
-            Entry::Recipe(index) | Entry::DietRecipe(index) => Some(*index),
-            _ => None,
-        })
+        .filter_map(|(_, entry)| entry.recipe_index())
         .collect();
     let drawings: Vec<&[&str]> = DRAWINGS
         .iter()

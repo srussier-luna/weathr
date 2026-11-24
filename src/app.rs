@@ -989,17 +989,16 @@ impl App {
     }
 
     fn has_received_every_recipe(&self) -> bool {
+        if self.progress.diet_answered_day.is_none() {
+            return false;
+        }
         let received: BTreeSet<usize> = self
             .timeline
             .first_mail(self.available_letters())
             .iter()
-            .filter_map(|(_, entry)| match entry {
-                Entry::Recipe(index) | Entry::DietRecipe(index) => Some(*index),
-                _ => None,
-            })
+            .filter_map(|(_, entry)| entry.recipe_index())
             .collect();
-        self.progress.diet_answered_day.is_some()
-            && has_every_recipe(&diets_from_ids(&self.progress.diets), &received)
+        has_every_recipe(&diets_from_ids(&self.progress.diets), &received)
     }
 
     fn has_read_all_letters(&self) -> bool {
