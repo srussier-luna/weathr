@@ -21,7 +21,9 @@ use crate::settings::{self, AutoLocation, CitySearch, Row, Settings};
 use crate::story::content::chronicles::{self, BOTTLE_MESSAGES, CITIES, OBJECTS, RIDDLES};
 use crate::story::content::letters::{self, Choice, Letter};
 use crate::story::content::neighbours_note::NeighboursNote;
-use crate::story::content::recipes::{Diet, diet_for_key, diet_ids, diets_from_ids, toggle_diet};
+use crate::story::content::recipes::{
+    Diet, diet_for_key, diet_ids, diets_from_ids, has_every_recipe, toggle_diet,
+};
 use crate::story::content::{self, ReadContext};
 use crate::story::postman_note::{self, MailStep};
 use crate::story::reach::{launch_reach, settle};
@@ -868,6 +870,11 @@ impl App {
                 self.progress.found_objects.len() >= OBJECTS.len(),
                 "all_objects",
             ),
+            (
+                chronicles::has_solved_every_riddle(&self.progress.riddles_solved),
+                "all_riddles",
+            ),
+            (self.has_received_every_recipe(), "all_recipes"),
             (!self.progress.bottles.is_empty(), "first_bottle"),
             (self.is_sky_lookout, "sky_lookout"),
             (self.is_time_master, "time_master"),
@@ -979,6 +986,20 @@ impl App {
         self.progress.save();
         self.animations.postman_leave();
         self.overlay = self.after_welcome();
+    }
+
+    fn has_received_every_recipe(&self) -> bool {
+        let received: BTreeSet<usize> = self
+            .timeline
+            .first_mail(self.available_letters())
+            .iter()
+            .filter_map(|(_, entry)| match entry {
+                Entry::Recipe(index) | Entry::DietRecipe(index) => Some(*index),
+                _ => None,
+            })
+            .collect();
+        self.progress.diet_answered_day.is_some()
+            && has_every_recipe(&diets_from_ids(&self.progress.diets), &received)
     }
 
     fn has_read_all_letters(&self) -> bool {

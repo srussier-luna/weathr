@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 pub const SAM_SENDER: &str = "Sam, le voisin du moulin";
 pub const SAM_LETTERS: [&str; 5] = [
     "Bonjour d'en face ! Je suis Sam, j'habite le vieux moulin au bord de la rivière. Je dessinais des cartes, autrefois. Aujourd'hui, je les regarde surtout. Ton jardin figure sur trois de mes plans, tu savais ?",
@@ -685,6 +687,14 @@ pub fn is_right_answer(riddle: &Riddle, attempt: &str) -> bool {
         .any(|answer| normalize_answer(answer) == attempt)
 }
 
+pub fn has_solved_every_riddle(solved_weeks: &BTreeSet<usize>) -> bool {
+    let riddles: BTreeSet<usize> = solved_weeks
+        .iter()
+        .map(|week| week % RIDDLES.len())
+        .collect();
+    riddles.len() == RIDDLES.len()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -695,5 +705,20 @@ mod tests {
         assert!(is_right_answer(&RIDDLES[10], "un écho"));
         assert!(is_right_answer(&RIDDLES[27], "Treize"));
         assert!(!is_right_answer(&RIDDLES[0], "un mensonge"));
+    }
+
+    #[test]
+    fn test_every_riddle_needs_all_thirty_solved() {
+        assert!(!has_solved_every_riddle(&(0..29).collect()));
+        assert!(has_solved_every_riddle(&(0..30).collect()));
+    }
+
+    #[test]
+    fn test_a_riddle_back_in_a_later_gazette_counts_once() {
+        let mut weeks: BTreeSet<usize> = (0..29).collect();
+        weeks.insert(30);
+        assert!(!has_solved_every_riddle(&weeks));
+        weeks.insert(59);
+        assert!(has_solved_every_riddle(&weeks));
     }
 }
