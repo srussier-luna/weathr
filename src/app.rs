@@ -129,6 +129,10 @@ fn earn(earned: &mut BTreeSet<String>, ids: Vec<&'static str>) -> Vec<Award> {
         .collect()
 }
 
+fn mark_unseen(unseen: &mut BTreeSet<String>, awards: &[Award]) {
+    unseen.extend(awards.iter().map(|award| award.badge.id.to_string()));
+}
+
 fn earn_tiers(earned: &mut BTreeSet<String>, before: usize, after: usize) -> Vec<Award> {
     let tiers = Tier::crossed(before, after);
     if tiers.contains(&Tier::Chocolate) {
@@ -153,6 +157,7 @@ fn record_trip(
         _ => false,
     };
     let tier_cards = earn_tiers(&mut progress.badges, sam_cities, progress.sam_cities.len());
+    mark_unseen(&mut progress.unseen_badges, &tier_cards);
     Trip { is_new, tier_cards }
 }
 
@@ -907,6 +912,7 @@ impl App {
         }
         let new_badges = earn(&mut self.progress.badges, ids);
         if !new_badges.is_empty() {
+            mark_unseen(&mut self.progress.unseen_badges, &new_badges);
             self.pending_badges.extend(new_badges);
             self.progress.save();
         }
@@ -2034,6 +2040,14 @@ mod tests {
         assert!(next_overlay(None, &mut pending).is_none());
     }
 
+    #[test]
+    fn test_already_earned_badge_is_not_unseen_again() {
+        let mut earned = BTreeSet::from(["rain".to_string()]);
+        let mut unseen = BTreeSet::new();
+        mark_unseen(&mut unseen, &earn(&mut earned, vec!["rain"]));
+        assert!(unseen.is_empty());
+    }
+
     fn notes() -> Vec<Section> {
         release_notes::parse("## 2026-10-26\n- Neuve\n## 2026-10-12\n- Ancienne\n")
     }
@@ -2914,6 +2928,16 @@ mod tests {
             )
         });
         assert_eq!(cards, expected);
+    }
+
+    #[test]
+    fn test_new_tier_marks_sam_trail_unseen() {
+        let mut progress = Progress::default();
+        launch(&mut progress, Some(&lisbon()), None);
+        assert_eq!(
+            progress.unseen_badges,
+            BTreeSet::from([SAM_TRAIL.id.to_string()])
+        );
     }
 
     #[test]
