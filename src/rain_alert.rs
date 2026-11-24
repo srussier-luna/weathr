@@ -34,8 +34,8 @@ pub enum RainAlert {
 impl RainAlert {
     pub fn message(&self) -> String {
         match self {
-            Self::At(time) => format!("Pluie vers {time} : prends ton parapluie !"),
-            Self::Soon => "Pluie probable dans l'heure : prends ton parapluie !".to_string(),
+            Self::At(time) => format!("Pluie vers {time}"),
+            Self::Soon => "Pluie dans l'heure".to_string(),
         }
     }
 }
@@ -122,5 +122,14 @@ mod tests {
     fn test_alert_falls_back_on_probability() {
         assert_eq!(alert_from(forecast([0.0; 4], 60.0)), Some(RainAlert::Soon));
         assert_eq!(alert_from(forecast([0.0; 4], 20.0)), None);
+    }
+
+    #[test]
+    fn test_message_is_short_enough_for_the_weather_bar() {
+        assert_eq!(
+            RainAlert::At("16:00".to_string()).message(),
+            "Pluie vers 16:00"
+        );
+        assert_eq!(RainAlert::Soon.message(), "Pluie dans l'heure");
     }
 }

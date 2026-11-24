@@ -45,12 +45,17 @@ Pure functions: story data → `View`. No I/O, no state.
 
 `MailContext` (`src/views.rs:36`) bundles view needs: Lettres, `Progress`, start date, night flag, current Énigme input. Content details in [[mail]].
 
-## HUD
+## Barres — `src/hud/`
 
-Status line built in `AppState::update_cached_info` (`src/app_state.rs:192`), rebuilt only when setter flags `weather_info_needs_update` or minute changes. Mixes French hints (`Lettre ! [c]`, `Badges x/y [b]`, `Aide [h]`) with English weather labels from upstream.
+Two bars split the screen (#37): weather on top, keys at the bottom. Weather is the point of the app, keys are secondary → top bar in colour, bottom bar grey.
 
-- Starts `HH:MM | Jour N | …`, loading line too. N = Jour de jeu (`AppState::set_story_day`), fed every frame by `refresh_progress` from `timeline_day` ([[mail]]): rolls over at `courrier.heure` without restart. `--hide-hud` or Réglages « Barre du haut » → « masquée » hides the whole line (`App.hide_hud`, live).
-- New Ville (#82) → `AppState::set_location` (`src/app_state.rs:136`) flags rebuild → name shown next frame, before new weather lands. Chosen Ville also → `set_location_display(City)` (`:142`): name shown even if Barre du haut was in coordinates. « Position auto » keeps `display` as is ([[weather]]).
+- **Barre du haut** (`weather_bar.rs`, `WeatherBar`): left block, one info per line — `Éclaircies 12 °C`, `Vent 8 km/h`, `Pluie 1,2 mm`, `Pluie vers 16:00` / `Pluie dans l'heure`, `Hors ligne`, `--demo` label last. A value rounding to 0 at its display precision → its line is gone, not `0 mm`. No weather yet → `Météo en route…`. Right block: `HH:MM`, then `Ville • Jour N`.
+- Colour per info: temperature by 7 steps (≤0 / 1-5 / 6-11 / 12-17 / 18-24 / 25-29 / ≥30 °C, always judged in °C so °F reads the same), rain blue, alerts yellow, rest grey (`MUTED`, shared by both bars). No bold: the renderer only knows colours.
+- Rebuilt only when `AppState` flags it (`take_weather_info_update`: weather, units, Ville, minute change), cached in `App.weather_bar`. Units come from `AppState::set_units` ([[weather]]).
+- N = Jour de jeu (`AppState::set_story_day`), fed every frame by `refresh_progress` from `timeline_day` ([[mail]]): rolls over at `courrier.heure` without restart. New Ville (#82) → `AppState::set_location` flags rebuild → name shown next frame, before new weather lands; chosen Ville also → `set_location_display(City)` so the name shows even if the bar was in coordinates.
+- **Barre du bas** (`toolbar.rs`): last row, right-aligned, grey: `[c] Courrier   [b] Badges x/y   [h] Aide   [q] Quitter`. Waiting Lettre / Objet → `[c] Lettre !` / `Objet !` first, pink, blinking on `overlay::blink_tick` (500 ms). Narrow terminal → compact labels, then cut from the right with `…`: alerts listed first, so they survive.
+- `hud::lay_out` places both: left block from row 1 after a 2-col margin, right block truncated so it never overlaps the left one, Barre du bas on the last row. Pure, tested.
+- Réglages « Barres » → « masquée », or `--hide-hud`, hides both bars (`App.hide_hud`, live).
 
 ## Gotchas
 

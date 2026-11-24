@@ -99,7 +99,7 @@ decimals), `location.json` + `geocode.json` (24 h). Writes fire-and-forget
 
 - `rain_alert.rs` — own task every 10 min (`src/rain_alert.rs:43`): first 15-min slot
   with ≥0.1 mm in next hour → `RainAlert::At("HH:MM")`, else ≥50 % hourly
-  probability → `Soon`. HUD shows umbrella hint, hidden when already wet.
+  probability → `Soon`. Barre du haut shows `Pluie vers HH:MM` / `Pluie dans l'heure`, hidden when already wet.
   Disabled in simulation.
 - `remote_weather.rs` — one-shot fetches for story content (`src/remote_weather.rs:46`):
   `Request::Postcard(i)` gets current weather in Carte postale's city;
@@ -109,7 +109,7 @@ decimals), `location.json` + `geocode.json` (24 h). Writes fire-and-forget
 ## Offline and simulation
 
 - First fetch fails → `generate_offline_weather` (`src/app.rs:77`) picks random
-  plausible condition, HUD shows `OFFLINE`. Later failures keep last data.
+  plausible condition, Barre du haut shows `Hors ligne`. Later failures keep last data.
 - `--simulate <condition>` / `--demo` skip client entirely. Condition names parse
   via `FromStr` on `WeatherCondition`.
 

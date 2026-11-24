@@ -11,6 +11,7 @@ mod diagnostic;
 mod error;
 mod geolocation;
 mod holiday;
+mod hud;
 mod overlay;
 mod progress;
 mod prompt;
