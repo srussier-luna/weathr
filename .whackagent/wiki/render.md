@@ -23,9 +23,9 @@ How cells reach terminal, how modal screens (Courrier, Lettre, Album, Aide, Badg
 - `View { title, lines, footer, frame }` = single data shape for every modal. `Line` is `Text` (word-wrapped), `Preformatted` (truncated), `Centered`, `Rule` or `Blank`.
 - `Frame` = one look per window, so each kind reads at a glance: parchment (Lettre, `Nouvel habitant`), wet paper (Lettre glissée sous la porte, `Frame::Wet`: light blue, `~` stain top-left, bottom-right corner cut over 4 rows, drops under the box), newspaper (Gazette), stamp (Carte postale), folder tab (Archives), punched card (Recette), waves (Bouteille), photo corners (Album), stars (Badges + Badge card), plain (Aide, Courrier, Réglages). Each frame has its own color.
 - `render_view` draws the frame centred, max 66 columns; `frame_rows` is the pure layout part (tested). Footers or titles wider than the frame wrap between key groups. A single word or key group wider than the text area is never split and spills onto the right edge (boxes under 23 columns, terminals under 27).
-- `render_badges` = only special layout (columns grouped by `BadgeKind`, secret badges show `???`).
+- `render_badges` = only special layout (columns grouped by `BadgeKind`, secret badges show `???`). Badges not seen yet blink pink (#163), from the copy `App.revealed_badges` taken when the view opens.
 - New Badge → centred card (`Overlay::NewBadge`): medal with the Badge's own 3×5 drawing (`Badge.icon`), name, condition for secrets. Queue `pending_badges`, one card per Badge, opens only when no window is open; a card replaced by another window comes back first.
-- Toasts (found object, riddle result, unsaved Réglage, failed « Position auto » detection) drawn by `App::render_overlays` on row 0, one at a time, 4 s. Réglages toasts go through `push_toast` (`src/app.rs:210`): same text already queued → skipped, so failing saves give one « Réglage non enregistré : vérifie config.toml » (`toast_unsaved_setting`), not one per key; same for « Pas de connexion ».
+- Toasts (found object, riddle result, unsaved Réglage, failed « Position auto » detection) one at a time (#162, `src/hud/toast.rs`): centred in a plain `+---+` frame, bottom just above the Barre du bas, yellow text typed 30 ms a letter in a frame already at its final width, then 4 s and the next one. Long text wraps (`overlay::wrap`) and the frame grows upward. Drawn by `App::render_overlays` even with the Barres masked, under any open window. `App.toast_started` times it, `toast::is_over` pops it. Réglages toasts go through `push_toast` (`src/app.rs:379`): same text already queued → skipped, so failing saves give one « Réglage non enregistré : vérifie config.toml » (`toast_unsaved_setting`), not one per key; same for « Pas de connexion ».
 - Speech bubble (`Frame::Bubble`, `render_bubble`): Facteur's Accueil lines, ≤ 40 cols, tail toward his `head`, clamped to screen edges; no mailbox → centred near the bottom, no tail. Layout shared with `render_view` via `lay_out` / `draw_rows`.
 - `wrap` splits on ASCII whitespace only: U+202F before `: ; ! ?` stays glued, French punctuation never starts a line.
 
@@ -45,12 +45,17 @@ Pure functions: story data → `View`. No I/O, no state.
 
 `MailContext` (`src/views.rs:36`) bundles view needs: Lettres, `Progress`, start date, night flag, current Énigme input. Content details in [[mail]].
 
-## HUD
+## Barres — `src/hud/`
 
-Status line built in `AppState::update_cached_info` (`src/app_state.rs:192`), rebuilt only when setter flags `weather_info_needs_update` or minute changes. Mixes French hints (`Lettre ! [c]`, `Badges x/y [b]`, `Aide [h]`) with English weather labels from upstream.
+Two bars split the screen (#37): weather on top, keys at the bottom. Weather is the point of the app, keys are secondary → top bar in colour, bottom bar grey.
 
-- Starts `HH:MM | Jour N | …`, loading line too. N = Jour de jeu (`AppState::set_story_day`), fed every frame by `refresh_progress` from `timeline_day` ([[mail]]): rolls over at `courrier.heure` without restart. `--hide-hud` or Réglages « Barre du haut » → « masquée » hides the whole line (`App.hide_hud`, live).
-- New Ville (#82) → `AppState::set_location` (`src/app_state.rs:136`) flags rebuild → name shown next frame, before new weather lands. Chosen Ville also → `set_location_display(City)` (`:142`): name shown even if Barre du haut was in coordinates. « Position auto » keeps `display` as is ([[weather]]).
+- **Barre du haut** (`weather_bar.rs`, `WeatherBar`): left block, one info per line — `Éclaircies 12 °C`, `Vent 8 km/h`, `Pluie 1,2 mm`, `Pluie vers 16:00` / `Pluie dans l'heure`, `Hors ligne`, `--demo` label last. A value rounding to 0 at its display precision → its line is gone, not `0 mm`. No weather yet → `Météo en route…`. Right block: `HH:MM`, then `Ville • Jour N`.
+- Colour per info: temperature by 7 steps (≤0 / 1-5 / 6-11 / 12-17 / 18-24 / 25-29 / ≥30 °C, always judged in °C so °F reads the same), rain blue, alerts yellow, rest grey (`MUTED`, shared by both bars). No bold: the renderer only knows colours.
+- Rebuilt only when `AppState` flags it (`take_weather_info_update`: weather, units, Ville, minute change), cached in `App.weather_bar`. Units come from `AppState::set_units` ([[weather]]).
+- N = Jour de jeu (`AppState::set_story_day`), fed every frame by `refresh_progress` from `timeline_day` ([[mail]]): rolls over at `courrier.heure` without restart. New Ville (#82) → `AppState::set_location` flags rebuild → name shown next frame, before new weather lands; chosen Ville also → `set_location_display(City)` so the name shows even if the bar was in coordinates.
+- **Barre du bas** (`toolbar.rs`): last row, right-aligned, grey: `[c] Courrier   [b] Badges x/y   [h] Aide   [q] Quitter`. Waiting Lettre / Objet → `[c] Lettre !` / `Objet !` first; unseen Badge (#163) → `[b] Badge ! x/y` (count dropped when compact). Alerts pink, blinking on `overlay::blink_tick` (500 ms). Narrow terminal → compact labels, then cut from the right with `…`: alerts listed first, so they survive.
+- `hud::lay_out` places both: left block from row 1 after a 2-col margin, right block truncated so it never overlaps the left one, Barre du bas on the last row. Pure, tested.
+- Réglages « Barres » → « masquée », or `--hide-hud`, hides both bars (`App.hide_hud`, live).
 
 ## Gotchas
 

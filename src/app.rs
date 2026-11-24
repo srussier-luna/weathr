@@ -8,6 +8,7 @@ use crate::demo::{Demo, SCENE_DURATION};
 use crate::error::{GeolocationError, WeatherError};
 use crate::geolocation::{self, GeoLocation};
 use crate::holiday::{Holiday, HolidayBox, MeteorShower};
+use crate::hud::{self, Placed, toast, toolbar, weather_bar::WeatherBar};
 use crate::overlay;
 use crate::progress::{Opening, Progress, Recovery};
 use crate::rain_alert::{self, RainAlert};
@@ -45,7 +46,6 @@ use tokio::sync::{mpsc, oneshot};
 const REFRESH_INTERVAL: Duration = Duration::from_secs(300);
 const INPUT_POLL_FPS: u64 = 30;
 const FRAME_DURATION: Duration = Duration::from_millis(1000 / INPUT_POLL_FPS);
-const TOAST_DURATION: Duration = Duration::from_secs(4);
 const PATIENCE: Duration = Duration::from_secs(60 * 60);
 const STARS_FOR_HUNTER: u32 = 3;
 const REMOTE_CHECK_FRAMES: u32 = 300;
@@ -129,6 +129,17 @@ fn earn(earned: &mut BTreeSet<String>, ids: Vec<&'static str>) -> Vec<Award> {
         .collect()
 }
 
+fn mark_unseen(unseen: &mut BTreeSet<String>, awards: &[Award]) {
+    unseen.extend(awards.iter().map(|award| award.badge.id.to_string()));
+}
+
+fn reveal_badges(
+    overlay: Option<Overlay>,
+    unseen: &mut BTreeSet<String>,
+) -> Option<BTreeSet<String>> {
+    (!matches!(overlay, Some(Overlay::Badges))).then(|| std::mem::take(unseen))
+}
+
 fn earn_tiers(earned: &mut BTreeSet<String>, before: usize, after: usize) -> Vec<Award> {
     let tiers = Tier::crossed(before, after);
     if tiers.contains(&Tier::Chocolate) {
@@ -153,6 +164,7 @@ fn record_trip(
         _ => false,
     };
     let tier_cards = earn_tiers(&mut progress.badges, sam_cities, progress.sam_cities.len());
+    mark_unseen(&mut progress.unseen_badges, &tier_cards);
     Trip { is_new, tier_cards }
 }
 
@@ -497,6 +509,15 @@ fn apply_simulated_weather(
     state.update_weather(weather);
 }
 
+fn render_placed(renderer: &mut TerminalRenderer, placed: &Placed) -> io::Result<()> {
+    let mut x = placed.x;
+    for segment in &placed.line {
+        renderer.render_line_colored(x, placed.y, &segment.text, segment.color)?;
+        x = x.saturating_add(u16::try_from(segment.text.chars().count()).unwrap_or(u16::MAX));
+    }
+    Ok(())
+}
+
 fn apply_demo_scene(state: &mut AppState, animations: &mut AnimationManager, demo: &Demo) {
     let scene = demo.current();
     apply_simulated_weather(
@@ -566,6 +587,7 @@ pub struct App {
     scene: WorldScene,
     weather_receiver: mpsc::Receiver<Result<WeatherData, WeatherError>>,
     hide_hud: bool,
+    weather_bar: WeatherBar,
     simulated_holiday: Option<Holiday>,
     invites_every_neighbour: bool,
     demo: Option<Demo>,
@@ -583,8 +605,9 @@ pub struct App {
     is_sky_lookout: bool,
     is_time_master: bool,
     toasts: VecDeque<String>,
-    toast_until: Option<Instant>,
+    toast_started: Option<Instant>,
     pending_badges: VecDeque<Award>,
+    revealed_badges: BTreeSet<String>,
     pending_holiday_box: Option<&'static HolidayBox>,
     session_start: Instant,
     star_watch: StarWatch,
@@ -726,6 +749,7 @@ impl App {
             scene,
             weather_receiver: rx,
             hide_hud: config.hide_hud,
+            weather_bar: WeatherBar::default(),
             simulated_holiday: simulation.holiday,
             invites_every_neighbour: simulation.demo
                 || (simulation.holiday.is_some() && simulation.day.is_none()),
@@ -744,8 +768,9 @@ impl App {
             is_sky_lookout: badges::is_sky_lookout(user_name.as_deref()),
             is_time_master: badges::is_time_master(user_name.as_deref()),
             toasts: VecDeque::new(),
-            toast_until: None,
+            toast_started: None,
             pending_badges: trip.tier_cards.into(),
+            revealed_badges: BTreeSet::new(),
             pending_holiday_box,
             session_start: Instant::now(),
             star_watch: StarWatch::default(),
@@ -801,9 +826,9 @@ impl App {
             self.progress.bottles.len() < BOTTLE_MESSAGES.len(),
         );
         let hint = match self.animations.visible_finds() {
-            (true, true) => Some("Objet et bouteille ! [r]"),
-            (true, false) => Some("Objet ! [r]"),
-            (false, true) => Some("Bouteille ! [r]"),
+            (true, true) => Some("Objet et bouteille"),
+            (true, false) => Some("Objet"),
+            (false, true) => Some("Bouteille"),
             (false, false) => None,
         };
         self.state.set_finds_hint(hint);
@@ -820,6 +845,8 @@ impl App {
             .count();
         self.state
             .set_progress_summary(is_mail_waiting, earned, badges::collection().count());
+        self.state
+            .set_new_badge(!self.progress.unseen_badges.is_empty());
     }
 
     fn collect_badges(&mut self) {
@@ -896,6 +923,7 @@ impl App {
         }
         let new_badges = earn(&mut self.progress.badges, ids);
         if !new_badges.is_empty() {
+            mark_unseen(&mut self.progress.unseen_badges, &new_badges);
             self.pending_badges.extend(new_badges);
             self.progress.save();
         }
@@ -1135,24 +1163,25 @@ impl App {
         }
     }
 
-    fn update_toasts(&mut self) {
+    fn update_toasts(&mut self, terminal_width: u16) {
         let now = Instant::now();
-        if self.toast_until.is_some_and(|until| now >= until) {
+        if let (Some(message), Some(started)) = (self.toasts.front(), self.toast_started)
+            && toast::is_over(message, now - started, terminal_width)
+        {
             self.toasts.pop_front();
-            self.toast_until = None;
+            self.toast_started = None;
         }
-        if self.toast_until.is_none() && !self.toasts.is_empty() {
-            self.toast_until = Some(now + TOAST_DURATION);
+        if self.toast_started.is_none() && !self.toasts.is_empty() {
+            self.toast_started = Some(now);
         }
     }
 
     fn render_overlays(&self, renderer: &mut TerminalRenderer) -> io::Result<()> {
-        if let Some(message) = self.toasts.front()
-            && self.toast_until.is_some()
-        {
-            let length = message.chars().count() as u16;
-            let x = renderer.get_size().0.saturating_sub(length) / 2;
-            renderer.render_line_colored(x, 0, message, crossterm::style::Color::Yellow)?;
+        if let (Some(message), Some(started)) = (self.toasts.front(), self.toast_started) {
+            let (width, height) = renderer.get_size();
+            for placed in toast::lay_out(message, started.elapsed(), width, height) {
+                render_placed(renderer, &placed)?;
+            }
         }
 
         let view = match self.overlay {
@@ -1230,6 +1259,7 @@ impl App {
                 return overlay::render_badges(
                     renderer,
                     &self.progress.badges,
+                    &self.revealed_badges,
                     self.progress.streak,
                     self.progress.sam_cities.len(),
                 );
@@ -1524,6 +1554,19 @@ impl App {
             Some(Overlay::Settings(_)) => self.change_setting(1),
             Some(Overlay::Letter(_)) if self.is_diet_letter_waiting() => self.send_diets(),
             _ => self.reread_selected(),
+        }
+    }
+
+    fn toggle_badges(&mut self) {
+        match reveal_badges(self.overlay, &mut self.progress.unseen_badges) {
+            Some(revealed) => {
+                if !revealed.is_empty() {
+                    self.progress.save();
+                }
+                self.revealed_badges = revealed;
+                self.overlay = Some(Overlay::Badges);
+            }
+            None => self.overlay = None,
         }
     }
 
@@ -1887,20 +1930,24 @@ impl App {
             self.open_holiday_box();
             self.open_pending_badge();
             self.update_welcome(term_width, term_height);
-            self.update_toasts();
+            self.update_toasts(term_width);
             self.refresh_rain_alert();
             self.receive_city_search();
             self.receive_location_detection();
-            self.state.update_loading_animation();
-            self.state.update_cached_info();
+            self.state.update_clock();
+            if self.state.take_weather_info_update() {
+                self.weather_bar = WeatherBar::new(&self.state);
+            }
 
             if !self.hide_hud {
-                renderer.render_line_colored(
-                    2,
-                    1,
-                    &self.state.cached_weather_info,
-                    crossterm::style::Color::Cyan,
-                )?;
+                let toolbar = toolbar::line(
+                    &self.state,
+                    overlay::is_blink_lit(),
+                    hud::inner_width(term_width),
+                );
+                for placed in hud::lay_out(&self.weather_bar, toolbar, term_width, term_height) {
+                    render_placed(renderer, &placed)?;
+                }
             }
 
             self.render_overlays(renderer)?;
@@ -1954,12 +2001,7 @@ impl App {
                                 self.press_neighbours_note_key(key_event.code);
                             }
                             KeyCode::Char('c') | KeyCode::Char('C') => self.press_mail(),
-                            KeyCode::Char('b') | KeyCode::Char('B') => {
-                                self.overlay = match self.overlay {
-                                    Some(Overlay::Badges) => None,
-                                    _ => Some(Overlay::Badges),
-                                };
-                            }
+                            KeyCode::Char('b') | KeyCode::Char('B') => self.toggle_badges(),
                             KeyCode::Char(key @ '1'..='8') => self.press_number(key),
                             KeyCode::Char('a') | KeyCode::Char('A') => self.toggle_album(),
                             KeyCode::Char('h') | KeyCode::Char('H') => self.toggle_help(),
@@ -2019,6 +2061,43 @@ mod tests {
         assert_eq!(card_id(overlay), Some("rain"));
         assert_eq!(card_id(next_overlay(None, &mut pending)), Some("patience"));
         assert!(next_overlay(None, &mut pending).is_none());
+    }
+
+    #[test]
+    fn test_earned_badges_stay_unseen_until_the_badges_view_opens() {
+        let mut earned = BTreeSet::new();
+        let mut unseen = BTreeSet::new();
+        let awards = earn(&mut earned, vec!["rain", "patience"]);
+        mark_unseen(&mut unseen, &awards);
+        let mut pending: VecDeque<_> = awards.into();
+        while next_overlay(None, &mut pending).is_some() {}
+        assert_eq!(
+            unseen,
+            BTreeSet::from(["patience".to_string(), "rain".to_string()])
+        );
+
+        let revealed = reveal_badges(None, &mut unseen);
+        assert_eq!(
+            revealed,
+            Some(BTreeSet::from(["patience".to_string(), "rain".to_string()]))
+        );
+        assert!(unseen.is_empty());
+    }
+
+    #[test]
+    fn test_reopening_the_badges_view_reveals_nothing() {
+        let mut unseen = BTreeSet::from(["rain".to_string()]);
+        reveal_badges(None, &mut unseen);
+        assert_eq!(reveal_badges(Some(Overlay::Badges), &mut unseen), None);
+        assert_eq!(reveal_badges(None, &mut unseen), Some(BTreeSet::new()));
+    }
+
+    #[test]
+    fn test_already_earned_badge_is_not_unseen_again() {
+        let mut earned = BTreeSet::from(["rain".to_string()]);
+        let mut unseen = BTreeSet::new();
+        mark_unseen(&mut unseen, &earn(&mut earned, vec!["rain"]));
+        assert!(unseen.is_empty());
     }
 
     fn notes() -> Vec<Section> {
@@ -2720,12 +2799,8 @@ mod tests {
 
         for (hour, minute, day) in [(8, 59, 7), (9, 0, 8)] {
             state.set_story_day(clock.day_on(morning.and_hms_opt(hour, minute, 0).unwrap()));
-            state.update_cached_info();
-            assert!(
-                state
-                    .cached_weather_info
-                    .starts_with(&format!("{} | Jour {day} | ", state.displayed_clock))
-            );
+            let bar = WeatherBar::new(&state);
+            assert_eq!(bar.right[1][0].text, format!("Jour {day}"));
         }
     }
 
@@ -2905,6 +2980,16 @@ mod tests {
             )
         });
         assert_eq!(cards, expected);
+    }
+
+    #[test]
+    fn test_new_tier_marks_sam_trail_unseen() {
+        let mut progress = Progress::default();
+        launch(&mut progress, Some(&lisbon()), None);
+        assert_eq!(
+            progress.unseen_badges,
+            BTreeSet::from([SAM_TRAIL.id.to_string()])
+        );
     }
 
     #[test]

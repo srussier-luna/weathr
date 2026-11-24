@@ -92,7 +92,7 @@ One precise screen. Team names, in the discussion language. UI projects only.
 | Lieux | menu des lieux | | menu touche m : Jardin, Potager, Fête du miel disponibles |
 | Accueil | onboarding | `welcome` | Facteur arrive, bulle, note dépliée, bulle de départ ; une fois par joueur |
 | Mot des voisins | | `neighbours_note` | fenêtre à l'ouverture : triche repérée, punition, voisins déçus |
-| Réglages | | `settings_view` | écran ouvert par `s` : unités, Heure du Facteur, Barre du haut, Ville, Position auto → [[architecture]] |
+| Réglages | | `settings_view` | écran ouvert par `s` : unités, Heure du Facteur, Barres, Ville, Position auto → [[architecture]] |
 <!-- | Login screen | login page | `LoginView` | email + password, forgot-password link | -->
 
 ## Parts
@@ -101,8 +101,9 @@ A named piece of UI, reused or talked about on its own. UI projects only.
 
 | Name | Also | Code | On | Means |
 |---|---|---|---|---|
-| Barre du haut | HUD, ligne d'état | `cached_weather_info` | scène | heure, Jour de jeu, Lettre, Badges, aide, météo ; masquable (`--hide-hud`, Réglages) → [[render]] |
-| Toast | | `toasts` | scène | texte bref sur la ligne 0, 4 s, un à la fois → [[render]] |
+| Barre du haut | weather bar, HUD, ligne d'état | `weather_bar` | scène | météo en haut : ciel, température, vent, pluie, alertes ; heure, Ville • Jour → [[render]] |
+| Barre du bas | toolbar | `toolbar` | scène | touches en bas à droite ; Lettre !, Objet ! clignotent ; masquée avec la Barre du haut → [[render]] |
+| Toast | | `toasts` | scène | texte bref centré dans un cadre au-dessus de la Barre du bas, tapé lettre par lettre, 4 s, un à la fois → [[render]] |
 <!-- | Composer | editor | `ComposerView` | Inbox, Thread | writes or replies to a message | -->
 
 ## Flows

@@ -75,7 +75,7 @@ Accueil visit (see [[mail]]): `visit` → `Arriving` (2.5 s ride) → `Staying` 
 
 ## Demo — `src/demo.rs`
 
-`--demo` cycles every weather condition by day and night, then Fête scenes, 1 s each, label in HUD.
+`--demo` cycles every weather condition by day and night, then Fête scenes, 1 s each, label on the last line of the Barre du haut.
 
 ## Gotchas
 

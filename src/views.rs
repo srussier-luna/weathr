@@ -311,7 +311,7 @@ fn settings_row(settings: &Settings, row: Row) -> (&'static str, String) {
         ),
         Row::MailHour => ("Heure du Facteur", format!("{} h", settings.mail_hour)),
         Row::Hud => (
-            "Barre du haut",
+            "Barres",
             if settings.hide_hud {
                 "masquée"
             } else {

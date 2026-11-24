@@ -17,7 +17,7 @@ Order matters (`src/main.rs:146`):
 ## The app — `src/app.rs`, `src/app_state.rs`
 
 - `App` (`src/app.rs:176`) owns everything: `AppState`, `AnimationManager`, `WorldScene`, `Progress` save, `StoryClock` + `Timeline` (`src/story/`), open overlay, toasts, async channels.
-- `AppState` (`src/app_state.rs:11`) = *weather + HUD* state: current `WeatherData`, derived `WeatherConditions` flags, `Holiday`, rainbow timer, cached status line.
+- `AppState` (`src/app_state.rs:11`) = *weather + Barres* state: current `WeatherData`, derived `WeatherConditions` flags, `Holiday`, rainbow timer, clock, rebuild flag for the Barre du haut (built in `src/hud/`, see [[render]]).
 - `Overlay` (`src/app.rs:354`) = one modal at a time: Lettre, Badges, Album, Bouteille, Aide, Courrier (index), Réglages (`Settings(row)`, see below), Nouveautés (release notes, see [[updater]]), Accueil (`Welcome`, see [[mail]]). Drawing in [[render]], content in [[mail]].
 
 ## Main loop — `App::run` (`src/app.rs:781`)
@@ -26,9 +26,9 @@ One iteration per ~33 ms (`FRAME_DURATION`, 30 fps input poll). Each frame:
 
 1. Advance demo / compute today's `Holiday`, set season (see [[animation]]).
 2. `refresh_progress` — streak, timeline rollover, remote weather for postcards/gazette, finds hint, mail flag, badge counts.
-3. Drain `weather_receiver` (non-blocking). Error with no data yet → random offline weather + `OFFLINE` in HUD.
-4. Draw in strict z-order: `render_background` (sky) → `WorldScene::render` (static scene) → chimney smoke → `render_garden` (animals, lore) → `render_foreground` (rain, snow, fog, leaves) → HUD → overlays. Later layers overwrite earlier cells.
-5. `collect_badges`, toasts, rain alert, Ville search / detection replies (non-blocking), Barre du haut text cache.
+3. Drain `weather_receiver` (non-blocking). Error with no data yet → random offline weather + `Hors ligne` in the Barre du haut.
+4. Draw in strict z-order: `render_background` (sky) → `WorldScene::render` (static scene) → chimney smoke → `render_garden` (animals, lore) → `render_foreground` (rain, snow, fog, leaves) → Barres → overlays. Later layers overwrite earlier cells.
+5. `collect_badges`, toasts, rain alert, Ville search / detection replies (non-blocking), Barre du haut rebuilt when flagged.
 6. `renderer.flush()` diffs against previous frame; then poll one key event.
 
 **Gotcha:** animations frame-counted, not time-based — speeds and waits assume 30 fps loop. Changing `INPUT_POLL_FPS` changes every animation's pace.
@@ -48,9 +48,9 @@ tokio task (REFRESH_INTERVAL 300s) → WeatherClient → mpsc(1) → App::run
 
 `config.toml` = **only source** for settings. Read once at startup; Réglages screen (key `s`, #38) writes back changed values only. No settings copy in `progress.json`, one exception: pending Heure du Facteur (see [[mail]]).
 
-- `Settings` (`src/settings/mod.rs:49`) = running values, taken from `App`, not file → launch flags (`--imperial`, `--hide-hud`) shown as current. `ROWS` (`:31`): Température, Vent, Pluie, Heure du Facteur, Barre du haut, Ville, Position auto.
+- `Settings` (`src/settings/mod.rs:49`) = running values, taken from `App`, not file → launch flags (`--imperial`, `--hide-hud`) shown as current. `ROWS` (`:31`): Température, Vent, Pluie, Heure du Facteur, Barres, Ville, Position auto.
 - `Settings::stepped(row, step)` (`:58`) → `Option<Setting>` (`src/config/mod.rs:102`) = next value; choices loop both ways, hour stops at 6 and 14 (`clamp_mail_hour`, #122): at a bound → `None`, nothing saved. `apply` updates snapshot. Ville + Position auto → `None`: actions, not values; `App::change_setting` routes them first (search box, detection).
-- `App::change_setting` (`src/app.rs:1214`): units → `AppState::set_units` (see [[weather]]), Barre du haut → `App.hide_hud`. Both live, no restart. Then `Config::save(setting)` (`src/config/mod.rs:149`). Write fails → kept for session anyway, toast « Réglage non enregistré : vérifie config.toml » (`toast_unsaved_setting`, once, see [[render]]).
+- `App::change_setting` (`src/app.rs:1214`): units → `AppState::set_units` (see [[weather]]), Barres → `App.hide_hud`. Both live, no restart. Then `Config::save(setting)` (`src/config/mod.rs:149`). Write fails → kept for session anyway, toast « Réglage non enregistré : vérifie config.toml » (`toast_unsaved_setting`, once, see [[render]]).
 - Heure du Facteur → `App::change_mail_hour` (`src/app.rs:1240`) instead: clock changes only if `progress.json` **and** `config.toml` both saved, else rollback + same toast. Never under `--day`. Next-day rule in [[mail]].
 - Ville chosen (#82) → `Config::save_city` (`src/config/mod.rs:161`): one write for `latitude`, `longitude`, `city`, `auto = false`, `display = "city"`. Why `display`: Barre du haut in coordinates would hide the name just picked (user decision, #82 review).
 - « Position auto » → `Config::save_location(location, auto)` (`:157`): same keys minus `display` → player's display choice kept. Write fails → same toast, new Ville still used for the session. Search, detection, refetch: [[weather]].
