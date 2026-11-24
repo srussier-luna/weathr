@@ -179,7 +179,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 17 night false
 title: Lettre 17/84
-text: Bonsoir. Marcel, garde champêtre. Je fais ma ronde chaque nuit, de la mairie jusqu'au bout de ton chemin. Si tu vois une lanterne passer derrière ta haie vers minuit, c'est moi. En général, rien à signaler.
+text: Bonsoir. Marcel, garde champêtre. Ronde chaque nuit, de la mairie au bout de ton chemin. Si tu vois une lanterne derrière ta haie vers minuit, c'est moi. Rien à signaler. Sauf ta haie, qui déborde de quarante centimètres. Je note pas. Pour cette fois.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -314,7 +314,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 33 night false
 title: Lettre 32/84
-text: On m'a dit que tu posais des questions sur une maison numéro 13. Je fais cette ronde depuis vingt-deux ans. Le village a toujours eu douze maisons. Toujours.
+text: Paraît que tu poses des questions sur un numéro 13. Vingt-deux ans que je fais cette ronde. Le village a toujours eu douze maisons. Je les compte tous les soirs. Douze.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -464,7 +464,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 51 night false
 title: Lettre 47/84
-text: Ronde de cette nuit : de la boue près du puits, encore. Des pas qui vont vers ta maison, aucun qui en revient. Ce sont sûrement les miens. J'ai dû mal compter.
+text: Ronde de 0 h 40. Boue près du puits, encore. Rien à signaler. Des pas vers ta maison, aucun qui revient. Sûrement les miens. J'ai dû mal compter.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -670,7 +670,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 77 night false
 title: Lettre 67/84
-text: Je compte les maisons à chaque ronde. Douze. Cette nuit, j'ai compté treize fenêtres allumées. J'ai recommencé : douze. Je n'ai rien noté dans le registre. Il vaut mieux ne rien noter.
+text: Ronde de 23 h 15. Compté les maisons, comme chaque soir. Douze. Au retour, treize fenêtres allumées. Recompté : douze. Pas noté au registre. Odile dit de tout noter. Pas ça. C'était la buée sur ma lanterne.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -838,7 +838,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 99 night false
 title: Lettre 84/84
-text: La fête approche, alors un conseil. Le soir, si on frappe trois coups à ta porte, ne réponds pas. Nous avons tous appris à ne pas répondre. Moi aussi, j'ai appris.
+text: La fête approche. Un conseil, un seul. Le soir, si on frappe trois coups à ta porte, réponds pas. Tout le village a appris à pas répondre. Moi aussi, j'ai appris. Ma première année de ronde. Je dors très bien, merci.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1020,7 +1020,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 17 night true
 title: Lettre 17/84
-text: Bonsoir. Marcel, garde champêtre. Je fais ma ronde chaque nuit, de la mairie jusqu'au bout de ton chemin. Si tu vois une lanterne passer derrière ta haie vers minuit, c'est moi. En général, rien à signaler.
+text: Bonsoir. Marcel, garde champêtre. Ronde chaque nuit, de la mairie au bout de ton chemin. Si tu vois une lanterne derrière ta haie vers minuit, c'est moi. Rien à signaler. Sauf ta haie, qui déborde de quarante centimètres. Je note pas. Pour cette fois.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1173,7 +1173,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 33 night true
 title: Lettre 32/84
-text: On m'a dit que tu posais des questions sur une maison numéro 13. Je fais cette ronde depuis vingt-deux ans. Le village a toujours eu douze maisons. Toujours.
+text: Paraît que tu poses des questions sur un numéro 13. Vingt-deux ans que je fais cette ronde. Le village a toujours eu douze maisons. Je les compte tous les soirs. Douze.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1341,7 +1341,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 51 night true
 title: Lettre 47/84
-text: Ronde de cette nuit : de la boue près du puits, encore. Des pas qui vont vers ta maison, aucun qui en revient. Ce sont sûrement les miens. J'ai dû mal compter.
+text: Ronde de 0 h 40. Boue près du puits, encore. Rien à signaler. Des pas vers ta maison, aucun qui revient. Sûrement les miens. J'ai dû mal compter.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1575,7 +1575,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 77 night true
 title: Lettre 67/84
-text: Je compte les maisons à chaque ronde. Douze. Cette nuit, j'ai compté treize fenêtres allumées. J'ai recommencé : douze. Je n'ai rien noté dans le registre. Il vaut mieux ne rien noter.
+text: Ronde de 23 h 15. Compté les maisons, comme chaque soir. Douze. Au retour, treize fenêtres allumées. Recompté : douze. Pas noté au registre. Odile dit de tout noter. Pas ça. C'était la buée sur ma lanterne.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1767,7 +1767,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 99 night true
 title: Lettre 84/84
-text: La fête approche, alors un conseil. Le soir, si on frappe trois coups à ta porte, ne réponds pas. Nous avons tous appris à ne pas répondre. Moi aussi, j'ai appris.
+text: La fête approche. Un conseil, un seul. Le soir, si on frappe trois coups à ta porte, réponds pas. Tout le village a appris à pas répondre. Moi aussi, j'ai appris. Ma première année de ronde. Je dors très bien, merci.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer

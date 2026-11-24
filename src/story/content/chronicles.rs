@@ -18,11 +18,11 @@ pub const NEIGHBOURS_LETTERS: [&str; 5] = [
 
 pub const MARCEL_SENDER: &str = "Marcel, le garde champêtre";
 pub const MARCEL_LETTERS: [&str; 5] = [
-    "Bonsoir. Marcel, garde champêtre. Je fais ma ronde chaque nuit, de la mairie jusqu'au bout de ton chemin. Si tu vois une lanterne passer derrière ta haie vers minuit, c'est moi. En général, rien à signaler.",
-    "On m'a dit que tu posais des questions sur une maison numéro 13. Je fais cette ronde depuis vingt-deux ans. Le village a toujours eu douze maisons. Toujours.",
-    "Ronde de cette nuit : de la boue près du puits, encore. Des pas qui vont vers ta maison, aucun qui en revient. Ce sont sûrement les miens. J'ai dû mal compter.",
-    "Je compte les maisons à chaque ronde. Douze. Cette nuit, j'ai compté treize fenêtres allumées. J'ai recommencé : douze. Je n'ai rien noté dans le registre. Il vaut mieux ne rien noter.",
-    "La fête approche, alors un conseil. Le soir, si on frappe trois coups à ta porte, ne réponds pas. Nous avons tous appris à ne pas répondre. Moi aussi, j'ai appris.",
+    "Bonsoir. Marcel, garde champêtre. Ronde chaque nuit, de la mairie au bout de ton chemin. Si tu vois une lanterne derrière ta haie vers minuit, c'est moi. Rien à signaler. Sauf ta haie, qui déborde de quarante centimètres. Je note pas. Pour cette fois.",
+    "Paraît que tu poses des questions sur un numéro 13. Vingt-deux ans que je fais cette ronde. Le village a toujours eu douze maisons. Je les compte tous les soirs. Douze.",
+    "Ronde de 0 h 40. Boue près du puits, encore. Rien à signaler. Des pas vers ta maison, aucun qui revient. Sûrement les miens. J'ai dû mal compter.",
+    "Ronde de 23 h 15. Compté les maisons, comme chaque soir. Douze. Au retour, treize fenêtres allumées. Recompté\u{202F}: douze. Pas noté au registre. Odile dit de tout noter. Pas ça. C'était la buée sur ma lanterne.",
+    "La fête approche. Un conseil, un seul. Le soir, si on frappe trois coups à ta porte, réponds pas. Tout le village a appris à pas répondre. Moi aussi, j'ai appris. Ma première année de ronde. Je dors très bien, merci.",
 ];
 
 pub struct City {
