@@ -9,6 +9,7 @@ const GAP: u16 = 1;
 const WIDTH: u16 = 3;
 const GNOME: [&str; 3] = [" A ", "(\")", "/V\\"];
 const STATUE: [&str; 4] = [" o ", "/|\\", "/ \\", "[=]"];
+const SUNDIAL: [&str; 3] = [" |\\", "===", "[_]"];
 const HAT: Color = Color::Red;
 const FACE: Color = Color::Rgb {
     r: 240,
@@ -31,15 +32,17 @@ const NIGHT_GOLD: Color = Color::Rgb {
 pub enum Trophy {
     GardenGnome,
     Statue,
+    Sundial,
 }
 
-pub const TROPHIES: [Trophy; 2] = [Trophy::GardenGnome, Trophy::Statue];
+pub const TROPHIES: [Trophy; 3] = [Trophy::GardenGnome, Trophy::Statue, Trophy::Sundial];
 
 impl Trophy {
     pub fn id(self) -> &'static str {
         match self {
             Self::GardenGnome => "garden_gnome",
             Self::Statue => "statue",
+            Self::Sundial => "sundial",
         }
     }
 
@@ -47,6 +50,7 @@ impl Trophy {
         match self {
             Self::GardenGnome => "Nain de jardin",
             Self::Statue => "Statue",
+            Self::Sundial => "Cadran solaire",
         }
     }
 
@@ -54,12 +58,13 @@ impl Trophy {
         match self {
             Self::GardenGnome => "streak_60",
             Self::Statue => "streak_100",
+            Self::Sundial => "streak_365",
         }
     }
 
     pub fn places(self) -> [&'static str; 2] {
         match self {
-            Self::GardenGnome => ["au jardin", "rangé"],
+            Self::GardenGnome | Self::Sundial => ["au jardin", "rangé"],
             Self::Statue => ["au jardin", "rangée"],
         }
     }
@@ -80,6 +85,7 @@ impl Trophy {
         match self {
             Self::GardenGnome => &GNOME,
             Self::Statue => &STATUE,
+            Self::Sundial => &SUNDIAL,
         }
     }
 }
@@ -118,6 +124,11 @@ impl Trophies {
                     garden::draw_solid(renderer, x, y, &sprite[..3], gold)?;
                     garden::draw_solid(renderer, x, y + 3, &sprite[3..], Color::Grey)?;
                 }
+                Trophy::Sundial => {
+                    garden::draw_solid(renderer, x, y, &sprite[..1], Color::DarkYellow)?;
+                    garden::draw_solid(renderer, x, y + 1, &sprite[1..2], Color::White)?;
+                    garden::draw_solid(renderer, x, y + 2, &sprite[2..], Color::Grey)?;
+                }
             }
         }
         Ok(())
@@ -129,10 +140,16 @@ fn spots(shown: &[Trophy], layout: &GardenLayout) -> Vec<(Trophy, u16)> {
     let mut x = Dog::seat_end(layout) + GAP;
     let mut spots = Vec::new();
     for &trophy in shown {
-        if x + WIDTH > end {
-            break;
+        if trophy == Trophy::Sundial {
+            let fence_spot = layout.fence_x() + GAP;
+            if fence_spot + WIDTH <= layout.width {
+                spots.push((trophy, fence_spot));
+            }
+            continue;
         }
-        spots.push((trophy, x));
+        if x + WIDTH <= end {
+            spots.push((trophy, x));
+        }
         x += WIDTH + GAP;
     }
     spots
@@ -156,20 +173,32 @@ mod tests {
         );
         assert_eq!(
             Trophy::won(&badges(&["streak_60", "streak_100"])).collect::<Vec<_>>(),
+            [Trophy::GardenGnome, Trophy::Statue]
+        );
+        assert_eq!(
+            Trophy::won(&badges(&["streak_365"])).collect::<Vec<_>>(),
+            [Trophy::Sundial]
+        );
+        assert_eq!(
+            Trophy::won(&badges(&["streak_60", "streak_100", "streak_365"])).collect::<Vec<_>>(),
             TROPHIES
         );
     }
 
     #[test]
     fn test_put_away_trophy_is_not_shown() {
-        let won = badges(&["streak_60", "streak_100"]);
+        let won = badges(&["streak_60", "streak_100", "streak_365"]);
         assert_eq!(Trophy::shown(&won, &BTreeSet::new()), TROPHIES);
         assert_eq!(
             Trophy::shown(&won, &badges(&["garden_gnome"])),
-            [Trophy::Statue]
+            [Trophy::Statue, Trophy::Sundial]
         );
         assert_eq!(
             Trophy::shown(&won, &badges(&["garden_gnome", "statue"])),
+            [Trophy::Sundial]
+        );
+        assert_eq!(
+            Trophy::shown(&won, &badges(&["garden_gnome", "statue", "sundial"])),
             []
         );
     }
@@ -191,7 +220,7 @@ mod tests {
         for width in [80, 120, 200, 300] {
             let layout = GardenLayout::new(width, 40, Growth::Full);
             let spots = spots(&TROPHIES, &layout);
-            assert_eq!(spots.len(), 2, "{width}");
+            assert!(spots.len() >= 2, "{width}");
             let (gnome, gnome_x) = spots[0];
             let (statue, statue_x) = spots[1];
             assert_eq!((gnome, statue), (Trophy::GardenGnome, Trophy::Statue));
@@ -199,6 +228,42 @@ mod tests {
             assert!(gnome_x + WIDTH < statue_x);
             assert!(statue_x + WIDTH < layout.fence_x());
         }
+    }
+
+    #[test]
+    fn test_sundial_stands_in_front_of_the_fence_with_both_houses() {
+        let mut house_widths = BTreeSet::new();
+        for width in 80..400 {
+            for height in [40, 60] {
+                let layout = GardenLayout::new(width, height, Growth::Full);
+                let spots = spots(&TROPHIES, &layout);
+                let [_, (_, statue_x), (sundial, sundial_x)] = spots[..] else {
+                    continue;
+                };
+                assert_eq!(sundial, Trophy::Sundial);
+                assert_eq!(sundial_x, layout.fence_x() + GAP);
+                assert!(statue_x + WIDTH < sundial_x);
+                assert!(sundial_x + WIDTH <= layout.width);
+                house_widths.insert(layout.house.width());
+            }
+        }
+        assert_eq!(house_widths, BTreeSet::from([64, 86]));
+    }
+
+    #[test]
+    fn test_sundial_without_room_in_front_of_the_fence_is_not_drawn() {
+        let layout = GardenLayout::new(120, 40, Growth::Full);
+        let narrow = GardenLayout {
+            width: layout.fence_x() + GAP + WIDTH - 1,
+            ..layout
+        };
+        assert_eq!(
+            spots(&TROPHIES, &narrow)
+                .iter()
+                .map(|(trophy, _)| *trophy)
+                .collect::<Vec<_>>(),
+            [Trophy::GardenGnome, Trophy::Statue]
+        );
     }
 
     #[test]

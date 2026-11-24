@@ -1156,14 +1156,20 @@ mod tests {
     #[test]
     fn test_trophies_page_shows_where_each_trophy_is() {
         let mut progress = Progress::default();
-        progress.badges = BTreeSet::from(["streak_60".to_string(), "streak_100".to_string()]);
+        progress.badges = BTreeSet::from([
+            "streak_60".to_string(),
+            "streak_100".to_string(),
+            "streak_365".to_string(),
+        ]);
         progress.hidden_trophies.insert("statue".to_string());
+        progress.hidden_trophies.insert("sundial".to_string());
         let pages = album_pages(&[], &progress, &Unlocks::default(), 1);
         assert_eq!(
             overlay::lay_out(&pages[TROPHIES_PAGE].lines, 200),
             [
                 "- Nain de jardin au jardin",
                 "> Statue [1]\u{a0}au jardin [2]\u{a0}rangée\u{a0}✓",
+                "- Cadran solaire rangé",
             ]
         );
     }

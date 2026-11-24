@@ -903,6 +903,7 @@ impl App {
             (self.progress.streak >= 30, "streak_30"),
             (self.progress.streak >= 60, "streak_60"),
             (self.progress.streak >= 100, "streak_100"),
+            (self.progress.streak >= 365, "streak_365"),
             (self.progress.visited_cities.len() >= 7, "traveller"),
             (self.progress.visited_cities.len() >= 15, "backpacker"),
             (self.has_read_all_letters(), "all_letters"),
@@ -3202,7 +3203,11 @@ mod tests {
 
     #[test]
     fn test_option_keys_put_the_selected_trophy_away_and_back() {
-        let badges = BTreeSet::from(["streak_60".to_string(), "streak_100".to_string()]);
+        let badges = BTreeSet::from([
+            "streak_60".to_string(),
+            "streak_100".to_string(),
+            "streak_365".to_string(),
+        ]);
         let mut hidden = BTreeSet::new();
         let shown = |hidden: &BTreeSet<String>| Trophy::shown(&badges, hidden);
 
@@ -3212,21 +3217,35 @@ mod tests {
             &mut hidden,
             2
         ));
-        assert_eq!(shown(&hidden), [Trophy::Statue]);
+        assert_eq!(shown(&hidden), [Trophy::Statue, Trophy::Sundial]);
         assert!(place_trophy(
             album(views::TROPHIES_PAGE, 1),
             &badges,
             &mut hidden,
             2
         ));
+        assert_eq!(shown(&hidden), [Trophy::Sundial]);
+        assert!(place_trophy(
+            album(views::TROPHIES_PAGE, 2),
+            &badges,
+            &mut hidden,
+            2
+        ));
         assert!(shown(&hidden).is_empty());
+        assert!(place_trophy(
+            album(views::TROPHIES_PAGE, 2),
+            &badges,
+            &mut hidden,
+            1
+        ));
+        assert_eq!(shown(&hidden), [Trophy::Sundial]);
         assert!(place_trophy(
             album(views::TROPHIES_PAGE, 0),
             &badges,
             &mut hidden,
             1
         ));
-        assert_eq!(shown(&hidden), [Trophy::GardenGnome]);
+        assert_eq!(shown(&hidden), [Trophy::GardenGnome, Trophy::Sundial]);
         assert!(place_trophy(
             album(views::TROPHIES_PAGE, 1),
             &badges,
@@ -3254,8 +3273,10 @@ mod tests {
 
     #[test]
     fn test_old_save_without_trophy_choice_shows_won_trophies() {
-        let progress: Progress =
-            serde_json::from_str(r#"{"badges":["streak_30","streak_60","streak_100"]}"#).unwrap();
+        let progress: Progress = serde_json::from_str(
+            r#"{"badges":["streak_30","streak_60","streak_100","streak_365"]}"#,
+        )
+        .unwrap();
         assert!(progress.hidden_trophies.is_empty());
         assert_eq!(
             Trophy::shown(&progress.badges, &progress.hidden_trophies),

@@ -396,6 +396,12 @@ pub const BADGES: &[Badge] = &[
         ["[===]", "|100|", "|___|"],
     ),
     badge(
+        "streak_365",
+        "365 jours d'affilée",
+        BadgeKind::Loyalty,
+        ["[===]", "|365|", "|___|"],
+    ),
+    badge(
         "traveller",
         "Voyageur",
         BadgeKind::Common,
@@ -796,10 +802,12 @@ mod tests {
                 ("streak_30", true),
                 ("streak_60", true),
                 ("streak_100", true),
+                ("streak_365", true),
             ]
         );
         assert_eq!(find("streak_60").unwrap().name, "60 jours d'affilée");
         assert_eq!(find("streak_100").unwrap().name, "100 jours d'affilée");
+        assert_eq!(find("streak_365").unwrap().name, "365 jours d'affilée");
     }
 
     #[test]

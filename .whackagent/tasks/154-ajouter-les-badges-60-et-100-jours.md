@@ -11,7 +11,8 @@ created: 2026-11-24
 > ajouter un badge 60 jours et 100 jours, pour chacun l'utilisateur recois un recompense pour son jardin qu'il peut afficher ou non dans son jardin
 
 - Deux Badges Fidélité de plus, suite de `streak_3` / `streak_7` / `streak_30` : « 60 jours d'affilée » (`streak_60`) et « 100 jours d'affilée » (`streak_100`). Même compteur de jours d'affilée, même attribution dans `App::collect_badges`, icône sur le modèle `|60 |` / `|100|`.
-- Chaque Badge offre un Trophée au jardin : 60 jours → Nain de jardin, 100 jours → Statue (petite statue dorée).
+- Chaque Badge offre un Trophée au jardin : 60 jours → Nain de jardin, 100 jours → Statue (petite statue dorée), 365 jours → Cadran solaire.
+- Badge « 365 jours d'affilée » (`streak_365`, Fidélité, après 100), ajouté au round 3.
 - Le Trophée est posé au jardin dès le Badge gagné.
 - Le joueur choisit d'afficher ou non chaque Trophée dans une nouvelle page de l'Album, « Album : tes trophées », placée juste après « Album : tes réponses ».
   - Même mécanique que « tes réponses » : `↑`/`↓` sélection, `[1]` au jardin, `[2]` rangé.
@@ -24,9 +25,10 @@ created: 2026-11-24
 
 - Sauvegarde avec 59 jours d'affilée, lancement le jour suivant → carte « Nouveau badge ! » « 60 jours d'affilée », Nain de jardin visible à côté de la niche.
 - Même chose à 100 jours → Badge « 100 jours d'affilée », Statue visible à côté de la niche.
-- Écran Badges (`b`) : les deux Badges dans la colonne Fidélité, après « 30 jours d'affilée ».
+- Même chose à 365 jours → Badge « 365 jours d'affilée », Cadran solaire visible devant la clôture, petite et grande maison (pas la place → pas dessiné).
+- Écran Badges (`b`) : les deux Badges dans la colonne Fidélité, après « 30 jours d'affilée », puis « 365 jours d'affilée ».
 - Album (`a`) : page « Album : tes trophées » après « tes réponses », une ligne par Trophée gagné, aucune ligne pour un Trophée pas gagné.
-- Sur cette page, `[2]` sur le Nain de jardin → il disparaît du jardin ; `[1]` → il revient. Pareil pour la Statue.
+- Sur cette page, `[2]` sur le Nain de jardin → il disparaît du jardin ; `[1]` → il revient. Pareil pour la Statue et le Cadran solaire.
 - Choix gardé après relance du jeu.
 - Ancienne sauvegarde sans le nouveau champ → se charge, Trophées gagnés affichés au jardin.
 
@@ -38,6 +40,8 @@ created: 2026-11-24
 - `Progress::hidden_trophies` (`#[serde(default)]`, vide = tout affiché).
 - Album : page « Album : tes trophées » (`views::TROPHIES_PAGE = ANSWERS_PAGE + 1`), « Rien pour l'instant. » tant qu'aucun Trophée ; mécanique partagée avec « tes réponses » (`choices_page`, `album_rows`, `album_after_scroll`). `[2]` = « rangé » / « rangée » selon le Trophée.
 - Preuve : `cargo clippy --all-targets` sans nouveau warning, `cargo build` OK, `cargo test` tout vert.
+
+- Round 3 : Badge `streak_365` (Fidélité, après 100, règle dans le même fichier que 60/100) ; Trophée `sundial` « Cadran solaire » dans `TROPHIES`, posé devant la clôture (`fence_x + 1`, par-dessus elle, `draw_solid`), Nain et Statue inchangés. Hunks : `src/badges.rs`, `src/app.rs`, `src/views.rs`, `src/animation/trophies.rs`, `src/story/reach.rs`.
 
 ## Review
 
@@ -52,6 +56,8 @@ Autopilot, app pilotée en pty (`HOME` à part, `--simulate clear`, 160×45, plu
 - ✅ Choix gardé après relance (`hidden_trophies`).
 - ✅ Ancienne sauvegarde sans le champ : Trophées affichés.
 
+- round 3 : manual validation — not run by agent.
+
 ## Feedback
 
 ### Round 2 — 2026-11-24
@@ -59,3 +65,10 @@ Autopilot, app pilotée en pty (`HOME` à part, `--simulate clear`, 160×45, plu
 - Tri : ajustement.
 - Changement : `BADGES` passe de `[Badge; N]` à `&[Badge]` (ligne identique sur #157, fusion sans conflit).
 - Preuve : clippy, build et tests verts.
+
+### Round 3 — 2026-11-24
+- Demande : « ajoute 365 jour d'affilé », avec une récompense à trouver ; Cadran solaire gardé ; « met le devant la cloture ».
+- Tri : ajustement, critères mis à jour.
+- Changement : Badge « 365 jours d'affilée » + Trophée Cadran solaire devant la clôture, rangeable dans « tes trophées ».
+- Review : deferred (→ /wa-validate). Verify : manual, run yours.
+- Point ouvert : en grand terminal, chevauchement avec la Mare possible selon la largeur, pas vu à l'écran.
