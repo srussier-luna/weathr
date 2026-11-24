@@ -36,6 +36,9 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Ville de Sam | | | `sam_cities` | ville d'une Carte postale où la position auto est passée (10 km) |
 | Palier | | niveau | `tier` | rang du badge de Sam : chocolat, bronze, argent, or, platine |
 | Carte de badge | | | `Award` | carte « Nouveau badge ! » ou « Nouveau palier ! » au lancement |
+| Trophée | récompense, cadeau | | `Trophy` | objet du jardin offert par un Badge, affiché ou rangé dans l'Album → [[animation]] |
+| Nain de jardin | | | | Trophée du Badge « 60 jours d'affilée », à côté de la niche de Biscuit |
+| Statue | | | | Trophée du Badge « 100 jours d'affilée », à côté de la niche de Biscuit |
 | Fête | jour férié | | `Holiday` | jour spécial qui décore la scène → [[animation]] |
 | Encadré de Fête | | | `HolidayBox` | fenêtre au lancement un jour de Fête : nom et ce qu'il faut guetter → [[render]] |
 | Fête de la musique | | | `is_music_day` | 21 juin : notes aux fenêtres, chanteurs, Notes du ciel ; Badge dédié → [[animation]] |
