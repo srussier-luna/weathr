@@ -2679,7 +2679,7 @@ mod tests {
 
     const WET_FOOTPRINT_MAIL: [(Entry, &str); 2] = [
         (Entry::Creepy(2), "Les traces vont du puits à ta porte"),
-        (Entry::Marcel(2), "Des pas qui vont vers ta maison"),
+        (Entry::Marcel(2), "Des pas vers ta maison"),
     ];
 
     fn mail_text(entry: Entry) -> String {

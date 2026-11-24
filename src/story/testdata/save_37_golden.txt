@@ -124,7 +124,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 10 night false
 title: Lettre 10/84
-text: Bonjour d'en face ! Je suis Sam, j'habite le vieux moulin au bord de la rivière. Je dessinais des cartes, autrefois. Aujourd'hui, je les regarde surtout. Ton jardin figure sur trois de mes plans, tu savais ?
+text: Bonjour d'en face ! Moi c'est Sam, le vieux moulin au bord de la rivière. Je dessinais des cartes, avant. Maintenant je les regarde, surtout. Tu savais ? Ton jardin est sur trois de mes plans. Sur le plus vieux, ta maison n'a même pas de cheminée.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -162,7 +162,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 15 night false
 title: Lettre 15/84
-text: Bonjour ! Nous sommes Nadia et Claire. On vient d'emménager dans la maison derrière le verger, avec nos quatre ruches. Si tu vois des abeilles dans ton jardin, ce sont les nôtres : elles adorent ton arbre.
+text: Coucou ! Nadia et Claire, les nouvelles de la maison derrière le verger. On est arrivées avec quatre ruches (Claire en voulait six). Si tu vois des abeilles chez toi, ce sont les nôtres. Elles adorent ton arbre : Claire dit qu'elles ont bon goût, Nadia dit qu'elles sont juste gourmandes. Le premier pot est pour toi.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -179,7 +179,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 17 night false
 title: Lettre 17/84
-text: Bonsoir. Marcel, garde champêtre. Je fais ma ronde chaque nuit, de la mairie jusqu'au bout de ton chemin. Si tu vois une lanterne passer derrière ta haie vers minuit, c'est moi. En général, rien à signaler.
+text: Bonsoir. Marcel, garde champêtre. Ronde chaque nuit, de la mairie au bout de ton chemin. Si tu vois une lanterne derrière ta haie vers minuit, c'est moi. Rien à signaler. Sauf ta haie, qui déborde de quarante centimètres. Je note pas. Pour cette fois.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -209,7 +209,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 21 night false
 title: Lettre 21/84
-text: Rose m'a vendu un croissant brûlé, je l'ai mangé quand même. Le soir, je trace des routes sur de vieilles cartes, vers des villes que je n'ai jamais vues.
+text: Rose m'a vendu un croissant brûlé. Le moins brûlé, d'après elle. Je l'ai mangé en traçant une route au crayon, d'ici jusqu'à Valparaíso. Onze centimètres sur ma carte. Vu comme ça, ça paraît faisable, non ?
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -276,7 +276,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 28 night false
 title: Lettre 27/84
-text: Rose nous apprend quelques mots en langue des signes. Claire a retenu « miel » et « merci ». Nadia confond encore les deux, ce qui donne des conversations très polies.
+text: Rose nous apprend la langue des signes, le jeudi, entre deux fournées. Claire a retenu « miel » et « merci » dès la première leçon. Nadia confond encore les deux. Du coup, elle remercie tout le monde pour le miel. Même Gaston, qui n'avait rien demandé.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -300,7 +300,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 31 night false
 title: Lettre 30/84
-text: J'ai retrouvé une carte du monde de mon grand-père, couverte de petites croix. Chaque croix est une ville qu'il rêvait de voir. Il n'en a vu aucune.
+text: Quarante petites croix. C'est ce qu'il y a sur la carte du monde de mon grand-père, retrouvée au grenier. Chaque croix, une ville qu'il voulait voir. Il n'en a vu aucune, tu savais ? Celle de Lisbonne, il l'a appuyée si fort que le papier est troué.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -314,7 +314,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 33 night false
 title: Lettre 32/84
-text: On m'a dit que tu posais des questions sur une maison numéro 13. Je fais cette ronde depuis vingt-deux ans. Le village a toujours eu douze maisons. Toujours.
+text: Paraît que tu poses des questions sur un numéro 13. Vingt-deux ans que je fais cette ronde. Le village a toujours eu douze maisons. Je les compte tous les soirs. Douze.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -372,7 +372,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 40 night false
 title: Lettre 38/84
-text: Premier pot de miel ! On en a déposé un sur ta boîte aux lettres. Rose en a pris dix pour ses gâteaux. Marcel n'en veut pas : il dit que nos abeilles évitent le n°13 et que ce n'est pas bon signe.
+text: Premier pot de miel. Il t'attend sur ta boîte aux lettres. Rose en a pris dix pour ses gâteaux, Claire voulait lui en vendre vingt. Marcel n'en veut pas. Il dit que nos abeilles évitent le n°13 et que c'est mauvais signe. Nadia a regardé : c'est vrai qu'elles font un détour. Claire trouve qu'il se fait des idées.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -393,7 +393,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 43 night false
 title: Lettre 41/84
-text: Paulo dit que les rêves se fanent comme les fleurs qu'on oublie d'arroser. Il a raison, pour une fois. J'ai acheté une valise. Elle est encore vide.
+text: J'ai acheté une valise. Marron, avec des coins en cuir. Elle est encore vide, au milieu du moulin. Paulo est passé, il l'a regardée longtemps et il a dit : « Faut la remplir. » C'est la plus longue phrase qu'il m'ait jamais dite.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -464,7 +464,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 51 night false
 title: Lettre 47/84
-text: Ronde de cette nuit : de la boue près du puits, encore. Des pas qui vont vers ta maison, aucun qui en revient. Ce sont sûrement les miens. J'ai dû mal compter.
+text: Ronde de 0 h 40. Boue près du puits, encore. Rien à signaler. Des pas vers ta maison, aucun qui revient. Sûrement les miens. J'ai dû mal compter.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -502,7 +502,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 56 night false
 title: Lettre 51/84
-text: Je pars demain. Je vais suivre les croix de mon grand-père, une par une. Je t'enverrai une carte postale chaque semaine, avec le temps qu'il fait là-bas. Garde un œil sur mon moulin.
+text: Je pars demain, par le car de 6 h 10. Je vais suivre les croix de mon grand-père, une par une. Chaque semaine, je t'envoie une carte postale avec le temps qu'il fait là-bas. Tu me diras s'il fait meilleur chez toi ? Garde un œil sur mon moulin. La porte du bas ferme mal, faut la soulever un peu.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -562,7 +562,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 63 night false
 title: Lettre 56/84
-text: Ce soir, cela fait dix ans que nous sommes mariées. C'est Odile qui nous a mariées, à la mairie, sous une pluie battante. Claire dit que ça porte bonheur. Nadia dit surtout que ça mouille. On fête ça avec une tarte au miel.
+text: Dix ans ce soir. C'est Odile qui nous a mariées, à la mairie, sous une pluie battante, l'écharpe tricolore trempée. Claire dit que ça porte bonheur, Nadia dit surtout que ça mouille. On fête ça avec une tarte au miel. Claire l'a sortie du four trop tôt, on ne lui dira pas.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -670,7 +670,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 77 night false
 title: Lettre 67/84
-text: Je compte les maisons à chaque ronde. Douze. Cette nuit, j'ai compté treize fenêtres allumées. J'ai recommencé : douze. Je n'ai rien noté dans le registre. Il vaut mieux ne rien noter.
+text: Ronde de 23 h 15. Compté les maisons, comme chaque soir. Douze. Au retour, treize fenêtres allumées. Recompté : douze. Pas noté au registre. Odile dit de tout noter. Pas ça. C'était la buée sur ma lanterne.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -712,7 +712,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 83 night false
 title: Lettre 72/84
-text: Une ruche a essaimé ce matin : tout un nuage d'abeilles s'est posé dans ton arbre. Claire est montée les chercher avec un carton, Nadia tenait l'échelle et donnait des conseils. Si une abeille se perd chez toi, ne t'inquiète pas, elle sait rentrer.
+text: Une ruche a essaimé ce matin. Tout le nuage d'abeilles s'est posé dans ton arbre, sur la troisième branche. Claire est montée avec un carton avant qu'on trouve les gants. Nadia tenait l'échelle et donnait des conseils, que personne n'a suivis. Si une abeille traîne chez toi, t'inquiète pas, elle connaît le chemin.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -838,7 +838,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 99 night false
 title: Lettre 84/84
-text: La fête approche, alors un conseil. Le soir, si on frappe trois coups à ta porte, ne réponds pas. Nous avons tous appris à ne pas répondre. Moi aussi, j'ai appris.
+text: La fête approche. Un conseil, un seul. Le soir, si on frappe trois coups à ta porte, réponds pas. Tout le village a appris à pas répondre. Moi aussi, j'ai appris. Ma première année de ronde. Je dors très bien, merci.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -957,7 +957,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 10 night true
 title: Lettre 10/84
-text: Bonjour d'en face ! Je suis Sam, j'habite le vieux moulin au bord de la rivière. Je dessinais des cartes, autrefois. Aujourd'hui, je les regarde surtout. Ton jardin figure sur trois de mes plans, tu savais ?
+text: Bonjour d'en face ! Moi c'est Sam, le vieux moulin au bord de la rivière. Je dessinais des cartes, avant. Maintenant je les regarde, surtout. Tu savais ? Ton jardin est sur trois de mes plans. Sur le plus vieux, ta maison n'a même pas de cheminée.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1001,7 +1001,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 15 night true
 title: Lettre 15/84
-text: Bonjour ! Nous sommes Nadia et Claire. On vient d'emménager dans la maison derrière le verger, avec nos quatre ruches. Si tu vois des abeilles dans ton jardin, ce sont les nôtres : elles adorent ton arbre.
+text: Coucou ! Nadia et Claire, les nouvelles de la maison derrière le verger. On est arrivées avec quatre ruches (Claire en voulait six). Si tu vois des abeilles chez toi, ce sont les nôtres. Elles adorent ton arbre : Claire dit qu'elles ont bon goût, Nadia dit qu'elles sont juste gourmandes. Le premier pot est pour toi.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1020,7 +1020,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 17 night true
 title: Lettre 17/84
-text: Bonsoir. Marcel, garde champêtre. Je fais ma ronde chaque nuit, de la mairie jusqu'au bout de ton chemin. Si tu vois une lanterne passer derrière ta haie vers minuit, c'est moi. En général, rien à signaler.
+text: Bonsoir. Marcel, garde champêtre. Ronde chaque nuit, de la mairie au bout de ton chemin. Si tu vois une lanterne derrière ta haie vers minuit, c'est moi. Rien à signaler. Sauf ta haie, qui déborde de quarante centimètres. Je note pas. Pour cette fois.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1054,7 +1054,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 21 night true
 title: Lettre 21/84
-text: Rose m'a vendu un croissant brûlé, je l'ai mangé quand même. Le soir, je trace des routes sur de vieilles cartes, vers des villes que je n'ai jamais vues.
+text: Rose m'a vendu un croissant brûlé. Le moins brûlé, d'après elle. Je l'ai mangé en traçant une route au crayon, d'ici jusqu'à Valparaíso. Onze centimètres sur ma carte. Vu comme ça, ça paraît faisable, non ?
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1129,7 +1129,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 28 night true
 title: Lettre 27/84
-text: Rose nous apprend quelques mots en langue des signes. Claire a retenu « miel » et « merci ». Nadia confond encore les deux, ce qui donne des conversations très polies.
+text: Rose nous apprend la langue des signes, le jeudi, entre deux fournées. Claire a retenu « miel » et « merci » dès la première leçon. Nadia confond encore les deux. Du coup, elle remercie tout le monde pour le miel. Même Gaston, qui n'avait rien demandé.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1157,7 +1157,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 31 night true
 title: Lettre 30/84
-text: J'ai retrouvé une carte du monde de mon grand-père, couverte de petites croix. Chaque croix est une ville qu'il rêvait de voir. Il n'en a vu aucune.
+text: Quarante petites croix. C'est ce qu'il y a sur la carte du monde de mon grand-père, retrouvée au grenier. Chaque croix, une ville qu'il voulait voir. Il n'en a vu aucune, tu savais ? Celle de Lisbonne, il l'a appuyée si fort que le papier est troué.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1173,7 +1173,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 33 night true
 title: Lettre 32/84
-text: On m'a dit que tu posais des questions sur une maison numéro 13. Je fais cette ronde depuis vingt-deux ans. Le village a toujours eu douze maisons. Toujours.
+text: Paraît que tu poses des questions sur un numéro 13. Vingt-deux ans que je fais cette ronde. Le village a toujours eu douze maisons. Je les compte tous les soirs. Douze.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1239,7 +1239,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 40 night true
 title: Lettre 38/84
-text: Premier pot de miel ! On en a déposé un sur ta boîte aux lettres. Rose en a pris dix pour ses gâteaux. Marcel n'en veut pas : il dit que nos abeilles évitent le n°13 et que ce n'est pas bon signe.
+text: Premier pot de miel. Il t'attend sur ta boîte aux lettres. Rose en a pris dix pour ses gâteaux, Claire voulait lui en vendre vingt. Marcel n'en veut pas. Il dit que nos abeilles évitent le n°13 et que c'est mauvais signe. Nadia a regardé : c'est vrai qu'elles font un détour. Claire trouve qu'il se fait des idées.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1262,7 +1262,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 43 night true
 title: Lettre 41/84
-text: Paulo dit que les rêves se fanent comme les fleurs qu'on oublie d'arroser. Il a raison, pour une fois. J'ai acheté une valise. Elle est encore vide.
+text: J'ai acheté une valise. Marron, avec des coins en cuir. Elle est encore vide, au milieu du moulin. Paulo est passé, il l'a regardée longtemps et il a dit : « Faut la remplir. » C'est la plus longue phrase qu'il m'ait jamais dite.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1341,7 +1341,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 51 night true
 title: Lettre 47/84
-text: Ronde de cette nuit : de la boue près du puits, encore. Des pas qui vont vers ta maison, aucun qui en revient. Ce sont sûrement les miens. J'ai dû mal compter.
+text: Ronde de 0 h 40. Boue près du puits, encore. Rien à signaler. Des pas vers ta maison, aucun qui revient. Sûrement les miens. J'ai dû mal compter.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1385,7 +1385,7 @@ footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 56 night true
 title: Lettre 51/84
-text: Je pars demain. Je vais suivre les croix de mon grand-père, une par une. Je t'enverrai une carte postale chaque semaine, avec le temps qu'il fait là-bas. Garde un œil sur mon moulin.
+text: Je pars demain, par le car de 6 h 10. Je vais suivre les croix de mon grand-père, une par une. Chaque semaine, je t'envoie une carte postale avec le temps qu'il fait là-bas. Tu me diras s'il fait meilleur chez toi ? Garde un œil sur mon moulin. La porte du bas ferme mal, faut la soulever un peu.
 blank
 text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1451,7 +1451,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 63 night true
 title: Lettre 56/84
-text: Ce soir, cela fait dix ans que nous sommes mariées. C'est Odile qui nous a mariées, à la mairie, sous une pluie battante. Claire dit que ça porte bonheur. Nadia dit surtout que ça mouille. On fête ça avec une tarte au miel.
+text: Dix ans ce soir. C'est Odile qui nous a mariées, à la mairie, sous une pluie battante, l'écharpe tricolore trempée. Claire dit que ça porte bonheur, Nadia dit surtout que ça mouille. On fête ça avec une tarte au miel. Claire l'a sortie du four trop tôt, on ne lui dira pas.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1575,7 +1575,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 77 night true
 title: Lettre 67/84
-text: Je compte les maisons à chaque ronde. Douze. Cette nuit, j'ai compté treize fenêtres allumées. J'ai recommencé : douze. Je n'ai rien noté dans le registre. Il vaut mieux ne rien noter.
+text: Ronde de 23 h 15. Compté les maisons, comme chaque soir. Douze. Au retour, treize fenêtres allumées. Recompté : douze. Pas noté au registre. Odile dit de tout noter. Pas ça. C'était la buée sur ma lanterne.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1623,7 +1623,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 83 night true
 title: Lettre 72/84
-text: Une ruche a essaimé ce matin : tout un nuage d'abeilles s'est posé dans ton arbre. Claire est montée les chercher avec un carton, Nadia tenait l'échelle et donnait des conseils. Si une abeille se perd chez toi, ne t'inquiète pas, elle sait rentrer.
+text: Une ruche a essaimé ce matin. Tout le nuage d'abeilles s'est posé dans ton arbre, sur la troisième branche. Claire est montée avec un carton avant qu'on trouve les gants. Nadia tenait l'échelle et donnait des conseils, que personne n'a suivis. Si une abeille traîne chez toi, t'inquiète pas, elle connaît le chemin.
 blank
 text: — Nadia et Claire, les apicultrices
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
@@ -1767,7 +1767,7 @@ footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 99 night true
 title: Lettre 84/84
-text: La fête approche, alors un conseil. Le soir, si on frappe trois coups à ta porte, ne réponds pas. Nous avons tous appris à ne pas répondre. Moi aussi, j'ai appris.
+text: La fête approche. Un conseil, un seul. Le soir, si on frappe trois coups à ta porte, réponds pas. Tout le village a appris à pas répondre. Moi aussi, j'ai appris. Ma première année de ronde. Je dors très bien, merci.
 blank
 text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer

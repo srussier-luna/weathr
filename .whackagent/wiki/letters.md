@@ -6,7 +6,7 @@ Reference for any Lettre text (village, correspondents, n°13, future ones). One
 
 - Village Lettres: `DEFAULT_LETTERS` (`src/story/content/letters.rs`), 60 `(sender, body)`. Sender string never changes (Courrier, guests and tests key on it). Body `\n` = new paragraph; game adds `— sender` itself, so no signature in the body.
 - Texts before #173: `PREVIOUS_LETTERS` (`src/story/content/previous_letters.rs`). Only for `lettres.txt` migration: a file letter equal to its previous text takes the new one; a player edit stays. Rewriting texts again → move the current ones there first.
-- Correspondents (Sam, Nadia et Claire, Marcel), n°13: `chronicles.rs`, `CREEPY_LETTERS`. Rewrite to these sheets in #174.
+- Correspondents (Sam, Nadia et Claire, Marcel), n°13: `chronicles.rs`, `CREEPY_LETTERS`. Rewritten to these sheets (#174); n°13 + night P.-S. kept as model.
 - French typography: `\u{202F}` before `? ! : ;` and inside `« »`. Exception: Énigme texts stay byte-identical.
 
 ## Common rules
@@ -147,7 +147,7 @@ Plus:
 - Voix: polite, calm, never threatening: that is what scares. Knows intimate details of your house. Numbers too precise, often 13.
 - Tic: « C'est normal. »
 - Ne dit jamais: an exclamation; a direct threat; an explanation.
-- Letters (`CREEPY_LETTERS`) reviewed in #174.
+- Letters (`CREEPY_LETTERS`) reviewed in #174, unchanged: the model voice. Plain spaces before ? : (no `\u{202F}`).
 
 > Bonjour. J'habite au numéro 13, juste derrière chez toi. Tu ne vois pas ma maison d'ici. C'est normal. Je voulais simplement te dire que la lumière de ta cuisine est très jolie, le soir. Surtout vers 22 h 13.
 
