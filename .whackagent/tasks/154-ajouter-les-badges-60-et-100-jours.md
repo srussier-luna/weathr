@@ -53,3 +53,9 @@ Autopilot, app pilotée en pty (`HOME` à part, `--simulate clear`, 160×45, plu
 - ✅ Ancienne sauvegarde sans le champ : Trophées affichés.
 
 ## Feedback
+
+### Round 2 — 2026-11-24
+- Demande : la branche de test (#154 + #157 + #155) ne compilait pas, chaque tâche changeait la taille fixe de `BADGES`.
+- Tri : ajustement.
+- Changement : `BADGES` passe de `[Badge; N]` à `&[Badge]` (ligne identique sur #157, fusion sans conflit).
+- Preuve : clippy, build et tests verts.
