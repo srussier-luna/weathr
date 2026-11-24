@@ -279,6 +279,10 @@ pub fn render_view(renderer: &mut TerminalRenderer, view: &View) -> io::Result<(
     Ok(())
 }
 
+pub fn blink_tick() -> usize {
+    (Local::now().timestamp_millis() / CHEVRON_STEP_MILLIS) as usize
+}
+
 pub fn render_with_chevrons(
     renderer: &mut TerminalRenderer,
     view: &View,
@@ -286,7 +290,7 @@ pub fn render_with_chevrons(
     has_next: bool,
 ) -> io::Result<()> {
     let area = render_view_box(renderer, view)?;
-    let tick = (Local::now().timestamp_millis() / CHEVRON_STEP_MILLIS) as usize;
+    let tick = blink_tick();
     let width = renderer.get_size().0;
     for (side, is_shown) in [(Side::Left, has_previous), (Side::Right, has_next)] {
         if is_shown && let Some((x, y)) = chevron_cell(area, side, width, tick) {
