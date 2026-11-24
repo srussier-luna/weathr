@@ -1,0 +1,394 @@
+<title>Maison weathr · v4</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600&display=swap">
+<style>
+/* Layout: terminal mock (scene + ASCII house overlay + Barre du bas) left, controls right; collectibles table below. Stacks on phone. */
+:root {
+  --page: #eef0f3; --panel: #ffffff; --ink: #1d2330; --muted: #5d6677; --line: #d6dae2; --accent: #2f6fd6;
+  --term-bg: #fbfbf8; --term-chrome: #e3e5ea;
+  --c-sky: #9aa7b8; --c-ground: #3f8a3a; --c-house: #8a5a2b; --c-roof: #a3402e; --c-window: #c48a00;
+  --c-key: #5d6677; --c-hot: #b03a7a; --c-text: #1d2330; --c-dim: #9aa3b4; --c-sel: #2f6fd6; --c-stars: #b8860b;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --sans: Inter, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #13161c; --panel: #1b1f27; --ink: #e4e7ee; --muted: #9aa3b4; --line: #2c323d; --accent: #6ea2ff;
+  --term-bg: #0c0e12; --term-chrome: #222731;
+  --c-sky: #39445a; --c-ground: #57a24e; --c-house: #b9875a; --c-roof: #d06a52; --c-window: #f2c14e;
+  --c-key: #8d97a8; --c-hot: #ff79c0; --c-text: #e4e7ee; --c-dim: #5f6878; --c-sel: #7fb2ff; --c-stars: #ffd25a;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --page: #13161c; --panel: #1b1f27; --ink: #e4e7ee; --muted: #9aa3b4; --line: #2c323d; --accent: #6ea2ff;
+  --term-bg: #0c0e12; --term-chrome: #222731;
+  --c-sky: #39445a; --c-ground: #57a24e; --c-house: #b9875a; --c-roof: #d06a52; --c-window: #f2c14e;
+  --c-key: #8d97a8; --c-hot: #ff79c0; --c-text: #e4e7ee; --c-dim: #5f6878; --c-sel: #7fb2ff; --c-stars: #ffd25a;
+  color-scheme: dark }
+:root[data-theme="light"] { color-scheme: light }
+body { background: var(--page); color: var(--ink); font-family: var(--sans); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 24px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) 300px; }
+@media (max-width: 900px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
+h1 { font-size: 20px; margin: 0; text-wrap: balance; }
+h2 { font-size: 15px; margin: 0 0 10px; }
+.sub { color: var(--muted); margin: 4px 0 0; font-size: 13px; max-width: 75ch; }
+
+.term { background: var(--term-bg); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.chrome { background: var(--term-chrome); padding: 6px 10px; font: 12px var(--mono); color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.chrome i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); display: inline-block; }
+.screen-scroll { overflow-x: auto; }
+.screen { font: 13px/1.4 var(--mono); color: var(--c-text); white-space: pre; padding: 10px 12px; position: relative; width: max-content; min-width: 100%; box-sizing: border-box; }
+.scene { color: var(--c-sky); }
+.scene .g { color: var(--c-ground); } .scene .h { color: var(--c-house); }
+.toolbar { display: flex; justify-content: flex-end; }
+.k { color: var(--c-key); cursor: pointer; }
+
+/* ASCII house overlay: every glyph is text, colored by role */
+.overlay { position: absolute; left: 50%; top: 6px; transform: translateX(-50%); background: var(--term-bg); padding: 0 1ch; }
+.overlay [data-room], .overlay [data-cat], .overlay [data-item] { cursor: pointer; }
+.roof { color: var(--c-roof); } .wall { color: var(--c-house); } .win { color: var(--c-window); }
+.grass { color: var(--c-ground); } .smoke, .dim { color: var(--c-dim); } .stars { color: var(--c-stars); }
+.title { font-weight: 700; color: var(--c-text); }
+.sel { color: var(--c-sel); background: color-mix(in srgb, var(--c-sel) 16%, transparent); }
+.new { color: var(--c-hot); }
+.blink .new { animation: blink 1s steps(1, end) infinite; }
+@keyframes blink { 0%, 49.9% { color: var(--c-hot); } 50%, 100% { color: var(--c-dim); } }
+@media (prefers-reduced-motion: reduce) { .blink .new { animation: none; } }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 14px; align-self: start; }
+.ctl label.t { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; letter-spacing: .02em; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.seg button { font: 12px var(--sans); padding: 5px 9px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+
+.full { grid-column: 1 / -1; }
+.tbl-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .02em; }
+td.num { font-variant-numeric: tabular-nums; font-family: var(--mono); }
+.pill { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+.pill.no { border-color: var(--c-hot); color: var(--c-hot); }
+tr:last-child td { border-bottom: 0; }
+</style>
+
+<div class="wrap">
+  <header class="full">
+    <h1>Maison · v4</h1>
+    <p class="sub">La Maison est une mini maison en ASCII : le Grenier sous le toit, les salles aux étages. Une salle clignote quand elle a du nouveau. Touche <b>[m]</b> ou clic sur la Barre du bas : ouvrir et fermer. Flèches ou clic : choisir une salle. <b>Entrée</b> : entrer. <b>Échap</b> : revenir.</p>
+  </header>
+
+  <section class="term" aria-label="Terminal weathr">
+    <div class="chrome"><i></i><i></i><i></i><span id="cols-label">weathr</span></div>
+    <div class="screen-scroll"><div class="screen" id="screen"></div></div>
+  </section>
+
+  <aside class="panel" aria-label="Réglages du proto">
+    <div class="ctl"><label class="t">Thème</label><div class="seg" data-ctl="theme"><button data-v="auto">Auto</button><button data-v="light">Clair</button><button data-v="dark">Sombre</button></div></div>
+    <div class="ctl"><label class="t">Salles</label><div class="seg" data-ctl="plan"><button data-v="five">5 salles</button><button data-v="three">3 salles</button></div></div>
+    <div class="ctl"><label class="t">Pas encore trouvé</label><div class="seg" data-ctl="missing"><button data-v="show">Montrer · · ·</button><button data-v="hide">Cacher</button></div></div>
+    <div class="ctl"><label class="t">Nouveautés</label><div class="seg" data-ctl="state"><button data-v="none">Rien de neuf</button><button data-v="object">1 Objet</button><button data-v="many">Bouteille + Recette</button><button data-v="badge">+ Badge</button></div></div>
+    <div class="ctl"><label class="t">Largeur du terminal</label><div class="seg" data-ctl="cols"><button data-v="80">80 col.</button><button data-v="70">70 col.</button></div></div>
+    <div class="ctl"><label class="t">Clignotement</label><div class="seg" data-ctl="blink"><button data-v="on">500 ms</button><button data-v="off">Fixe</button></div></div>
+    <p class="hint">Fermer la Maison marque tout comme vu, comme la vue Badges (#163). Les Badges passent dans la Salle des trophées, donc <b>[b]</b> et <b>[a]</b> quittent la Barre du bas.</p>
+  </aside>
+
+  <section class="full">
+    <h2>Tout ce qu'on collecte, et sa salle</h2>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Rayon</th><th>Total</th><th>Comment on l'obtient</th><th>Aujourd'hui</th><th>Salle</th></tr></thead>
+      <tbody id="catalog"></tbody>
+    </table></div>
+  </section>
+</div>
+
+<script>
+const CATS = {
+  badges: { name: "Badges", total: 50, how: "Météo, Fêtes, Rares, Fidélité, Secrets, Mauvais points", today: "écran Badges [b]",
+    items: ["Ciel dégagé","Éclaircies","Nuageux","Pluie","Neige","Orage","Brouillard","Noël"],
+    icons: [[" \\|/ ","--O--"," /|\\ "],["\\|/  ","-O.-."," (__)"],["  _  "," ( ) ","(___)"],["(___)"," / / ","/ / /"],["  *  ","* * *","  *  "],["(___)"," _/  "," /   "],["~~~~~"," ~~~ ","~~~~~"],["  *  "," /^\\ ","/___\\"]],
+    found: [0,1,2,3,4,6] },
+  gifts: { name: "Cadeaux", total: 15, how: "arrivent au jardin avec l'histoire", today: "Album",
+    items: ["Le banc de Paulo","Le nœud de Minouche","Le vieux puits réparé","L'os de Biscuit","La petite clé","La cabane de Léo"], found: [0,1,2,3,4] },
+  objects: { name: "Objets", total: 25, how: "ramassés dans la scène avec [r]", today: "Album",
+    items: ["une bille bleue","un bouton de nacre","une plume de hibou","une clé rouillée","un dé à coudre","une pièce d'un franc","une photo déchirée"], found: [0,2,5] },
+  bottles: { name: "Bouteilles", total: 20, how: "repêchées dans la rivière avec [r]", today: "Album",
+    items: ["« Si tu lis ceci, la rivière t'a choisi. Rejette-moi à l'eau, s'il te plaît. »","« Je m'appelle Lucie, j'ai neuf ans et j'écris en 1972. Est-ce que les voitures volent, chez toi ? »","« Recette secrète : il n'y en a pas. Mets juste du beurre. »"],
+    labels: ["Bouteille n°1","Bouteille n°2","Bouteille n°3"], found: [0,1] },
+  postcards: { name: "Cartes postales", total: 40, how: "Sam en voyage, une par ville", today: "Album",
+    items: ["Lisbonne, Portugal","Reykjavik, Islande"], details: ["Les tramways jaunes grimpent les collines comme des chèvres têtues.",""], found: [0,1] },
+  recipes: { name: "Recettes", total: 40, how: "Lettres de Rose, tous les 10 jours", today: "Album",
+    items: ["Galette des rois","Crêpes de la Chandeleur","Pain perdu","Gâteau au yaourt"],
+    details: ["","","Du pain rassis, 2 œufs, 25 cl de lait, du sucre, de la cannelle. Rien ne se perd chez Rose, surtout pas le pain.",""], found: [0,1] },
+  drawings: { name: "Dessins de Léo", total: 3, how: "glissés dans certaines Lettres", today: "Album", items: ["Dessin n°1"], found: [0] },
+  chest: { name: "Souvenirs du coffre", total: 4, how: "Coffre de Jeanne ouvert", today: "Album",
+    items: ["Les lettres d'amour de Jeanne et Paulo","Des photos du village d'autrefois","La recette de Rose, écrite à dix ans","Une lettre pour toi, écrite il y a quarante ans"], found: [] },
+};
+// attic = room drawn inside the roof; floors = rows of rooms, top to bottom
+const PLANS = {
+  five: { attic: { id: "attic", name: "Grenier", cats: ["objects", "chest"] }, floors: [
+    [{ id: "trophies", name: "Salle des trophées", cats: ["badges"] }, { id: "memories", name: "Salle des souvenirs", cats: ["gifts", "drawings"] }],
+    [{ id: "desk", name: "Bureau", cats: ["postcards", "bottles"] }, { id: "kitchen", name: "Cuisine", cats: ["recipes"] }],
+  ] },
+  three: { attic: null, floors: [
+    [{ id: "trophies", name: "Salle des trophées", cats: ["badges"] }],
+    [{ id: "memories", name: "Salle des souvenirs", cats: ["gifts", "objects", "chest", "drawings", "postcards", "bottles"] }, { id: "kitchen", name: "Cuisine", cats: ["recipes"] }],
+  ] },
+};
+const EXTRA_ROWS = [
+  { name: "Tes réponses", how: "Questions des Lettres, modifiables", today: "Album", note: "pas une collection : Courrier ?" },
+  { name: "Énigmes résolues", how: "Gazette du lundi, touche [e]", today: "nulle part", note: "candidat : Bureau" },
+  { name: "Villes visitées", how: "position auto au lancement", today: "nulle part", note: "candidat : Bureau" },
+];
+const NEW_BY_STATE = {
+  none: {}, object: { objects: [6] },
+  many: { objects: [6], bottles: [2], recipes: [2] },
+  badge: { objects: [6], bottles: [2], recipes: [2], badges: [7] },
+};
+const S = { theme: "auto", plan: "five", missing: "show", state: "many", cols: "80", blink: "on",
+  open: true, room: "attic", inRoom: false, cat: null, item: 0, fresh: null };
+
+const W = 60;                       // house width, eaves included
+const IW = W - 4;                   // inside the walls
+const esc = t => t.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const plan = () => PLANS[S.plan];
+const rooms = () => (plan().attic ? [plan().attic] : []).concat(plan().floors.flat());
+const roomOf = id => rooms().find(r => r.id === id);
+const fresh = () => S.fresh ?? NEW_BY_STATE[S.state];
+const isNew = (cid, i) => (fresh()[cid] || []).includes(i);
+const catNew = cid => (fresh()[cid] || []).length > 0;
+const roomNew = r => r.cats.some(catNew);
+const anyNew = () => rooms().some(roomNew);
+const foundOf = cid => [...new Set(CATS[cid].found.concat(fresh()[cid] || []))].sort((a, b) => a - b);
+const roomCount = r => r.cats.reduce((a, cid) => [a[0] + foundOf(cid).length, a[1] + CATS[cid].total], [0, 0]);
+
+// A line = list of segments { t, c, d }. Width counted in chars (monospace).
+const sg = (t, c = "", d = "") => ({ t, c, d });
+const len = segs => segs.reduce((n, s) => n + s.t.length, 0);
+function fit(segs, w) {                      // pad or cut to w
+  const out = []; let n = 0;
+  for (const s of segs) { if (n >= w) break; const t = s.t.slice(0, w - n); out.push({ ...s, t }); n += t.length; }
+  if (n < w) out.push(sg(" ".repeat(w - n)));
+  return out;
+}
+const center = (segs, w) => { const l = Math.max(0, Math.floor((w - len(segs)) / 2)); return fit([sg(" ".repeat(l)), ...segs], w); };
+const wallLine = segs => [sg(" |", "wall"), ...fit(segs, IW), sg("| ", "wall")];
+function wrap(text, w) {
+  const out = []; let cur = "";
+  for (const word of text.split(" ")) { if ((cur + " " + word).trim().length > w) { out.push(cur); cur = word; } else cur = (cur + " " + word).trim(); }
+  if (cur) out.push(cur); return out;
+}
+
+function roofLines(R, content) {            // content[i] = segs centered in roof row i (row R-1 is the eaves)
+  const lines = [], ind0 = 2 * (R - 1), capW = W - 2 - 2 * ind0, cx = ind0 + 1 + capW - 7;
+  lines.push([sg(" ".repeat(cx)), sg(" ~ ~", "smoke")]);
+  lines.push([sg(" ".repeat(cx)), sg(" |_|", "roof")]);
+  lines.push([sg(" ".repeat(ind0 + 1)), sg("_".repeat(cx - ind0 - 1), "roof"), sg("| |", "roof"), sg("_".repeat(capW - (cx - ind0 - 1) - 3), "roof")]);
+  for (let i = 0; i < R; i++) {
+    const ind = 2 * (R - 1 - i), inner = W - 2 - 2 * ind;
+    if (i === R - 1) lines.push([sg("/", "roof"), sg("_".repeat(inner), "roof"), sg("\\", "roof")]);
+    else lines.push([sg(" ".repeat(ind)), sg("/", "roof"), ...center(content[i] || [], inner), sg("\\", "roof"), sg(" ".repeat(ind))]);
+  }
+  return lines;
+}
+
+function roomLabel(r) {
+  const sel = r.id === S.room, nw = roomNew(r);
+  const [f, t] = roomCount(r);
+  return {
+    name: [sg(r.name + (nw ? " !" : ""), [sel ? "sel" : "title", nw ? "new" : ""].join(" "), r.id)],
+    count: [sg(`${f}/${t}`, "dim", r.id)],
+  };
+}
+
+function houseLines() {
+  const p = plan(), lines = [];
+  const atticContent = [];
+  if (p.attic) {
+    const l = roomLabel(p.attic);
+    atticContent[2] = l.name; atticContent[3] = l.count;
+  } else atticContent[2] = [sg("o", "win")];
+  lines.push(...roofLines(5, atticContent));
+  p.floors.forEach((floor, fi) => {
+    const n = floor.length, base = Math.floor((IW - (n - 1)) / n);
+    const widths = floor.map((_, i) => i === n - 1 ? IW - (n - 1) - base * (n - 1) : base);
+    const isGround = fi === p.floors.length - 1;
+    for (let row = 0; row < 5; row++) {
+      const segs = [];
+      floor.forEach((r, i) => {
+        const w = widths[i], l = roomLabel(r), bottom = row === 4;
+        let cell;
+        const door = isGround && i === 0;
+        if (bottom) cell = door ? [sg("_".repeat(w - 7), "wall"), sg("|  |", "wall"), sg("___", "wall")] : [sg("_".repeat(w), "wall")];
+        else if (row === 1) cell = [sg("  "), ...l.name];
+        else if (row === 2) cell = [sg("  "), ...l.count];
+        else cell = [];
+        if (!bottom) {
+          cell = fit(cell, w);
+          if (door && row === 2) cell = fit([sg("  "), ...l.count, sg(" ".repeat(w - 9 - len(l.count))), sg(" __ ", "wall"), sg("   ")], w);
+          if (door && row === 3) cell = fit([sg(" ".repeat(w - 7)), sg("|  |", "wall"), sg("   ")], w);
+        }
+        segs.push(...cell);
+        if (i < n - 1) segs.push(sg("|", "wall"));
+      });
+      lines.push(wallLine(segs));
+    }
+  });
+  lines.push([sg(",".repeat(W).replace(/,(?=.)/g, (m, o) => (o % 3 ? "," : "'")), "grass")]);
+  return lines;
+}
+
+function itemLines(cid, w) {
+  const c = CATS[cid], found = foundOf(cid), out = [];
+  if (cid === "badges") {
+    const shown = S.missing === "show" ? c.items.map((_, i) => i) : found;
+    const per = Math.max(1, Math.floor(w / 13)), unknown = ["     ", "  ?  ", "     "];
+    for (let k = 0; k < shown.length; k += per) {
+      const group = shown.slice(k, k + per);
+      for (let row = 0; row < 4; row++) {
+        out.push(group.flatMap(i => {
+          const got = found.includes(i), nw = isNew(cid, i);
+          const t = row < 3 ? (got ? c.icons[i] : unknown)[row] : (got ? c.items[i] : "???");
+          return center([sg(t, [row < 3 ? (got ? "stars" : "dim") : (got ? "" : "dim"), nw ? "new" : ""].join(" "))], 13);
+        }));
+      }
+    }
+    return out;
+  }
+  const rows = found.map(i => ({ i, t: c.labels ? c.labels[i] : c.items[i] }));
+  const sel = Math.min(S.item, Math.max(0, rows.length - 1));
+  rows.forEach((r, k) => out.push([sg("- " + r.t, [k === sel ? "sel" : "", isNew(cid, r.i) ? "new" : ""].join(" "), `item:${k}`)]));
+  const left = c.total - rows.length;
+  if (S.missing === "show" && left > 0) out.push([sg(`  · · ·  encore ${left}`, "dim")]);
+  if (!rows.length && S.missing === "hide") out.push([sg("Rien pour l'instant.", "dim")]);
+  const cur = rows[sel];
+  const d = cur && (cid === "bottles" ? c.items[cur.i] : (c.details || [])[cur.i]);
+  if (d) { out.push([sg("· ".repeat(Math.floor(w / 2)), "dim")]); wrap(d, w).forEach(l => out.push([sg(l)])); }
+  return out;
+}
+
+function roomViewLines() {
+  const r = roomOf(S.room);
+  if (!r.cats.includes(S.cat)) S.cat = r.cats[0];
+  const nw = roomNew(r);
+  const lines = roofLines(4, [[], [sg("Maison › ", "dim", "home"), sg(r.name + (nw ? " !" : ""), "title" + (nw ? " new" : ""))]]);
+  let body;
+  const inner = IW - 2;
+  if (r.cats.length === 1) body = itemLines(S.cat, inner).map(l => [sg(" "), ...l]);
+  else {
+    const sw = 22, iw = inner - sw - 2;
+    const shelf = r.cats.map(cid => {
+      const sel = cid === S.cat, c = CATS[cid], n = `${foundOf(cid).length}/${c.total}`, label = c.name + (catNew(cid) ? " !" : "");
+      return [sg(label.padEnd(sw - n.length), [sel ? "sel" : "", catNew(cid) ? "new" : ""].join(" "), `cat:${cid}`), sg(n, "dim", `cat:${cid}`)];
+    });
+    const items = itemLines(S.cat, iw);
+    body = Array.from({ length: Math.max(shelf.length, items.length) }, (_, k) => [sg(" "), ...fit(shelf[k] || [], sw), sg("  "), ...fit(items[k] || [], iw)]);
+  }
+  while (body.length < 9) body.push([]);
+  lines.push(wallLine([]), ...body.map(wallLine), wallLine(fit([], 0)).map(s => s));
+  lines.push([sg(" |", "wall"), sg("_".repeat(IW), "wall"), sg("| ", "wall")]);
+  lines.push([sg(",".repeat(W), "grass")]);
+  return lines;
+}
+
+function overlayHtml() {
+  const lines = S.inRoom ? roomViewLines() : houseLines();
+  const r = roomOf(S.room);
+  const status = S.inRoom
+    ? (r.cats.length > 1 ? "[←] [→] rayon  [↑] [↓] choisir  [Échap] Maison" : "[↑] [↓] choisir  [Échap] Maison")
+    : `${r.name} : ${r.cats.map(cid => CATS[cid].name).join(", ")}`;
+  const foot = S.inRoom ? "" : "[flèches] salle  [Entrée] entrer  [m] fermer";
+  lines.push(center([sg(status, "dim")], W));
+  if (foot) lines.push(center([sg(foot, "dim")], W));
+  return lines.map(l => l.map(s => {
+    const attrs = s.d ? (s.d.startsWith("item:") ? ` data-item="${s.d.slice(5)}"` : s.d.startsWith("cat:") ? ` data-cat="${s.d.slice(4)}"` : s.d === "home" ? ` data-home="1"` : ` data-room="${s.d}"`) : "";
+    return s.c || attrs ? `<span class="${s.c}"${attrs}>${esc(s.t)}</span>` : esc(s.t);
+  }).join("")).join("\n");
+}
+
+function toolbar() {
+  const narrow = S.cols === "70", gap = narrow ? "  " : "   ";
+  const home = `<span class="k ${anyNew() ? "new" : ""}" data-toggle="1">[m] Maison${anyNew() ? "\u202F!" : ""}</span>`;
+  const items = [`<span class="k">[c] Courrier</span>`, home,
+    `<span class="k">${narrow ? "[h]" : "[h] Aide"}</span>`, `<span class="k">${narrow ? "[q]" : "[q] Quitter"}</span>`];
+  return `<div class="toolbar">${items.join(`<span class="k">${gap}</span>`)}</div>`;
+}
+
+function scene() {
+  const w = S.cols === "70" ? 70 : 80;
+  const sky = Array.from({ length: 27 }, (_, r) => r === 2 ? "      .        *            .".padEnd(w) : " ".repeat(w));
+  const house = ["        /\\", "       /  \\", "      |[] |"];
+  return `<div class="scene">${sky.concat(house.map(l => `<span class="h">${l.padEnd(w)}</span>`), [`<span class="g">${"^".repeat(w)}</span>`]).join("\n")}</div>`;
+}
+
+function render() {
+  const root = document.documentElement;
+  if (S.theme === "auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", S.theme);
+  if (!roomOf(S.room)) { S.room = rooms()[0].id; S.inRoom = false; }
+  const scr = document.getElementById("screen");
+  scr.className = "screen" + (S.blink === "on" ? " blink" : "");
+  scr.innerHTML = scene() + toolbar() + (S.open ? `<div class="overlay">${overlayHtml()}</div>` : "");
+  document.getElementById("cols-label").textContent = `weathr · ${S.cols} colonnes${S.open ? "" : " · Maison fermée"}`;
+  document.querySelectorAll(".seg").forEach(seg => seg.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(S[seg.dataset.ctl] === b.dataset.v))));
+  const salle = cid => (rooms().find(r => r.cats.includes(cid)) || {}).name || "";
+  document.getElementById("catalog").innerHTML = Object.entries(CATS).map(([cid, c]) => `<tr><td>${esc(c.name)}</td><td class="num">${c.total}</td><td>${esc(c.how)}</td><td><span class="pill">${esc(c.today)}</span></td><td>${esc(salle(cid))}</td></tr>`).join("")
+    + EXTRA_ROWS.map(r => `<tr><td>${esc(r.name)}</td><td class="num">—</td><td>${esc(r.how)}</td><td><span class="pill">${esc(r.today)}</span></td><td><span class="pill no">${esc(r.note)}</span></td></tr>`).join("");
+}
+
+function toggleOpen() {
+  if (S.open) { S.fresh = {}; S.inRoom = false; }
+  S.open = !S.open;
+  render();
+}
+function moveRoom(dr, dc) {
+  const p = plan(), grid = (p.attic ? [[p.attic]] : []).concat(p.floors);
+  let fi = grid.findIndex(f => f.some(r => r.id === S.room)), ri = grid[fi].findIndex(r => r.id === S.room);
+  if (dr) { fi = Math.max(0, Math.min(grid.length - 1, fi + dr)); ri = Math.min(ri, grid[fi].length - 1); }
+  if (dc) ri = Math.max(0, Math.min(grid[fi].length - 1, ri + dc));
+  S.room = grid[fi][ri].id;
+}
+
+document.querySelector(".panel").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const ctl = b.parentElement.dataset.ctl;
+  S[ctl] = b.dataset.v;
+  if (ctl === "state") { S.fresh = null; S.open = false; S.inRoom = false; }
+  render();
+});
+document.getElementById("screen").addEventListener("click", e => {
+  const t = e.target.closest("[data-toggle],[data-room],[data-cat],[data-item],[data-home]"); if (!t) return;
+  if (t.dataset.toggle) return toggleOpen();
+  if (t.dataset.home) S.inRoom = false;
+  if (t.dataset.room) { S.room = t.dataset.room; S.inRoom = true; S.cat = null; S.item = 0; }
+  if (t.dataset.cat) { S.cat = t.dataset.cat; S.item = 0; }
+  if (t.dataset.item) S.item = +t.dataset.item;
+  render();
+});
+document.addEventListener("keydown", e => {
+  if (e.target.closest && e.target.closest(".panel")) return;
+  const k = e.key.toLowerCase();
+  if (k === "m") return toggleOpen();
+  if (!S.open) return;
+  if (k === "escape") { if (S.inRoom) { S.inRoom = false; render(); } else toggleOpen(); e.preventDefault(); return; }
+  if (!S.inRoom) {
+    if (k === "enter") { S.inRoom = true; S.cat = null; S.item = 0; }
+    else if (k === "arrowup") moveRoom(-1, 0);
+    else if (k === "arrowdown") moveRoom(1, 0);
+    else if (k === "arrowleft") moveRoom(0, -1);
+    else if (k === "arrowright") moveRoom(0, 1);
+    else return;
+  } else {
+    const r = roomOf(S.room), ci = r.cats.indexOf(S.cat);
+    if (k === "arrowdown") S.item = Math.min(S.item + 1, Math.max(0, foundOf(S.cat).length - 1));
+    else if (k === "arrowup") S.item = Math.max(0, S.item - 1);
+    else if (k === "arrowright" && ci < r.cats.length - 1) { S.cat = r.cats[ci + 1]; S.item = 0; }
+    else if (k === "arrowleft" && ci > 0) { S.cat = r.cats[ci - 1]; S.item = 0; }
+    else return;
+  }
+  e.preventDefault();
+  render();
+});
+render();
+</script>

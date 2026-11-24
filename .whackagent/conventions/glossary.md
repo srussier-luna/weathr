@@ -85,11 +85,12 @@ One precise screen. Team names, in the discussion language. UI projects only.
 |---|---|---|---|
 | Courrier | boîte aux lettres, index | `index_view` | liste des Lettres reçues |
 | Lettre | | `entry_view` | une Lettre ouverte, numéro / total |
-| Album | | `album_pages` | Badges et souvenirs collectés |
+| Album | | `album_pages` | pages des souvenirs collectés, ouvertes une rubrique à la fois depuis une Salle de la Maison |
+| Maison | | | plan ASCII d'une maison, touche `m` (et `a`) : Grenier sous le toit, Salles aux étages ; mène aux écrans de collection → [[render]] |
 | Aide | help | `help_view` | touches disponibles selon déblocages |
 | Potager | | | scène du potager vue de dessus en biais, sans ciel ; pousse par Jour de jeu, suit les saisons |
 | Fête du miel | scène de fête | | maison de Nadia et Claire, Jours de jeu 119–120 seulement |
-| Lieux | menu des lieux | | menu touche m : Jardin, Potager, Fête du miel disponibles |
+| Lieux | menu des lieux | | menu touche p : Jardin, Potager, Fête du miel disponibles |
 | Accueil | onboarding | `welcome` | Facteur arrive, bulle, note dépliée, bulle de départ ; une fois par joueur |
 | Mot des voisins | | `neighbours_note` | fenêtre à l'ouverture : triche repérée, punition, voisins déçus |
 | Réglages | | `settings_view` | écran ouvert par `s` : unités, Heure du Facteur, Barres, Ville, Position auto → [[architecture]] |
@@ -103,6 +104,7 @@ A named piece of UI, reused or talked about on its own. UI projects only.
 |---|---|---|---|---|
 | Barre du haut | weather bar, HUD, ligne d'état | `weather_bar` | scène | météo en haut : ciel, température, vent, pluie, alertes ; heure, Ville • Jour → [[render]] |
 | Barre du bas | toolbar | `toolbar` | scène | touches en bas à droite ; Lettre !, Objet ! clignotent ; masquée avec la Barre du haut → [[render]] |
+| Salle | pièce | | Maison | pièce de la Maison : Grenier, Salle des trophées, Salle des souvenirs, Bureau, Cuisine ; liste ses entrées vers l'Album ou la vue Badges |
 | Toast | | `toasts` | scène | texte bref centré dans un cadre au-dessus de la Barre du bas, tapé lettre par lettre, 4 s, un à la fois → [[render]] |
 <!-- | Composer | editor | `ComposerView` | Inbox, Thread | writes or replies to a message | -->
 
