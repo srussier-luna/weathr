@@ -1,37 +1,47 @@
-use super::{Line, MUTED, Segment, width};
+use super::{Line, MUTED, PINK, Segment, width};
 use crate::app_state::AppState;
 use crossterm::style::Color;
 
-const PINK: Color = Color::Rgb {
-    r: 255,
-    g: 120,
-    b: 190,
-};
 const GAP: &str = "   ";
 const COMPACT_GAP: &str = "  ";
 
 enum Item {
     Key(char, &'static str),
     Counter(char, String),
-    Alert(char, String),
+    Alert {
+        key: char,
+        label: String,
+        detail: Option<String>,
+    },
 }
 
 impl Item {
-    fn alert(key: char, label: &str) -> Self {
-        Self::Alert(key, format!("{label}\u{202F}!"))
+    fn alert(key: char, label: &str, detail: Option<String>) -> Self {
+        Self::Alert {
+            key,
+            label: format!("{label}\u{202F}!"),
+            detail,
+        }
     }
 
     fn text(&self, is_compact: bool) -> String {
         match self {
             Self::Key(key, _) if is_compact => format!("[{key}]"),
             Self::Key(key, label) => format!("[{key}] {label}"),
-            Self::Counter(key, label) | Self::Alert(key, label) => format!("[{key}] {label}"),
+            Self::Alert {
+                key,
+                label,
+                detail: Some(detail),
+            } if !is_compact => format!("[{key}] {label} {detail}"),
+            Self::Counter(key, label) | Self::Alert { key, label, .. } => {
+                format!("[{key}] {label}")
+            }
         }
     }
 
     fn color(&self, is_lit: bool) -> Color {
         match self {
-            Self::Alert(..) if is_lit => PINK,
+            Self::Alert { .. } if is_lit => PINK,
             _ => MUTED,
         }
     }
@@ -49,15 +59,17 @@ pub fn line(state: &AppState, is_lit: bool, max_width: usize) -> Line {
 
 fn items(state: &AppState) -> Vec<Item> {
     let mail = if state.is_mail_waiting {
-        Item::alert('c', "Lettre")
+        Item::alert('c', "Lettre", None)
     } else {
         Item::Key('c', "Courrier")
     };
-    let finds = state.finds_hint.map(|hint| Item::alert('r', hint));
-    let badges = Item::Counter(
-        'b',
-        format!("Badges {}/{}", state.badges_earned, state.badges_total),
-    );
+    let finds = state.finds_hint.map(|hint| Item::alert('r', hint, None));
+    let count = format!("{}/{}", state.badges_earned, state.badges_total);
+    let badges = if state.has_new_badge {
+        Item::alert('b', "Badge", Some(count))
+    } else {
+        Item::Counter('b', format!("Badges {count}"))
+    };
     [
         Some(mail),
         finds,
@@ -147,6 +159,50 @@ mod tests {
         );
         assert_eq!(colors(&line)[1].1, PINK);
         assert_eq!(colors(&line)[0].1, MUTED);
+    }
+
+    #[test]
+    fn test_new_badge_blinks_pink_and_grey() {
+        let mut state = state();
+        state.set_new_badge(true);
+
+        let lit = line(&state, true, 66);
+        assert_eq!(
+            text(&lit),
+            "[c] Courrier   [b] Badge\u{202F}! 3/12   [h] Aide   [q] Quitter"
+        );
+        assert_eq!(
+            colors(&lit)[1],
+            ("[b] Badge\u{202F}! 3/12".to_string(), PINK)
+        );
+        let dim = line(&state, false, 66);
+        assert_eq!(colors(&dim)[1].1, MUTED);
+    }
+
+    #[test]
+    fn test_seen_badges_bring_back_the_grey_count() {
+        let mut state = state();
+        state.set_new_badge(true);
+        state.set_new_badge(false);
+
+        let line = line(&state, true, 66);
+        assert_eq!(colors(&line)[1], ("[b] Badges 3/12".to_string(), MUTED));
+    }
+
+    #[test]
+    fn test_crowded_toolbar_with_new_badge_fits_70_columns() {
+        let mut state = state();
+        state.set_progress_summary(true, 54, 54);
+        state.set_finds_hint(Some("Objet et bouteille"));
+        state.set_new_badge(true);
+
+        let line = line(&state, true, 66);
+        assert!(width(&line) <= 66, "{}", text(&line));
+        assert_eq!(
+            text(&line),
+            "[c] Lettre\u{202F}!  [r] Objet et bouteille\u{202F}!  [b] Badge\u{202F}!  [h]  [q]"
+        );
+        assert!(colors(&line)[..3].iter().all(|(_, color)| *color == PINK));
     }
 
     #[test]

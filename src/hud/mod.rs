@@ -10,6 +10,11 @@ const TOP_ROW: u16 = 1;
 const BLOCK_GAP: usize = 2;
 const ELLIPSIS: char = '…';
 const MUTED: Color = Color::DarkGrey;
+pub const PINK: Color = Color::Rgb {
+    r: 255,
+    g: 120,
+    b: 190,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Segment {

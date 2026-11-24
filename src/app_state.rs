@@ -20,6 +20,7 @@ pub struct AppState {
     pub finds_hint: Option<&'static str>,
     pub badges_earned: usize,
     pub badges_total: usize,
+    pub has_new_badge: bool,
     pub holiday: Holiday,
     pub rainbow_until: Option<Instant>,
     pub location: WeatherLocation,
@@ -50,6 +51,7 @@ impl AppState {
             finds_hint: None,
             badges_earned: 0,
             badges_total: 0,
+            has_new_badge: false,
             holiday: Holiday::default(),
             rainbow_until: None,
             location,
@@ -100,6 +102,13 @@ impl AppState {
     pub fn set_finds_hint(&mut self, hint: Option<&'static str>) {
         if hint != self.finds_hint {
             self.finds_hint = hint;
+            self.weather_info_needs_update = true;
+        }
+    }
+
+    pub fn set_new_badge(&mut self, has_new_badge: bool) {
+        if has_new_badge != self.has_new_badge {
+            self.has_new_badge = has_new_badge;
             self.weather_info_needs_update = true;
         }
     }
