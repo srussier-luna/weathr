@@ -37,6 +37,9 @@ thiserror = "2.0"
 clap_complete = "4.5.66"
 toml_edit = { version = "0.24", features = ["serde"] }
 
+[lints.clippy]
+all = "deny"
+
 [profile.release]
 lto = "thin"
 codegen-units = 1
