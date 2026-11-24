@@ -103,7 +103,7 @@ A named piece of UI, reused or talked about on its own. UI projects only.
 |---|---|---|---|---|
 | Barre du haut | weather bar, HUD, ligne d'état | `weather_bar` | scène | météo en haut : ciel, température, vent, pluie, alertes ; heure, Ville • Jour → [[render]] |
 | Barre du bas | toolbar | `toolbar` | scène | touches en bas à droite ; Lettre !, Objet ! clignotent ; masquée avec la Barre du haut → [[render]] |
-| Toast | | `toasts` | scène | texte bref sur la ligne 0, 4 s, un à la fois → [[render]] |
+| Toast | | `toasts` | scène | texte bref centré dans un cadre au-dessus de la Barre du bas, tapé lettre par lettre, 4 s, un à la fois → [[render]] |
 <!-- | Composer | editor | `ComposerView` | Inbox, Thread | writes or replies to a message | -->
 
 ## Flows
