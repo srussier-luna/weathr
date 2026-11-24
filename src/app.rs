@@ -607,6 +607,7 @@ pub struct App {
     toasts: VecDeque<String>,
     toast_started: Option<Instant>,
     pending_badges: VecDeque<Award>,
+    revealed_badges: BTreeSet<String>,
     pending_holiday_box: Option<&'static HolidayBox>,
     session_start: Instant,
     star_watch: StarWatch,
@@ -769,6 +770,7 @@ impl App {
             toasts: VecDeque::new(),
             toast_started: None,
             pending_badges: trip.tier_cards.into(),
+            revealed_badges: BTreeSet::new(),
             pending_holiday_box,
             session_start: Instant::now(),
             star_watch: StarWatch::default(),
@@ -1257,6 +1259,7 @@ impl App {
                 return overlay::render_badges(
                     renderer,
                     &self.progress.badges,
+                    &self.revealed_badges,
                     self.progress.streak,
                     self.progress.sam_cities.len(),
                 );
@@ -1560,6 +1563,7 @@ impl App {
                 if !revealed.is_empty() {
                     self.progress.save();
                 }
+                self.revealed_badges = revealed;
                 self.overlay = Some(Overlay::Badges);
             }
             None => self.overlay = None,
@@ -1936,8 +1940,11 @@ impl App {
             }
 
             if !self.hide_hud {
-                let is_lit = overlay::blink_tick() % 2 == 0;
-                let toolbar = toolbar::line(&self.state, is_lit, hud::inner_width(term_width));
+                let toolbar = toolbar::line(
+                    &self.state,
+                    overlay::is_blink_lit(),
+                    hud::inner_width(term_width),
+                );
                 for placed in hud::lay_out(&self.weather_bar, toolbar, term_width, term_height) {
                     render_placed(renderer, &placed)?;
                 }

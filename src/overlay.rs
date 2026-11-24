@@ -1,4 +1,5 @@
 use crate::badges::{self, BADGES, Badge, BadgeKind, KINDS, SAM_TRAIL};
+use crate::hud::PINK;
 use crate::render::TerminalRenderer;
 use chrono::Local;
 use crossterm::style::Color;
@@ -30,6 +31,18 @@ const CHEVRON_STEP_MILLIS: i64 = 500;
 const CHEVRON_GAP: u16 = 1;
 
 type Piece = (u16, String, Color);
+
+#[derive(Debug, PartialEq, Eq)]
+struct Highlight {
+    line: usize,
+    start: usize,
+    len: usize,
+}
+
+struct BadgeLines {
+    lines: Vec<String>,
+    highlights: Vec<Highlight>,
+}
 
 #[derive(Clone, Copy)]
 struct BoxArea {
@@ -283,6 +296,10 @@ pub fn blink_tick() -> usize {
     (Local::now().timestamp_millis() / CHEVRON_STEP_MILLIS) as usize
 }
 
+pub fn is_blink_lit() -> bool {
+    blink_tick() % 2 == 0
+}
+
 pub fn render_with_chevrons(
     renderer: &mut TerminalRenderer,
     view: &View,
@@ -308,6 +325,7 @@ fn render_view_box(renderer: &mut TerminalRenderer, view: &View) -> io::Result<B
         view.frame,
         &view.title,
         &lines,
+        &[],
         &view.footer,
         box_width,
     )
@@ -354,7 +372,7 @@ pub fn render_bubble(
 fn bubble_rows(text: &str, footer: &str, box_width: u16, tail: Option<u16>) -> Vec<Vec<Piece>> {
     let frame = Frame::Bubble;
     let lines = wrap(text, frame.inner_width(box_width));
-    let mut rows = frame_rows(frame, "", &lines, footer, box_width);
+    let mut rows = frame_rows(frame, "", &lines, &[], footer, box_width);
     if let Some(tail) = tail {
         if let Some(bottom) = rows.last_mut() {
             bottom.push((tail - 1, BUBBLE_GAP.to_string(), frame.border()));
@@ -367,20 +385,25 @@ fn bubble_rows(text: &str, footer: &str, box_width: u16, tail: Option<u16>) -> V
 pub fn render_badges(
     renderer: &mut TerminalRenderer,
     earned: &BTreeSet<String>,
+    unseen: &BTreeSet<String>,
     streak: u32,
     sam_cities: usize,
 ) -> io::Result<()> {
     let box_width = Frame::Stars.fit(MAX_BADGES_WIDTH.min(renderer.get_size().0.saturating_sub(4)));
+    let BadgeLines { lines, highlights } = badge_lines(
+        earned,
+        unseen,
+        streak,
+        sam_cities,
+        Frame::Stars.inner_width(box_width),
+    );
+    let highlights = if is_blink_lit() { &highlights[..] } else { &[] };
     render_box(
         renderer,
         Frame::Stars,
         &badges_title(earned),
-        &badge_lines(
-            earned,
-            streak,
-            sam_cities,
-            Frame::Stars.inner_width(box_width),
-        ),
+        &lines,
+        highlights,
         BADGES_FOOTER,
         box_width,
     )?;
@@ -396,12 +419,14 @@ fn badges_title(earned: &BTreeSet<String>) -> String {
 
 fn badge_lines(
     earned: &BTreeSet<String>,
+    unseen: &BTreeSet<String>,
     streak: u32,
     sam_cities: usize,
     inner: usize,
-) -> Vec<String> {
+) -> BadgeLines {
     let plural = if streak > 1 { "s" } else { "" };
     let mut lines = vec![format!("Série en cours : {streak} jour{plural} d'affilée")];
+    let mut highlights = Vec::new();
 
     for kind in KINDS {
         let badges: Vec<_> = BADGES.iter().filter(|badge| badge.kind == kind).collect();
@@ -424,13 +449,18 @@ fn badge_lines(
             .iter()
             .map(|badge| (*badge, earned.contains(badge.id)))
             .partition(|(badge, is_earned)| *is_earned && badge.id == SAM_TRAIL.id);
-        let cells: Vec<String> = grid
+        let cells: Vec<(String, bool)> = grid
             .into_iter()
-            .map(|(badge, is_earned)| badge_cell(badge, is_earned, sam_cities))
+            .map(|(badge, is_earned)| {
+                (
+                    badge_cell(badge, is_earned, sam_cities),
+                    unseen.contains(badge.id),
+                )
+            })
             .collect();
         let longest_cell = cells
             .iter()
-            .map(|cell| cell.chars().count() + 1)
+            .map(|(cell, _)| cell.chars().count() + 1)
             .max()
             .unwrap_or(1);
         let columns = (inner / longest_cell).clamp(1, MAX_BADGE_COLUMNS);
@@ -439,15 +469,34 @@ fn badge_lines(
         for row in cells.chunks(columns) {
             let line: String = row
                 .iter()
-                .map(|cell| format!("{cell:<width$} ", width = column_width.saturating_sub(1)))
+                .map(|(cell, _)| format!("{cell:<width$} ", width = column_width.saturating_sub(1)))
                 .collect();
+            highlights.extend(
+                row.iter()
+                    .enumerate()
+                    .filter(|(_, (_, is_unseen))| *is_unseen)
+                    .map(|(column, (cell, _))| Highlight {
+                        line: lines.len(),
+                        start: column * column_width,
+                        len: cell.chars().count(),
+                    }),
+            );
             lines.push(line.trim_end().to_string());
         }
         for (badge, is_earned) in own_rows {
-            lines.extend(wrap_cell(&badge_cell(badge, is_earned, sam_cities), inner));
+            for row in wrap_cell(&badge_cell(badge, is_earned, sam_cities), inner) {
+                if unseen.contains(badge.id) {
+                    highlights.push(Highlight {
+                        line: lines.len(),
+                        start: 0,
+                        len: row.chars().count(),
+                    });
+                }
+                lines.push(row);
+            }
         }
     }
-    lines
+    BadgeLines { lines, highlights }
 }
 
 fn badge_cell(badge: &Badge, is_earned: bool, sam_cities: usize) -> String {
@@ -508,11 +557,12 @@ fn render_box(
     frame: Frame,
     title: &str,
     lines: &[String],
+    highlights: &[Highlight],
     footer: &str,
     box_width: u16,
 ) -> io::Result<BoxArea> {
     let (width, height) = renderer.get_size();
-    let rows = frame_rows(frame, title, lines, footer, box_width);
+    let rows = frame_rows(frame, title, lines, highlights, footer, box_width);
     let area = BoxArea {
         x: width.saturating_sub(box_width) / 2,
         y: (height.saturating_sub(rows.len() as u16) / 2).max(2),
@@ -541,6 +591,7 @@ fn frame_rows(
     frame: Frame,
     title: &str,
     lines: &[String],
+    highlights: &[Highlight],
     footer: &str,
     box_width: u16,
 ) -> Vec<Vec<Piece>> {
@@ -563,6 +614,7 @@ fn frame_rows(
         );
         body.push((String::new(), Color::White));
     }
+    let first_body_line = body.len();
     body.extend(lines.iter().map(|line| (line.clone(), Color::White)));
     body.push((String::new(), Color::White));
     body.extend(
@@ -572,6 +624,7 @@ fn frame_rows(
     );
 
     let mut rows: Vec<Vec<Piece>> = rule_rows(frame.top(width)).collect();
+    let first_line_row = rows.len() + first_body_line;
     let count = body.len();
     rows.extend(body.into_iter().enumerate().map(|(index, (text, color))| {
         let (indent, left, right) = frame.edges(index, Some(count - index - 1));
@@ -583,6 +636,16 @@ fn frame_rows(
             (start + inner as u16, right.to_string(), edge),
         ]
     }));
+    for highlight in highlights {
+        let row = &mut rows[first_line_row + highlight.line];
+        let (start, text, _) = &row[1];
+        let cell = text
+            .chars()
+            .skip(highlight.start)
+            .take(highlight.len)
+            .collect();
+        row.push((start + highlight.start as u16, cell, PINK));
+    }
     rows.extend(rule_rows(frame.bottom(width)));
     let drops = frame.drops(width);
     if !drops.is_empty() {
@@ -663,12 +726,12 @@ mod tests {
         let cheater = BTreeSet::from(["rain".to_string(), badges::CHEATER.to_string()]);
         let total = BADGES.len() - 1;
 
-        let lines = badge_lines(&honest, 1, 0, 76);
+        let lines = badge_lines(&honest, &BTreeSet::new(), 1, 0, 76).lines;
         assert!(!lines.iter().any(|line| line.contains("Mauvais points")));
         assert!(!lines.iter().any(|line| line.contains("Tricheur")));
         assert_eq!(badges_title(&honest), format!("Badges 1/{total}"));
 
-        let lines = badge_lines(&cheater, 1, 0, 76);
+        let lines = badge_lines(&cheater, &BTreeSet::new(), 1, 0, 76).lines;
         let family = lines
             .iter()
             .position(|line| line == "Mauvais points")
@@ -706,6 +769,91 @@ mod tests {
                 .all(|row| row.chars().count() <= 30)
         );
         assert_eq!(wrap_cell(&line, 77), [line]);
+    }
+
+    fn highlighted(badges: &BadgeLines) -> Vec<String> {
+        badges
+            .highlights
+            .iter()
+            .map(|highlight| {
+                badges.lines[highlight.line]
+                    .chars()
+                    .skip(highlight.start)
+                    .take(highlight.len)
+                    .collect()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_only_unseen_badges_are_highlighted() {
+        let earned = BTreeSet::from(["rain".to_string(), "clear".to_string()]);
+        let unseen = BTreeSet::from(["rain".to_string()]);
+
+        let badges = badge_lines(&earned, &unseen, 1, 0, 76);
+        assert_eq!(highlighted(&badges), ["[x] Pluie"]);
+        assert!(
+            badge_lines(&earned, &BTreeSet::new(), 1, 0, 76)
+                .highlights
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn test_two_unseen_badges_are_both_highlighted() {
+        let earned = BTreeSet::from([
+            "rain".to_string(),
+            "clear".to_string(),
+            "patience".to_string(),
+        ]);
+        let unseen = BTreeSet::from(["clear".to_string(), "patience".to_string()]);
+
+        let badges = badge_lines(&earned, &unseen, 1, 0, 76);
+        assert_eq!(
+            highlighted(&badges),
+            [
+                "[x] Ciel dégagé",
+                "[x] Patience (weathr ouvert 1 h d'affilée)"
+            ]
+        );
+    }
+
+    #[test]
+    fn test_unseen_sam_trail_highlights_each_wrapped_row() {
+        let earned = BTreeSet::from([SAM_TRAIL.id.to_string()]);
+        let unseen = earned.clone();
+
+        let badges = badge_lines(&earned, &unseen, 1, 12, 40);
+        let rows = wrap_cell(&badge_cell(&SAM_TRAIL, true, 12), 40);
+        assert!(rows.len() > 1);
+        assert_eq!(badges.highlights.len(), rows.len());
+        assert!(
+            highlighted(&badges)
+                .iter()
+                .all(|row| !row.trim().is_empty())
+        );
+    }
+
+    #[test]
+    fn test_highlight_draws_its_cell_in_pink_over_the_line() {
+        let lines = vec!["[x] Pluie   [x] Ciel dégagé".to_string()];
+        let highlight = Highlight {
+            line: 0,
+            start: 12,
+            len: 15,
+        };
+        let rows = frame_rows(Frame::Stars, "Badges", &lines, &[highlight], "", 41);
+        let pink: Vec<_> = rows
+            .iter()
+            .flatten()
+            .filter(|(_, _, color)| *color == PINK)
+            .collect();
+        assert_eq!(pink.len(), 1);
+        let (column, text, _) = pink[0];
+        assert_eq!(text, "[x] Ciel dégagé");
+        let row = rows.iter().find(|row| row.contains(pink[0])).unwrap();
+        assert_eq!(*column, row[1].0 + 12);
+        assert!(row[1].1.starts_with("[x] Pluie"));
     }
 
     #[test]
@@ -757,7 +905,7 @@ mod tests {
 
     fn draw(frame: Frame, title: &str, lines: &[&str], footer: &str, width: u16) -> Vec<String> {
         let lines: Vec<String> = lines.iter().map(|line| line.to_string()).collect();
-        rows_text(&frame_rows(frame, title, &lines, footer, width), width)
+        rows_text(&frame_rows(frame, title, &lines, &[], footer, width), width)
     }
 
     fn rows_text(rows: &[Vec<Piece>], width: u16) -> Vec<String> {
@@ -829,7 +977,7 @@ mod tests {
     fn assert_wet_text_clears_the_cut(width: u16, title: &str, body: &str, footer: &str) {
         let inner = Frame::Wet.inner_width(width);
         let lines = wrap(body, inner);
-        let rows = frame_rows(Frame::Wet, title, &lines, footer, width);
+        let rows = frame_rows(Frame::Wet, title, &lines, &[], footer, width);
         let body_rows = &rows[1..rows.len() - 2];
         for (index, row) in body_rows.iter().enumerate() {
             let [(indent, left, _), (start, text, _), (end, right, _)] = row.as_slice() else {
@@ -954,7 +1102,7 @@ mod tests {
             let width = frame.fit(MAX_BOX_WIDTH.min(80 - 4));
             let inner = frame.inner_width(width);
             let lines = wrap(body, inner);
-            for row in frame_rows(frame, title, &lines, footer, width) {
+            for row in frame_rows(frame, title, &lines, &[], footer, width) {
                 for (column, text, _) in &row {
                     let end = usize::from(*column) + text.chars().count();
                     assert!(end <= usize::from(width), "{frame:?}: {text}");
