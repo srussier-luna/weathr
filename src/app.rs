@@ -8,6 +8,7 @@ use crate::demo::{Demo, SCENE_DURATION};
 use crate::error::{GeolocationError, WeatherError};
 use crate::geolocation::{self, GeoLocation};
 use crate::holiday::{Holiday, HolidayBox, MeteorShower};
+use crate::hud::{self, Placed, toolbar, weather_bar::WeatherBar};
 use crate::overlay;
 use crate::progress::{Opening, Progress, Recovery};
 use crate::rain_alert::{self, RainAlert};
@@ -497,6 +498,15 @@ fn apply_simulated_weather(
     state.update_weather(weather);
 }
 
+fn render_placed(renderer: &mut TerminalRenderer, placed: &Placed) -> io::Result<()> {
+    let mut x = placed.x;
+    for segment in &placed.line {
+        renderer.render_line_colored(x, placed.y, &segment.text, segment.color)?;
+        x = x.saturating_add(u16::try_from(segment.text.chars().count()).unwrap_or(u16::MAX));
+    }
+    Ok(())
+}
+
 fn apply_demo_scene(state: &mut AppState, animations: &mut AnimationManager, demo: &Demo) {
     let scene = demo.current();
     apply_simulated_weather(
@@ -566,6 +576,7 @@ pub struct App {
     scene: WorldScene,
     weather_receiver: mpsc::Receiver<Result<WeatherData, WeatherError>>,
     hide_hud: bool,
+    weather_bar: WeatherBar,
     simulated_holiday: Option<Holiday>,
     invites_every_neighbour: bool,
     demo: Option<Demo>,
@@ -726,6 +737,7 @@ impl App {
             scene,
             weather_receiver: rx,
             hide_hud: config.hide_hud,
+            weather_bar: WeatherBar::default(),
             simulated_holiday: simulation.holiday,
             invites_every_neighbour: simulation.demo
                 || (simulation.holiday.is_some() && simulation.day.is_none()),
@@ -801,9 +813,9 @@ impl App {
             self.progress.bottles.len() < BOTTLE_MESSAGES.len(),
         );
         let hint = match self.animations.visible_finds() {
-            (true, true) => Some("Objet et bouteille ! [r]"),
-            (true, false) => Some("Objet ! [r]"),
-            (false, true) => Some("Bouteille ! [r]"),
+            (true, true) => Some("Objet et bouteille"),
+            (true, false) => Some("Objet"),
+            (false, true) => Some("Bouteille"),
             (false, false) => None,
         };
         self.state.set_finds_hint(hint);
@@ -1891,16 +1903,17 @@ impl App {
             self.refresh_rain_alert();
             self.receive_city_search();
             self.receive_location_detection();
-            self.state.update_loading_animation();
-            self.state.update_cached_info();
+            self.state.update_clock();
+            if self.state.take_weather_info_update() {
+                self.weather_bar = WeatherBar::new(&self.state);
+            }
 
             if !self.hide_hud {
-                renderer.render_line_colored(
-                    2,
-                    1,
-                    &self.state.cached_weather_info,
-                    crossterm::style::Color::Cyan,
-                )?;
+                let is_lit = overlay::blink_tick() % 2 == 0;
+                let toolbar = toolbar::line(&self.state, is_lit, hud::inner_width(term_width));
+                for placed in hud::lay_out(&self.weather_bar, toolbar, term_width, term_height) {
+                    render_placed(renderer, &placed)?;
+                }
             }
 
             self.render_overlays(renderer)?;
@@ -2720,12 +2733,8 @@ mod tests {
 
         for (hour, minute, day) in [(8, 59, 7), (9, 0, 8)] {
             state.set_story_day(clock.day_on(morning.and_hms_opt(hour, minute, 0).unwrap()));
-            state.update_cached_info();
-            assert!(
-                state
-                    .cached_weather_info
-                    .starts_with(&format!("{} | Jour {day} | ", state.displayed_clock))
-            );
+            let bar = WeatherBar::new(&state);
+            assert_eq!(bar.right[1][0].text, format!("Jour {day}"));
         }
     }
 
