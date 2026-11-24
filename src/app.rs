@@ -129,6 +129,17 @@ fn earn(earned: &mut BTreeSet<String>, ids: Vec<&'static str>) -> Vec<Award> {
         .collect()
 }
 
+fn mark_unseen(unseen: &mut BTreeSet<String>, awards: &[Award]) {
+    unseen.extend(awards.iter().map(|award| award.badge.id.to_string()));
+}
+
+fn reveal_badges(
+    overlay: Option<Overlay>,
+    unseen: &mut BTreeSet<String>,
+) -> Option<BTreeSet<String>> {
+    (!matches!(overlay, Some(Overlay::Badges))).then(|| std::mem::take(unseen))
+}
+
 fn earn_tiers(earned: &mut BTreeSet<String>, before: usize, after: usize) -> Vec<Award> {
     let tiers = Tier::crossed(before, after);
     if tiers.contains(&Tier::Chocolate) {
@@ -153,6 +164,7 @@ fn record_trip(
         _ => false,
     };
     let tier_cards = earn_tiers(&mut progress.badges, sam_cities, progress.sam_cities.len());
+    mark_unseen(&mut progress.unseen_badges, &tier_cards);
     Trip { is_new, tier_cards }
 }
 
@@ -595,6 +607,7 @@ pub struct App {
     toasts: VecDeque<String>,
     toast_started: Option<Instant>,
     pending_badges: VecDeque<Award>,
+    revealed_badges: BTreeSet<String>,
     pending_holiday_box: Option<&'static HolidayBox>,
     session_start: Instant,
     star_watch: StarWatch,
@@ -757,6 +770,7 @@ impl App {
             toasts: VecDeque::new(),
             toast_started: None,
             pending_badges: trip.tier_cards.into(),
+            revealed_badges: BTreeSet::new(),
             pending_holiday_box,
             session_start: Instant::now(),
             star_watch: StarWatch::default(),
@@ -831,6 +845,8 @@ impl App {
             .count();
         self.state
             .set_progress_summary(is_mail_waiting, earned, badges::collection().count());
+        self.state
+            .set_new_badge(!self.progress.unseen_badges.is_empty());
     }
 
     fn collect_badges(&mut self) {
@@ -907,6 +923,7 @@ impl App {
         }
         let new_badges = earn(&mut self.progress.badges, ids);
         if !new_badges.is_empty() {
+            mark_unseen(&mut self.progress.unseen_badges, &new_badges);
             self.pending_badges.extend(new_badges);
             self.progress.save();
         }
@@ -1242,6 +1259,7 @@ impl App {
                 return overlay::render_badges(
                     renderer,
                     &self.progress.badges,
+                    &self.revealed_badges,
                     self.progress.streak,
                     self.progress.sam_cities.len(),
                 );
@@ -1536,6 +1554,19 @@ impl App {
             Some(Overlay::Settings(_)) => self.change_setting(1),
             Some(Overlay::Letter(_)) if self.is_diet_letter_waiting() => self.send_diets(),
             _ => self.reread_selected(),
+        }
+    }
+
+    fn toggle_badges(&mut self) {
+        match reveal_badges(self.overlay, &mut self.progress.unseen_badges) {
+            Some(revealed) => {
+                if !revealed.is_empty() {
+                    self.progress.save();
+                }
+                self.revealed_badges = revealed;
+                self.overlay = Some(Overlay::Badges);
+            }
+            None => self.overlay = None,
         }
     }
 
@@ -1909,8 +1940,11 @@ impl App {
             }
 
             if !self.hide_hud {
-                let is_lit = overlay::blink_tick() % 2 == 0;
-                let toolbar = toolbar::line(&self.state, is_lit, hud::inner_width(term_width));
+                let toolbar = toolbar::line(
+                    &self.state,
+                    overlay::is_blink_lit(),
+                    hud::inner_width(term_width),
+                );
                 for placed in hud::lay_out(&self.weather_bar, toolbar, term_width, term_height) {
                     render_placed(renderer, &placed)?;
                 }
@@ -1967,12 +2001,7 @@ impl App {
                                 self.press_neighbours_note_key(key_event.code);
                             }
                             KeyCode::Char('c') | KeyCode::Char('C') => self.press_mail(),
-                            KeyCode::Char('b') | KeyCode::Char('B') => {
-                                self.overlay = match self.overlay {
-                                    Some(Overlay::Badges) => None,
-                                    _ => Some(Overlay::Badges),
-                                };
-                            }
+                            KeyCode::Char('b') | KeyCode::Char('B') => self.toggle_badges(),
                             KeyCode::Char(key @ '1'..='8') => self.press_number(key),
                             KeyCode::Char('a') | KeyCode::Char('A') => self.toggle_album(),
                             KeyCode::Char('h') | KeyCode::Char('H') => self.toggle_help(),
@@ -2032,6 +2061,43 @@ mod tests {
         assert_eq!(card_id(overlay), Some("rain"));
         assert_eq!(card_id(next_overlay(None, &mut pending)), Some("patience"));
         assert!(next_overlay(None, &mut pending).is_none());
+    }
+
+    #[test]
+    fn test_earned_badges_stay_unseen_until_the_badges_view_opens() {
+        let mut earned = BTreeSet::new();
+        let mut unseen = BTreeSet::new();
+        let awards = earn(&mut earned, vec!["rain", "patience"]);
+        mark_unseen(&mut unseen, &awards);
+        let mut pending: VecDeque<_> = awards.into();
+        while next_overlay(None, &mut pending).is_some() {}
+        assert_eq!(
+            unseen,
+            BTreeSet::from(["patience".to_string(), "rain".to_string()])
+        );
+
+        let revealed = reveal_badges(None, &mut unseen);
+        assert_eq!(
+            revealed,
+            Some(BTreeSet::from(["patience".to_string(), "rain".to_string()]))
+        );
+        assert!(unseen.is_empty());
+    }
+
+    #[test]
+    fn test_reopening_the_badges_view_reveals_nothing() {
+        let mut unseen = BTreeSet::from(["rain".to_string()]);
+        reveal_badges(None, &mut unseen);
+        assert_eq!(reveal_badges(Some(Overlay::Badges), &mut unseen), None);
+        assert_eq!(reveal_badges(None, &mut unseen), Some(BTreeSet::new()));
+    }
+
+    #[test]
+    fn test_already_earned_badge_is_not_unseen_again() {
+        let mut earned = BTreeSet::from(["rain".to_string()]);
+        let mut unseen = BTreeSet::new();
+        mark_unseen(&mut unseen, &earn(&mut earned, vec!["rain"]));
+        assert!(unseen.is_empty());
     }
 
     fn notes() -> Vec<Section> {
@@ -2914,6 +2980,16 @@ mod tests {
             )
         });
         assert_eq!(cards, expected);
+    }
+
+    #[test]
+    fn test_new_tier_marks_sam_trail_unseen() {
+        let mut progress = Progress::default();
+        launch(&mut progress, Some(&lisbon()), None);
+        assert_eq!(
+            progress.unseen_badges,
+            BTreeSet::from([SAM_TRAIL.id.to_string()])
+        );
     }
 
     #[test]
