@@ -214,7 +214,7 @@ pub const KINDS: [BadgeKind; 8] = [
     BadgeKind::Demerit,
 ];
 
-pub const BADGES: [Badge; 52] = [
+pub const BADGES: &[Badge] = &[
     badge(
         "clear",
         "Ciel dégagé",
@@ -582,7 +582,7 @@ mod tests {
 
     #[test]
     fn test_every_badge_icon_is_three_lines_of_five_chars() {
-        for badge in &BADGES {
+        for badge in BADGES {
             assert!(
                 badge.icon.iter().all(|line| line.chars().count() == 5),
                 "{}",

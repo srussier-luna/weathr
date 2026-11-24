@@ -56,3 +56,9 @@ Autopilot, app pilotée en pty (`HOME` à part, `-s clear`, sauvegardes prépar�
 - ✅ Dernière Recette du Régime reçue → carte « Toutes les recettes » ; la veille, pas de carte.
 
 ## Feedback
+
+### Round 2 — 2026-11-24
+- Demande : la branche de test (#154 + #157 + #155) ne compilait pas, chaque tâche changeait la taille fixe de `BADGES`.
+- Tri : ajustement.
+- Changement : `BADGES` passe de `[Badge; N]` à `&[Badge]` (ligne identique sur #154, fusion sans conflit).
+- Preuve : clippy, build et tests verts.
