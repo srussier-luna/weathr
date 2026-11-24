@@ -133,6 +133,8 @@ pub struct Progress {
     pub bare_village_until: Option<usize>,
     #[serde(default)]
     mail_ban_until: Option<String>,
+    #[serde(default)]
+    pub hidden_trophies: BTreeSet<String>,
     #[serde(default, skip_serializing)]
     format: u32,
     #[serde(skip)]

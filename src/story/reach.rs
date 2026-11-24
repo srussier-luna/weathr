@@ -75,6 +75,8 @@ impl Reach {
             ("streak_3", self.days >= 3),
             ("streak_7", self.days >= 7),
             ("streak_30", self.days >= 30),
+            ("streak_60", self.days >= 60),
+            ("streak_100", self.days >= 100),
             (
                 "all_letters",
                 progress.letters_read >= VILLAGE_LETTER_COUNT + CREEPY_LETTER_COUNT,
@@ -310,6 +312,8 @@ mod tests {
             "night_owl",
             "streak_3",
             "streak_30",
+            "streak_60",
+            "streak_100",
             "all_letters",
             "riddle_1",
             "riddle_10",

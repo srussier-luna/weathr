@@ -1,4 +1,5 @@
 use crate::animation::lore::Unlocks;
+use crate::animation::trophies::Trophy;
 use crate::badges::{self, Award};
 use crate::holiday::HolidayBox;
 use crate::overlay::{self, Frame, Line, View};
@@ -7,7 +8,7 @@ use crate::release_notes::Section;
 use crate::settings::{AutoLocation, CitySearch, Row, SearchStatus, Settings};
 use crate::story::Entry;
 use crate::story::content::chronicles::{BOTTLE_MESSAGES, CHEST_SOUVENIRS, DRAWINGS, OBJECTS};
-use crate::story::content::letters::{Choice, answered_choices};
+use crate::story::content::letters::answered_choices;
 use crate::story::content::neighbours_note::{self, NeighboursNote};
 use crate::story::content::recipes::{Diet, RECIPES, diet_labels};
 use crate::story::content::{
@@ -42,6 +43,7 @@ const NOTES_INDENT: &str = "  ";
 pub const NOTES_FRAME: Frame = Frame::Plain;
 pub const INDEX_FRAME: Frame = Frame::Plain;
 pub const ANSWERS_PAGE: usize = 2;
+pub const TROPHIES_PAGE: usize = ANSWERS_PAGE + 1;
 pub const POSTMAN_SIGNATURE: &str = "— Le Facteur";
 const FULL_BOX_NOTE: &str =
     "Pendant ton absence, tout le village en a profité pour prendre des vacances\u{202F}!";
@@ -512,24 +514,42 @@ fn answers_page(progress: &Progress, selected: usize) -> View {
     let items: Vec<String> = answered_choices(&progress.answers)
         .enumerate()
         .map(|(index, (choice, answer))| {
-            if index == selected {
-                format!("> {} {}", choice.prompt, both_options(choice, answer))
-            } else {
-                format!("- {} {}", choice.prompt, choice.options[answer])
-            }
+            choice_line(choice.prompt, &choice.options, answer, index == selected)
         })
         .collect();
+    choices_page("Album : tes réponses", items)
+}
+
+fn trophies_page(progress: &Progress, selected: usize) -> View {
+    let items: Vec<String> = Trophy::won(&progress.badges)
+        .enumerate()
+        .map(|(index, trophy)| {
+            let place = usize::from(progress.hidden_trophies.contains(trophy.id()));
+            choice_line(trophy.name(), &trophy.places(), place, index == selected)
+        })
+        .collect();
+    choices_page("Album : tes trophées", items)
+}
+
+fn choices_page(title: &str, items: Vec<String>) -> View {
     let footer = if items.is_empty() {
         ALBUM_FOOTER
     } else {
         ANSWERS_FOOTER
     };
-    album_page("Album : tes réponses", items, footer)
+    album_page(title, items, footer)
 }
 
-fn both_options(choice: &Choice, answer: usize) -> String {
-    choice
-        .options
+fn choice_line(label: &str, options: &[&str], answer: usize, is_selected: bool) -> String {
+    if is_selected {
+        format!("> {label} {}", both_options(options, answer))
+    } else {
+        format!("- {label} {}", options[answer])
+    }
+}
+
+fn both_options(options: &[&str], answer: usize) -> String {
+    options
         .iter()
         .enumerate()
         .map(|(index, option)| {
@@ -544,7 +564,7 @@ pub fn album_pages(
     read_entries: &[(usize, Entry)],
     progress: &Progress,
     unlocks: &Unlocks,
-    selected_answer: usize,
+    selected: usize,
 ) -> Vec<View> {
     let postcards: Vec<usize> = read_entries
         .iter()
@@ -592,7 +612,8 @@ pub fn album_pages(
             "Album : cadeaux du village",
             gifts.iter().map(|gift| gift.to_string()).collect(),
         ),
-        answers_page(progress, selected_answer),
+        answers_page(progress, selected),
+        trophies_page(progress, selected),
         list_page("Album : objets trouvés", objects),
     ];
     if unlocks.chest {
@@ -1096,6 +1117,7 @@ mod tests {
             "Album : sommaire",
             "Album : cadeaux du village",
             "Album : tes réponses",
+            "Album : tes trophées",
             "Album : objets trouvés",
         ];
         for (page, title) in pages.iter().zip(titles) {
@@ -1105,6 +1127,44 @@ mod tests {
             pages[ANSWERS_PAGE]
                 .title
                 .starts_with("Album : tes réponses")
+        );
+        assert!(
+            pages[TROPHIES_PAGE]
+                .title
+                .starts_with("Album : tes trophées")
+        );
+    }
+
+    #[test]
+    fn test_trophies_page_lists_won_trophies_only() {
+        let pages = album_pages(&[], &Progress::default(), &Unlocks::default(), 0);
+        let view = &pages[TROPHIES_PAGE];
+        assert_eq!(overlay::lay_out(&view.lines, 60), ["Rien pour l'instant."]);
+        assert_eq!(view.footer, ALBUM_FOOTER);
+
+        let mut progress = Progress::default();
+        progress.badges.insert("streak_60".to_string());
+        let pages = album_pages(&[], &progress, &Unlocks::default(), 0);
+        let view = &pages[TROPHIES_PAGE];
+        assert_eq!(
+            overlay::lay_out(&view.lines, 200),
+            ["> Nain de jardin [1]\u{a0}au jardin\u{a0}✓ [2]\u{a0}rangé"]
+        );
+        assert_eq!(view.footer, ANSWERS_FOOTER);
+    }
+
+    #[test]
+    fn test_trophies_page_shows_where_each_trophy_is() {
+        let mut progress = Progress::default();
+        progress.badges = BTreeSet::from(["streak_60".to_string(), "streak_100".to_string()]);
+        progress.hidden_trophies.insert("statue".to_string());
+        let pages = album_pages(&[], &progress, &Unlocks::default(), 1);
+        assert_eq!(
+            overlay::lay_out(&pages[TROPHIES_PAGE].lines, 200),
+            [
+                "- Nain de jardin au jardin",
+                "> Statue [1]\u{a0}au jardin [2]\u{a0}rangée\u{a0}✓",
+            ]
         );
     }
 

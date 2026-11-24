@@ -43,6 +43,7 @@ use crate::animation::{
     stars::{ShootingStarSky, StarSystem},
     sunny::SunnyAnimation,
     thunderstorm::ThunderstormSystem,
+    trophies::{Trophies, Trophy},
 };
 use crate::app_state::AppState;
 use crate::holiday::{Holiday, Season};
@@ -113,6 +114,7 @@ pub struct AnimationManager {
     sunny_animation: SunnyAnimation,
     cat: Cat,
     dog: Dog,
+    trophies: Trophies,
     duck: Duck,
     owl: Owl,
     snowman: Snowman,
@@ -169,6 +171,7 @@ impl AnimationManager {
             sunny_animation: SunnyAnimation::new(),
             cat: Cat::new(),
             dog: Dog::new(),
+            trophies: Trophies::new(),
             duck: Duck::new(),
             owl: Owl::new(),
             snowman: Snowman,
@@ -233,6 +236,10 @@ impl AnimationManager {
         self.lore.set_unlocks(unlocks);
         self.postman.set_bell(unlocks.choices.postman_bell);
         self.kid.set_avoids_puddles(unlocks.choices.avoids_puddles);
+    }
+
+    pub fn set_trophies(&mut self, shown: Vec<Trophy>) {
+        self.trophies.set_shown(shown);
     }
 
     pub fn set_guests(&mut self, guests: Vec<Neighbour>) {
@@ -537,6 +544,7 @@ impl AnimationManager {
         self.lore.update(&layout, conditions, &mut rng);
         self.lore.render_balloon(renderer)?;
         self.lore.render_scenery(renderer, &layout, conditions)?;
+        self.trophies.render(renderer, &layout, conditions.is_day)?;
 
         if holiday.is_epiphany {
             epiphany::render_crown(renderer, &layout)?;

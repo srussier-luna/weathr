@@ -335,6 +335,10 @@ impl Dog {
         layout.house_x + layout.house.porch_x() + HOME_OFFSET
     }
 
+    pub fn seat_end(layout: &GardenLayout) -> u16 {
+        Self::home_x(layout) + DOG_WIDTH
+    }
+
     fn max_x(layout: &GardenLayout) -> f32 {
         layout.width.saturating_sub(DOG_WIDTH + 1) as f32
     }

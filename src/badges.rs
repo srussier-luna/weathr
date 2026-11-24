@@ -384,6 +384,18 @@ pub const BADGES: &[Badge] = &[
         ["[===]", "|30 |", "|___|"],
     ),
     badge(
+        "streak_60",
+        "60 jours d'affilée",
+        BadgeKind::Loyalty,
+        ["[===]", "|60 |", "|___|"],
+    ),
+    badge(
+        "streak_100",
+        "100 jours d'affilée",
+        BadgeKind::Loyalty,
+        ["[===]", "|100|", "|___|"],
+    ),
+    badge(
         "traveller",
         "Voyageur",
         BadgeKind::Common,
@@ -767,6 +779,27 @@ mod tests {
                 "Toutes les recettes",
             ]
         );
+    }
+
+    #[test]
+    fn test_streak_badges_follow_each_other_in_loyalty() {
+        let streaks: Vec<_> = BADGES
+            .iter()
+            .filter(|badge| badge.id.starts_with("streak_"))
+            .map(|badge| (badge.id, badge.kind == BadgeKind::Loyalty))
+            .collect();
+        assert_eq!(
+            streaks,
+            [
+                ("streak_3", true),
+                ("streak_7", true),
+                ("streak_30", true),
+                ("streak_60", true),
+                ("streak_100", true),
+            ]
+        );
+        assert_eq!(find("streak_60").unwrap().name, "60 jours d'affilée");
+        assert_eq!(find("streak_100").unwrap().name, "100 jours d'affilée");
     }
 
     #[test]

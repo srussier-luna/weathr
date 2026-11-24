@@ -1,6 +1,6 @@
 ---
 issue: 154
-status: todo
+status: to-test
 wiki: [[mail]], [[animation]], [[render]]
 note: ajouter un badge 60 jours et 100 jours, pour chacun l'utilisateur recois un recompense pour son jardin qu'il peut afficher ou non dans son jardin
 created: 2026-11-24
@@ -32,8 +32,24 @@ created: 2026-11-24
 
 ## Implementation
 
+- Badges `streak_60` / `streak_100` (Fidélité, après `streak_30`) dans `src/badges.rs`, attribués dans `App::collect_badges`; règles de sauvegarde dans `src/story/reach.rs`.
+- Trophées : `src/animation/trophies.rs` (`Trophy`, `TROPHIES`, `Trophies`), codes `garden_gnome` et `statue`. Rendus après le décor, avant les Habitants (`animation_manager.rs`, `set_trophies`), dérivés des Badges dans `App::refresh_trophies`.
+- Placement : la gauche de la niche est prise par l'os de Biscuit → à droite, après la place où Biscuit s'assoit (`Dog::seat_end`), 1 colonne d'écart, avant la clôture (`GardenLayout::fence_x`, `FENCE_GAP`). Pas la place → pas dessiné.
+- `Progress::hidden_trophies` (`#[serde(default)]`, vide = tout affiché).
+- Album : page « Album : tes trophées » (`views::TROPHIES_PAGE = ANSWERS_PAGE + 1`), « Rien pour l'instant. » tant qu'aucun Trophée ; mécanique partagée avec « tes réponses » (`choices_page`, `album_rows`, `album_after_scroll`). `[2]` = « rangé » / « rangée » selon le Trophée.
+- Preuve : `cargo clippy --all-targets` sans nouveau warning, `cargo build` OK, `cargo test` tout vert.
+
 ## Review
 
 ## Verification
+
+Autopilot, app pilotée en pty (`HOME` à part, `--simulate clear`, 160×45, plus 230×60 et 80×30) :
+- ✅ 59 jours → carte « 60 jours d'affilée », Nain dessiné à droite de la niche.
+- ✅ 99 jours → carte « 100 jours d'affilée », Statue à côté du Nain, avant la clôture.
+- ✅ Badges : Fidélité = 3, 7, 30, 60, 100 jours.
+- ✅ Album : « tes trophées » après « tes réponses », une ligne par Trophée gagné.
+- ✅ `[2]` / `[1]` range puis remet le Nain, pareil pour la Statue.
+- ✅ Choix gardé après relance (`hidden_trophies`).
+- ✅ Ancienne sauvegarde sans le champ : Trophées affichés.
 
 ## Feedback
