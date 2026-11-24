@@ -12,19 +12,19 @@ pub const VILLAGE_LETTER_COUNT: usize = 60;
 const DEFAULT_LETTERS: [(&str, &str); VILLAGE_LETTER_COUNT] = [
     (
         "Rose, la boulangère",
-        "Bienvenue dans la maison au bout du chemin ! Ici, tout le monde se connaît. Je passe chaque matin avec mon panier de croissants : si tu sens une odeur de beurre, c'est moi. Je suis sourde : inutile de sonner chez moi, fais-moi plutôt signe par la fenêtre. Gaston, le facteur, t'apportera une lettre par jour. C'est la tradition du village.",
+        "Bienvenue au bout du chemin\u{202F}! Moi c'est Rose, la boulangère. Le matin, si ça sent le beurre chaud devant chez toi, c'est que je passe avec mon panier. Sonne pas, hein, je suis sourde\u{202F}: un signe par la fenêtre, c'est parfait. Gaston t'apportera une lettre par jour, il adore ça.\nP.-S. Je t'ai gardé un croissant. Le moins brûlé.",
     ),
     (
         "L'encre bleue",
-        "Tu ne me connais pas, mais je connais très bien ta maison. Chaque pierre, chaque fenêtre. Elle cache un secret depuis longtemps. Si tu veux le découvrir, lis bien chacune de mes lettres.",
+        "Tu ne me connais pas. Moi, je connais ta maison. Chaque pierre, la marche qui grince, la fenêtre qui ferme mal. Elle garde un secret depuis longtemps. Si tu veux le trouver, lis mes lettres. Toutes.",
     ),
     (
         "Minouche, la chatte du toit",
-        "Miaou. Je suis la chatte qui dort sur ton toit. Ce toit est à moi depuis six hivers, je te le prête. D'ici, je lis les étoiles : ce mois-ci, elles te sont favorables. Quand il pleut, je rentre par la fenêtre, ne t'inquiète pas. Signé d'une patte.",
+        "Le toit de ta maison est à moi depuis six hivers. Je te le prête. De là-haut, je lis les étoiles\u{202F}: ce mois-ci, elles te sont favorables, ce qui m'étonne un peu. Quand il pleut, j'entre par ta fenêtre. Inutile de la fermer, je sais l'ouvrir.",
     ),
     (
         "Paulo, le pêcheur",
-        "J'avais trop de bois flotté dans ma cabane, alors je t'ai fabriqué un banc. Je l'ai posé devant ta maison. On y voit très bien le coucher du soleil. Paulo, ton voisin de la rivière.",
+        "Javais trop de bois flotté dans la cabane. Alors je tai fait un banc, voilà. Il est devant chez toi. Le soir on voit le soleil tomber dans la rivière. Cest beau.",
     ),
     (
         "L'encre bleue",
@@ -32,223 +32,223 @@ const DEFAULT_LETTERS: [(&str, &str); VILLAGE_LETTER_COUNT] = [
     ),
     (
         "Minouche, la chatte du toit",
-        "Rose m'a offert un nœud. Les astres l'avaient annoncé : je suis désormais la chatte la plus élégante du village. Biscuit est jaloux, mais Biscuit ne lit pas les étoiles. Regarde bien mon oreille !",
+        "Rose m'a offert un nœud. Les astres l'avaient prédit, évidemment\u{202F}: je suis officiellement la chatte la plus élégante du village. Biscuit est jaloux. Biscuit ne lit pas les étoiles. Biscuit lit à peine sa gamelle. Regarde mon oreille. Longuement.",
     ),
     (
         "Odile, la maire",
-        "Le village prépare sa grande fête. Il reste beaucoup à faire : réparer le vieux puits, décorer les maisons, trouver de la musique. Chaque habitant peut aider, et ta maison compte beaucoup pour nous.",
+        "Le conseil municipal (c'est-à-dire moi, Rose, et Gaston quand il a le temps) a voté à l'unanimité\u{202F}: le village fera sa grande fête cette année. À l'ordre du jour\u{202F}: le vieux puits à réparer, des décorations partout, et de la musique. Ta maison est au cœur du projet. En somme, ce n'est pas une faveur, c'est une réquisition amicale.",
     ),
     (
         "L'encre bleue",
-        "Bravo, c'était le grand arbre. Cette nuit, quelqu'un a marché dans ton jardin. Regarde le sol : les traces mènent quelque part.",
+        "Bravo, c'était le grand arbre. Cette nuit, quelqu'un est passé dans ton jardin. Regarde le sol, près des racines. Les traces vont quelque part.",
     ),
     (
         "Biscuit, le chien",
-        "Wouf ! C'est moi qui dors dans la niche. Je n'ai rien vu cette nuit, je dormais. Enfin, presque. J'ai entendu des petits pas, très légers, puis un rire.",
+        "La niche, c'est chez moi. Cette nuit j'ai rien vu. Je dormais. Enfin, presque. J'ai entendu des petits pas. Tout légers. Et après, un rire. Un rire de quelqu'un de PETIT.",
     ),
     (
         "Gaston, le facteur",
-        "Trente ans que je fais la tournée à vélo ! Ta boîte aux lettres est ma préférée : elle grince joliment. Quand son drapeau rouge est levé, c'est qu'une lettre t'attend.",
+        "Trente ans de tournée, et je vais pas te mentir\u{202F}: ta boîte aux lettres, c'est ma préférée. Elle grince comme la porte de ma grand-tante Lucienne, paix à son âme. Bref. Quand le petit drapeau rouge est levé, y a du courrier. Baissé, y en a pas. C'est pas sorcier, mais tu serais surpris du nombre de gens qui regardent jamais.",
     ),
     (
         "L'encre bleue",
-        "Ces traces sont petites. Elles appartiennent à quelqu'un qui aime grimper aux arbres et sauter dans les flaques. Il en sait plus qu'il ne le dit.",
+        "Ces traces sont petites. Celui qui les a laissées grimpe aux arbres et saute dans les flaques. Il en sait plus qu'il ne le dit.",
     ),
     (
         "Hulotte, le hibou",
-        "Hou hou. Je veille dans le grand arbre la nuit. Je vois tout : les chauves-souris, les étoiles filantes, et parfois une petite lumière bleue qui n'est pas une étoile.",
+        "La nuit, je veille dans le grand arbre. Je vois passer les chauves-souris, les étoiles filantes, les rêves des chats. Et parfois, une petite lumière bleue. Hou. Ce n'est pas une étoile. Les étoiles ne clignent pas comme ça.",
     ),
     (
         "Odile, la maire",
-        "Grâce aux voisins, le vieux puits de ton jardin est réparé ! Autrefois, on y faisait des vœux. Fais-en un, ça ne coûte rien.",
+        "Communiqué de la mairie\u{202F}: le vieux puits de ton jardin est réparé. Paulo a remonté les pierres, Gaston a fourni la corde, et moi j'ai supervisé, ce qui est le plus fatigant. Autrefois, on y faisait des vœux. Je ne te l'impose pas. Je ne te l'interdis pas non plus. Le puits est à toi.",
     ),
     (
         "L'encre bleue",
-        "Le puits, oui. Il y a longtemps, quelqu'un y a jeté une pièce en faisant un vœu : que cette maison reste heureuse. Ce vœu, c'est moi qui l'ai fait.",
+        "Le puits, oui. Il y a longtemps, quelqu'un y a jeté une pièce. Le vœu tenait en quelques mots\u{202F}: que cette maison reste heureuse. Ce vœu, c'est moi qui l'ai fait.",
     ),
     (
         "Biscuit, le chien",
-        "J'ai trouvé un os énorme en creusant près de ma niche ! Je l'ai laissé dehors pour que tout le monde l'admire. Personne n'y touche. Wouf.",
+        "J'ai trouvé un os. Un ÉNORME os. Trop bien. En creusant près de ma niche. Je l'ai laissé dehors pour que tout le monde le voie. Personne n'y touche. Normal. Tu l'as vu\u{202F}? Il est beau. Wouf.",
     ),
     (
         "Léo, le petit voisin",
-        "Bonjour, c'est Léo, celui qui saute dans les flaques chez toi. Pardon pour les traces de boue. Mamie dit que ta maison était la sienne, avant. Je peux continuer à venir jouer ?",
+        "Salut c'est Léo\u{202F}! Celui qui saute dans tes flaques. Pardon pour la boue, mais franchement tes flaques sont les meilleures du village. Mamie dit que ta maison c'était la sienne avant. C'est vrai\u{202F}?? Je peux continuer à venir jouer\u{202F}? Dis oui.",
     ),
     (
         "L'encre bleue",
-        "Sous ta boîte aux lettres, j'ai laissé une petite clé. Garde-la bien. Elle n'ouvre aucune porte de la maison.",
+        "J'ai laissé une petite clé sous ta boîte aux lettres. Garde-la. Elle n'ouvre aucune porte de la maison.",
     ),
     (
         "Coin-Coin, le canard",
-        "Coin ! La mare au bout de ton jardin est la plus belle de la région quand il pleut. Je la partage avec la grenouille, mais elle chante faux.",
+        "Ta mare, quand il pleut, c'est la plus belle de la région. Je ne dis pas ça parce que j'y vis. Bon, un peu. Je la partage avec la grenouille. Elle chante faux, je dis ça, je dis rien. Même les têtards ont déménagé.",
     ),
     (
         "Rose, la boulangère",
-        "Léo m'a commandé un gâteau « pour fêter la cabane », en langue des signes, rien que ça ! Il apprend vite. Une cabane ? Dans l'arbre ? Je crois qu'un projet se prépare en cachette.",
+        "Léo m'a commandé un gâteau «\u{202F}pour fêter la cabane\u{202F}». En langue des signes, s'il te plaît\u{202F}! Il a appris ça tout seul, ce petit. Une cabane\u{202F}? Dans le grand arbre, je parie. Ils croient que je vois rien. Je suis sourde, pas aveugle.",
     ),
     (
         "L'encre bleue",
-        "La clé et le grand arbre vont ensemble. Mais il faut encore attendre. Les bonnes choses arrivent lentement, comme les escargots.",
+        "La clé et le grand arbre vont ensemble. Pas tout de suite. Il faut attendre, longtemps. Un escargot est déjà en route vers ta boîte aux lettres. Il arrivera avant la suite.",
     ),
     (
         "Gustave, l'escargot",
-        "Je suis parti de la mare il y a trois jours. J'arriverai à la boîte aux lettres… un jour. Ne m'attends pas pour le dîner.",
+        "Parti de la mare il y a trois jours. J'arriverai à ta boîte aux lettres un jour, rien ne presse. Commence à dîner sans moi.",
     ),
     (
         "Paulo, le pêcheur",
-        "Avec Léo, on a construit une cabane dans le grand arbre. Il y a une échelle, un toit et une fenêtre pour surveiller la rivière. Interdite aux adultes, paraît-il.",
+        "Avec Léo on a fait une cabane. Dans le grand arbre. Une échelle. Un toit. Une fenêtre sur la rivière. Jai pas le droit dy monter. Cest Léo qui la dit. Cest notre cabane quand même.",
     ),
     (
         "L'encre bleue",
-        "Autrefois, dans ta maison, quelqu'un posait une lanterne bleue à la fenêtre pour guider un pêcheur qui rentrait tard.",
+        "Autrefois, quelqu'un posait une lanterne bleue à ta fenêtre. Un pêcheur rentrait tard. La lumière le ramenait. Regarde bien la fenêtre du haut.",
     ),
     (
         "Hulotte, le hibou",
-        "Mon cousin le grand-duc est venu me rendre visite. Il trouve ton arbre très confortable et compte rester. Nous serons deux à veiller. Hou hou.",
+        "Mon cousin le grand-duc est arrivé hier soir. Il trouve ton arbre confortable. Il reste. Il ne m'a pas demandé mon avis. Il a pris la branche du haut, celle que je préférais.",
     ),
     (
         "Gaston, le facteur",
-        "Il pleuvait si fort ce matin que mon vélo flottait presque. Le canard m'a doublé. Bizarre : ta boîte aux lettres était déjà ouverte, et toute humide à l'intérieur.",
+        "Quelle saucée ce matin. Mon vélo flottait presque, et ton canard m'a doublé, je te jure, avec un petit air supérieur. Ça m'a rappelé l'hiver où j'avais fini la tournée dans les bottes de pêche de Paulo. Bref. Ta boîte aux lettres était déjà ouverte quand je suis arrivé. Toute mouillée à l'intérieur. Comme si quelqu'un avait mis la main dedans avant moi.",
     ),
     (
         "L'encre bleue",
-        "Ce soir, regarde la petite fenêtre en haut à gauche. La lanterne bleue est revenue. Quelqu'un pense encore au pêcheur.",
+        "Ce soir, la petite fenêtre en haut à gauche. Regarde-la. La lanterne bleue est revenue. Quelqu'un pense encore au pêcheur.",
     ),
     (
         "Noisette, l'écureuil",
-        "Tchic tchic ! J'ai caché 147 noisettes dans ton arbre. Je ne me souviens plus où. Si tu en trouves une, elle est à moi.",
+        "J'ai caché 147 noisettes dans ton arbre. Tchic. Ou 148. Je sais plus où. Si t'en trouves une, elle est à moi. Si t'en trouves deux, elles sont à moi aussi.",
     ),
     (
         "Odile, la maire",
-        "La fête approche. Chaque maison doit apporter une décoration. La tienne aura des guirlandes, j'ai déjà prévenu Rose.",
+        "Point suivant de l'ordre du jour\u{202F}: les décorations. Chaque maison en fournit une, c'est voté. Les guirlandes, c'est réglé avec Rose, qui a dit oui avant la fin de ma phrase. Reste ta façade, et sur ce point le conseil tient à recueillir ton avis.",
     ),
     (
         "L'encre bleue",
-        "Le pêcheur s'appelle Paulo. Il ne sait pas que c'est moi qui écris. Garde le secret encore un peu.",
+        "Le pêcheur s'appelle Paulo. Il ne sait pas que c'est moi qui t'écris. Il ne doit pas le savoir. Pas encore.",
     ),
     (
         "Rainette, la grenouille",
-        "Je ne chante pas faux, c'est le canard qui n'a pas d'oreille. Quand il pleut, je saute dans la mare : plouf ! C'est mon meilleur numéro.",
+        "Je ne chante pas faux, naturellement. C'est le canard qui n'a pas d'oreille. Quand il pleut, je saute dans la mare\u{202F}: PLOUF. Mon grand numéro.",
     ),
     (
         "Rose, la boulangère",
-        "Avec Léo, on a accroché une guirlande lumineuse sous ton porche. Elle s'allume le soir. Tout le village la voit depuis la route !",
+        "Léo et moi, on a accroché une guirlande lumineuse sous ton porche. Il tenait l'escabeau, moi je tenais Léo. Elle s'allume à la tombée du jour. On la voit depuis la route, même Gaston s'est arrêté pour la regarder.",
     ),
     (
         "L'encre bleue",
-        "J'ai habité ta maison pendant cinquante ans. J'y ai été très heureuse. J'ai laissé quelque chose pour la personne qui vivrait là après moi.",
+        "Cinquante ans. C'est le temps que j'ai passé dans ta maison. J'y ai été heureuse. En partant, j'ai laissé quelque chose pour celui ou celle qui viendrait après moi.",
     ),
     (
         "Minouche, la chatte du toit",
-        "Grande nouvelle : j'ai eu deux chatons ! Ils sont nés une nuit de pleine lune, ce qui fait d'eux des chatons très sages. L'un a une tache en forme d'étoile. Biscuit fait semblant de ne pas les aimer.",
+        "J'ai eu deux chatons. Une nuit de pleine lune, évidemment, ce qui en fait des chatons très sages. L'un a une tache en forme d'étoile sur le front. Biscuit fait semblant de ne pas les aimer. Il les a reniflés onze fois.",
     ),
     (
         "Léo, le petit voisin",
-        "Mamie s'appelle Jeanne. Elle habite la maison de retraite au bord de la rivière. Elle me demande toujours des nouvelles de ta maison, du grand arbre et du puits.",
+        "Ma mamie elle s'appelle Jeanne et elle habite la maison de retraite au bord de la rivière. Et quand je vais la voir elle me pose plein de questions sur ta maison. Sur le grand arbre et sur le puits. Même sur la fenêtre du haut\u{202F}! Pourquoi\u{202F}?? C'est juste une fenêtre.",
     ),
     (
         "L'encre bleue",
-        "Au pied du grand arbre, j'ai tracé une croix. Ne creuse pas encore. Attends ma dernière lettre.",
+        "J'ai tracé une croix au pied du grand arbre. Ne creuse pas. Pas encore. Attends ma dernière lettre.",
     ),
     (
         "Biscuit, le chien",
-        "Il y a une croix rouge par terre près de l'arbre. Je voulais creuser, mais Minouche m'a regardé très sévèrement. Je n'ai pas creusé. Presque pas.",
+        "Une croix ROUGE. Par terre. Près de l'arbre. Trop bien, une croix\u{202F}! Je voulais creuser. Mais Minouche m'a regardé. Avec ses yeux. J'ai pas creusé. Presque pas.",
     ),
     (
         "Gaston, le facteur",
-        "Les lettres à l'encre bleue arrivent avec un timbre de la maison de retraite. Les autres, celles sans timbre, je ne sais pas qui les dépose. Je ne distribue rien au numéro 13. Il n'y a pas de numéro 13.",
+        "Je vais te dire un truc, mais tu le répètes pas. Les lettres à l'encre bleue ont un timbre de la maison de retraite. Je reconnais le tampon, c'est le même que pour la tante d'Odile. Les autres, celles sans timbre, je sais pas qui les dépose. Pas moi, en tout cas. Et je distribue rien au numéro 13. Y a pas de numéro 13. Trente ans que je compte les boîtes, y en a douze.",
     ),
     (
         "Jeanne, l'encre bleue",
-        "Tu as sûrement deviné. Je m'appelle Jeanne, je suis la mamie de Léo. Paulo et moi, nous nous sommes aimés quand nous étions jeunes, puis la vie nous a séparés.",
+        "Tu as sûrement deviné, mon petit. Je m'appelle Jeanne, je suis la mamie de Léo. J'écris à l'encre bleue parce que c'est la seule qui ne bave pas sur mon vieux papier. Paulo et moi, on s'est aimés, il y a longtemps. Et puis la vie a fait ce qu'elle fait.",
     ),
     (
         "Hulotte, le hibou",
-        "Cette nuit, j'ai vu Paulo regarder longtemps la lanterne bleue depuis la rivière. Les humains sont compliqués. Hou.",
+        "Cette nuit, Paulo est resté longtemps au bord de la rivière. Il regardait la lanterne bleue. Il n'a pas lancé sa ligne une seule fois. Les humains sont compliqués.",
     ),
     (
         "Odile, la maire",
-        "Pour la fête, le village a loué une montgolfière ! Elle passera au-dessus de ta maison les jours de beau temps. Lève les yeux et fais-lui signe : le pilote adore ça.",
+        "Décision du conseil, adoptée à une voix contre zéro\u{202F}: le village a loué une montgolfière pour la fête. Elle passera au-dessus de ta maison les jours de beau temps. Le pilote s'appelle Bernard et il salue tout ce qui bouge. En somme, si tu lui fais signe, tu fais partie du spectacle.",
     ),
     (
         "Jeanne, l'encre bleue",
-        "Dans le coffre sous l'arbre, il y a nos lettres d'amour, des photos du village et une recette de Rose quand elle avait dix ans.",
+        "Sous l'arbre, il y a un coffre. Dedans, nos lettres d'amour, à Paulo et à moi, et des photos du village quand il n'avait pas encore de route. Il y a aussi une recette de Rose. Elle avait dix ans, et déjà des idées sur le beurre.",
     ),
     (
         "Coin-Coin, le canard",
-        "Coin coin ! Des canetons sont nés au bord de la mare. Ils me suivent partout, même sous la pluie. Surtout sous la pluie.",
+        "Je suis papa. Des canetons, nés ce matin au bord de la mare. Ils me suivent partout, même sous la pluie. Surtout sous la pluie. Ils ont mon talent pour la nage. La grenouille dit qu'ils ont surtout mes pieds.",
     ),
     (
         "Paulo, le pêcheur",
-        "Une dame m'a écrit à l'encre bleue. Son écriture me rappelle quelqu'un. Il y a très longtemps, je rentrais tard de la pêche, et une lanterne bleue m'attendait…",
+        "Une dame ma écrit. À lencre bleue. Je connais cette écriture. Avant je rentrais tard de la pêche. Il y avait une lanterne bleue à la fenêtre. Pour moi. Jai pas dormi.",
     ),
     (
         "Jeanne, l'encre bleue",
-        "Paulo a reçu ma lettre. Il m'a répondu, avec des fautes d'orthographe, comme avant. J'ai pleuré de joie. Merci d'avoir gardé la lanterne.",
+        "Paulo a reçu ma lettre. Il m'a répondu, avec des fautes d'orthographe, comme avant. Trois lignes, et j'ai pleuré comme une sotte. Merci d'avoir gardé la lanterne.",
     ),
     (
         "Noisette, l'écureuil",
-        "J'ai retrouvé une noisette ! Ah non, c'est un bouton. Ça compte quand même. Tchic.",
+        "J'ai retrouvé une noisette. Ah non. C'est un bouton. Ça compte quand même, je le garde.",
     ),
     (
         "Rose, la boulangère",
-        "Gros secret : Paulo m'a commandé un gâteau en forme de cœur. Sur mon carnet, j'ai écrit « Pour qui ? ». Il a rougi et il est reparti sans répondre.",
+        "Gros secret. Paulo m'a commandé un gâteau en forme de cœur. Paulo\u{202F}! Un cœur\u{202F}! J'ai écrit «\u{202F}Pour qui\u{202F}?\u{202F}» sur mon carnet. Il est devenu rouge comme une framboise et il est reparti sans répondre. Il a même oublié sa monnaie.",
     ),
     (
         "Jeanne, l'encre bleue",
-        "Bientôt, je viendrai au village pour la fête. Ce sera la première fois depuis des années que je reverrai ma maison. Ta maison.",
+        "Je viendrai au village pour la fête. Cela fait des années que je n'ai pas revu ma maison. Ta maison, pardon. J'ai encore du mal à le dire.",
     ),
     (
         "Gustave, l'escargot",
-        "Je suis arrivé à la boîte aux lettres ! Il m'a fallu des semaines. Maintenant, je repars vers la mare. À dans un mois.",
+        "Arrivé à ta boîte aux lettres. Il m'a fallu des semaines. La vue est belle d'ici. Je repars vers la mare demain. Ou après-demain.",
     ),
     (
         "Gaston, le facteur",
-        "J'ai installé une girouette sur ton toit, cadeau des anciens du village. Elle indique le vent. Sauf la nuit : la nuit, elle tourne vers le puits, même quand il n'y a pas un souffle.",
+        "J'ai monté une girouette sur ton toit, cadeau des anciens du village. Le cousin d'Odile me tenait l'échelle en me parlant de sa hanche, une heure au moins. Elle indique le vent, la girouette, pas la hanche. Sauf la nuit. La nuit, elle tourne vers le puits, même quand y a pas un souffle.",
     ),
     (
         "Jeanne, l'encre bleue",
-        "La clé sous la boîte aux lettres ouvre le coffre. Le jour de la fête, nous l'ouvrirons ensemble, avec Paulo et Léo.",
+        "La petite clé sous ta boîte aux lettres, c'est celle du coffre. Je l'ai gardée sur moi pendant quarante ans. Le jour de la fête, nous l'ouvrirons ensemble, avec Paulo et Léo.",
     ),
     (
         "Rainette, la grenouille",
-        "Les canetons veulent apprendre à sauter comme moi. Ils tombent tous dans la mare. C'est normal, c'est une mare.",
+        "Les canetons veulent sauter comme moi. Je leur donne des cours. Ils tombent tous dans la mare. En même temps, c'est une mare.",
     ),
     (
         "Léo, le petit voisin",
-        "On a préparé les décorations pour la fête. Mamie arrive bientôt !",
+        "On a fait les décorations pour la fête avec Rose et j'ai eu de la colle partout, même dans les cheveux. Mamie arrive bientôt\u{202F}!!",
     ),
     (
         "Jeanne, l'encre bleue",
-        "Il y a une dernière chose dans le coffre : une lettre écrite il y a quarante ans pour la personne qui habiterait ma maison. Pour toi.",
+        "Il reste une chose dans le coffre. Une lettre, écrite il y a quarante ans, pour la personne qui habiterait ma maison après moi. Je ne savais pas qui ce serait. C'est toi.",
     ),
     (
         "Minouche, la chatte du toit",
-        "Mes chatons ont appris à grimper sur la cheminée. Ils disent que, de là-haut, on entend mieux les étoiles. Je fais semblant de ne pas les connaître.",
+        "Mes chatons grimpent sur la cheminée, maintenant. Ils prétendent que de là-haut on entend mieux les étoiles. On n'entend pas les étoiles. Je fais semblant de ne pas les connaître.",
     ),
     (
         "Odile, la maire",
-        "Tout le village est prêt. La fête aura lieu dans ton jardin, sous le grand arbre. Rose apporte les gâteaux, Paulo s'occupe de la musique. Il ne manque plus que toi.",
+        "Dernière séance du conseil avant la fête. Lieu\u{202F}: ton jardin, sous le grand arbre. Gâteaux\u{202F}: Rose. Musique\u{202F}: Paulo, qui a promis de ne pas chanter. Il ne manque plus que toi, et Gaston, en retard à sa propre réunion.",
     ),
     (
         "Jeanne, l'encre bleue",
-        "Demain, je viens. J'ai sorti ma plus belle robe bleue. Paulo dit qu'il apportera des fleurs de la rivière.",
+        "Demain, je viens. J'ai sorti ma robe bleue, la belle, et je l'ai essayée deux fois. Paulo dit qu'il apportera des fleurs de la rivière. À mon âge, mon petit, on a encore le trac.",
     ),
     (
         "Biscuit, le chien",
-        "Il y a beaucoup de monde dans le jardin. Je garde mon os bien caché. Et je surveille la croix rouge. Wouf !",
+        "Plein de MONDE dans le jardin. Des pieds partout. Mon os est caché. Je dis pas où. Et je surveille la croix rouge. Personne creuse sans moi.",
     ),
     (
         "Rose, la boulangère",
-        "Quelle fête ! Les décorations ont tenu toute la soirée, Paulo et Jeanne ont dansé, et Léo a mangé trois parts de gâteau. Moi, j'ai dansé tout près des enceintes, là où la musique se sent le mieux. Merci d'avoir ouvert ton jardin.",
+        "Quelle fête\u{202F}! Les décorations ont tenu jusqu'au bout, même avec le vent. Paulo et Jeanne ont dansé. Lentement, mais ils ont dansé. Léo a mangé trois parts de gâteau, hein, trois. Moi, je me suis mise tout contre les enceintes\u{202F}: la musique, je la sens mieux dans le ventre.\nP.-S. Il reste du gâteau. Viens avant Léo.",
     ),
     (
         "Jeanne, l'encre bleue",
-        "Nous avons ouvert le coffre au pied de l'arbre. Il est encore là, plein de souvenirs. La lettre qui t'était destinée dit simplement : prends soin de cette maison, elle te le rendra.",
+        "Nous avons ouvert le coffre au pied de l'arbre. Paulo a retrouvé ses vieilles lettres et il a fait semblant d'avoir une poussière dans l'œil. Le coffre reste là, plein de souvenirs. La lettre qui t'était destinée dit seulement\u{202F}: prends soin de cette maison, elle te le rendra. Ma plume fuyait, ce jour-là\u{202F}: il y a une tache bleue sur le mot «\u{202F}maison\u{202F}».",
     ),
     (
         "Tout le village",
-        "Merci d'avoir lu nos lettres. Rose fait ses croissants, Paulo pêche avec Jeanne, Léo saute dans les flaques et Gaston passe toujours. Notre histoire se termine, la tienne continue. À bientôt !",
+        "Merci de nous avoir lus jusqu'au bout. Rose fait toujours ses croissants. Paulo pêche, et maintenant Jeanne tient l'épuisette. Léo saute dans les flaques. Gaston passe tous les matins, même les jours sans courrier, pour discuter. À bientôt.",
     ),
 ];
 
