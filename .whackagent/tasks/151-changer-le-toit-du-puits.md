@@ -12,13 +12,14 @@ created: 2026-11-24
 - Nouveau haut, toit de tuiles (choix B) :
 
   ```
-    _____
-   /vvvvv\
+   _______
+  /vvvvvvv\
    |  o  |
   (_______)
   ```
 
-  soit `["  _____", " /vvvvv\\", " |  o  |", "(_______)"]`.
+  soit `[" _______", "/vvvvvvv\\", " |  o  |", "(_______)"]`.
+- La 2e ligne doit faire exactement 9 caractères (`const _: () = assert!(WELL[1].len() == WELL_WIDTH)`, `lore.rs:13`) : le toit de tuiles est élargi d'une tuile de chaque côté par rapport à la proposition B.
 - Hors périmètre : couleurs, position, autres dessins (Coffre, Cabane), Lettres qui décrivent le Puits.
 
 ## Acceptance criteria
