@@ -2674,7 +2674,7 @@ mod tests {
     const FOOTPRINT_MAIL: [(Entry, &str); 3] = [
         (Entry::Main(7), "Regarde le sol"),
         (Entry::Main(10), "Ces traces sont petites"),
-        (Entry::Main(15), "Pardon pour les traces de boue"),
+        (Entry::Main(15), "Pardon pour la boue"),
     ];
 
     const WET_FOOTPRINT_MAIL: [(Entry, &str); 2] = [
