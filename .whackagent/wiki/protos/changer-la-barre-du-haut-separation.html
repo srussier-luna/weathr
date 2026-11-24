@@ -1,0 +1,441 @@
+<title>Barre du haut · v10</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600&display=swap">
+<style>
+/* Layout: terminal mock on the left, controls panel on the right (stacks on phone). */
+:root {
+  --page: #eef0f3; --panel: #ffffff; --ink: #1d2330; --muted: #5d6677; --line: #d6dae2; --accent: #2f6fd6;
+  --term-bg: #fbfbf8; --term-chrome: #e3e5ea;
+  --c-sky: #9aa7b8; --c-mount: #6f7f95; --c-snow: #5d6677; --c-ground: #3f8a3a; --c-grass: #2f7a2c;
+  --c-house: #8a5a2b; --c-roof: #a3402e; --c-window: #c48a00;
+  --c-weather: #0f7c8c; --c-strong: #0b5f6b; --c-faint: #6b98a0; --c-alert: #b86e00; --c-ctrl: #8a93a3; --c-key: #5d6677; --c-hot: #b03a7a;
+  --c-toast: #1d2330; --c-frame: #5d6677; --c-stars: #b8860b; --c-text: #1d2330; --c-dim: #9aa3b4;
+  --c-time: #1d2330; --c-place: #7a8394; --t1: #3b4fb8; --t2: #2f7fd6; --t3: #1f9a8a; --t4: #3c8a2e; --t5: #b58900; --t6: #d2691e; --t7: #c8312b; --c-wind: #6b7a8f; --c-rain: #3a7bd5; --c-cond: #1d2330;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --sans: Inter, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #13161c; --panel: #1b1f27; --ink: #e4e7ee; --muted: #9aa3b4; --line: #2c323d; --accent: #6ea2ff;
+  --term-bg: #0c0e12; --term-chrome: #222731;
+  --c-sky: #39445a; --c-mount: #5a6a85; --c-snow: #c9d2e0; --c-ground: #3c7a36; --c-grass: #57a24e;
+  --c-house: #b9875a; --c-roof: #c4604a; --c-window: #f2c14e;
+  --c-weather: #5fd3e3; --c-strong: #c8f6fb; --c-faint: #3f8c97; --c-alert: #ffc04d; --c-ctrl: #5f6878; --c-key: #8d97a8; --c-hot: #ff79c0;
+  --c-toast: #e4e7ee; --c-frame: #8d97a8; --c-stars: #ffd25a; --c-text: #e4e7ee; --c-dim: #5f6878;
+  --c-time: #f2f4f8; --c-place: #7d8798; --t1: #a9b4ff; --t2: #7fb2ff; --t3: #6fdcd0; --t4: #8fdc7a; --t5: #f2d14e; --t6: #ffa463; --t7: #ff6b5e; --c-wind: #a3adbd; --c-rain: #6fb0ff; --c-cond: #e4e7ee;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --page: #13161c; --panel: #1b1f27; --ink: #e4e7ee; --muted: #9aa3b4; --line: #2c323d; --accent: #6ea2ff;
+  --term-bg: #0c0e12; --term-chrome: #222731;
+  --c-sky: #39445a; --c-mount: #5a6a85; --c-snow: #c9d2e0; --c-ground: #3c7a36; --c-grass: #57a24e;
+  --c-house: #b9875a; --c-roof: #c4604a; --c-window: #f2c14e;
+  --c-weather: #5fd3e3; --c-strong: #c8f6fb; --c-faint: #3f8c97; --c-alert: #ffc04d; --c-ctrl: #5f6878; --c-key: #8d97a8; --c-hot: #ff79c0;
+  --c-toast: #e4e7ee; --c-frame: #8d97a8; --c-stars: #ffd25a; --c-text: #e4e7ee; --c-dim: #5f6878;
+  --c-time: #f2f4f8; --c-place: #7d8798; --t1: #a9b4ff; --t2: #7fb2ff; --t3: #6fdcd0; --t4: #8fdc7a; --t5: #f2d14e; --t6: #ffa463; --t7: #ff6b5e; --c-wind: #a3adbd; --c-rain: #6fb0ff; --c-cond: #e4e7ee;
+  color-scheme: dark }
+body { background: var(--page); color: var(--ink); font-family: var(--sans); }
+.wrap { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 20px; padding-block: 20px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); align-items: start; }
+@media (max-width: 900px) { .wrap { grid-template-columns: minmax(0,1fr); } }
+h1 { font-size: 15px; font-weight: 600; margin: 0 0 10px; display: flex; gap: 10px; align-items: baseline; }
+h1 small { color: var(--muted); font-weight: 400; }
+.term { background: var(--term-bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; min-width: 0; }
+.chrome { background: var(--term-chrome); padding: 6px 10px; display: flex; gap: 6px; align-items: center; font: 12px var(--sans); color: var(--muted); }
+.chrome i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); display: inline-block; }
+.chrome span { margin-left: 8px; }
+.screen { overflow-x: auto; padding: 8px 10px; }
+pre { margin: 0; font: 13px/1.25 var(--mono); font-variant-numeric: tabular-nums; }
+.legend { margin-top: 12px; display: grid; gap: 6px; font-size: 13px; color: var(--muted); max-width: 72ch; }
+.legend b { color: var(--ink); font-weight: 600; }
+.scale { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 4px 18px; font: 700 13px var(--mono); background: var(--term-bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.scale small { display: block; font: 400 11px var(--sans); color: var(--muted); }
+aside { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 14px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+legend { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 4px; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.seg label { cursor: pointer; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg span { display: inline-block; padding: 4px 9px; border: 1px solid var(--line); border-radius: 6px; font-size: 12.5px; }
+.seg input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+.seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.checks { display: grid; gap: 4px; font-size: 13px; }
+.checks label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+button { font: 12.5px var(--sans); padding: 5px 10px; border: 1px solid var(--accent); color: var(--accent); background: transparent; border-radius: 6px; cursor: pointer; justify-self: start; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+  <main style="min-width:0">
+    <h1>Barre du haut <small id="vname"></small></h1>
+    <div class="term">
+      <div class="chrome"><i></i><i></i><i></i><span id="dims">weathr — 110×28</span></div>
+      <div class="screen"><pre id="out" aria-label="Aperçu du terminal"></pre></div>
+    </div>
+    <div class="scale" id="scale" aria-label="Échelle des températures"></div>
+    <div class="legend" id="legend"></div>
+  </main>
+
+  <aside aria-label="Contrôles du proto">
+    <fieldset><legend>Bloc météo (gauche)</legend>
+      <div class="seg">
+        <label><input type="radio" name="blk" value="one"><span>une info par ligne</span></label>
+        <label><input type="radio" name="blk" value="joined" checked><span>ciel + température ensemble</span></label>
+      </div>
+      <div class="seg">
+        <label><input type="radio" name="round" value="round" checked><span>12 °C</span></label>
+        <label><input type="radio" name="round" value="dec"><span>12,4 °C</span></label>
+      </div>
+    </fieldset>
+    <fieldset><legend>Couleurs météo</legend>
+      <div class="seg">
+        <label><input type="radio" name="pal" value="info" checked><span>une par info</span></label>
+        <label><input type="radio" name="pal" value="mono"><span>une seule</span></label>
+      </div>
+    </fieldset>
+    <fieldset><legend>Alerte pluie</legend>
+      <div class="seg">
+        <label><input type="radio" name="alertk" value="at" checked><span>vers 16:00</span></label>
+        <label><input type="radio" name="alertk" value="soon"><span>dans l'heure</span></label>
+      </div>
+    </fieldset>
+    <fieldset><legend>Valeurs météo</legend>
+      <div class="seg">
+        <label><input type="radio" name="temp" value="-8"><span>−8</span></label>
+        <label><input type="radio" name="temp" value="2"><span>2</span></label>
+        <label><input type="radio" name="temp" value="8"><span>8</span></label>
+        <label><input type="radio" name="temp" value="14" checked><span>14</span></label>
+        <label><input type="radio" name="temp" value="21"><span>21</span></label>
+        <label><input type="radio" name="temp" value="27"><span>27</span></label>
+        <label><input type="radio" name="temp" value="34"><span>34 °C</span></label>
+      </div>
+      <div class="checks">
+        <label><input type="checkbox" id="v-wind" checked> Vent 8 km/h (sinon 0)</label>
+        <label><input type="checkbox" id="v-rain"> Pluie 1,2 mm (sinon 0)</label>
+      </div>
+    </fieldset>
+    <fieldset><legend>Ville</legend>
+      <div class="seg">
+        <label><input type="radio" name="loc" value="city" checked><span>nom</span></label>
+        <label><input type="radio" name="loc" value="coords"><span>coordonnées</span></label>
+        <label><input type="radio" name="loc" value="mixed"><span>mixte</span></label>
+      </div>
+    </fieldset>
+    <fieldset><legend>Contrôles (bas)</legend>
+      <div class="seg">
+        <label><input type="radio" name="ctrl" value="dim" checked><span>atténués</span></label>
+        <label><input type="radio" name="ctrl" value="keys"><span>touches seules</span></label>
+        <label><input type="radio" name="ctrl" value="min"><span>[h] seul</span></label>
+      </div>
+      <div class="seg">
+        <label><input type="radio" name="blink" value="on" checked><span>Lettre/Objet clignote</span></label>
+        <label><input type="radio" name="blink" value="off"><span>fixe</span></label>
+      </div>
+    </fieldset>
+    <fieldset><legend>États</legend>
+      <div class="checks">
+        <label><input type="checkbox" id="s-loading"> Chargement</label>
+        <label><input type="checkbox" id="s-mail" checked> Lettre en attente</label>
+        <label><input type="checkbox" id="s-find"> Objet trouvé [r]</label>
+        <label><input type="checkbox" id="s-badge" checked> Nouveau Badge</label>
+        <label><input type="checkbox" id="s-rain" checked> Alerte pluie</label>
+        <label><input type="checkbox" id="s-offline"> Hors ligne</label>
+      </div>
+    </fieldset>
+    <fieldset><legend>Écran</legend>
+      <div class="seg">
+        <label><input type="radio" name="view" value="scene" checked><span>scène</span></label>
+        <label><input type="radio" name="view" value="badges"><span>vue Badges [b]</span></label>
+      </div>
+    </fieldset>
+    <fieldset><legend>Toast</legend>
+      <div class="seg">
+        <label><input type="radio" name="toastpos" value="mid"><span>milieu du ciel</span></label>
+        <label><input type="radio" name="toastpos" value="low" checked><span>au-dessus des contrôles</span></label>
+      </div>
+      <div class="seg">
+        <label><input type="radio" name="tspeed" value="30" checked><span>frappe 30 ms</span></label>
+        <label><input type="radio" name="tspeed" value="60"><span>60 ms</span></label>
+      </div>
+      <button type="button" id="toast-btn">Afficher un toast</button>
+    </fieldset>
+    <fieldset><legend>Largeur du terminal</legend>
+      <div class="seg">
+        <label><input type="radio" name="w" value="70"><span>70 (min)</span></label>
+        <label><input type="radio" name="w" value="110" checked><span>110</span></label>
+        <label><input type="radio" name="w" value="160"><span>160</span></label>
+      </div>
+    </fieldset>
+    <fieldset><legend>Thème</legend>
+      <div class="seg">
+        <label><input type="radio" name="theme" value="system" checked><span>système</span></label>
+        <label><input type="radio" name="theme" value="light"><span>clair</span></label>
+        <label><input type="radio" name="theme" value="dark"><span>sombre</span></label>
+      </div>
+    </fieldset>
+  </aside>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const val = (n) => document.querySelector(`input[name="${n}"]:checked`).value;
+const on = (id) => document.getElementById(id).checked;
+
+const H = 28;
+const NNBSP = " ";
+
+function makeGrid(W) { return Array.from({ length: H }, () => Array.from({ length: W }, () => [" ", null])); }
+function put(g, row, col, text, cls) {
+  if (row < 0 || row >= g.length) return;
+  [...text].forEach((ch, i) => { const c = col + i; if (c >= 0 && c < g[row].length) g[row][c] = [ch, cls]; });
+}
+function clearRow(g, row) { for (let c = 0; c < g[row].length; c++) g[row][c] = [" ", null]; }
+
+function drawScene(g, W) {
+  const horizon = H - 7;
+  for (let i = 0; i < W * 0.06; i++) {
+    const r = 4 + ((i * 7) % (horizon - 10));
+    const c = (i * 37 + 11) % W;
+    put(g, r, c, i % 3 ? "." : "+", "sky");
+  }
+  for (let c = 0; c < W; c++) {
+    const h = Math.round(4 + 3 * Math.sin(c / 9) + 2 * Math.sin(c / 4.3 + 1) + (c % 17 === 0 ? 1 : 0));
+    const top = horizon - Math.max(1, h);
+    for (let r = top; r < horizon; r++) put(g, r, c, r === top ? (h > 7 ? "^" : "/") : ".", r === top && h > 7 ? "snow" : "mount");
+  }
+  for (let r = horizon; r < H; r++) for (let c = 0; c < W; c++) {
+    const grass = (c * 13 + r * 7) % 11 === 0;
+    put(g, r, c, grass ? "\"" : (r === horizon ? "_" : (c + r) % 5 === 0 ? "," : " "), grass ? "grass" : "ground");
+  }
+  const hx = Math.max(18, Math.floor(W / 2) - 10);
+  const house = [
+    ["        _____||____", "roof"], ["       /           \\", "roof"], ["      /_____________\\", "roof"],
+    ["      |  [#]   [#]  |", "house"], ["      |      _      |", "house"], ["      |  [#] | |    |", "house"], ["      |______|_|____|", "house"],
+  ];
+  house.forEach(([line, cls], i) => {
+    const r = horizon - house.length + 2 + i;
+    [...line].forEach((ch, j) => { if (ch === " " && i < 3) return; put(g, r, hx + j, ch, ch === "#" ? "win" : cls); });
+  });
+  const tx = hx - 12;
+  if (tx > 2) ["   &&&", "  &&&&&", " &&&&&&&", "   ||", "   ||"].forEach((line, i) => {
+    [...line].forEach((ch, j) => { if (ch !== " ") put(g, horizon - 3 + i, tx + j, ch, ch === "|" ? "house" : "grass"); });
+  });
+  if (tx > 6) { put(g, horizon, tx - 4, "[=]", "house"); put(g, horizon + 1, tx - 3, "|", "house"); }
+}
+
+// ---------- Weather line ----------
+const GAP = "   ";
+const len = (segs) => segs.reduce((n, [t]) => n + [...t].length, 0);
+function join(groups, sep) {
+  const out = [];
+  groups.filter((g) => g.length).forEach((g, i) => { if (i) out.push([sep, "faint"]); out.push(...g); });
+  return out;
+}
+function locationText() {
+  const loc = val("loc"), coords = "45,76°N, 4,84°E";
+  return loc === "city" ? "Lyon" : loc === "coords" ? coords : `Lyon (${coords})`;
+}
+const mono = () => val("pal") === "mono";
+const C = (cls) => (mono() ? (cls === "time" || cls === "cond" || cls.startsWith("t-") ? "strong" : cls === "alert" ? "alert" : "weather") : cls);
+
+function placeGroup() { return [[locationText(), C("place")]]; }
+// ≤0 glace · 1–5 froid · 6–11 frais · 12–17 doux · 18–24 bon · 25–29 chaud · ≥30 canicule
+const TEMP_STEPS = [[0, "t1"], [5, "t2"], [11, "t3"], [17, "t4"], [24, "t5"], [29, "t6"], [Infinity, "t7"]];
+const tempClass = (t) => TEMP_STEPS.find(([max]) => t <= max)[1];
+function tempSeg() {
+  const t = +val("temp");
+  const temp = (val("round") === "round" ? String(t) : (t + 0.4).toFixed(1).replace(".", ",")).replace("-", "−");
+  const tcls = tempClass(t);
+  return [temp + NNBSP + "°C", C(tcls)];
+}
+function leftLines() {
+  if (on("s-loading")) return [[[`Météo en route${NNBSP}…`, C("cond")]]];
+  const lines = [];
+  if (val("blk") === "joined") lines.push([["Éclaircies  ", C("cond")], tempSeg()]);
+  else lines.push([["Éclaircies", C("cond")]], [tempSeg()]);
+  if (on("v-wind")) lines.push([["Vent 8" + NNBSP + "km/h", C("wind")]]);
+  if (on("v-rain")) lines.push([["Pluie 1,2" + NNBSP + "mm", C("rain")]]);
+  if (on("s-rain")) lines.push([[val("alertk") === "at" ? "Pluie vers 16:00" : "Pluie dans l'heure", "alert"]]);
+  if (on("s-offline")) lines.push([["Hors ligne", "alert"]]);
+  return lines;
+}
+
+function putSegs(g, row, col, segs, maxCol) {
+  let c = col;
+  for (const [t, cls] of segs) for (const ch of t) {
+    if (maxCol !== undefined && c >= maxCol) { put(g, row, c - 1, "…", cls); return c; }
+    put(g, row, c++, ch, cls);
+  }
+  return c;
+}
+
+function drawWeather(g, W) {
+  const left = leftLines();
+  const right = [[["14:32", C("time")]], [[locationText(), C("place")], [" • ", "faint"], ["Jour 12", C("place")]]];
+  const R = W - 2;
+  const lw = Math.max(...left.map(len));
+  const blank = (row, col, n) => put(g, row, col, " ".repeat(n), null);
+  left.forEach((l, i) => { blank(1 + i, 1, lw + 2); putSegs(g, 1 + i, 2, l); });
+  right.forEach((l, i) => { blank(1 + i, R - len(l) - 1, len(l) + 1); putSegs(g, 1 + i, R - len(l), l); });
+}
+
+// ---------- Controls (bottom row) ----------
+function controlSegs() {
+  const mode = val("ctrl"), segs = [];
+  const item = (key, label, hot, extra) => {
+    if (segs.length) segs.push([GAP, "ctrl"]);
+    segs.push([`[${key}]`, hot ? "hot" : "key"]);
+    if (mode !== "keys" || hot) segs.push([" " + label, hot ? "hot" : "ctrl"]);
+    if (extra) segs.push([" " + extra, "ctrl"]);
+  };
+  if (mode === "min") {
+    if (on("s-mail")) item("c", "Lettre !", true);
+    if (on("s-find")) item("r", "Objet !", true);
+    if (on("s-badge")) item("b", "Badge !", true);
+    item("h", "Aide", false);
+    return segs;
+  }
+  item("c", on("s-mail") ? "Lettre !" : "Courrier", on("s-mail"));
+  if (on("s-find")) item("r", "Objet !", true);
+  if (on("s-badge")) item("b", "Badge !", true, "4/12");
+  else item("b", "Badges", false, "3/12");
+  item("h", "Aide", false);
+  item("q", "Quitter", false);
+  return segs;
+}
+function drawControls(g, W) {
+  clearRow(g, H - 1);
+  const ct = controlSegs();
+  putSegs(g, H - 1, Math.max(2, W - 2 - len(ct)), ct);
+}
+
+// ---------- Toast ----------
+const TOAST = "Tu as trouvé un galet tout rond.";
+let toast = null; // { start, ms }
+function drawToast(g, W, now) {
+  if (!toast) return;
+  const chars = [...TOAST];
+  const typing = chars.length * toast.ms;
+  const t = now - toast.start;
+  if (t > typing + 4000) { toast = null; return; }
+  const shown = Math.min(chars.length, Math.floor(t / toast.ms));
+  const inner = chars.length + 4;           // full width from the start: box never grows
+  const col = Math.max(1, Math.floor((W - inner - 2) / 2));
+  const row = val("toastpos") === "mid" ? Math.floor((H - 7) / 2) - 1 : H - 5;
+  const rule = "+" + "-".repeat(inner) + "+";
+  put(g, row, col, rule, "frame");
+  put(g, row + 1, col, "|" + " ".repeat(inner) + "|", "frame");
+  put(g, row + 2, col, rule, "frame");
+  put(g, row + 1, col + 3, chars.slice(0, shown).join(""), "toast");
+  if (shown < chars.length && Math.floor(t / 400) % 2 === 0) put(g, row + 1, col + 3 + shown, "_", "toast");
+}
+
+// ---------- Badges view ----------
+const KINDS = [
+  ["Météo", [["Ciel dégagé", 1], ["Éclaircies", 1], ["Nuageux", 1], ["Couvert", 0], ["Brouillard", 0], ["Bruine", 0], ["Pluie", 0], ["Orage", 2]]],
+  ["Fêtes", [["Noël", 0], ["Halloween", 0], ["Nouvel An", 0], ["Pâques", 0]]],
+  ["Secrets", [["???", 0], ["???", 0]]],
+];
+function drawBadges(g, W) {
+  const boxW = Math.min(66, W - 4);
+  const inner = boxW - 4;
+  const lines = [["Série en cours : 12 jours d'affilée", "text"]];
+  for (const [kind, badges] of KINDS) {
+    const earned = badges.filter((b) => b[1]).length;
+    lines.push(["", null]);
+    lines.push([`${kind} (${earned}/${badges.length})`, "text"]);
+    const cellW = Math.max(...badges.map(([n]) => n.length + 4)) + 1;
+    const cols = Math.max(1, Math.min(4, Math.floor(inner / cellW)));
+    const colW = Math.floor(inner / cols);
+    for (let i = 0; i < badges.length; i += cols) {
+      lines.push(badges.slice(i, i + cols).map(([n, e]) => ({ text: `[${e ? "x" : " "}] ${n}`.padEnd(colW), cls: e === 2 ? "hot" : e ? "text" : "dim" })));
+    }
+  }
+  const title = "Badges 4/14", footer = "[b] ou [Echap] fermer";
+  const h = lines.length + 6;
+  const top = Math.max(2, Math.floor((H - h) / 2));
+  const left = Math.floor((W - boxW) / 2);
+  const stars = "*~".repeat(boxW).slice(0, boxW);
+  for (let r = top; r < top + h; r++) put(g, r, left, " ".repeat(boxW), null);
+  put(g, top, left, stars, "stars");
+  put(g, top + h - 1, left, stars, "stars");
+  for (let r = top + 1; r < top + h - 1; r++) { put(g, r, left, "* ", "stars"); put(g, r, left + boxW - 2, " *", "stars"); }
+  put(g, top + 1, left + Math.floor((boxW - title.length) / 2), title, "text");
+  lines.forEach((ln, i) => {
+    const r = top + 3 + i;
+    if (Array.isArray(ln) && typeof ln[0] === "string") { if (ln[0]) put(g, r, left + 2, ln[0], ln[1]); return; }
+    let c = left + 2;
+    for (const cell of ln) { put(g, r, c, cell.text, cell.cls); c += cell.text.length; }
+  });
+  put(g, top + h - 2, left + Math.floor((boxW - footer.length) / 2), footer, "dim");
+}
+
+// ---------- Render ----------
+const COLORS = {
+  sky: "--c-sky", mount: "--c-mount", snow: "--c-snow", ground: "--c-ground", grass: "--c-grass",
+  house: "--c-house", roof: "--c-roof", win: "--c-window",
+  time: "--c-time", place: "--c-place", cond: "--c-cond", t1: "--t1", t2: "--t2", t3: "--t3", t4: "--t4", t5: "--t5", t6: "--t6", t7: "--t7", wind: "--c-wind", rain: "--c-rain",
+  weather: "--c-weather", strong: "--c-strong", faint: "--c-faint", alert: "--c-alert",
+  ctrl: "--c-ctrl", key: "--c-key", hot: "--c-hot", toast: "--c-toast", frame: "--c-frame",
+  stars: "--c-stars", text: "--c-text", dim: "--c-dim",
+};
+const BOLD = new Set(["strong", "hot", "alert", "time", "t1", "t2", "t3", "t4", "t5", "t6", "t7"]);
+const esc = (ch) => (ch === "<" ? "&lt;" : ch === ">" ? "&gt;" : ch === "&" ? "&amp;" : ch);
+
+let lastHtml = "";
+function render() {
+  const theme = val("theme");
+  if (theme === "system") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", theme);
+
+  const now = performance.now();
+  const W = +val("w");
+  const g = makeGrid(W);
+  drawScene(g, W);
+  drawWeather(g, W);
+  drawControls(g, W);
+  if (val("view") === "badges") drawBadges(g, W);
+  drawToast(g, W, now);
+
+  const blinkOff = val("blink") === "on" && Math.floor(now / 500) % 2 === 1;
+  const html = g.map((row) => {
+    let out = "", cur, buf = "";
+    const flush = () => {
+      if (!buf) return;
+      out += cur ? `<span style="color:var(${COLORS[cur]})${BOLD.has(cur) ? ";font-weight:700" : ""}">${buf}</span>` : buf;
+      buf = "";
+    };
+    for (let [ch, cls] of row) {
+      if (blinkOff && cls === "hot") cls = "ctrl";
+      if (cls !== cur) { flush(); cur = cls; }
+      buf += esc(ch);
+    }
+    flush();
+    return out;
+  }).join("\n");
+  if (html !== lastHtml) { $("#out").innerHTML = html; lastHtml = html; }
+  $("#dims").textContent = `weathr — ${W}×${H}`;
+}
+
+function legend() {
+  $("#legend").innerHTML = [
+    "<b>Gauche</b> : une info par ligne, chacune avec une majuscule. Ce qui vaut 0 ou n'arrive pas ne prend pas de ligne.",
+    "<b>Droite</b> : l'heure en haut, « Lyon • Jour 12 » dessous.",
+    "<b>Valeurs à 0</b> : jamais affichées. Pas de vent, pas de pluie → juste le ciel et la température.",
+    "<b>Couleurs</b> : heure en clair, Jour et Ville en gris, température teintée en 7 paliers, du bleu glacé au rouge canicule, vent gris, pluie bleue, alerte jaune.",
+    "<b>Toast</b> : centré, dans un cadre, le texte s'écrit lettre par lettre puis reste 4 s.",
+    "<b>Bas</b> : les contrôles ; Lettre !, Objet ! et Badge ! clignotent en rose.",
+    "<b>Vue Badges</b> : le Badge qui vient d'arriver (Orage) clignote dans la liste. Une fois la vue fermée, il ne clignote plus et [b] redevient gris.",
+  ].map((t) => `<div>${t}</div>`).join("");
+  $("#vname").textContent = "· v10";
+}
+
+(function scale() {
+  const rows = [["−8", "t1", "≤ 0"], ["3", "t2", "1 à 5"], ["9", "t3", "6 à 11"], ["14", "t4", "12 à 17"], ["21", "t5", "18 à 24"], ["27", "t6", "25 à 29"], ["34", "t7", "≥ 30"]];
+  document.getElementById("scale").innerHTML = rows.map(([t, c, r]) => `<div style="color:var(--${c})">${t}${NNBSP}°C<small>${r}</small></div>`).join("");
+})();
+function showToast() { toast = { start: performance.now(), ms: +val("tspeed") }; }
+$("#toast-btn").addEventListener("click", showToast);
+document.querySelectorAll("input").forEach((i) => i.addEventListener("change", () => { legend(); render(); }));
+legend();
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+setTimeout(showToast, 600);
+(function loop() { render(); setTimeout(loop, reduce ? 500 : 50); })();
+</script>

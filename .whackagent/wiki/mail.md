@@ -53,7 +53,7 @@ Once per player, fresh **and** existing saves: `welcome_seen` in `progress.json`
 
 - Shown on `Launch::Fresh` / `Normal` when not seen; `Suppressed` (`--silent`, `--demo`, forced modes on an existing save) → nothing, not marked. Fresh launch in those modes still shows it.
 - `Overlay::Welcome(Step)`: `Arriving` (Facteur rides in, see [[animation]]) → `Greeting` (arrival bubble) → `Unfolding` (note grows) → `Reading` (« Bienvenue au village », keys, scroll `↑`/`↓`) → `Farewell` (departure bubble). `Entrée` next, `Échap` ends at once.
-- Before `Farewell`: mailbox flag and HUD « Lettre ! [c] » hidden, story keys ignored, Badge cards wait. `q` quits, not marked → replays next launch.
+- Before `Farewell`: mailbox flag and `[c] Lettre !` in the Barre du bas hidden, story keys ignored, Badge cards wait. `q` quits, not marked → replays next launch.
 - Marked + saved at the last `Entrée` or `Échap`; then Nouveautés box if pending, then Badge cards.
 - Not a timeline entry, not in the Courrier, no replay key.
 
