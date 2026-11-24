@@ -9,11 +9,11 @@ pub const SAM_LETTERS: [&str; 5] = [
 
 pub const NEIGHBOURS_SENDER: &str = "Nadia et Claire, les apicultrices";
 pub const NEIGHBOURS_LETTERS: [&str; 5] = [
-    "Bonjour ! Nous sommes Nadia et Claire. On vient d'emménager dans la maison derrière le verger, avec nos quatre ruches. Si tu vois des abeilles dans ton jardin, ce sont les nôtres : elles adorent ton arbre.",
-    "Rose nous apprend quelques mots en langue des signes. Claire a retenu « miel » et « merci ». Nadia confond encore les deux, ce qui donne des conversations très polies.",
-    "Premier pot de miel ! On en a déposé un sur ta boîte aux lettres. Rose en a pris dix pour ses gâteaux. Marcel n'en veut pas : il dit que nos abeilles évitent le n°13 et que ce n'est pas bon signe.",
-    "Ce soir, cela fait dix ans que nous sommes mariées. C'est Odile qui nous a mariées, à la mairie, sous une pluie battante. Claire dit que ça porte bonheur. Nadia dit surtout que ça mouille. On fête ça avec une tarte au miel.",
-    "Une ruche a essaimé ce matin : tout un nuage d'abeilles s'est posé dans ton arbre. Claire est montée les chercher avec un carton, Nadia tenait l'échelle et donnait des conseils. Si une abeille se perd chez toi, ne t'inquiète pas, elle sait rentrer.",
+    "Coucou\u{202F}! Nadia et Claire, les nouvelles de la maison derrière le verger. On est arrivées avec quatre ruches (Claire en voulait six). Si tu vois des abeilles chez toi, ce sont les nôtres. Elles adorent ton arbre\u{202F}: Claire dit qu'elles ont bon goût, Nadia dit qu'elles sont juste gourmandes. Le premier pot est pour toi.",
+    "Rose nous apprend la langue des signes, le jeudi, entre deux fournées. Claire a retenu «\u{202F}miel\u{202F}» et «\u{202F}merci\u{202F}» dès la première leçon. Nadia confond encore les deux. Du coup, elle remercie tout le monde pour le miel. Même Gaston, qui n'avait rien demandé.",
+    "Premier pot de miel. Il t'attend sur ta boîte aux lettres. Rose en a pris dix pour ses gâteaux, Claire voulait lui en vendre vingt. Marcel n'en veut pas. Il dit que nos abeilles évitent le n°13 et que c'est mauvais signe. Nadia a regardé\u{202F}: c'est vrai qu'elles font un détour. Claire trouve qu'il se fait des idées.",
+    "Dix ans ce soir. C'est Odile qui nous a mariées, à la mairie, sous une pluie battante, l'écharpe tricolore trempée. Claire dit que ça porte bonheur, Nadia dit surtout que ça mouille. On fête ça avec une tarte au miel. Claire l'a sortie du four trop tôt, on ne lui dira pas.",
+    "Une ruche a essaimé ce matin. Tout le nuage d'abeilles s'est posé dans ton arbre, sur la troisième branche. Claire est montée avec un carton avant qu'on trouve les gants. Nadia tenait l'échelle et donnait des conseils, que personne n'a suivis. Si une abeille traîne chez toi, t'inquiète pas, elle connaît le chemin.",
 ];
 
 pub const MARCEL_SENDER: &str = "Marcel, le garde champêtre";
