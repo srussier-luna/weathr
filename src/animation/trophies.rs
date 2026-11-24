@@ -1,15 +1,13 @@
 use crate::animation::dog::Dog;
 use crate::animation::garden::{self, GardenLayout};
 use crate::render::TerminalRenderer;
+use crate::scene::river::River;
 use crossterm::style::Color;
 use std::collections::BTreeSet;
 use std::io;
 
 const GAP: u16 = 1;
 const WIDTH: u16 = 3;
-const GNOME: [&str; 3] = [" A ", "(\")", "/V\\"];
-const STATUE: [&str; 4] = [" o ", "/|\\", "/ \\", "[=]"];
-const SUNDIAL: [&str; 3] = [" |\\", "===", "[_]"];
 const HAT: Color = Color::Red;
 const FACE: Color = Color::Rgb {
     r: 240,
@@ -33,6 +31,12 @@ pub enum Trophy {
     GardenGnome,
     Statue,
     Sundial,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Spot {
+    BesideDoghouse,
+    InFrontOfFence,
 }
 
 pub const TROPHIES: [Trophy; 3] = [Trophy::GardenGnome, Trophy::Statue, Trophy::Sundial];
@@ -81,12 +85,35 @@ impl Trophy {
             .collect()
     }
 
-    fn sprite(self) -> &'static [&'static str] {
+    fn spot(self) -> Spot {
         match self {
-            Self::GardenGnome => &GNOME,
-            Self::Statue => &STATUE,
-            Self::Sundial => &SUNDIAL,
+            Self::GardenGnome | Self::Statue => Spot::BesideDoghouse,
+            Self::Sundial => Spot::InFrontOfFence,
         }
+    }
+
+    fn sprite(self, is_day: bool) -> Vec<(&'static str, Color)> {
+        match self {
+            Self::GardenGnome => vec![(" A ", HAT), ("(\")", FACE), ("/V\\", COAT)],
+            Self::Statue => {
+                let gold = if is_day { DAY_GOLD } else { NIGHT_GOLD };
+                vec![
+                    (" o ", gold),
+                    ("/|\\", gold),
+                    ("/ \\", gold),
+                    ("[=]", Color::Grey),
+                ]
+            }
+            Self::Sundial => vec![
+                (" |\\", Color::DarkYellow),
+                ("===", Color::White),
+                ("[_]", Color::Grey),
+            ],
+        }
+    }
+
+    fn height(self) -> u16 {
+        self.sprite(true).len() as u16
     }
 }
 
@@ -108,57 +135,58 @@ impl Trophies {
         &self,
         renderer: &mut TerminalRenderer,
         layout: &GardenLayout,
+        river: &River,
         is_day: bool,
     ) -> io::Result<()> {
-        for (trophy, x) in spots(&self.shown, layout) {
-            let sprite = trophy.sprite();
-            let y = layout.horizon_y.saturating_sub(sprite.len() as u16);
-            match trophy {
-                Trophy::GardenGnome => {
-                    for (row, color) in [HAT, FACE, COAT].into_iter().enumerate() {
-                        garden::draw_solid(renderer, x, y + row as u16, &sprite[row..=row], color)?;
-                    }
-                }
-                Trophy::Statue => {
-                    let gold = if is_day { DAY_GOLD } else { NIGHT_GOLD };
-                    garden::draw_solid(renderer, x, y, &sprite[..3], gold)?;
-                    garden::draw_solid(renderer, x, y + 3, &sprite[3..], Color::Grey)?;
-                }
-                Trophy::Sundial => {
-                    garden::draw_solid(renderer, x, y, &sprite[..1], Color::DarkYellow)?;
-                    garden::draw_solid(renderer, x, y + 1, &sprite[1..2], Color::White)?;
-                    garden::draw_solid(renderer, x, y + 2, &sprite[2..], Color::Grey)?;
-                }
+        for (trophy, x) in spots(&self.shown, layout, river) {
+            let y = layout.horizon_y.saturating_sub(trophy.height());
+            for (row, (line, color)) in trophy.sprite(is_day).into_iter().enumerate() {
+                garden::draw_solid(renderer, x, y + row as u16, &[line], color)?;
             }
         }
         Ok(())
     }
 }
 
-fn spots(shown: &[Trophy], layout: &GardenLayout) -> Vec<(Trophy, u16)> {
+fn spots(shown: &[Trophy], layout: &GardenLayout, river: &River) -> Vec<(Trophy, u16)> {
     let end = layout.fence_x().saturating_sub(GAP).min(layout.width);
     let mut x = Dog::seat_end(layout) + GAP;
     let mut spots = Vec::new();
     for &trophy in shown {
-        if trophy == Trophy::Sundial {
-            let fence_spot = layout.fence_x() + GAP;
-            if fence_spot + WIDTH <= layout.width {
-                spots.push((trophy, fence_spot));
+        let spot = match trophy.spot() {
+            Spot::BesideDoghouse => {
+                let spot = x;
+                x += WIDTH + GAP;
+                (spot + WIDTH <= end).then_some(spot)
             }
-            continue;
+            Spot::InFrontOfFence => {
+                let spot = layout.fence_x() + GAP;
+                (spot + WIDTH <= layout.width).then_some(spot)
+            }
+        };
+        if let Some(spot) = spot.filter(|&spot| clear_of_river(trophy, spot, layout, river)) {
+            spots.push((trophy, spot));
         }
-        if x + WIDTH <= end {
-            spots.push((trophy, x));
-        }
-        x += WIDTH + GAP;
     }
     spots
+}
+
+fn clear_of_river(trophy: Trophy, x: u16, layout: &GardenLayout, river: &River) -> bool {
+    let top = layout.horizon_y.saturating_sub(trophy.height());
+    (0..river.stretch_count())
+        .filter_map(|index| river.stretch(index))
+        .filter(|stretch| (top..layout.horizon_y).contains(&stretch.y))
+        .all(|stretch| stretch.x + stretch.width <= x || x + WIDTH <= stretch.x)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::scene::tree::Growth;
+
+    fn placed(shown: &[Trophy], layout: &GardenLayout) -> Vec<(Trophy, u16)> {
+        spots(shown, layout, &River::new(layout.width, layout.horizon_y))
+    }
 
     fn badges(ids: &[&str]) -> BTreeSet<String> {
         ids.iter().map(|id| id.to_string()).collect()
@@ -206,20 +234,20 @@ mod tests {
     #[test]
     fn test_sprites_are_as_wide_as_a_spot() {
         for trophy in TROPHIES {
-            assert!(
+            assert!([true, false].into_iter().all(|is_day| {
                 trophy
-                    .sprite()
+                    .sprite(is_day)
                     .iter()
-                    .all(|line| line.chars().count() == WIDTH as usize)
-            );
+                    .all(|(line, _)| line.chars().count() == WIDTH as usize)
+            }));
         }
     }
 
     #[test]
     fn test_trophies_stand_side_by_side_right_of_biscuit_seat_before_the_fence() {
-        for width in [80, 120, 200, 300] {
+        for width in [100, 120, 200, 300] {
             let layout = GardenLayout::new(width, 40, Growth::Full);
-            let spots = spots(&TROPHIES, &layout);
+            let spots = placed(&TROPHIES, &layout);
             assert!(spots.len() >= 2, "{width}");
             let (gnome, gnome_x) = spots[0];
             let (statue, statue_x) = spots[1];
@@ -236,7 +264,7 @@ mod tests {
         for width in 80..400 {
             for height in [40, 60] {
                 let layout = GardenLayout::new(width, height, Growth::Full);
-                let spots = spots(&TROPHIES, &layout);
+                let spots = placed(&TROPHIES, &layout);
                 let [_, (_, statue_x), (sundial, sundial_x)] = spots[..] else {
                     continue;
                 };
@@ -253,12 +281,13 @@ mod tests {
     #[test]
     fn test_sundial_without_room_in_front_of_the_fence_is_not_drawn() {
         let layout = GardenLayout::new(120, 40, Growth::Full);
+        let river = River::new(layout.width, layout.horizon_y);
         let narrow = GardenLayout {
             width: layout.fence_x() + GAP + WIDTH - 1,
             ..layout
         };
         assert_eq!(
-            spots(&TROPHIES, &narrow)
+            spots(&TROPHIES, &narrow, &river)
                 .iter()
                 .map(|(trophy, _)| *trophy)
                 .collect::<Vec<_>>(),
@@ -269,18 +298,39 @@ mod tests {
     #[test]
     fn test_lone_trophy_takes_the_first_spot() {
         let layout = GardenLayout::new(120, 40, Growth::Full);
-        let first = spots(&TROPHIES, &layout)[0].1;
-        assert_eq!(spots(&[Trophy::Statue], &layout), [(Trophy::Statue, first)]);
+        let first = placed(&TROPHIES, &layout)[0].1;
+        assert_eq!(
+            placed(&[Trophy::Statue], &layout),
+            [(Trophy::Statue, first)]
+        );
     }
 
     #[test]
     fn test_trophy_without_room_is_not_drawn() {
         let layout = GardenLayout::new(120, 40, Growth::Full);
-        let first = spots(&TROPHIES, &layout)[0].1;
+        let first = placed(&TROPHIES, &layout)[0].1;
         let narrow = GardenLayout {
             width: first + 2,
             ..layout
         };
-        assert!(spots(&TROPHIES, &narrow).is_empty());
+        assert!(placed(&TROPHIES, &narrow).is_empty());
+    }
+
+    #[test]
+    fn test_trophies_never_cover_the_river_above_the_horizon() {
+        let layout = GardenLayout::new(80, 40, Growth::Full);
+        let river = River::new(layout.width, layout.horizon_y);
+        assert_eq!(
+            (0..river.stretch_count())
+                .filter_map(|index| river.stretch(index))
+                .filter(|stretch| stretch.y + 4 >= layout.horizon_y && stretch.y < layout.horizon_y)
+                .map(|stretch| (stretch.x, stretch.width))
+                .collect::<Vec<_>>(),
+            [(70, 1), (71, 1), (71, 2), (70, 2)]
+        );
+        assert_eq!(
+            spots(&TROPHIES, &layout, &river),
+            [(Trophy::GardenGnome, 66), (Trophy::Sundial, 75)]
+        );
     }
 }

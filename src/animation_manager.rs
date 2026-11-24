@@ -544,7 +544,8 @@ impl AnimationManager {
         self.lore.update(&layout, conditions, &mut rng);
         self.lore.render_balloon(renderer)?;
         self.lore.render_scenery(renderer, &layout, conditions)?;
-        self.trophies.render(renderer, &layout, conditions.is_day)?;
+        self.trophies
+            .render(renderer, &layout, &river, conditions.is_day)?;
 
         if holiday.is_epiphany {
             epiphany::render_crown(renderer, &layout)?;

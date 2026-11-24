@@ -1,6 +1,6 @@
 ---
 issue: 154
-status: to-test
+status: to-close
 wiki: [[mail]], [[animation]], [[render]]
 note: ajouter un badge 60 jours et 100 jours, pour chacun l'utilisateur recois un recompense pour son jardin qu'il peut afficher ou non dans son jardin
 created: 2026-11-24
@@ -44,6 +44,17 @@ created: 2026-11-24
 - Round 3 : Badge `streak_365` (Fidélité, après 100, règle dans le même fichier que 60/100) ; Trophée `sundial` « Cadran solaire » dans `TROPHIES`, posé devant la clôture (`fence_x + 1`, par-dessus elle, `draw_solid`), Nain et Statue inchangés. Hunks : `src/badges.rs`, `src/app.rs`, `src/views.rs`, `src/animation/trophies.rs`, `src/story/reach.rs`.
 
 ## Review
+
+### Round validation — 2026-11-24
+- LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓
+- 🟠 Terminal de 80 à 90 colonnes : Statue et Cadran solaire couvraient l'arrivée de la rivière dans la Mare → un Trophée qui croise la rivière n'est pas dessiné. Corrigé. Grand terminal : aucun chevauchement.
+- 🟡 Place du Cadran solaire codée par son nom → `Trophy::spot()` + `match`. Corrigé.
+- 🟡 Découpage des dessins par indices en dur → `Trophy::sprite` en lignes `(texte, couleur)`. Corrigé.
+- 🟡 Test de la rivière recopiait la règle → valeurs fixes à 80 colonnes. Corrigé.
+- 🟡 Espace avant « : » dans « Album : tes trophées » : accepté, comme les autres titres de l'Album.
+- Autofix : 2 tours, relecture finale propre. clippy (hors `double_must_use` déjà sur develop), build, fmt, tests verts.
+- Effet visible : Nain caché à 71–73 colonnes, Statue à 77–93, Cadran solaire à 89–94 (rivière). Les trois ensemble à 75–76 et dès 95.
+- Wiki : [[animation]] (Trophées), [[render]] (page Album).
 
 ## Verification
 

@@ -37,7 +37,7 @@ Pure functions: story data → `View`. No I/O, no state.
 |---|---|---|
 | Lettre | `entry_view` (`src/views.rs:56`) | dispatch on `Entry` kind; footer changes with Choice / Énigme / input |
 | Courrier | `index_view` (`:114`) | scrolling list of read entries, date + sender |
-| Album | `album_pages` | summary, gifts, answers, objects, chest, Bouteilles, Cartes postales, recipes, drawings |
+| Album | `album_pages` | summary, gifts, answers, objects, chest, Bouteilles, Cartes postales, recipes, drawings, « Album : tes trophées » (`TROPHIES_PAGE`, `[1] au jardin` / `[2] rangé`) |
 | Aide | `help_view` (`:292`) | keys shown only once unlocked (`[e]`, `[r]`); `[s] réglages` always |
 | Bouteille | `bottle_view` (`:284`) | shown on pickup |
 | Réglages | `settings_view` (`:201`) | key `s`; one `Preformatted` row per `settings::ROWS`, selected one `> label < value >`. `↑`/`↓` row, `←`/`→` or `Entrée` change, `s`/`Échap` close. « Nouvelle heure du Facteur dès demain. » while new hour waits ([[mail]]). « Ville » = name, else `lat, lon` (2 decimals); change key → search box below. « Position auto » = `non` / `…` (detecting) / `oui` from `AutoLocation { Off, Locating, On }` (one enum, not two bools); change key toggles. Flow + save: [[architecture]] |
