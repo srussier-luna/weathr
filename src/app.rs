@@ -1,5 +1,6 @@
 use crate::animation::lore::{Choices, Unlocks};
 use crate::animation::neighbours_party::Neighbour;
+use crate::animation::trophies::Trophy;
 use crate::animation_manager::AnimationManager;
 use crate::app_state::AppState;
 use crate::badges::{self, Award, SAM_TRAIL, Tier};
@@ -228,24 +229,63 @@ fn answer_option(
     true
 }
 
+fn album_trophy(overlay: Option<Overlay>, badges: &BTreeSet<String>) -> Option<Trophy> {
+    match overlay {
+        Some(Overlay::Album {
+            page: views::TROPHIES_PAGE,
+            selected,
+        }) => Trophy::won(badges).nth(selected),
+        _ => None,
+    }
+}
+
+fn place_trophy(
+    overlay: Option<Overlay>,
+    badges: &BTreeSet<String>,
+    hidden: &mut BTreeSet<String>,
+    option: u8,
+) -> bool {
+    let Some(trophy) = album_trophy(overlay, badges) else {
+        return false;
+    };
+    if option == 1 {
+        hidden.remove(trophy.id());
+    } else {
+        hidden.insert(trophy.id().to_string());
+    }
+    true
+}
+
+fn album_rows(
+    page: usize,
+    answers: &BTreeMap<String, u8>,
+    badges: &BTreeSet<String>,
+) -> Option<usize> {
+    match page {
+        views::ANSWERS_PAGE => Some(letters::answered_choices(answers).count()),
+        views::TROPHIES_PAGE => Some(Trophy::won(badges).count()),
+        _ => None,
+    }
+}
+
 fn album_after_scroll(
     overlay: Option<Overlay>,
     step: isize,
     answers: &BTreeMap<String, u8>,
+    badges: &BTreeSet<String>,
 ) -> Option<Overlay> {
-    match overlay {
-        Some(Overlay::Album {
-            page: views::ANSWERS_PAGE,
-            selected,
-        }) => {
-            let last = letters::answered_choices(answers).count().saturating_sub(1);
-            Some(Overlay::Album {
-                page: views::ANSWERS_PAGE,
-                selected: selected.saturating_add_signed(step).min(last),
-            })
-        }
-        overlay => overlay,
-    }
+    let Some(Overlay::Album { page, selected }) = overlay else {
+        return overlay;
+    };
+    let Some(rows) = album_rows(page, answers, badges) else {
+        return overlay;
+    };
+    Some(Overlay::Album {
+        page,
+        selected: selected
+            .saturating_add_signed(step)
+            .min(rows.saturating_sub(1)),
+    })
 }
 
 fn requeue_replaced_badge(
@@ -861,6 +901,9 @@ impl App {
             (self.progress.streak >= 3, "streak_3"),
             (self.progress.streak >= 7, "streak_7"),
             (self.progress.streak >= 30, "streak_30"),
+            (self.progress.streak >= 60, "streak_60"),
+            (self.progress.streak >= 100, "streak_100"),
+            (self.progress.streak >= 365, "streak_365"),
             (self.progress.visited_cities.len() >= 7, "traveller"),
             (self.progress.visited_cities.len() >= 15, "backpacker"),
             (self.has_read_all_letters(), "all_letters"),
@@ -933,6 +976,7 @@ impl App {
             mark_unseen(&mut self.progress.unseen_badges, &new_badges);
             self.pending_badges.extend(new_badges);
             self.progress.save();
+            self.refresh_trophies();
         }
     }
 
@@ -1036,6 +1080,14 @@ impl App {
             unlocks
         });
         self.animations.set_guests(self.guests());
+        self.refresh_trophies();
+    }
+
+    fn refresh_trophies(&mut self) {
+        self.animations.set_trophies(Trophy::shown(
+            &self.progress.badges,
+            &self.progress.hidden_trophies,
+        ));
     }
 
     fn mail_date(&self) -> NaiveDate {
@@ -1071,6 +1123,16 @@ impl App {
     }
 
     fn press_option(&mut self, option: u8) {
+        if place_trophy(
+            self.overlay,
+            &self.progress.badges,
+            &mut self.progress.hidden_trophies,
+            option,
+        ) {
+            self.progress.save();
+            self.refresh_trophies();
+            return;
+        }
         let letter_choice = match self.overlay {
             Some(Overlay::Letter(index)) => self
                 .village_letter_number(index)
@@ -1328,12 +1390,12 @@ impl App {
             .first_mail(self.progress.letters_read.min(self.available_letters()))
     }
 
-    fn album_pages(&self, selected_answer: usize) -> Vec<overlay::View> {
+    fn album_pages(&self, selected: usize) -> Vec<overlay::View> {
         views::album_pages(
             self.read_entries(),
             &self.progress,
             &self.unlocks(),
-            selected_answer,
+            selected,
         )
     }
 
@@ -1539,7 +1601,12 @@ impl App {
                 ));
             }
             Some(Overlay::Album { .. }) => {
-                self.overlay = album_after_scroll(self.overlay, step, &self.progress.answers);
+                self.overlay = album_after_scroll(
+                    self.overlay,
+                    step,
+                    &self.progress.answers,
+                    &self.progress.badges,
+                );
             }
             _ => self.select_in_index(step),
         }
@@ -2058,6 +2125,7 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::animation::trophies::TROPHIES;
     use crate::config::LocationDisplay;
     use crate::progress::DATE_FORMAT;
     use crate::story::punishment::Punishment;
@@ -3031,7 +3099,9 @@ mod tests {
     fn test_album_selection_stays_within_answered_questions() {
         let answers = BTreeMap::from([("bow".to_string(), 1), ("well".to_string(), 2)]);
         let page = views::ANSWERS_PAGE;
-        let scroll = |overlay, step| album_position(album_after_scroll(overlay, step, &answers));
+        let no_badge = BTreeSet::new();
+        let scroll =
+            |overlay, step| album_position(album_after_scroll(overlay, step, &answers, &no_badge));
         assert_eq!(scroll(album(page, 0), -1), Some((page, 0)));
         assert_eq!(scroll(album(page, 0), 1), Some((page, 1)));
         assert_eq!(scroll(album(page, 1), 1), Some((page, 1)));
@@ -3041,7 +3111,12 @@ mod tests {
         let nothing_answered = BTreeMap::new();
         for step in [-1, 1] {
             assert_eq!(
-                album_position(album_after_scroll(album(page, 0), step, &nothing_answered)),
+                album_position(album_after_scroll(
+                    album(page, 0),
+                    step,
+                    &nothing_answered,
+                    &no_badge
+                )),
                 Some((page, 0))
             );
         }
@@ -3069,7 +3144,7 @@ mod tests {
         let before = answers.clone();
         assert!(!answer_option(album(0, 0), &mut answers, None, 1));
         assert!(!answer_option(
-            album(views::ANSWERS_PAGE + 1, 0),
+            album(views::TROPHIES_PAGE, 0),
             &mut answers,
             None,
             1
@@ -3102,5 +3177,122 @@ mod tests {
             2
         ));
         assert_eq!(nothing_answered, BTreeMap::from([("bow".to_string(), 2)]));
+    }
+
+    #[test]
+    fn test_trophy_page_selection_stays_within_won_trophies() {
+        let page = views::TROPHIES_PAGE;
+        let answers = BTreeMap::new();
+        let scroll = |badges: &BTreeSet<String>, selected, step| {
+            album_position(album_after_scroll(
+                album(page, selected),
+                step,
+                &answers,
+                badges,
+            ))
+        };
+        let both = BTreeSet::from(["streak_60".to_string(), "streak_100".to_string()]);
+        assert_eq!(scroll(&both, 0, 1), Some((page, 1)));
+        assert_eq!(scroll(&both, 1, 1), Some((page, 1)));
+        assert_eq!(scroll(&both, 1, -1), Some((page, 0)));
+
+        let gnome_only = BTreeSet::from(["streak_60".to_string()]);
+        assert_eq!(scroll(&gnome_only, 0, 1), Some((page, 0)));
+        assert_eq!(scroll(&BTreeSet::new(), 0, 1), Some((page, 0)));
+    }
+
+    #[test]
+    fn test_option_keys_put_the_selected_trophy_away_and_back() {
+        let badges = BTreeSet::from([
+            "streak_60".to_string(),
+            "streak_100".to_string(),
+            "streak_365".to_string(),
+        ]);
+        let mut hidden = BTreeSet::new();
+        let shown = |hidden: &BTreeSet<String>| Trophy::shown(&badges, hidden);
+
+        assert!(place_trophy(
+            album(views::TROPHIES_PAGE, 0),
+            &badges,
+            &mut hidden,
+            2
+        ));
+        assert_eq!(shown(&hidden), [Trophy::Statue, Trophy::Sundial]);
+        assert!(place_trophy(
+            album(views::TROPHIES_PAGE, 1),
+            &badges,
+            &mut hidden,
+            2
+        ));
+        assert_eq!(shown(&hidden), [Trophy::Sundial]);
+        assert!(place_trophy(
+            album(views::TROPHIES_PAGE, 2),
+            &badges,
+            &mut hidden,
+            2
+        ));
+        assert!(shown(&hidden).is_empty());
+        assert!(place_trophy(
+            album(views::TROPHIES_PAGE, 2),
+            &badges,
+            &mut hidden,
+            1
+        ));
+        assert_eq!(shown(&hidden), [Trophy::Sundial]);
+        assert!(place_trophy(
+            album(views::TROPHIES_PAGE, 0),
+            &badges,
+            &mut hidden,
+            1
+        ));
+        assert_eq!(shown(&hidden), [Trophy::GardenGnome, Trophy::Sundial]);
+        assert!(place_trophy(
+            album(views::TROPHIES_PAGE, 1),
+            &badges,
+            &mut hidden,
+            1
+        ));
+        assert_eq!(shown(&hidden), TROPHIES);
+
+        assert!(!place_trophy(
+            album(views::ANSWERS_PAGE, 0),
+            &badges,
+            &mut hidden,
+            2
+        ));
+        assert!(!place_trophy(None, &badges, &mut hidden, 2));
+        let gnome_only = BTreeSet::from(["streak_60".to_string()]);
+        assert!(!place_trophy(
+            album(views::TROPHIES_PAGE, 1),
+            &gnome_only,
+            &mut hidden,
+            2
+        ));
+        assert!(hidden.is_empty());
+    }
+
+    #[test]
+    fn test_old_save_without_trophy_choice_shows_won_trophies() {
+        let progress: Progress = serde_json::from_str(
+            r#"{"badges":["streak_30","streak_60","streak_100","streak_365"]}"#,
+        )
+        .unwrap();
+        assert!(progress.hidden_trophies.is_empty());
+        assert_eq!(
+            Trophy::shown(&progress.badges, &progress.hidden_trophies),
+            TROPHIES
+        );
+    }
+
+    #[test]
+    fn test_trophy_choice_survives_a_save_and_reload() {
+        let mut progress = Progress::default();
+        progress.badges.insert("streak_60".to_string());
+        progress
+            .hidden_trophies
+            .insert(Trophy::GardenGnome.id().to_string());
+        let reloaded: Progress =
+            serde_json::from_str(&serde_json::to_string(&progress).unwrap()).unwrap();
+        assert!(Trophy::shown(&reloaded.badges, &reloaded.hidden_trophies).is_empty());
     }
 }
