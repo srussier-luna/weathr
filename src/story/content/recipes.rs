@@ -102,6 +102,14 @@ pub fn diet_for_key(key: char) -> Option<Diet> {
     DIETS.get(usize::try_from(index).ok()?).copied()
 }
 
+pub fn has_every_recipe(diets: &BTreeSet<Diet>, received: &BTreeSet<usize>) -> bool {
+    RECIPES
+        .iter()
+        .enumerate()
+        .filter(|(_, recipe)| recipe.suits(diets))
+        .all(|(index, _)| received.contains(&index))
+}
+
 pub fn toggle_diet(diets: &mut BTreeSet<Diet>, diet: Diet) {
     if !diets.remove(&diet) {
         diets.insert(diet);
@@ -517,6 +525,30 @@ mod tests {
                 "Bûche de Noël",
             ]
         );
+    }
+
+    #[test]
+    fn test_every_recipe_means_every_one_that_suits_the_diets() {
+        let vegan = BTreeSet::from([Diet::Vegan]);
+        let mut received: BTreeSet<usize> = compatible(&[Diet::Vegan])
+            .into_iter()
+            .map(|number| number - 1)
+            .collect();
+        assert!(has_every_recipe(&vegan, &received));
+        let last = *received.iter().next_back().unwrap();
+        received.remove(&last);
+        assert!(!has_every_recipe(&vegan, &received));
+    }
+
+    #[test]
+    fn test_recipes_outside_the_diets_are_not_needed() {
+        let vegan = BTreeSet::from([Diet::Vegan]);
+        let all: BTreeSet<usize> = (0..RECIPES.len()).collect();
+        assert!(has_every_recipe(&vegan, &all));
+        assert!(!has_every_recipe(
+            &BTreeSet::new(),
+            &all.iter().copied().skip(1).collect()
+        ));
     }
 
     #[test]

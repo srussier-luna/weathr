@@ -29,7 +29,9 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Question | choix | | `Choice` | question [1]/[2] d'une Lettre du village ; réponse modifiable dans l'Album → [[mail]] |
 | Écho | | | `echoes` | phrase d'une Lettre suivante qui rappelle la réponse à une Question |
 | Bouteille | message à la mer | | `bottle` | message dérivant sur la rivière |
-| Badge | succès | | `Badge` | récompense : météo, fête, rare, fidélité, secret → [[mail]] |
+| Badge | succès | | `Badge` | récompense : météo, fête, fidélité, commun, rare, épique, secret → [[mail]] |
+| Commun | commune | | `BadgeKind::Common` | rangée des Badges les plus faciles à gagner → [[mail]] |
+| Épique | epic | | `BadgeKind::Epic` | rangée des Badges « tout collectionner » : Lettres, objets, Énigmes, Recettes → [[mail]] |
 | Ville visitée | | | `visited_cities` | ville détectée par la position auto ; compte pour Voyageur et Baroudeur |
 | Ville de Sam | | | `sam_cities` | ville d'une Carte postale où la position auto est passée (10 km) |
 | Palier | | niveau | `tier` | rang du badge de Sam : chocolat, bronze, argent, or, platine |

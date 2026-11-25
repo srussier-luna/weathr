@@ -4,8 +4,10 @@ use crate::weather::WeatherCondition;
 pub enum BadgeKind {
     Weather,
     Holiday,
-    Rare,
     Loyalty,
+    Common,
+    Rare,
+    Epic,
     Secret,
     Demerit,
 }
@@ -15,8 +17,10 @@ impl BadgeKind {
         match self {
             Self::Weather => "Météo",
             Self::Holiday => "Fêtes",
-            Self::Rare => "Rares",
             Self::Loyalty => "Fidélité",
+            Self::Common => "Commun",
+            Self::Rare => "Rares",
+            Self::Epic => "Épique",
             Self::Secret => "Secrets",
             Self::Demerit => "Mauvais points",
         }
@@ -199,16 +203,18 @@ pub const SAM_TRAIL: Badge = secret(
 
 const CONTRIBUTORS: [&str; 1] = ["bpisano"];
 
-pub const KINDS: [BadgeKind; 6] = [
+pub const KINDS: [BadgeKind; 8] = [
     BadgeKind::Weather,
     BadgeKind::Holiday,
-    BadgeKind::Rare,
     BadgeKind::Loyalty,
+    BadgeKind::Common,
+    BadgeKind::Rare,
+    BadgeKind::Epic,
     BadgeKind::Secret,
     BadgeKind::Demerit,
 ];
 
-pub const BADGES: [Badge; 50] = [
+pub const BADGES: &[Badge] = &[
     badge(
         "clear",
         "Ciel dégagé",
@@ -360,36 +366,6 @@ pub const BADGES: [Badge; 50] = [
         [" .--.", " |o o", "\\|/  "],
     ),
     badge(
-        "rainbow",
-        "Arc-en-ciel",
-        BadgeKind::Rare,
-        [" ___ ", "/ _ \\", "|/ \\|"],
-    ),
-    badge(
-        "shooting_star",
-        "Étoile filante",
-        BadgeKind::Rare,
-        ["    *", " .*' ", "*'   "],
-    ),
-    badge(
-        "postman",
-        "Facteur",
-        BadgeKind::Rare,
-        [" .-. ", "|__|>", "  |  "],
-    ),
-    badge(
-        "snowman",
-        "Bonhomme de neige",
-        BadgeKind::Rare,
-        [" _|_ ", " (o) ", "(   )"],
-    ),
-    badge(
-        "first_bottle",
-        "Bouteille à la mer",
-        BadgeKind::Rare,
-        ["  _  ", " | | ", "~[_]~"],
-    ),
-    badge(
         "streak_3",
         "3 jours d'affilée",
         BadgeKind::Loyalty,
@@ -410,38 +386,80 @@ pub const BADGES: [Badge; 50] = [
     badge(
         "traveller",
         "Voyageur",
-        BadgeKind::Loyalty,
+        BadgeKind::Common,
         [" .-. ", "|===|", "|___|"],
-    ),
-    badge(
-        "backpacker",
-        "Baroudeur",
-        BadgeKind::Loyalty,
-        [" .-. ", "/[_]\\", "\\___/"],
-    ),
-    badge(
-        "all_letters",
-        "Toutes les lettres",
-        BadgeKind::Loyalty,
-        ["_____", "|\\_/|", "|___|"],
     ),
     badge(
         "riddle_1",
         "Première énigme",
-        BadgeKind::Loyalty,
+        BadgeKind::Common,
         [" .-. ", "  .' ", "  .  "],
     ),
     badge(
         "riddle_10",
         "Dix énigmes",
-        BadgeKind::Loyalty,
+        BadgeKind::Common,
         ["?   ?", " 10  ", "?   ?"],
+    ),
+    badge(
+        "postman",
+        "Facteur",
+        BadgeKind::Common,
+        [" .-. ", "|__|>", "  |  "],
+    ),
+    badge(
+        "snowman",
+        "Bonhomme de neige",
+        BadgeKind::Common,
+        [" _|_ ", " (o) ", "(   )"],
+    ),
+    badge(
+        "first_bottle",
+        "Bouteille à la mer",
+        BadgeKind::Common,
+        ["  _  ", " | | ", "~[_]~"],
+    ),
+    badge(
+        "rainbow",
+        "Arc-en-ciel",
+        BadgeKind::Rare,
+        [" ___ ", "/ _ \\", "|/ \\|"],
+    ),
+    badge(
+        "shooting_star",
+        "Étoile filante",
+        BadgeKind::Rare,
+        ["    *", " .*' ", "*'   "],
+    ),
+    badge(
+        "backpacker",
+        "Baroudeur",
+        BadgeKind::Rare,
+        [" .-. ", "/[_]\\", "\\___/"],
+    ),
+    badge(
+        "all_letters",
+        "Toutes les lettres",
+        BadgeKind::Epic,
+        ["_____", "|\\_/|", "|___|"],
     ),
     badge(
         "all_objects",
         "Tous les objets",
-        BadgeKind::Loyalty,
+        BadgeKind::Epic,
         ["_____", "|_$_|", "|___|"],
+    ),
+    badge(
+        "all_riddles",
+        "Toutes les énigmes",
+        BadgeKind::Epic,
+        ["?_?_?", "|???|", "|___|"],
+    ),
+    badge(
+        "all_recipes",
+        "Toutes les recettes",
+        BadgeKind::Epic,
+        [" ___ ", "(___)", " \\_/ "],
     ),
     secret(
         "night_owl",
@@ -564,7 +582,7 @@ mod tests {
 
     #[test]
     fn test_every_badge_icon_is_three_lines_of_five_chars() {
-        for badge in &BADGES {
+        for badge in BADGES {
             assert!(
                 badge.icon.iter().all(|line| line.chars().count() == 5),
                 "{}",
@@ -676,11 +694,79 @@ mod tests {
         assert!(find(SAM_TRAIL.id).is_some_and(|badge| badge.kind == BadgeKind::Secret));
     }
 
+    fn row(kind: BadgeKind) -> Vec<&'static str> {
+        BADGES
+            .iter()
+            .filter(|badge| badge.kind == kind)
+            .map(|badge| badge.name)
+            .collect()
+    }
+
     #[test]
-    fn test_travel_badges_are_loyalty_badges() {
-        for id in ["traveller", "backpacker"] {
+    fn test_rows_are_ordered_from_weather_to_secrets() {
+        let titles: Vec<_> = KINDS.iter().map(BadgeKind::title).collect();
+        assert_eq!(
+            titles,
+            [
+                "Météo",
+                "Fêtes",
+                "Fidélité",
+                "Commun",
+                "Rares",
+                "Épique",
+                "Secrets",
+                "Mauvais points",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_loyalty_keeps_only_the_streaks() {
+        assert!(
+            BADGES
+                .iter()
+                .filter(|badge| badge.kind == BadgeKind::Loyalty)
+                .all(|badge| badge.id.starts_with("streak_"))
+        );
+        for id in ["streak_3", "streak_7", "streak_30"] {
             assert!(find(id).is_some_and(|badge| badge.kind == BadgeKind::Loyalty));
         }
+    }
+
+    #[test]
+    fn test_common_row_holds_the_easiest_badges() {
+        assert_eq!(
+            row(BadgeKind::Common),
+            [
+                "Voyageur",
+                "Première énigme",
+                "Dix énigmes",
+                "Facteur",
+                "Bonhomme de neige",
+                "Bouteille à la mer",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_backpacker_joins_the_rare_row() {
+        assert_eq!(
+            row(BadgeKind::Rare),
+            ["Arc-en-ciel", "Étoile filante", "Baroudeur"]
+        );
+    }
+
+    #[test]
+    fn test_epic_row_collects_everything() {
+        assert_eq!(
+            row(BadgeKind::Epic),
+            [
+                "Toutes les lettres",
+                "Tous les objets",
+                "Toutes les énigmes",
+                "Toutes les recettes",
+            ]
+        );
     }
 
     #[test]
