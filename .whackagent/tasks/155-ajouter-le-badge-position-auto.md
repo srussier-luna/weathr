@@ -1,6 +1,6 @@
 ---
 issue: 155
-status: to-test
+status: to-close
 wiki: [[mail]], [[weather]]
 note: ajouter un badge lorsque la geolocalisation est activé v1..8.1
 created: 2026-11-24
@@ -27,7 +27,6 @@ created: 2026-11-24
 
 ## Implementation
 
-stacked on: wa/157-ranger-les-badges-par-rarete @ d43bf9c
 
 - `geolocation::detect_location` / `detect_location_with_city` renvoient `DetectedLocation { location, is_from_device }` ; `detect_from(device, fallback)` décide, testé. Le cache `location.json` n'est écrit qu'après l'IP : une position du cache ne donne jamais le Badge.
 - `App::new` prend `Option<&DetectedLocation>` ; drapeau de session `is_located_by_device`, posé au lancement et par la détection des Réglages.
@@ -35,6 +34,12 @@ stacked on: wa/157-ranger-les-badges-par-rarete @ d43bf9c
 - Preuve : clippy sans nouveau warning, build OK, `cargo test` tout vert.
 
 ## Review
+
+### Round validation — 2026-11-25
+- Remise sur develop après la fusion de #157 (conflits résolus : ligne Boussole du glossaire, liste `BADGES`).
+- LENSES: style ✓ · elegance ✓ · structure ✓ · correctness ✓
+- Aucune remarque. clippy (hors `double_must_use` déjà sur develop), build, 802 tests verts.
+- Wiki : [[weather]] (position auto et Boussole).
 
 ## Verification
 

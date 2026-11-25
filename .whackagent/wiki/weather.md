@@ -37,12 +37,14 @@ Requests ask Open-Meteo for user units, then `normalize_*`
 
 ## Location — `src/geolocation.rs`
 
-`detect_location` (`src/geolocation.rs:34`), at launch when `location.auto`, in game
+`detect_location` (`src/geolocation.rs:51`), at launch when `location.auto`, in game
 when « Position auto » → oui:
 
 1. `CoreLocationCLI` (macOS device location, 10 s timeout) if installed.
 2. Cached `location.json` (24 h).
 3. ipinfo.io, 3 retries + backoff; result cached.
+
+Returns `DetectedLocation { location, is_from_device }`: `is_from_device` only when step 1 answered (`detect_from`). `App::is_located_by_device` (set at launch, `|=` from Réglages) awards the Commun Badge « Boussole » (`compass`, #155), only outside simulations and `--day`.
 
 `reverse_geocode` (`:170`) asks Nominatim for city/town/village name when
 `location.display` is `city` or `mixed`; cached per coordinates + language.
