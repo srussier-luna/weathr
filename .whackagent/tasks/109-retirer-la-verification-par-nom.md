@@ -1,6 +1,6 @@
 ---
 issue: 109
-status: to-test
+status: to-close
 wiki: [[mail]]
 note: plus aucun nom de joueur dans le code public ; aussi pour le Maître du temps
 created: 2026-11-26
@@ -40,6 +40,12 @@ created: 2026-11-26
 - Preuve : clippy (hors `double_must_use` déjà sur develop), build, fmt, tests verts.
 
 ## Review
+
+Round validation — 2026-11-26, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- 🟠 [correctness] identifiant git du joueur encore dans la tâche 133 → remplacé par `<identifiant du joueur>` / « le joueur ».
+- 🟡 [elegance] collection des Badges parcourue deux fois (`App::refresh`, `badges_title`) → autofix : `badges::collection_progress(earned) -> (gagnés, total)`.
+- Round 2 : clean. Tests 801 verts, fmt OK.
+- Hors revue, à la demande : prénom retiré de la tâche 104 ; NOUVEAUTES.md laissé tel quel.
 
 ## Verification
 

@@ -411,14 +411,8 @@ pub fn render_badges(
 }
 
 fn badges_title(earned: &BTreeSet<String>) -> String {
-    let total_earned = badges::collection(earned)
-        .filter(|badge| earned.contains(badge.id))
-        .count();
-    format!(
-        "Badges {}/{}",
-        total_earned,
-        badges::collection(earned).count()
-    )
+    let (owned, total) = badges::collection_progress(earned);
+    format!("Badges {owned}/{total}")
 }
 
 fn badge_lines(

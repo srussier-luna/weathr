@@ -558,6 +558,15 @@ pub fn collection(earned: &BTreeSet<String>) -> impl Iterator<Item = &'static Ba
         .filter(move |badge| badge.kind != BadgeKind::Demerit && is_shown(badge, earned))
 }
 
+pub fn collection_progress(earned: &BTreeSet<String>) -> (usize, usize) {
+    let shown: Vec<&Badge> = collection(earned).collect();
+    let owned = shown
+        .iter()
+        .filter(|badge| earned.contains(badge.id))
+        .count();
+    (owned, shown.len())
+}
+
 pub fn is_shown(badge: &Badge, earned: &BTreeSet<String>) -> bool {
     earned.contains(badge.id) || (badge.kind != BadgeKind::Demerit && !RETIRED.contains(&badge.id))
 }

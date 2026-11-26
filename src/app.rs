@@ -887,10 +887,7 @@ impl App {
         self.animations.set_story_frozen(
             self.clock.is_frozen() || self.is_box_full() || self.is_mail_banned(),
         );
-        let earned = badges::collection(&self.progress.badges)
-            .filter(|badge| self.progress.badges.contains(badge.id))
-            .count();
-        let total = badges::collection(&self.progress.badges).count();
+        let (earned, total) = badges::collection_progress(&self.progress.badges);
         self.state
             .set_progress_summary(is_mail_waiting, earned, total);
         self.state

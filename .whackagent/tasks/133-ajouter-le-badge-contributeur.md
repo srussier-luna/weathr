@@ -10,7 +10,7 @@ created: 2026-11-18
 
 - Badge secret pour qui a contribué au code du projet, sur le même modèle que « Vigie du ciel » (#108).
 - **Identité** : `updater::git_user_name()` (`git config user.name` dans `SOURCE_DIR`, déjà lu une fois dans `App::new`) présent dans une liste écrite dans le code.
-  - Liste : `<contributeur>` (srussier-luna retirée le 19/11).
+  - Liste : `<contributeur>` (identifiant du joueur retiré le 19/11).
   - Chaque nouveau contributeur → une tâche dédiée l'ajoute à la liste, pour la version suivante.
   - Pas de détection automatique par l'historique git, pas d'API GitHub.
 - **Badge** : nouveau secret dans `BADGES` (`src/badges.rs`), id `time_master`, nom « Maître du temps » (clin d'œil à la Timeline du contributeur).
@@ -39,13 +39,13 @@ created: 2026-11-18
 ## Review
 
 Round validation — 2026-11-19, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
-- Cumulative diff incl. feedback round 2 (contributeur seul): clean, no finding. Code changed since the user's test: srussier-luna no longer gets Maître du temps.
+- Cumulative diff incl. feedback round 2 (contributeur seul): clean, no finding. Code changed since the user's test: le joueur no longer gets Maître du temps.
 
 ## Verification
 
 Round 1 — runtime check by the agent (`target/debug/weathr` in a pty, fresh `HOME` each run, `user.name` steered with `GIT_CONFIG_GLOBAL`):
 
-- ✅ `srussier-luna`, `<contributeur>`, `"  <contributeur>  "` → card « Maître du temps · a mis le village à l'heure » after the Accueil; `b` → ticked with its hint, Badges x/44.
+- ✅ `<identifiant du joueur>`, `<contributeur>`, `"  <contributeur>  "` → card « Maître du temps · a mis le village à l'heure » after the Accueil; `b` → ticked with its hint, Badges x/44.
 - ✅ `<identifiant du joueur>` → Vigie du ciel only, Maître du temps stays `???`.
 - ✅ Other name, no `user.name`, no git on PATH → no secret card, hidden cells, no error.
 - ✅ One `git config user.name` per launch (single call in `App::new`, confirmed by a logging git shim).
@@ -53,5 +53,5 @@ Round 1 — runtime check by the agent (`target/debug/weathr` in a pty, fresh `H
 ## Feedback
 
 Round 2 — 2026-11-19. Asked: « pour 133 enlève-moi de la liste des personnes qui auront le badge, laisse le contributeur ».
-- adjustment: `CONTRIBUTORS` = `<contributeur>` only; `srussier-luna` → no Maître du temps.
-- Changes: `src/badges.rs` (+2 −2) list and tests. Review: in the validation round below. Verify: ✅ agent pty — srussier-luna no card; <contributeur> (spaces too) card; <identifiant du joueur> Vigie only; one git call.
+- adjustment: `CONTRIBUTORS` = `<contributeur>` only; `<identifiant du joueur>` → no Maître du temps.
+- Changes: `src/badges.rs` (+2 −2) list and tests. Review: in the validation round below. Verify: ✅ agent pty — <identifiant du joueur> no card; <contributeur> (spaces too) card; <identifiant du joueur> Vigie only; one git call.
