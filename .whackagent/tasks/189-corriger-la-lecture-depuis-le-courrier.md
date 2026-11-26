@@ -1,6 +1,6 @@
 ---
 issue: 189
-status: todo
+status: to-test
 wiki: [[mail]]
 note: "hot fix 1.8.2 : quand on lit les Lettres depuis L, garder les flèches jaunes pour passer à la suivante et la précédente ; depuis un courrier lu depuis L, Échap retourne sur L au lieu de tout quitter"
 created: 2026-11-26
@@ -32,8 +32,18 @@ Correctif de #105, livré en 1.8.2 (depuis `develop`, puis release 1.8.2).
 
 ## Implementation
 
+- `tabs::entry_beside(read, tab, selected, step)` : entrée voisine dans l'onglet (ordre `entries_in`), `None` aux bouts. `browse_letters` : `from` présent → déplacement dans l'onglet + `from.1` mis à jour ; `from` absent → chemin `TodayLetters` inchangé. Chevrons depuis [l] seulement vers un voisin.
+- `is_reread(overlay)` (app.rs) : `press_mail` ne fait rien depuis [l] ; `ReadContext.from_courrier`.
+- Pieds de page sans « [c] suivante » depuis [l] : `REREAD_LETTER_FOOTER`, `REREAD_QUESTION_FOOTER`, `REREAD_RIDDLE_FOOTER` (Lettre, carte postale, question, Gazette, Lettre de Régime répondue, P.-S. de nuit).
+- Gazette : `gazette::title(clock, day)` → « Gazette du lundi 7 septembre », dans la liste (`content::label` prend `day`) et en titre de la Gazette ouverte (avant : « LA GAZETTE · lundi 7 septembre »). Golden `save_37` : seules les lignes titre des Gazettes changent.
+- Tests : feuilletage dans l'onglet (milieu, bouts, jours différents), `is_reread`, Échap après deux `→`, pieds de page sans [c], titres de Gazette cohérents avec jj/mm.
+- Wiki mail : lecture depuis [l].
+- Preuve : clippy, build, tests, fmt verts.
+
 ## Review
 
 ## Verification
+
+round 1: manual validation — not run by agent
 
 ## Feedback

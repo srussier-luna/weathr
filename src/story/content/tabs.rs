@@ -55,6 +55,18 @@ pub fn entries_in(read: &[(usize, Entry)], tab: Tab) -> Vec<usize> {
         .collect()
 }
 
+pub fn entry_beside(
+    read: &[(usize, Entry)],
+    tab: Tab,
+    selected: usize,
+    step: isize,
+) -> Option<(usize, usize)> {
+    let beside = selected.checked_add_signed(step)?;
+    entries_in(read, tab)
+        .get(beside)
+        .map(|&index| (beside, index))
+}
+
 pub fn opening_tab(read: &[(usize, Entry)]) -> Tab {
     visible_tabs(read).first().copied().unwrap_or(Tab::Letters)
 }
@@ -135,6 +147,26 @@ mod tests {
         assert_eq!(entries_in(&read, Tab::Recipes).get(1), Some(&5));
         assert_eq!(entries_in(&read, Tab::Letters).get(1), Some(&2));
         assert_eq!(entries_in(&read, Tab::Letters).get(3), None);
+    }
+
+    #[test]
+    fn test_entry_beside_stays_in_its_tab_across_days() {
+        let read = read();
+
+        assert_eq!(entry_beside(&read, Tab::Letters, 1, 1), Some((2, 4)));
+        assert_eq!(entry_beside(&read, Tab::Letters, 1, -1), Some((0, 0)));
+        assert_eq!(entry_beside(&read, Tab::Recipes, 0, 1), Some((1, 5)));
+        assert_eq!(entry_beside(&read, Tab::Recipes, 1, -1), Some((0, 1)));
+    }
+
+    #[test]
+    fn test_entry_beside_stops_at_both_ends_of_the_tab() {
+        let read = read();
+
+        assert_eq!(entry_beside(&read, Tab::Letters, 0, -1), None);
+        assert_eq!(entry_beside(&read, Tab::Letters, 2, 1), None);
+        assert_eq!(entry_beside(&read, Tab::Gazettes, 0, -1), None);
+        assert_eq!(entry_beside(&read, Tab::Gazettes, 0, 1), None);
     }
 
     #[test]

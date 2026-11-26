@@ -80,7 +80,7 @@ pub fn index_view(
                     "{marker} {:>3}. {}  {}",
                     position + 1,
                     context.clock.date_of(day).format("%d/%m"),
-                    content::label(entry, context)
+                    content::label(day, entry, context)
                 ))
             }),
     );
@@ -724,6 +724,33 @@ mod tests {
             &save.context(12),
         )));
         assert_eq!(out, courrier_fixture());
+    }
+
+    #[test]
+    fn test_gazette_rows_are_named_after_their_date() {
+        let save = SavedGame::load();
+        let read = save
+            .timeline
+            .first_mail(save.progress.letters_read.min(save.available));
+        let view = index_view(read, Tab::Gazettes, 0, 200, &save.context(12));
+        let rows: Vec<String> = view
+            .lines
+            .iter()
+            .filter_map(|line| match line {
+                Line::Preformatted(row) if row.contains("Gazette du") => Some(row.clone()),
+                _ => None,
+            })
+            .collect();
+
+        assert!(!rows.is_empty());
+        assert!(rows[0].ends_with("07/09  Gazette du lundi 7 septembre"));
+        for row in &rows {
+            let (date, title) = row[7..].split_once("  ").unwrap();
+            let (day, month) = date.split_once('/').unwrap();
+            let month = MONTHS[month.parse::<usize>().unwrap() - 1];
+            let day: u32 = day.parse().unwrap();
+            assert_eq!(title, format!("Gazette du lundi {day} {month}"));
+        }
     }
 
     fn day(month: u32, day: u32) -> NaiveDate {
