@@ -1,6 +1,6 @@
 ---
 issue: 182
-status: todo
+status: to-test
 wiki: [[mail]]
 note: "Badge contributeur de type écrivain ou plume d'or, pour le contributeur qui a réécrit les Lettres (#177)."
 created: 2026-11-26
@@ -35,8 +35,17 @@ Glossaire à ajouter :
 
 ## Implementation
 
+- `src/badges.rs` : `BadgeKind::Contribution` (« Contribution »), dans `KINDS` après Secret, avant Demerit. Constructeur `contribution(...)`. Vigie du ciel, Maître du temps et nouveau `village_quill` (« Plume du village », « a prêté sa plume au village », icône plume) dans ce bloc, ids inchangés. `RETIRED` supprimé : `is_shown` = gagné, ou ni Demerit ni Contribution. `WRITERS = ["bpisano"]` + `is_village_quill` via `is_listed`. `CONTRIBUTORS` vide et commentaires « do not remove » gardés.
+- `src/app.rs` : champ `is_village_quill` depuis le même `user_name` lu dans `App::new`, attribution à côté de `time_master` (`earn` n'attribue qu'une fois).
+- `src/overlay.rs` : aucun rendu changé (rangée vide déjà sautée) ; test `test_contribution_row_shows_only_once_owned`.
+- Tests : titres des rangées, `is_village_quill` (nom, espaces, autre, vide, None), rangée Contribution, collection et total avec/sans Badges, total Tricheur ajusté.
+- Glossaire : Contribution, Plume du village ; ligne Badge. Wiki mail : rangée Contribution.
+- Preuve : clippy, build, tests (179 + 614 + 10 + 7 + 3 + 5), fmt verts.
+
 ## Review
 
 ## Verification
+
+round 1: manual validation — not run by agent
 
 ## Feedback

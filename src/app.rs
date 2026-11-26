@@ -664,6 +664,7 @@ pub struct App {
     is_simulated: bool,
     awards_badges: bool,
     is_time_master: bool,
+    is_village_quill: bool,
     toasts: VecDeque<String>,
     toast_started: Option<Instant>,
     pending_badges: VecDeque<Award>,
@@ -832,6 +833,7 @@ impl App {
             is_simulated: is_forced,
             awards_badges: simulation.day.is_none(),
             is_time_master: badges::is_time_master(user_name.as_deref()),
+            is_village_quill: badges::is_village_quill(user_name.as_deref()),
             toasts: VecDeque::new(),
             toast_started: None,
             pending_badges: trip.tier_cards.into(),
@@ -942,6 +944,7 @@ impl App {
             (self.has_received_every_recipe(), "all_recipes"),
             (!self.progress.bottles.is_empty(), "first_bottle"),
             (self.is_time_master, "time_master"),
+            (self.is_village_quill, "village_quill"),
         ];
         found.extend(
             milestones

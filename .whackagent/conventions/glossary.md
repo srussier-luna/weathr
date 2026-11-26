@@ -29,9 +29,11 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Question | choix | | `Choice` | question [1]/[2] d'une Lettre du village ; réponse modifiable dans l'Album → [[mail]] |
 | Écho | | | `echoes` | phrase d'une Lettre suivante qui rappelle la réponse à une Question |
 | Bouteille | message à la mer | | `bottle` | message dérivant sur la rivière |
-| Badge | succès | | `Badge` | récompense : météo, fête, fidélité, commun, rare, épique, secret → [[mail]] |
+| Badge | succès | | `Badge` | récompense : météo, fête, fidélité, commun, rare, épique, secret, contribution → [[mail]] |
 | Commun | commune | | `BadgeKind::Common` | rangée des Badges les plus faciles à gagner → [[mail]] |
 | Épique | epic | | `BadgeKind::Epic` | rangée des Badges « tout collectionner » : Lettres, objets, Énigmes, Recettes → [[mail]] |
+| Contribution | contributeur | | `BadgeKind::Contribution` | rangée des Badges donnés à des personnes (Vigie du ciel, Maître du temps, Plume du village), affichée seulement pour qui en a un → [[mail]] |
+| Plume du village | plume d'or, écrivain | | `village_quill` | Badge Contribution de l'auteur des Lettres réécrites (#177) → [[mail]] |
 | Boussole | | | `compass` | Badge Commun : Ville trouvée par CoreLocationCLI → [[weather]] |
 | Ville visitée | | | `visited_cities` | ville détectée par la position auto ; compte pour Voyageur et Baroudeur |
 | Ville de Sam | | | `sam_cities` | ville d'une Carte postale où la position auto est passée (10 km) |
