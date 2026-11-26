@@ -1,5 +1,13 @@
 # Nouveautés
 
+## 2026-11-26
+
+- La barre de statut a fait peau neuve : plus claire, plus colorée, et toujours à l'heure.
+- Les voisins ont repris la plume : toutes leurs Lettres ont été réécrites, chacun avec sa propre voix. Ça vaut le coup de les relire.
+- Gaston a mis de l'ordre dans ton Courrier : chaque chose à sa place, et les Lettres du jour sur le dessus.
+- Rester fidèle finit par payer : certains Badges t'offrent maintenant de quoi décorer ton jardin. Ouvre l'œil !
+- Grand ménage dans tes Badges : on a tout sorti, tout épousseté, et chacun a retrouvé son étagère selon sa rareté.
+
 ## 2026-11-23
 
 - Rose t'écrit : dis-lui ce que tu manges, ses recettes s'adapteront à ton assiette.
