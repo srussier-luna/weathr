@@ -725,7 +725,7 @@ mod tests {
     fn test_cheater_family_shows_only_once_earned_and_never_counts() {
         let honest = BTreeSet::from(["rain".to_string()]);
         let cheater = BTreeSet::from(["rain".to_string(), badges::CHEATER.to_string()]);
-        let total = BADGES.len() - 3;
+        let total = BADGES.len() - 4;
 
         let lines = badge_lines(&honest, &BTreeSet::new(), 1, 0, 76).lines;
         assert!(!lines.iter().any(|line| line.contains("Mauvais points")));
@@ -742,7 +742,7 @@ mod tests {
     }
 
     #[test]
-    fn test_retired_badges_show_only_once_owned() {
+    fn test_contribution_row_shows_only_once_owned() {
         let fresh = BTreeSet::from(["rain".to_string()]);
         let owner = BTreeSet::from([
             "rain".to_string(),
@@ -755,30 +755,50 @@ mod tests {
             .count();
 
         let lines = badge_lines(&fresh, &BTreeSet::new(), 1, 0, 76).lines;
+        assert!(!lines.iter().any(|line| line.starts_with("Contribution")));
         assert!(!lines.iter().any(|line| line.contains("Vigie du ciel")));
         assert!(!lines.iter().any(|line| line.contains("Maître du temps")));
-        assert!(lines.contains(&format!("Secrets (0/{})", secrets - 2)));
+        assert!(!lines.iter().any(|line| line.contains("Plume du village")));
         let hidden = lines
             .iter()
             .map(|line| line.matches("???").count())
             .sum::<usize>();
-        assert_eq!(hidden, secrets - 2);
+        assert_eq!(hidden, secrets);
         assert_eq!(
             badges_title(&fresh),
-            format!("Badges 1/{}", BADGES.len() - 3)
+            format!("Badges 1/{}", BADGES.len() - 4)
         );
 
         let lines = badge_lines(&owner, &BTreeSet::new(), 1, 0, 76).lines;
-        assert!(lines.iter().any(|line| line.contains("[x] Vigie du ciel")));
+        let secrets_row = lines
+            .iter()
+            .position(|line| *line == format!("Secrets (0/{secrets})"))
+            .unwrap();
+        let contribution_row = lines
+            .iter()
+            .position(|line| line == "Contribution (2/2)")
+            .unwrap();
+        assert!(secrets_row < contribution_row);
         assert!(
-            lines
+            lines[secrets_row..contribution_row]
+                .iter()
+                .all(|line| !line.contains("Vigie du ciel") && !line.contains("Maître du temps"))
+        );
+        let contribution = &lines[contribution_row + 1..];
+        assert!(
+            contribution
+                .iter()
+                .any(|line| line.contains("[x] Vigie du ciel"))
+        );
+        assert!(
+            contribution
                 .iter()
                 .any(|line| line.contains("[x] Maître du temps"))
         );
-        assert!(lines.contains(&format!("Secrets (2/{secrets})")));
+        assert!(!lines.iter().any(|line| line.contains("Plume du village")));
         assert_eq!(
             badges_title(&owner),
-            format!("Badges 3/{}", BADGES.len() - 1)
+            format!("Badges 3/{}", BADGES.len() - 2)
         );
     }
 

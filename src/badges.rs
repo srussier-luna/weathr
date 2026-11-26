@@ -10,6 +10,7 @@ pub enum BadgeKind {
     Rare,
     Epic,
     Secret,
+    Contribution,
     Demerit,
 }
 
@@ -23,6 +24,7 @@ impl BadgeKind {
             Self::Rare => "Rares",
             Self::Epic => "Épique",
             Self::Secret => "Secrets",
+            Self::Contribution => "Contribution",
             Self::Demerit => "Mauvais points",
         }
     }
@@ -74,6 +76,15 @@ const fn secret(
     icon: [&'static str; 3],
 ) -> Badge {
     hinted(id, name, BadgeKind::Secret, hint, icon)
+}
+
+const fn contribution(
+    id: &'static str,
+    name: &'static str,
+    hint: &'static str,
+    icon: [&'static str; 3],
+) -> Badge {
+    hinted(id, name, BadgeKind::Contribution, hint, icon)
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -204,9 +215,9 @@ pub const SAM_TRAIL: Badge = secret(
 // Kept on purpose for future contributor Badges: do not remove.
 const CONTRIBUTORS: &[&str] = &[];
 
-const RETIRED: [&str; 2] = ["sky_lookout", "time_master"];
+const WRITERS: &[&str] = &["bpisano"];
 
-pub const KINDS: [BadgeKind; 8] = [
+pub const KINDS: [BadgeKind; 9] = [
     BadgeKind::Weather,
     BadgeKind::Holiday,
     BadgeKind::Loyalty,
@@ -214,6 +225,7 @@ pub const KINDS: [BadgeKind; 8] = [
     BadgeKind::Rare,
     BadgeKind::Epic,
     BadgeKind::Secret,
+    BadgeKind::Contribution,
     BadgeKind::Demerit,
 ];
 
@@ -530,19 +542,25 @@ pub const BADGES: &[Badge] = &[
         "boîte aux lettres pleine",
         [" _n_ ", "| | |", "|_|_|"],
     ),
-    secret(
+    SAM_TRAIL,
+    contribution(
         "sky_lookout",
         "Vigie du ciel",
         "a repéré les nuages pressés",
         [" .-. ", "(___)", "  \\o "],
     ),
-    secret(
+    contribution(
         "time_master",
         "Maître du temps",
         "a mis le village à l'heure",
         ["\\___/", " )_( ", "/___\\"],
     ),
-    SAM_TRAIL,
+    contribution(
+        "village_quill",
+        "Plume du village",
+        "a prêté sa plume au village",
+        ["   //", "  // ", " /'  "],
+    ),
     hinted(
         CHEATER,
         "Tricheur",
@@ -568,7 +586,7 @@ pub fn collection_progress(earned: &BTreeSet<String>) -> (usize, usize) {
 }
 
 pub fn is_shown(badge: &Badge, earned: &BTreeSet<String>) -> bool {
-    earned.contains(badge.id) || (badge.kind != BadgeKind::Demerit && !RETIRED.contains(&badge.id))
+    earned.contains(badge.id) || !matches!(badge.kind, BadgeKind::Demerit | BadgeKind::Contribution)
 }
 
 pub fn weather_badges() -> impl Iterator<Item = &'static Badge> {
@@ -606,6 +624,10 @@ pub fn name(id: &str) -> &'static str {
 
 pub fn is_time_master(user_name: Option<&str>) -> bool {
     is_listed(user_name, CONTRIBUTORS)
+}
+
+pub fn is_village_quill(user_name: Option<&str>) -> bool {
+    is_listed(user_name, WRITERS)
 }
 
 fn is_listed(user_name: Option<&str>, logins: &[&str]) -> bool {
@@ -751,6 +773,7 @@ mod tests {
                 "Rares",
                 "Épique",
                 "Secrets",
+                "Contribution",
                 "Mauvais points",
             ]
         );
@@ -875,16 +898,37 @@ mod tests {
     }
 
     #[test]
-    fn test_retired_badges_stay_known_for_saves_that_own_them() {
-        assert!(RETIRED.iter().all(|id| find(id).is_some()));
+    fn test_village_quill_goes_to_the_listed_writer() {
+        assert!(is_village_quill(Some("bpisano")));
+        assert!(is_village_quill(Some(" bpisano\n")));
+        assert!(!is_village_quill(Some("Alex Martin")));
+        assert!(!is_village_quill(Some("")));
+        assert!(!is_village_quill(None));
     }
 
     #[test]
-    fn test_retired_badges_leave_the_collection_unless_owned() {
+    fn test_contribution_row_holds_the_badges_given_to_people() {
+        assert_eq!(
+            row(BadgeKind::Contribution),
+            ["Vigie du ciel", "Maître du temps", "Plume du village"]
+        );
+        assert!(
+            BADGES
+                .iter()
+                .filter(|badge| badge.kind == BadgeKind::Contribution)
+                .all(|badge| badge.hint.is_some())
+        );
+    }
+
+    #[test]
+    fn test_contribution_badges_leave_the_collection_unless_owned() {
         let none = BTreeSet::new();
-        let owned = BTreeSet::from(["sky_lookout".to_string(), "time_master".to_string()]);
-        assert!(collection(&none).all(|badge| !RETIRED.contains(&badge.id)));
-        assert_eq!(collection(&none).count(), BADGES.len() - 3);
-        assert_eq!(collection(&owned).count(), BADGES.len() - 1);
+        let owned = BTreeSet::from(["sky_lookout".to_string(), "village_quill".to_string()]);
+        assert!(collection(&none).all(|badge| badge.kind != BadgeKind::Contribution));
+        assert_eq!(collection(&none).count(), BADGES.len() - 4);
+        assert_eq!(collection(&owned).count(), BADGES.len() - 2);
+        assert_eq!(collection_progress(&owned), (2, BADGES.len() - 2));
+        assert!(is_shown(find("village_quill").unwrap(), &owned));
+        assert!(!is_shown(find("time_master").unwrap(), &owned));
     }
 }
