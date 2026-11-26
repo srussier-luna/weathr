@@ -15,9 +15,10 @@ created: 2026-10-26
 - `Place` = where the player looks: `Garden` only in this task. #9 adds `Potager`, #11 adds `HoneyFete`.
   - Each place declares when it's available (e.g. Potager after its Arrival, Fête du miel on Jours de jeu 119–120).
   - Each place declares whether it shows the sky. Garden and Fête du miel: yes. Potager: no (top-down view, #9).
-- **Lieux menu** (replaces the per-place keys of the note): key `m` opens a small overlay listing available places.
+- **Lieux menu** (replaces the per-place keys of the note): key `p` opens a small overlay listing available places.
+  - `m` is taken by the Maison (#171), so the menu uses `p`, the key the note gave to the Potager.
   - Garden always listed, current place marked. `↑`/`↓` + `Enter` goes there, `Esc` closes.
-  - Only the garden available → `m` does nothing, Aide doesn't list it.
+  - Only the garden available → `p` does nothing, Aide doesn't list it.
   - Opens like the other overlays (`Overlay` enum), same box style (`render`).
 - **`Esc`**: closes an open overlay first, else returns to the garden from any other place.
 - **Switch is instant**: the scene changes from one frame to the next. Status line shows the place name outside the garden.
@@ -34,10 +35,10 @@ created: 2026-10-26
 ## Acceptance criteria
 
 - [ ] `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test` all green.
-- [ ] Running `weathr`: garden, keys and Aide look exactly as before; `m` does nothing.
-- [ ] Test, dummy place available: `m` lists Garden (marked) + dummy; `↓` + `Enter` switches to it.
+- [ ] Running `weathr`: garden, keys and Aide look exactly as before; `p` does nothing.
+- [ ] Test, dummy place available: `p` lists Garden (marked) + dummy; `↓` + `Enter` switches to it.
 - [ ] Test, in dummy place: `Esc` returns to the garden.
-- [ ] Test, dummy place unavailable: `m` does nothing, Aide doesn't list it.
+- [ ] Test, dummy place unavailable: `p` does nothing, Aide doesn't list it.
 - [ ] Test, dummy place + Lettre open: `Esc` closes the Lettre, place unchanged; second `Esc` → garden.
 - [ ] Test, dummy place without sky: no sky layer, weather layer drawn, no shooting-star Badge.
 - [ ] Test, dummy place with sky: sky drawn, shooting star still awards its Badge; `r` does nothing.
