@@ -1,6 +1,6 @@
 ---
 issue: 184
-status: to-test
+status: to-close
 wiki: [[updater]]
 note: "Aujourd'hui le joueur choisit s'il veut la mise à jour. Pour certaines versions, une mise à jour forcée, sans demander l'autorisation."
 created: 2026-11-26
@@ -46,6 +46,12 @@ Glossaire à ajouter :
 - Preuve : clippy, build, tests, fmt verts.
 
 ## Review
+
+Round validation — 2026-11-26, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- 🟡 [style] wiki updater : bannière « (prompt only) » → « (proposed or forced update) ». Corrigé.
+- 🟡 [style] wiki updater : numéros de ligne `mod.rs` périmés (16, 21, 51, 149, 291). Corrigé.
+- Code : aucune remarque. Tests verts (dont 12 `updater::forced`).
+- Test joueur : mise à jour forcée installée depuis une source locale (`test/184-upstream`, `min_version = "1.8.1"`).
 
 ## Verification
 
