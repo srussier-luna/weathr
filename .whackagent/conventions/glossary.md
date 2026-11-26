@@ -83,6 +83,7 @@ Product objects and notions, their states, roles, plans. Users see these: one co
 | Poulailler | | | | abri des poules la nuit et sous la pluie, au jardin et au Potager |
 | Carré | parcelle | case | | une des 9 planches du Potager : vide, plantée, fanée, mûre |
 | Jour de plante | | | | jour où weathr est ouvert ; fait pousser et faner les plantes du Potager |
+| Mise à jour forcée | force update | | `min_version` | mise à jour installée sans question quand la version locale est plus vieille que `[package.metadata.weathr] min_version` du `Cargo.toml` distant → [[updater]] |
 | Sauvegarde | export | | `backup` | fichier écrit par `--export` : progression + réglages, relu par `--import` |
 <!-- | Inbox | mailbox | Messages | `Inbox` | received mail, not archived, all accounts | -->
 <!-- | Message | mail | Email | `Message` | one mail. States: Draft, Sent, Pending | -->
