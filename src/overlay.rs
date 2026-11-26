@@ -411,10 +411,14 @@ pub fn render_badges(
 }
 
 fn badges_title(earned: &BTreeSet<String>) -> String {
-    let total_earned = badges::collection()
+    let total_earned = badges::collection(earned)
         .filter(|badge| earned.contains(badge.id))
         .count();
-    format!("Badges {}/{}", total_earned, badges::collection().count())
+    format!(
+        "Badges {}/{}",
+        total_earned,
+        badges::collection(earned).count()
+    )
 }
 
 fn badge_lines(
@@ -429,15 +433,18 @@ fn badge_lines(
     let mut highlights = Vec::new();
 
     for kind in KINDS {
-        let badges: Vec<_> = BADGES.iter().filter(|badge| badge.kind == kind).collect();
+        let badges: Vec<_> = BADGES
+            .iter()
+            .filter(|badge| badge.kind == kind && badges::is_shown(badge, earned))
+            .collect();
+        if badges.is_empty() {
+            continue;
+        }
         let count = badges
             .iter()
             .filter(|badge| earned.contains(badge.id))
             .count();
         let is_demerit = kind == BadgeKind::Demerit;
-        if is_demerit && count == 0 {
-            continue;
-        }
         lines.push(String::new());
         lines.push(if is_demerit {
             kind.title().to_string()
@@ -724,7 +731,7 @@ mod tests {
     fn test_cheater_family_shows_only_once_earned_and_never_counts() {
         let honest = BTreeSet::from(["rain".to_string()]);
         let cheater = BTreeSet::from(["rain".to_string(), badges::CHEATER.to_string()]);
-        let total = BADGES.len() - 1;
+        let total = BADGES.len() - 3;
 
         let lines = badge_lines(&honest, &BTreeSet::new(), 1, 0, 76).lines;
         assert!(!lines.iter().any(|line| line.contains("Mauvais points")));
@@ -738,6 +745,47 @@ mod tests {
             .unwrap();
         assert_eq!(lines[family + 1], "[x] Tricheur (pris la main dans le sac)");
         assert_eq!(badges_title(&cheater), format!("Badges 1/{total}"));
+    }
+
+    #[test]
+    fn test_retired_badges_show_only_once_owned() {
+        let fresh = BTreeSet::from(["rain".to_string()]);
+        let owner = BTreeSet::from([
+            "rain".to_string(),
+            "sky_lookout".to_string(),
+            "time_master".to_string(),
+        ]);
+        let secrets = BADGES
+            .iter()
+            .filter(|badge| badge.kind == BadgeKind::Secret)
+            .count();
+
+        let lines = badge_lines(&fresh, &BTreeSet::new(), 1, 0, 76).lines;
+        assert!(!lines.iter().any(|line| line.contains("Vigie du ciel")));
+        assert!(!lines.iter().any(|line| line.contains("Maître du temps")));
+        assert!(lines.contains(&format!("Secrets (0/{})", secrets - 2)));
+        let hidden = lines
+            .iter()
+            .map(|line| line.matches("???").count())
+            .sum::<usize>();
+        assert_eq!(hidden, secrets - 2);
+        assert_eq!(
+            badges_title(&fresh),
+            format!("Badges 1/{}", BADGES.len() - 3)
+        );
+
+        let lines = badge_lines(&owner, &BTreeSet::new(), 1, 0, 76).lines;
+        assert!(lines.iter().any(|line| line.contains("[x] Vigie du ciel")));
+        assert!(
+            lines
+                .iter()
+                .any(|line| line.contains("[x] Maître du temps"))
+        );
+        assert!(lines.contains(&format!("Secrets (2/{secrets})")));
+        assert_eq!(
+            badges_title(&owner),
+            format!("Badges 3/{}", BADGES.len() - 1)
+        );
     }
 
     #[test]
