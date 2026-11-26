@@ -438,6 +438,12 @@ pub const BADGES: &[Badge] = &[
         ["  _  ", " | | ", "~[_]~"],
     ),
     badge(
+        "compass",
+        "Boussole",
+        BadgeKind::Common,
+        ["  N  ", "W-o-E", "  S  "],
+    ),
+    badge(
         "rainbow",
         "Arc-en-ciel",
         BadgeKind::Rare,
@@ -762,6 +768,7 @@ mod tests {
                 "Facteur",
                 "Bonhomme de neige",
                 "Bouteille à la mer",
+                "Boussole",
             ]
         );
     }

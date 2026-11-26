@@ -7,7 +7,7 @@ use crate::badges::{self, Award, SAM_TRAIL, Tier};
 use crate::config::{Config, LocationDisplay, Setting};
 use crate::demo::{Demo, SCENE_DURATION};
 use crate::error::{GeolocationError, WeatherError};
-use crate::geolocation::{self, GeoLocation};
+use crate::geolocation::{self, DetectedLocation, GeoLocation};
 use crate::holiday::{Holiday, HolidayBox, MeteorShower};
 use crate::hud::{self, Placed, toast, toolbar, weather_bar::WeatherBar};
 use crate::overlay;
@@ -665,7 +665,8 @@ pub struct App {
     auto_location: bool,
     city_name_language: String,
     city_search: Option<CitySearch>,
-    location_detection: Option<oneshot::Receiver<Result<GeoLocation, GeolocationError>>>,
+    location_detection: Option<oneshot::Receiver<Result<DetectedLocation, GeolocationError>>>,
+    is_located_by_device: bool,
     shows_every_habitant: bool,
     diet_draft: BTreeSet<Diet>,
     diet_editor: Option<BTreeSet<Diet>>,
@@ -675,7 +676,7 @@ impl App {
     pub fn new(
         config: &Config,
         simulation: SimulationOptions,
-        launch_location: Option<&GeoLocation>,
+        launch_location: Option<&DetectedLocation>,
         show_leaves: bool,
         term_width: u16,
         term_height: u16,
@@ -764,7 +765,11 @@ impl App {
         if shows_welcome {
             animations.postman_visit();
         }
-        let trip = record_trip(&mut progress, launch_location, simulation.day);
+        let trip = record_trip(
+            &mut progress,
+            launch_location.map(|detected| &detected.location),
+            simulation.day,
+        );
         if progress.record_visit() || trip.is_new {
             progress.save();
         }
@@ -829,6 +834,7 @@ impl App {
             city_name_language: config.location.city_name_language.clone(),
             city_search: None,
             location_detection: None,
+            is_located_by_device: launch_location.is_some_and(|detected| detected.is_from_device),
             shows_every_habitant: shows_every_habitant(is_forced, simulation.day),
             diet_draft: BTreeSet::new(),
             diet_editor: None,
@@ -960,6 +966,7 @@ impl App {
                 (sightings.snowman, "snowman"),
                 (self.star_watch.seen >= STARS_FOR_HUNTER, "star_hunter"),
                 (has_all_weathers, "full_weather"),
+                (self.is_located_by_device, "compass"),
             ];
             found.extend(events.iter().filter(|(seen, _)| *seen).map(|(_, id)| *id));
         }
@@ -1852,8 +1859,12 @@ impl App {
         };
         self.location_detection = None;
         match result {
-            Ok(location) => {
+            Ok(DetectedLocation {
+                location,
+                is_from_device,
+            }) => {
                 self.auto_location = true;
+                self.is_located_by_device |= is_from_device;
                 self.save_location(&location, true);
                 self.move_to(location);
             }
