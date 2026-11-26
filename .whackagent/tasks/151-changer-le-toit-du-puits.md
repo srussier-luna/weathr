@@ -1,6 +1,6 @@
 ---
 issue: 151
-status: todo
+status: to-close
 wiki: [[scene]], [[animation]]
 note: changer la forme du haut du puits
 created: 2026-11-24
@@ -30,8 +30,20 @@ created: 2026-11-24
 
 ## Implementation
 
+- `src/animation/lore.rs` : `WELL` lignes 0-1 → `" _______"`, `"/vvvvvvv\\"` ; bas, couleurs et dessin inchangés.
+- `cargo build` vert · `cargo test` vert · `cargo fmt -- --check` propre.
+- Non commité : commit/push réservés à `/wa-close` (règle perso).
+
 ## Review
 
+### validation — 2026-11-24
+
+- Verdict : clean · style ✓ · elegance ✓ · structure ✓ · correctness ✓
+- `cargo test` vert (tests `garden.rs` placement/chevauchement inclus).
+- Aucun autofix, code inchangé depuis le test.
+
 ## Verification
+
+manual validation — not run by agent
 
 ## Feedback
