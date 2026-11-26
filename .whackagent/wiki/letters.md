@@ -177,3 +177,15 @@ Plus:
 - Letters rewritten in #174.
 
 > Ronde de 0 h 40. Boue près du puits, encore. Rien à signaler. Des pas vers ta maison, aucun qui revient. Sûrement les miens. J'ai dû mal compter.
+
+## Le village — la boîte Nouveautés
+
+Not a Lettre: the in-game release notes (`NOUVEAUTES.md`, see [[updater]]). Factual GitHub notes stay outside this sheet (see `wording.md`).
+
+- Voix: neighbours passing news over the hedge. One line per novelty, « tu », a wink at the end. Puts the player on the trail, never tells everything.
+- Tic: « Ouvre l'œil » — once per note at most.
+- Ne dit jamais: technical jargon (correctif, bug, version, optimisation); spoilers (hidden mechanic, object, place or Lettre the player may not have seen).
+- One exclamation mark per note at most.
+
+> De nouvelles petites bouilles pourraient bien s'installer au jardin. Ouvre l'œil !
+> Le grand Arbre a des envies de grandeur. Laisse-lui le temps.
