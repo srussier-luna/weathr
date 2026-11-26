@@ -25,10 +25,12 @@ use crate::story::content::neighbours_note::NeighboursNote;
 use crate::story::content::recipes::{
     Diet, diet_for_key, diet_ids, diets_from_ids, has_every_recipe, toggle_diet,
 };
+use crate::story::content::tabs::{self, Tab};
 use crate::story::content::{self, ReadContext};
 use crate::story::postman_note::{self, MailStep};
 use crate::story::reach::{launch_reach, settle};
 use crate::story::sources::{self, Recipes};
+use crate::story::today_letters::TodayLetters;
 use crate::story::{Entry, StoryClock, Thing, Timeline, pause, punishment};
 use crate::travel;
 use crate::updater;
@@ -193,6 +195,10 @@ fn next_overlay(overlay: Option<Overlay>, pending_badges: &mut VecDeque<Award>) 
 fn closed_overlay(overlay: Option<Overlay>) -> Option<Overlay> {
     match overlay {
         Some(Overlay::NoteBadge(_)) => Some(Overlay::PostmanNote),
+        Some(Overlay::Letter {
+            from: Some((tab, selected)),
+            ..
+        }) => Some(Overlay::Index { tab, selected }),
         _ => None,
     }
 }
@@ -219,7 +225,9 @@ fn answer_option(
     option: u8,
 ) -> bool {
     let choice = match overlay {
-        Some(Overlay::Letter(_)) => letter_choice.filter(|choice| !answers.contains_key(choice.id)),
+        Some(Overlay::Letter { .. }) => {
+            letter_choice.filter(|choice| !answers.contains_key(choice.id))
+        }
         _ => album_choice(overlay, answers),
     };
     let Some(choice) = choice else {
@@ -581,14 +589,25 @@ pub struct SimulationOptions {
 
 #[derive(Clone, Copy)]
 enum Overlay {
-    Letter(usize),
+    Letter {
+        index: usize,
+        from: Option<(Tab, usize)>,
+    },
     Badges,
-    Album { page: usize, selected: usize },
-    Backup { shows_welcome: bool },
+    Album {
+        page: usize,
+        selected: usize,
+    },
+    Backup {
+        shows_welcome: bool,
+    },
     Bottle(usize),
     Help,
     HolidayBox(&'static HolidayBox),
-    Index(usize),
+    Index {
+        tab: Tab,
+        selected: usize,
+    },
     NeighboursNote,
     NewBadge(Award),
     NoteBadge(Award),
@@ -1137,7 +1156,7 @@ impl App {
             return;
         }
         let letter_choice = match self.overlay {
-            Some(Overlay::Letter(index)) => self
+            Some(Overlay::Letter { index, .. }) => self
                 .village_letter_number(index)
                 .and_then(letters::choice_for),
             _ => None,
@@ -1154,7 +1173,7 @@ impl App {
     }
 
     fn is_diet_letter_waiting(&self) -> bool {
-        let Some(Overlay::Letter(index)) = self.overlay else {
+        let Some(Overlay::Letter { index, .. }) = self.overlay else {
             return false;
         };
         self.progress.diet_answered_day.is_none()
@@ -1204,11 +1223,12 @@ impl App {
             self.timeline_day,
         );
         let open_letter = match self.overlay {
-            Some(Overlay::Letter(index)) => Some(index),
+            Some(Overlay::Letter { index, .. }) => Some(index),
             _ => None,
         };
         match postman_note::next_mail(
             open_letter,
+            self.today_letters().start,
             self.available_letters(),
             self.progress.letters_read,
             is_note_waiting,
@@ -1228,17 +1248,47 @@ impl App {
     }
 
     fn browse_letters(&mut self, step: isize) {
-        if let Some(Overlay::Letter(index)) = self.overlay {
-            let available = self.available_letters();
-            let target = index
-                .saturating_add_signed(step)
-                .min(available.saturating_sub(1));
+        if let Some(Overlay::Letter { index, .. }) = self.overlay
+            && let Some(target) = self
+                .today_letters()
+                .browse(index, step, self.available_letters())
+        {
             self.open_letter(target);
         }
     }
 
+    fn today_letters(&self) -> TodayLetters {
+        TodayLetters::on_day(
+            self.saved_today_letters(),
+            self.timeline_day,
+            self.progress.letters_read,
+        )
+    }
+
+    fn saved_today_letters(&self) -> Option<TodayLetters> {
+        self.progress
+            .today_letters()
+            .map(|(day, start)| TodayLetters { day, start })
+    }
+
+    fn settle_today_letters(&mut self) {
+        let today = self.today_letters();
+        if self.saved_today_letters() != Some(today) {
+            self.progress.set_today_letters(today.day, today.start);
+            self.progress.save();
+        }
+    }
+
     fn open_letter(&mut self, index: usize) {
-        self.overlay = Some(Overlay::Letter(index));
+        let from = match self.overlay {
+            Some(Overlay::Letter { from, .. }) => from,
+            _ => None,
+        };
+        self.open_letter_from(index, from);
+    }
+
+    fn open_letter_from(&mut self, index: usize, from: Option<(Tab, usize)>) {
+        self.overlay = Some(Overlay::Letter { index, from });
         if content::is_night_hour(Local::now().hour()) {
             self.award(vec!["night_reading"]);
         }
@@ -1270,16 +1320,17 @@ impl App {
         }
 
         let view = match self.overlay {
-            Some(Overlay::Letter(index)) => {
+            Some(Overlay::Letter { index, .. }) => {
                 let delivered = self.timeline.first_mail(self.available_letters());
                 let Some(view) = content::entry_view(delivered, index, &self.read_context()) else {
                     return Ok(());
                 };
-                let has_unread_mail = postman_note::has_unread_after(
-                    index,
-                    self.available_letters(),
-                    self.progress.letters_read,
-                );
+                let has_unread_mail = self.today_letters().contains(index)
+                    && postman_note::has_unread_after(
+                        index,
+                        self.available_letters(),
+                        self.progress.letters_read,
+                    );
                 return overlay::render_with_chevrons(renderer, &view, false, has_unread_mail);
             }
             Some(Overlay::Album { page, selected }) => {
@@ -1310,11 +1361,12 @@ impl App {
                 overlay_rows(renderer.get_size().1),
                 notes_width(renderer),
             ),
-            Some(Overlay::Index(selected)) => {
+            Some(Overlay::Index { tab, selected }) => {
                 let rows = overlay_rows(renderer.get_size().1);
-                if self.is_box_full() {
+                let view = if self.is_box_full() {
                     views::full_box_index_view(
                         self.read_entries(),
+                        tab,
                         selected,
                         rows,
                         overlay::text_width(renderer, views::INDEX_FRAME),
@@ -1322,8 +1374,16 @@ impl App {
                         self.back_to_school(),
                     )
                 } else {
-                    views::index_view(self.read_entries(), selected, rows, &self.read_context())
-                }
+                    views::index_view(
+                        self.read_entries(),
+                        tab,
+                        selected,
+                        rows,
+                        &self.read_context(),
+                    )
+                };
+                let (has_previous, has_next) = tabs::has_neighbours(self.read_entries(), tab);
+                return overlay::render_with_chevrons(renderer, &view, has_previous, has_next);
             }
             Some(Overlay::Help) => views::help_view(
                 &self.unlocks(),
@@ -1439,6 +1499,7 @@ impl App {
             self.refresh_unlocks();
             self.refresh_tree_growth();
         }
+        self.settle_today_letters();
     }
 
     fn tree_growth(&self) -> Growth {
@@ -1530,7 +1591,7 @@ impl App {
 
     fn gazette_week(&self) -> Option<usize> {
         match self.overlay {
-            Some(Overlay::Letter(index)) => match self.timeline.mail_at(index)?.1 {
+            Some(Overlay::Letter { index, .. }) => match self.timeline.mail_at(index)?.1 {
                 Entry::Gazette(week) => Some(week),
                 _ => None,
             },
@@ -1577,17 +1638,39 @@ impl App {
 
     fn toggle_index(&mut self) {
         self.overlay = match self.overlay {
-            Some(Overlay::Index(_)) => None,
-            _ => Some(Overlay::Index(self.read_entries().len().saturating_sub(1))),
+            Some(Overlay::Index { .. }) => None,
+            _ => Some(self.index_on(tabs::opening_tab(self.read_entries()))),
         };
     }
 
+    fn index_on(&self, tab: Tab) -> Overlay {
+        Overlay::Index {
+            tab,
+            selected: self.last_in_tab(tab),
+        }
+    }
+
+    fn last_in_tab(&self, tab: Tab) -> usize {
+        tabs::entries_in(self.read_entries(), tab)
+            .len()
+            .saturating_sub(1)
+    }
+
     fn select_in_index(&mut self, step: isize) {
-        if let Some(Overlay::Index(selected)) = self.overlay {
-            let last = self.read_entries().len().saturating_sub(1);
-            self.overlay = Some(Overlay::Index(
-                selected.saturating_add_signed(step).min(last),
-            ));
+        if let Some(Overlay::Index { tab, selected }) = self.overlay {
+            self.overlay = Some(Overlay::Index {
+                tab,
+                selected: selected
+                    .saturating_add_signed(step)
+                    .min(self.last_in_tab(tab)),
+            });
+        }
+    }
+
+    fn switch_tab(&mut self, step: isize) {
+        if let Some(Overlay::Index { tab, .. }) = self.overlay {
+            let tab = tabs::switch_tab(self.read_entries(), tab, step);
+            self.overlay = Some(self.index_on(tab));
         }
     }
 
@@ -1626,10 +1709,10 @@ impl App {
     }
 
     fn reread_selected(&mut self) {
-        if let Some(Overlay::Index(selected)) = self.overlay
-            && selected < self.read_entries().len()
+        if let Some(Overlay::Index { tab, selected }) = self.overlay
+            && let Some(&index) = tabs::entries_in(self.read_entries(), tab).get(selected)
         {
-            self.open_letter(selected);
+            self.open_letter_from(index, Some((tab, selected)));
         }
     }
 
@@ -1642,7 +1725,7 @@ impl App {
                 | Overlay::PostmanNote,
             ) => self.overlay = closed_overlay(self.overlay),
             Some(Overlay::Settings(_)) => self.change_setting(1),
-            Some(Overlay::Letter(_)) if self.is_diet_letter_waiting() => self.send_diets(),
+            Some(Overlay::Letter { .. }) if self.is_diet_letter_waiting() => self.send_diets(),
             _ => self.reread_selected(),
         }
     }
@@ -1911,7 +1994,8 @@ impl App {
                     selected: 0,
                 });
             }
-            Some(Overlay::Letter(_)) => self.browse_letters(step),
+            Some(Overlay::Letter { .. }) => self.browse_letters(step),
+            Some(Overlay::Index { .. }) => self.switch_tab(step),
             Some(Overlay::Settings(_)) => self.change_setting(step),
             _ => {}
         }
@@ -2247,8 +2331,12 @@ mod tests {
     fn test_badge_card_waits_for_the_open_window_to_close() {
         let mut pending: VecDeque<_> = earn(&mut BTreeSet::new(), vec!["night_reading"]).into();
 
-        let overlay = next_overlay(Some(Overlay::Letter(3)), &mut pending);
-        assert!(matches!(overlay, Some(Overlay::Letter(3))));
+        let letter = Overlay::Letter {
+            index: 3,
+            from: None,
+        };
+        let overlay = next_overlay(Some(letter), &mut pending);
+        assert!(matches!(overlay, Some(Overlay::Letter { index: 3, .. })));
         assert_eq!(pending.len(), 1);
         assert_eq!(
             card_id(next_overlay(None, &mut pending)),
@@ -2286,6 +2374,27 @@ mod tests {
             Some(Overlay::PostmanNote)
         ));
         assert!(closed_overlay(closed).is_none());
+    }
+
+    #[test]
+    fn test_letter_reread_from_the_courrier_goes_back_to_it() {
+        let reread = Some(Overlay::Letter {
+            index: 4,
+            from: Some((Tab::Recipes, 1)),
+        });
+        let from_mail = Some(Overlay::Letter {
+            index: 4,
+            from: None,
+        });
+
+        assert!(matches!(
+            closed_overlay(reread),
+            Some(Overlay::Index {
+                tab: Tab::Recipes,
+                selected: 1
+            })
+        ));
+        assert!(closed_overlay(from_mail).is_none());
     }
 
     #[test]
@@ -3163,7 +3272,10 @@ mod tests {
             1
         ));
         assert!(!answer_option(
-            Some(Overlay::Letter(2)),
+            Some(Overlay::Letter {
+                index: 2,
+                from: None,
+            }),
             &mut answers,
             letters::choice_for(3),
             1
@@ -3178,7 +3290,10 @@ mod tests {
             1
         ));
         assert!(answer_option(
-            Some(Overlay::Letter(2)),
+            Some(Overlay::Letter {
+                index: 2,
+                from: None,
+            }),
             &mut nothing_answered,
             letters::choice_for(3),
             2

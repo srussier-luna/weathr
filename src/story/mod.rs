@@ -7,6 +7,7 @@ pub mod punishment;
 pub mod reach;
 pub mod sources;
 pub mod timeline;
+pub mod today_letters;
 
 pub use clock::StoryClock;
 pub use event::{Entry, Thing};
