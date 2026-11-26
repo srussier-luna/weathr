@@ -11,6 +11,7 @@ use crate::story::content::chronicles::{BOTTLE_MESSAGES, CHEST_SOUVENIRS, DRAWIN
 use crate::story::content::letters::answered_choices;
 use crate::story::content::neighbours_note::{self, NeighboursNote};
 use crate::story::content::recipes::{Diet, RECIPES, diet_labels};
+use crate::story::content::tabs::{self, Tab};
 use crate::story::content::{
     self, MONTHS, ReadContext, diet_checklist, postcard_lines, postcard_title, text,
 };
@@ -20,7 +21,8 @@ use chrono::{Datelike, NaiveDate};
 use std::collections::BTreeSet;
 use std::path::Path;
 
-const INDEX_FOOTER: &str = "[↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer";
+const INDEX_FOOTER: &str =
+    "[←] [→] onglets  [↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer";
 const ALBUM_FOOTER: &str = "[<] [>] pages  [a] ou [Echap] fermer";
 const ANSWERS_FOOTER: &str =
     "[↑] [↓] choisir  [1] [2] changer  [<] [>] pages  [a] ou [Echap] fermer";
@@ -50,29 +52,38 @@ const FULL_BOX_NOTE: &str =
 
 pub fn index_view(
     read_entries: &[(usize, Entry)],
+    tab: Tab,
     selected: usize,
     rows: usize,
     context: &ReadContext,
 ) -> View {
-    let rows = rows.max(1);
+    let shown = tabs::entries_in(read_entries, tab);
+    let mut lines = Vec::new();
+    if !shown.is_empty() {
+        lines.push(Line::Preformatted(tab_bar(read_entries, tab)));
+        lines.push(Line::Blank);
+    }
+    let rows = rows.saturating_sub(lines.len()).max(1);
     let first = selected
         .saturating_sub(rows / 2)
-        .min(read_entries.len().saturating_sub(rows));
-    let mut lines: Vec<Line> = read_entries
-        .iter()
-        .enumerate()
-        .skip(first)
-        .take(rows)
-        .map(|(index, (day, entry))| {
-            let marker = if index == selected { '>' } else { ' ' };
-            Line::Preformatted(format!(
-                "{marker} {:>3}. {}  {}",
-                index + 1,
-                context.clock.date_of(*day).format("%d/%m"),
-                content::label(*entry, context)
-            ))
-        })
-        .collect();
+        .min(shown.len().saturating_sub(rows));
+    lines.extend(
+        shown
+            .iter()
+            .enumerate()
+            .skip(first)
+            .take(rows)
+            .map(|(position, &index)| {
+                let (day, entry) = read_entries[index];
+                let marker = if position == selected { '>' } else { ' ' };
+                Line::Preformatted(format!(
+                    "{marker} {:>3}. {}  {}",
+                    position + 1,
+                    context.clock.date_of(day).format("%d/%m"),
+                    content::label(entry, context)
+                ))
+            }),
+    );
     if lines.is_empty() {
         lines.push(text("Aucune lettre lue pour l'instant."));
     }
@@ -82,6 +93,20 @@ pub fn index_view(
         footer: INDEX_FOOTER.to_string(),
         frame: INDEX_FRAME,
     }
+}
+
+fn tab_bar(read_entries: &[(usize, Entry)], current: Tab) -> String {
+    tabs::visible_tabs(read_entries)
+        .into_iter()
+        .map(|tab| {
+            if tab == current {
+                format!("[{}]", tab.label())
+            } else {
+                tab.label().to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("  ")
 }
 
 fn day_and_month(date: NaiveDate) -> String {
@@ -159,6 +184,7 @@ pub fn neighbours_note_view(note: NeighboursNote) -> View {
 
 pub fn full_box_index_view(
     read_entries: &[(usize, Entry)],
+    tab: Tab,
     selected: usize,
     rows: usize,
     width: usize,
@@ -170,6 +196,7 @@ pub fn full_box_index_view(
     let note_rows = overlay::lay_out(&note, width).len();
     let mut view = index_view(
         read_entries,
+        tab,
         selected,
         rows.saturating_sub(note_rows),
         context,
@@ -689,7 +716,13 @@ mod tests {
             .first_mail(save.progress.letters_read.min(save.available));
 
         let mut out = format!("opens: {opened}\n");
-        out.push_str(&render(&index_view(read, 0, 200, &save.context(12))));
+        out.push_str(&render(&index_view(
+            read,
+            Tab::Letters,
+            0,
+            200,
+            &save.context(12),
+        )));
         assert_eq!(out, courrier_fixture());
     }
 
@@ -704,9 +737,10 @@ mod tests {
         let save = SavedGame::load();
         let read = save.timeline.first_mail(10);
         let context = save.context(12);
-        let plain = render(&index_view(read, 0, 20, &context));
+        let plain = render(&index_view(read, Tab::Letters, 0, 20, &context));
         let full = render(&full_box_index_view(
             read,
+            Tab::Letters,
             0,
             20,
             200,
@@ -814,7 +848,7 @@ mod tests {
         let read = save.timeline.first_mail(10);
         let context = save.context(12);
         let (rows, width) = (12, 30);
-        let view = full_box_index_view(read, 0, rows, width, &context, day(10, 31));
+        let view = full_box_index_view(read, Tab::Letters, 0, rows, width, &context, day(10, 31));
 
         assert!(overlay::lay_out(&view.lines, width).len() <= rows);
         assert!(render(&view).contains("pre: >"));

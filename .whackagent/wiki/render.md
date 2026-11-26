@@ -36,7 +36,7 @@ Pure functions: story data → `View`. No I/O, no state.
 | Screen | Function | Notes |
 |---|---|---|
 | Lettre | `entry_view` (`src/views.rs:56`) | dispatch on `Entry` kind; footer changes with Choice / Énigme / input |
-| Courrier | `index_view` (`:114`) | scrolling list of read entries, date + sender |
+| Courrier | `index_view` | key `l`; tabs (`src/story/content/tabs.rs`) Lettres · Cartes postales · Archives · Recettes · Gazettes, empty ones hidden (no spoiler), opens on Lettres. Tab bar on top, `←`/`→` switch tab (yellow chevrons via `tabs::has_neighbours`), `↑`/`↓` list numbered per tab, `Entrée` rereads |
 | Album | `album_pages` | summary, gifts, answers, objects, chest, Bouteilles, Cartes postales, recipes, drawings, « Album : tes trophées » (`TROPHIES_PAGE`, `[1] au jardin` / `[2] rangé`) |
 | Aide | `help_view` (`:292`) | keys shown only once unlocked (`[e]`, `[r]`); `[s] réglages` always |
 | Bouteille | `bottle_view` (`:284`) | shown on pickup |

@@ -135,6 +135,10 @@ pub struct Progress {
     mail_ban_until: Option<String>,
     #[serde(default)]
     pub hidden_trophies: BTreeSet<String>,
+    #[serde(default)]
+    today_letters_day: Option<usize>,
+    #[serde(default)]
+    today_letters_start: usize,
     #[serde(default, skip_serializing)]
     format: u32,
     #[serde(skip)]
@@ -231,6 +235,16 @@ impl Progress {
             in_memory: true,
             ..Self::default()
         }
+    }
+
+    pub fn today_letters(&self) -> Option<(usize, usize)> {
+        self.today_letters_day
+            .map(|day| (day, self.today_letters_start))
+    }
+
+    pub fn set_today_letters(&mut self, day: usize, start: usize) {
+        self.today_letters_day = Some(day);
+        self.today_letters_start = start;
     }
 
     pub fn save(&self) {

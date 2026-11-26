@@ -11,6 +11,7 @@ pub fn is_postman_note_waiting(box_full: bool, note_day: Option<usize>, day: usi
 
 pub fn next_mail(
     open_letter: Option<usize>,
+    range_start: usize,
     available: usize,
     letters_read: usize,
     is_note_waiting: bool,
@@ -19,6 +20,15 @@ pub fn next_mail(
         return None;
     }
     Some(match open_letter {
+        Some(index) if index < range_start => {
+            if letters_read < available {
+                MailStep::Letter(letters_read)
+            } else if is_note_waiting {
+                MailStep::PostmanNote
+            } else {
+                MailStep::Close
+            }
+        }
         Some(index) if index + 1 < available => MailStep::Letter(index + 1),
         Some(_) => MailStep::Close,
         None if is_note_waiting => MailStep::PostmanNote,
@@ -56,19 +66,19 @@ mod tests {
 
         assert!(waiting);
         assert_eq!(
-            next_mail(None, available, 0, waiting),
+            next_mail(None, 0, available, 0, waiting),
             Some(MailStep::PostmanNote)
         );
         assert_eq!(
-            next_mail(None, available, 0, false),
+            next_mail(None, 0, available, 0, false),
             Some(MailStep::Letter(0))
         );
         assert_eq!(
-            next_mail(Some(0), available, 0, waiting),
+            next_mail(Some(0), 0, available, 0, waiting),
             Some(MailStep::Letter(1))
         );
         assert_eq!(
-            next_mail(Some(available - 1), available, 0, waiting),
+            next_mail(Some(available - 1), 0, available, 0, waiting),
             Some(MailStep::Close)
         );
     }
@@ -81,7 +91,7 @@ mod tests {
 
         assert!(!waiting);
         assert_eq!(
-            next_mail(None, available, 0, waiting),
+            next_mail(None, 0, available, 0, waiting),
             Some(MailStep::Letter(0))
         );
         assert!(!is_postman_note_waiting(
@@ -97,8 +107,26 @@ mod tests {
     }
 
     #[test]
+    fn test_mail_from_a_past_letter_jumps_to_the_next_unread() {
+        assert_eq!(
+            next_mail(Some(1), 5, 8, 6, false),
+            Some(MailStep::Letter(6))
+        );
+        assert_eq!(next_mail(Some(4), 5, 8, 6, true), Some(MailStep::Letter(6)));
+        assert_eq!(
+            next_mail(Some(1), 5, 8, 8, true),
+            Some(MailStep::PostmanNote)
+        );
+        assert_eq!(next_mail(Some(1), 5, 8, 8, false), Some(MailStep::Close));
+        assert_eq!(
+            next_mail(Some(5), 5, 8, 8, false),
+            Some(MailStep::Letter(6))
+        );
+    }
+
+    #[test]
     fn test_empty_courrier_opens_nothing() {
-        assert_eq!(next_mail(None, 0, 0, true), None);
+        assert_eq!(next_mail(None, 0, 0, 0, true), None);
     }
 
     #[test]

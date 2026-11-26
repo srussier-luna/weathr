@@ -1,6 +1,6 @@
 ---
 issue: 105
-status: todo
+status: to-close
 wiki: [[mail]], [[render]]
 note: il faudrait que les lettre dans la boite au letrre soit suele;met celle du jours, les autres sont lisble dans L uniquement — + séparation dans L des lettres, des recettes, des gazettes
 created: 2026-11-24
@@ -43,8 +43,34 @@ created: 2026-11-24
 
 ## Implementation
 
+- `src/story/today_letters.rs` (nouveau) : plage des Lettres lues pendant le Jour de jeu (`TodayLetters { day, start }`, `on_day`, `contains`, `browse`), 8 tests.
+- `src/progress/mod.rs` : `today_letters_day`, `today_letters_start` (`#[serde(default)]`).
+- `src/story/content/tabs.rs` (nouveau) : onglets Lettres / Cartes postales / Archives / Recettes / Gazettes, onglets vides cachés, bascule bornée, 5 tests.
+- `src/app.rs` : plage recalée à chaque bascule de jour (`settle_today_letters`), `browse_letters` limité à la plage, `Overlay::Index { tab, selected }`, `←`/`→` changent d'onglet.
+- `src/views.rs` : barre d'onglets, numérotation par onglet, pied `[←] [→] onglets` ; titre « Lettres reçues (n) » gardé.
+- `src/story/testdata/save_37_golden.txt` : partie Courrier régénérée (onglets).
+- Chevron droit : affiché seulement sur une Lettre de la plage. Pas de chevron gauche, comme avant.
+- `cargo build` vert · `cargo test` vert (543 lib). Clippy : seule l'erreur `double_must_use` d'`async_trait` (`src/weather/provider.rs`), déjà présente avant.
+- Non commité : commit/push réservés à `/wa-close`.
+
 ## Review
+
+### validation — 2026-11-26
+
+- Tour 1 : 4 remarques, corrigées automatiquement.
+  - 🟠 correctness : `c` depuis une Lettre passée feuilletait les anciennes → va à la prochaine non lue, sinon Mot du Facteur, sinon ferme (`next_mail(range_start)`).
+  - 🟠 correctness : `Échap` sur une Lettre rouverte depuis `l` → revient au Courrier, même onglet et sélection (`Overlay::Letter { index, from }`).
+  - 🟡 structure : chevrons d'onglets via `tabs::has_neighbours`.
+  - 🟡 elegance : champs `today_letters_*` privés, accesseurs `today_letters()` / `set_today_letters()`.
+- Tour 2 : clean · style ✓ · elegance ✓ · structure ✓ · correctness ✓
+- `cargo test` vert (546 lib).
 
 ## Verification
 
+manual validation — not run by agent
+
 ## Feedback
+
+### 2026-11-26
+
+- `l` : petites flèches jaunes à gauche/droite quand un onglet précédent/suivant existe (`render_with_chevrons`, `src/app.rs`).

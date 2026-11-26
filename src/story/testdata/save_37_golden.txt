@@ -1,5 +1,7 @@
 opens: 37
 title: Lettres reçues (37)
+pre: [Lettres]  Gazettes
+blank
 pre: >   1. 01/09  Rose, la boulangère
 pre:     2. 02/09  L'encre bleue
 pre:     3. 03/09  Minouche, la chatte du toit
@@ -8,36 +10,33 @@ pre:     5. 05/09  L'encre bleue
 pre:     6. 05/09  Le voisin du n°13
 pre:     7. 06/09  Minouche, la chatte du toit
 pre:     8. 07/09  Odile, la maire
-pre:     9. 07/09  La Gazette du lundi
-pre:    10. 08/09  L'encre bleue
-pre:    11. 08/09  Sam, le voisin du moulin
-pre:    12. 09/09  Biscuit, le chien
-pre:    13. 09/09  Le voisin du n°13
-pre:    14. 10/09  Gaston, le facteur
-pre:    15. 11/09  L'encre bleue
-pre:    16. 11/09  Nadia et Claire, les apicultrices
-pre:    17. 12/09  Hulotte, le hibou
-pre:    18. 12/09  Marcel, le garde champêtre
-pre:    19. 13/09  Odile, la maire
-pre:    20. 13/09  Le voisin du n°13
-pre:    21. 14/09  L'encre bleue
-pre:    22. 14/09  Sam, le voisin du moulin
-pre:    23. 14/09  La Gazette du lundi
-pre:    24. 15/09  Biscuit, le chien
-pre:    25. 16/09  Léo, le petit voisin
-pre:    26. 17/09  L'encre bleue
-pre:    27. 17/09  Le voisin du n°13
-pre:    28. 18/09  Coin-Coin, le canard
-pre:    29. 18/09  Nadia et Claire, les apicultrices
-pre:    30. 19/09  Rose, la boulangère
-pre:    31. 20/09  L'encre bleue
-pre:    32. 20/09  Sam, le voisin du moulin
-pre:    33. 21/09  Gustave, l'escargot
-pre:    34. 21/09  Marcel, le garde champêtre
-pre:    35. 21/09  La Gazette du lundi
-pre:    36. 21/09  Le voisin du n°13
-pre:    37. 22/09  Paulo, le pêcheur
-footer: [↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer
+pre:     9. 08/09  L'encre bleue
+pre:    10. 08/09  Sam, le voisin du moulin
+pre:    11. 09/09  Biscuit, le chien
+pre:    12. 09/09  Le voisin du n°13
+pre:    13. 10/09  Gaston, le facteur
+pre:    14. 11/09  L'encre bleue
+pre:    15. 11/09  Nadia et Claire, les apicultrices
+pre:    16. 12/09  Hulotte, le hibou
+pre:    17. 12/09  Marcel, le garde champêtre
+pre:    18. 13/09  Odile, la maire
+pre:    19. 13/09  Le voisin du n°13
+pre:    20. 14/09  L'encre bleue
+pre:    21. 14/09  Sam, le voisin du moulin
+pre:    22. 15/09  Biscuit, le chien
+pre:    23. 16/09  Léo, le petit voisin
+pre:    24. 17/09  L'encre bleue
+pre:    25. 17/09  Le voisin du n°13
+pre:    26. 18/09  Coin-Coin, le canard
+pre:    27. 18/09  Nadia et Claire, les apicultrices
+pre:    28. 19/09  Rose, la boulangère
+pre:    29. 20/09  L'encre bleue
+pre:    30. 20/09  Sam, le voisin du moulin
+pre:    31. 21/09  Gustave, l'escargot
+pre:    32. 21/09  Marcel, le garde champêtre
+pre:    33. 21/09  Le voisin du n°13
+pre:    34. 22/09  Paulo, le pêcheur
+footer: [←] [→] onglets  [↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer
 frame: Plain
 == entry 0 night false
 title: Lettre 1/84
