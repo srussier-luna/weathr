@@ -1,6 +1,6 @@
 ---
 issue: 182
-status: to-test
+status: to-close
 wiki: [[mail]]
 note: "Badge contributeur de type écrivain ou plume d'or, pour le contributeur qui a réécrit les Lettres (#177)."
 created: 2026-11-26
@@ -43,6 +43,9 @@ Glossaire à ajouter :
 - Preuve : clippy, build, tests (179 + 614 + 10 + 7 + 3 + 5), fmt verts.
 
 ## Review
+
+Round validation — 2026-11-26, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- Clean, no finding. Tests verts, fmt OK.
 
 ## Verification
 
