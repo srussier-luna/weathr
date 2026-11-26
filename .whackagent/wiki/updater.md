@@ -5,27 +5,29 @@ Assumes binary built from local clone of this fork.
 
 ## How it works — `src/updater/`
 
-`mod.rs` (flow) · `progress.rs` (loader) · `banner.rs` (banner).
+`mod.rs` (flow) · `forced.rs` (Mise à jour forcée) · `progress.rs` (loader) · `banner.rs` (banner).
 
-- `SOURCE_DIR = env!("CARGO_MANIFEST_DIR")` (`mod.rs:15`) — repo path **baked in at compile time**. Move or delete clone → updates silently disabled.
-- `offer_update` (`mod.rs:22`), called from `main` before config load and before raw mode
+- `SOURCE_DIR = env!("CARGO_MANIFEST_DIR")` (`mod.rs:16`) — repo path **baked in at compile time**. Move or delete clone → updates silently disabled.
+- `offer_update` (`mod.rs:21`), called from `main` before config load and before raw mode
   (see [[architecture]]):
-  1. Skip if stdin not TTY or check already done today
-     (`<config>/weathr/update_check` holds date; written before check).
+  1. Checked at every launch (no daily limit since 11d6d67).
   2. Skip unless checkout exists and clean (untracked files ignored).
   3. `git fetch --quiet` with 5 s timeout, no prompts (`non_interactive_git_env`:
      `GIT_TERMINAL_PROMPT=0`, SSH `BatchMode=yes` unless user set `GIT_SSH_COMMAND`,
      `GIT_SSH` or `core.sshCommand`) so never blocks startup.
-  4. Pending commits (`git rev-list --count HEAD..@{u}` > 0) → banner + `[O/n]` (empty = yes). No change list: Nouveautés box tells after restart.
-  5. `update` (`mod.rs:143`): `git pull --ff-only` (same git env) → `cargo build --release --message-format=json` → `install`. All output captured, never printed.
+  4. Pending commits (`git rev-list --count HEAD..@{u}` > 0), else stop.
+     - **Mise à jour forcée** (#184, `forced.rs`): `git show @{u}:Cargo.toml` → `[package.metadata.weathr] min_version = "x.y.z"`; local `CARGO_PKG_VERSION` older → banner, no question, install, even when stdin is not a TTY. Absent, unparsable or not exactly x.y.z → not forced. Raise `min_version` by hand in the release that must be forced.
+     - Not forced → stdin TTY only: banner + `[O/n]` (empty = yes). No TTY → nothing.
+     - No change list: Nouveautés box tells after restart.
+  5. `update` (`mod.rs:149`): `git pull --ff-only` (same git env) → `cargo build --release --message-format=json` → `install`. All output captured, never printed.
   6. `restart` re-`exec`s current executable with same args. No « terminée » line.
-- **Banner** (`banner::show`): « WEATHR » ANSI Shadow logo, sunset gradient per column, outline `╗╔╝╚═║` ×0.45, postman below. `Some(NEW_VERSION_MESSAGE)` adds « Une nouvelle version est arrivée ! » (prompt only). Skipped when stdout not TTY.
+- **Banner** (`banner::show`): « WEATHR » ANSI Shadow logo, sunset gradient per column, outline `╗╔╝╚═║` ×0.45, postman below. `Some(NEW_VERSION_MESSAGE)` adds « Une nouvelle version est arrivée ! » (proposed or forced update). Skipped when stdout not TTY.
 - **Loader** (`InstallProgress`, `progress.rs:55`): one line `[weathr] Installation en cours / [====>   ] 45 %`, redrawn with `\r` every 100 ms. Pull → 10 %, each cargo `compiler-artifact` → up to 95 % (total = `[[package]]` count in `Cargo.lock`), install → 100 %. Stops in `Drop`. stdout not TTY → one plain `Installation en cours…` line.
-- **Failure**: captured output → `<config>/weathr/update.log` (overwritten), `[weathr] Mise à jour impossible. Détails dans <path>`, wait for Enter.
-- `install` (`mod.rs:285`) copies built binary next to running one as `.new`, then
+- **Failure**: captured output → `<config>/weathr/update.log` (overwritten), `[weathr] Mise à jour impossible. Détails dans <path>`, wait for Enter (only with a TTY), then the old version starts; retried at next launch.
+- `install` (`mod.rs:291`) copies built binary next to running one as `.new`, then
   renames over it (atomic on same filesystem). No-op if already running from
   `target/release`.
-- `update_now` (`mod.rs:49`) = `--update` flag: banner without message, same pipeline, no prompt, no restart. Returns `false` on error (`[weathr] …` printed), `main` exits 1. Never checks a version exists first.
+- `update_now` (`mod.rs:51`) = `--update` flag: banner without message, same pipeline, no prompt, no restart. Returns `false` on error (`[weathr] …` printed), `main` exits 1. Never checks a version exists first.
 
 ## CLI — `src/main.rs`
 

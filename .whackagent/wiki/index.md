@@ -9,8 +9,9 @@ Living knowledge base for project. Pages link to each other and to tasks via `[[
 - [[scene]] — static landscape: house, mountains, river, tree, mailbox, layout invariants
 - [[animation]] — moving systems, lore/unlocks, seasons, Fêtes, Facteur, demo
 - [[weather]] — Open-Meteo, units, location, Nominatim city search, Ville change in game, caches, rain alert, story fetches
-- [[render]] — diffing terminal renderer, colours, overlay boxes, views, HUD
+- [[render]] — diffing terminal renderer, colours, overlay boxes, views, Barres
 - [[mail]] — Lettre timeline, Carte postale, Gazette, Énigme, Bouteille, Badges, progress save
+- [[letters]] — voix des personnages : une fiche par habitant (voix, Tic de langage, ne dit jamais, exemple), règles communes des Lettres
 - [[updater]] — git-based self-update, CLI flags
 
 ## How to read

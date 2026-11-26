@@ -1,12 +1,16 @@
 use crate::weather::WeatherCondition;
+use std::collections::BTreeSet;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum BadgeKind {
     Weather,
     Holiday,
-    Rare,
     Loyalty,
+    Common,
+    Rare,
+    Epic,
     Secret,
+    Contribution,
     Demerit,
 }
 
@@ -15,9 +19,12 @@ impl BadgeKind {
         match self {
             Self::Weather => "Météo",
             Self::Holiday => "Fêtes",
-            Self::Rare => "Rares",
             Self::Loyalty => "Fidélité",
+            Self::Common => "Commun",
+            Self::Rare => "Rares",
+            Self::Epic => "Épique",
             Self::Secret => "Secrets",
+            Self::Contribution => "Contribution",
             Self::Demerit => "Mauvais points",
         }
     }
@@ -69,6 +76,15 @@ const fn secret(
     icon: [&'static str; 3],
 ) -> Badge {
     hinted(id, name, BadgeKind::Secret, hint, icon)
+}
+
+const fn contribution(
+    id: &'static str,
+    name: &'static str,
+    hint: &'static str,
+    icon: [&'static str; 3],
+) -> Badge {
+    hinted(id, name, BadgeKind::Contribution, hint, icon)
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -179,7 +195,6 @@ pub fn sam_trail_line(sam_cities: usize) -> Option<String> {
     })
 }
 
-const SKY_LOOKOUT_NAME: &str = "Denis Richard";
 pub const CHEATER: &str = "cheater";
 
 const TIERS: [Tier; 5] = [
@@ -197,18 +212,24 @@ pub const SAM_TRAIL: Badge = secret(
     ["   ::", " ::  ", "::   "],
 );
 
-const CONTRIBUTORS: [&str; 1] = ["bpisano"];
+// Kept on purpose for future contributor Badges: do not remove.
+const CONTRIBUTORS: &[&str] = &[];
 
-pub const KINDS: [BadgeKind; 6] = [
+const WRITERS: &[&str] = &["bpisano"];
+
+pub const KINDS: [BadgeKind; 9] = [
     BadgeKind::Weather,
     BadgeKind::Holiday,
-    BadgeKind::Rare,
     BadgeKind::Loyalty,
+    BadgeKind::Common,
+    BadgeKind::Rare,
+    BadgeKind::Epic,
     BadgeKind::Secret,
+    BadgeKind::Contribution,
     BadgeKind::Demerit,
 ];
 
-pub const BADGES: [Badge; 50] = [
+pub const BADGES: &[Badge] = &[
     badge(
         "clear",
         "Ciel dégagé",
@@ -360,36 +381,6 @@ pub const BADGES: [Badge; 50] = [
         [" .--.", " |o o", "\\|/  "],
     ),
     badge(
-        "rainbow",
-        "Arc-en-ciel",
-        BadgeKind::Rare,
-        [" ___ ", "/ _ \\", "|/ \\|"],
-    ),
-    badge(
-        "shooting_star",
-        "Étoile filante",
-        BadgeKind::Rare,
-        ["    *", " .*' ", "*'   "],
-    ),
-    badge(
-        "postman",
-        "Facteur",
-        BadgeKind::Rare,
-        [" .-. ", "|__|>", "  |  "],
-    ),
-    badge(
-        "snowman",
-        "Bonhomme de neige",
-        BadgeKind::Rare,
-        [" _|_ ", " (o) ", "(   )"],
-    ),
-    badge(
-        "first_bottle",
-        "Bouteille à la mer",
-        BadgeKind::Rare,
-        ["  _  ", " | | ", "~[_]~"],
-    ),
-    badge(
         "streak_3",
         "3 jours d'affilée",
         BadgeKind::Loyalty,
@@ -408,40 +399,106 @@ pub const BADGES: [Badge; 50] = [
         ["[===]", "|30 |", "|___|"],
     ),
     badge(
+        "streak_60",
+        "60 jours d'affilée",
+        BadgeKind::Loyalty,
+        ["[===]", "|60 |", "|___|"],
+    ),
+    badge(
+        "streak_100",
+        "100 jours d'affilée",
+        BadgeKind::Loyalty,
+        ["[===]", "|100|", "|___|"],
+    ),
+    badge(
+        "streak_365",
+        "365 jours d'affilée",
+        BadgeKind::Loyalty,
+        ["[===]", "|365|", "|___|"],
+    ),
+    badge(
         "traveller",
         "Voyageur",
-        BadgeKind::Loyalty,
+        BadgeKind::Common,
         [" .-. ", "|===|", "|___|"],
-    ),
-    badge(
-        "backpacker",
-        "Baroudeur",
-        BadgeKind::Loyalty,
-        [" .-. ", "/[_]\\", "\\___/"],
-    ),
-    badge(
-        "all_letters",
-        "Toutes les lettres",
-        BadgeKind::Loyalty,
-        ["_____", "|\\_/|", "|___|"],
     ),
     badge(
         "riddle_1",
         "Première énigme",
-        BadgeKind::Loyalty,
+        BadgeKind::Common,
         [" .-. ", "  .' ", "  .  "],
     ),
     badge(
         "riddle_10",
         "Dix énigmes",
-        BadgeKind::Loyalty,
+        BadgeKind::Common,
         ["?   ?", " 10  ", "?   ?"],
+    ),
+    badge(
+        "postman",
+        "Facteur",
+        BadgeKind::Common,
+        [" .-. ", "|__|>", "  |  "],
+    ),
+    badge(
+        "snowman",
+        "Bonhomme de neige",
+        BadgeKind::Common,
+        [" _|_ ", " (o) ", "(   )"],
+    ),
+    badge(
+        "first_bottle",
+        "Bouteille à la mer",
+        BadgeKind::Common,
+        ["  _  ", " | | ", "~[_]~"],
+    ),
+    badge(
+        "compass",
+        "Boussole",
+        BadgeKind::Common,
+        ["  N  ", "W-o-E", "  S  "],
+    ),
+    badge(
+        "rainbow",
+        "Arc-en-ciel",
+        BadgeKind::Rare,
+        [" ___ ", "/ _ \\", "|/ \\|"],
+    ),
+    badge(
+        "shooting_star",
+        "Étoile filante",
+        BadgeKind::Rare,
+        ["    *", " .*' ", "*'   "],
+    ),
+    badge(
+        "backpacker",
+        "Baroudeur",
+        BadgeKind::Rare,
+        [" .-. ", "/[_]\\", "\\___/"],
+    ),
+    badge(
+        "all_letters",
+        "Toutes les lettres",
+        BadgeKind::Epic,
+        ["_____", "|\\_/|", "|___|"],
     ),
     badge(
         "all_objects",
         "Tous les objets",
-        BadgeKind::Loyalty,
+        BadgeKind::Epic,
         ["_____", "|_$_|", "|___|"],
+    ),
+    badge(
+        "all_riddles",
+        "Toutes les énigmes",
+        BadgeKind::Epic,
+        ["?_?_?", "|???|", "|___|"],
+    ),
+    badge(
+        "all_recipes",
+        "Toutes les recettes",
+        BadgeKind::Epic,
+        [" ___ ", "(___)", " \\_/ "],
     ),
     secret(
         "night_owl",
@@ -485,19 +542,25 @@ pub const BADGES: [Badge; 50] = [
         "boîte aux lettres pleine",
         [" _n_ ", "| | |", "|_|_|"],
     ),
-    secret(
+    SAM_TRAIL,
+    contribution(
         "sky_lookout",
         "Vigie du ciel",
         "a repéré les nuages pressés",
         [" .-. ", "(___)", "  \\o "],
     ),
-    secret(
+    contribution(
         "time_master",
         "Maître du temps",
         "a mis le village à l'heure",
         ["\\___/", " )_( ", "/___\\"],
     ),
-    SAM_TRAIL,
+    contribution(
+        "village_quill",
+        "Plume du village",
+        "a prêté sa plume au village",
+        ["   //", "  // ", " /'  "],
+    ),
     hinted(
         CHEATER,
         "Tricheur",
@@ -507,10 +570,23 @@ pub const BADGES: [Badge; 50] = [
     ),
 ];
 
-pub fn collection() -> impl Iterator<Item = &'static Badge> {
+pub fn collection(earned: &BTreeSet<String>) -> impl Iterator<Item = &'static Badge> + '_ {
     BADGES
         .iter()
-        .filter(|badge| badge.kind != BadgeKind::Demerit)
+        .filter(move |badge| badge.kind != BadgeKind::Demerit && is_shown(badge, earned))
+}
+
+pub fn collection_progress(earned: &BTreeSet<String>) -> (usize, usize) {
+    let shown: Vec<&Badge> = collection(earned).collect();
+    let owned = shown
+        .iter()
+        .filter(|badge| earned.contains(badge.id))
+        .count();
+    (owned, shown.len())
+}
+
+pub fn is_shown(badge: &Badge, earned: &BTreeSet<String>) -> bool {
+    earned.contains(badge.id) || !matches!(badge.kind, BadgeKind::Demerit | BadgeKind::Contribution)
 }
 
 pub fn weather_badges() -> impl Iterator<Item = &'static Badge> {
@@ -546,12 +622,12 @@ pub fn name(id: &str) -> &'static str {
     find(id).map_or("?", |badge| badge.name)
 }
 
-pub fn is_sky_lookout(user_name: Option<&str>) -> bool {
-    is_listed(user_name, &[SKY_LOOKOUT_NAME])
+pub fn is_time_master(user_name: Option<&str>) -> bool {
+    is_listed(user_name, CONTRIBUTORS)
 }
 
-pub fn is_time_master(user_name: Option<&str>) -> bool {
-    is_listed(user_name, &CONTRIBUTORS)
+pub fn is_village_quill(user_name: Option<&str>) -> bool {
+    is_listed(user_name, WRITERS)
 }
 
 fn is_listed(user_name: Option<&str>, logins: &[&str]) -> bool {
@@ -564,7 +640,7 @@ mod tests {
 
     #[test]
     fn test_every_badge_icon_is_three_lines_of_five_chars() {
-        for badge in &BADGES {
+        for badge in BADGES {
             assert!(
                 badge.icon.iter().all(|line| line.chars().count() == 5),
                 "{}",
@@ -582,8 +658,8 @@ mod tests {
             .collect();
         assert_eq!(demerits, [CHEATER]);
         assert!(find(CHEATER).is_some_and(|badge| badge.hint.is_some()));
-        assert_eq!(collection().count(), BADGES.len() - 1);
-        assert!(collection().all(|badge| badge.id != CHEATER));
+        let cheater = BTreeSet::from([CHEATER.to_string()]);
+        assert!(collection(&cheater).all(|badge| badge.id != CHEATER));
     }
 
     #[test]
@@ -676,11 +752,104 @@ mod tests {
         assert!(find(SAM_TRAIL.id).is_some_and(|badge| badge.kind == BadgeKind::Secret));
     }
 
+    fn row(kind: BadgeKind) -> Vec<&'static str> {
+        BADGES
+            .iter()
+            .filter(|badge| badge.kind == kind)
+            .map(|badge| badge.name)
+            .collect()
+    }
+
     #[test]
-    fn test_travel_badges_are_loyalty_badges() {
-        for id in ["traveller", "backpacker"] {
+    fn test_rows_are_ordered_from_weather_to_secrets() {
+        let titles: Vec<_> = KINDS.iter().map(BadgeKind::title).collect();
+        assert_eq!(
+            titles,
+            [
+                "Météo",
+                "Fêtes",
+                "Fidélité",
+                "Commun",
+                "Rares",
+                "Épique",
+                "Secrets",
+                "Contribution",
+                "Mauvais points",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_loyalty_keeps_only_the_streaks() {
+        assert!(
+            BADGES
+                .iter()
+                .filter(|badge| badge.kind == BadgeKind::Loyalty)
+                .all(|badge| badge.id.starts_with("streak_"))
+        );
+        for id in ["streak_3", "streak_7", "streak_30"] {
             assert!(find(id).is_some_and(|badge| badge.kind == BadgeKind::Loyalty));
         }
+    }
+
+    #[test]
+    fn test_common_row_holds_the_easiest_badges() {
+        assert_eq!(
+            row(BadgeKind::Common),
+            [
+                "Voyageur",
+                "Première énigme",
+                "Dix énigmes",
+                "Facteur",
+                "Bonhomme de neige",
+                "Bouteille à la mer",
+                "Boussole",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_backpacker_joins_the_rare_row() {
+        assert_eq!(
+            row(BadgeKind::Rare),
+            ["Arc-en-ciel", "Étoile filante", "Baroudeur"]
+        );
+    }
+
+    #[test]
+    fn test_epic_row_collects_everything() {
+        assert_eq!(
+            row(BadgeKind::Epic),
+            [
+                "Toutes les lettres",
+                "Tous les objets",
+                "Toutes les énigmes",
+                "Toutes les recettes",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_streak_badges_follow_each_other_in_loyalty() {
+        let streaks: Vec<_> = BADGES
+            .iter()
+            .filter(|badge| badge.id.starts_with("streak_"))
+            .map(|badge| (badge.id, badge.kind == BadgeKind::Loyalty))
+            .collect();
+        assert_eq!(
+            streaks,
+            [
+                ("streak_3", true),
+                ("streak_7", true),
+                ("streak_30", true),
+                ("streak_60", true),
+                ("streak_100", true),
+                ("streak_365", true),
+            ]
+        );
+        assert_eq!(find("streak_60").unwrap().name, "60 jours d'affilée");
+        assert_eq!(find("streak_100").unwrap().name, "100 jours d'affilée");
+        assert_eq!(find("streak_365").unwrap().name, "365 jours d'affilée");
     }
 
     #[test]
@@ -700,52 +869,66 @@ mod tests {
     }
 
     #[test]
-    fn test_sky_lookout_matches_exact_name() {
-        assert!(is_sky_lookout(Some("Denis Richard")));
+    fn test_is_listed_matches_exact_name() {
+        assert!(is_listed(Some("Alex Martin"), &["Alex Martin"]));
     }
 
     #[test]
-    fn test_sky_lookout_ignores_surrounding_whitespace() {
-        assert!(is_sky_lookout(Some("Denis Richard\n")));
-        assert!(is_sky_lookout(Some(" Denis Richard ")));
+    fn test_is_listed_ignores_surrounding_whitespace() {
+        assert!(is_listed(Some(" Alex Martin\n"), &["Alex Martin"]));
     }
 
     #[test]
-    fn test_sky_lookout_rejects_other_name() {
-        assert!(!is_sky_lookout(Some("srussier-luna")));
-        assert!(!is_sky_lookout(Some("drichard-luna")));
+    fn test_is_listed_rejects_other_name() {
+        assert!(!is_listed(Some("Alex Martinez"), &["Alex Martin"]));
     }
 
     #[test]
-    fn test_sky_lookout_does_not_grant_time_master() {
-        assert!(!is_time_master(Some("Denis Richard")));
+    fn test_is_listed_rejects_missing_name() {
+        assert!(!is_listed(None, &["Alex Martin"]));
+        assert!(!is_listed(Some(""), &["Alex Martin"]));
     }
 
     #[test]
-    fn test_sky_lookout_rejects_missing_name() {
-        assert!(!is_sky_lookout(None));
-        assert!(!is_sky_lookout(Some("")));
-    }
-
-    #[test]
-    fn test_time_master_matches_each_contributor() {
-        assert!(is_time_master(Some("bpisano")));
-    }
-
-    #[test]
-    fn test_time_master_ignores_surrounding_whitespace() {
-        assert!(is_time_master(Some(" bpisano\n")));
-    }
-
-    #[test]
-    fn test_time_master_rejects_other_name() {
-        assert!(!is_time_master(Some("srussier-luna")));
-        assert!(!is_time_master(Some("drichard-luna")));
-    }
-
-    #[test]
-    fn test_time_master_rejects_missing_name() {
-        assert!(!is_time_master(None));
+    fn test_time_master_is_out_of_reach_while_contributors_is_empty() {
+        assert!(CONTRIBUTORS.is_empty());
+        assert!(!is_time_master(Some("Alex Martin")));
         assert!(!is_time_master(Some("")));
+        assert!(!is_time_master(None));
+    }
+
+    #[test]
+    fn test_village_quill_goes_to_the_listed_writer() {
+        assert!(is_village_quill(Some("bpisano")));
+        assert!(is_village_quill(Some(" bpisano\n")));
+        assert!(!is_village_quill(Some("Alex Martin")));
+        assert!(!is_village_quill(Some("")));
+        assert!(!is_village_quill(None));
+    }
+
+    #[test]
+    fn test_contribution_row_holds_the_badges_given_to_people() {
+        assert_eq!(
+            row(BadgeKind::Contribution),
+            ["Vigie du ciel", "Maître du temps", "Plume du village"]
+        );
+        assert!(
+            BADGES
+                .iter()
+                .filter(|badge| badge.kind == BadgeKind::Contribution)
+                .all(|badge| badge.hint.is_some())
+        );
+    }
+
+    #[test]
+    fn test_contribution_badges_leave_the_collection_unless_owned() {
+        let none = BTreeSet::new();
+        let owned = BTreeSet::from(["sky_lookout".to_string(), "village_quill".to_string()]);
+        assert!(collection(&none).all(|badge| badge.kind != BadgeKind::Contribution));
+        assert_eq!(collection(&none).count(), BADGES.len() - 4);
+        assert_eq!(collection(&owned).count(), BADGES.len() - 2);
+        assert_eq!(collection_progress(&owned), (2, BADGES.len() - 2));
+        assert!(is_shown(find("village_quill").unwrap(), &owned));
+        assert!(!is_shown(find("time_master").unwrap(), &owned));
     }
 }

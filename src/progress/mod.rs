@@ -82,6 +82,8 @@ pub struct Progress {
     #[serde(default)]
     pub badges: BTreeSet<String>,
     #[serde(default)]
+    pub unseen_badges: BTreeSet<String>,
+    #[serde(default)]
     pub answers: BTreeMap<String, u8>,
     #[serde(default)]
     pub last_seen_on: Option<String>,
@@ -131,6 +133,12 @@ pub struct Progress {
     pub bare_village_until: Option<usize>,
     #[serde(default)]
     mail_ban_until: Option<String>,
+    #[serde(default)]
+    pub hidden_trophies: BTreeSet<String>,
+    #[serde(default)]
+    today_letters_day: Option<usize>,
+    #[serde(default)]
+    today_letters_start: usize,
     #[serde(default, skip_serializing)]
     format: u32,
     #[serde(skip)]
@@ -227,6 +235,16 @@ impl Progress {
             in_memory: true,
             ..Self::default()
         }
+    }
+
+    pub fn today_letters(&self) -> Option<(usize, usize)> {
+        self.today_letters_day
+            .map(|day| (day, self.today_letters_start))
+    }
+
+    pub fn set_today_letters(&mut self, day: usize, start: usize) {
+        self.today_letters_day = Some(day);
+        self.today_letters_start = start;
     }
 
     pub fn save(&self) {
@@ -389,6 +407,25 @@ mod tests {
         assert!(progress.paused_days.is_empty());
         assert_eq!(progress.pause_checked_date(), None);
         assert_eq!(progress.postman_note_day, None);
+    }
+
+    #[test]
+    fn test_save_without_unseen_badges_has_no_new_badge() {
+        let progress: Progress =
+            serde_json::from_str(r#"{"started_on":"2026-09-01","badges":["rain","clear"]}"#)
+                .unwrap();
+        assert_eq!(progress.badges.len(), 2);
+        assert!(progress.unseen_badges.is_empty());
+    }
+
+    #[test]
+    fn test_unseen_badges_survive_a_restart() {
+        let mut progress = Progress::default();
+        progress.badges.insert("rain".to_string());
+        progress.unseen_badges.insert("rain".to_string());
+        let saved = serde_json::to_string(&progress).unwrap();
+        let loaded: Progress = serde_json::from_str(&saved).unwrap();
+        assert_eq!(loaded.unseen_badges, BTreeSet::from(["rain".to_string()]));
     }
 
     #[test]

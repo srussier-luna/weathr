@@ -41,6 +41,7 @@ pub mod stars;
 pub mod sun_path;
 pub mod sunny;
 pub mod thunderstorm;
+pub mod trophies;
 
 use crate::render::TerminalRenderer;
 use crossterm::style::Color;

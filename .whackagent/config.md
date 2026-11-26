@@ -10,6 +10,8 @@ pr_screenshots:                # PR screenshots of changed screens, at /wa-valid
                                # Ignore verify.mode: taken even under autopilot / off.
   mode: auto                   # auto — UI changed → new screens shot, changed screens before/after · off
   width: 250                   # px in PR body, height auto (250 = iPhone)
+  replay: off                  # iOS: on — one XCUITest per task in <App>Screenshots, replayed before/after
+                               # (needs the target, wa-setup) · off — agent drives the app tap by tap
 primary_language: generic        # swift | typescript | generic | ...
 project_kind: cli              # app | package | cli | server  (pick architecture module)
 
@@ -79,9 +81,20 @@ review:
                                # report which ran.
 
 build:                         # how THIS project build — project beat plugin default
-  command: "cargo build"       # e.g. "ign app", "make build", "./scripts/build.sh". Empty → XcodeBuildMCP
+  command: "cargo clippy --all-targets && cargo build" # e.g. "ign app", "make build", "./scripts/build.sh". Empty → XcodeBuildMCP
                                # for Apple targets, `swift build` for SwiftPM, project runner otherwise.
   test_command: "cargo test"   # e.g. "make test". Empty → language default (`swift test`, …).
+
+lint:                          # strict linter wired into the build: violation = build error
+  tool: clippy                 # swiftlint | eslint | ruff | golangci-lint | clippy | detekt | none
+                               # set by /wa-setup. Rules: project's linter config (from the
+                               # plugin templates, yours to edit). Agents never disable a rule.
+  fix_command: ""              # autofix before build, e.g. "make lint-fix". Empty → tool default.
+
+archtest:                      # architecture rules as unit tests: violation = red test
+  tool: none                   # harmonize | none. Set by /wa-setup. Rules: Architecture/ package
+                               # (from the plugin templates, yours to edit). Agents never touch it.
+  command: ""                  # e.g. "make archtest". Empty → swift test --package-path Architecture
 
 verify:                        # runtime check — implementer drive app it built
   mode: autopilot              # WHO exercise app after green build:
@@ -99,6 +112,9 @@ verify:                        # runtime check — implementer drive app it buil
 
 commit:
   auto_commit_after_validation: false   # Claude may commit once YOU validate feature?
+  steps: on                    # on — /wa-close rewrites the task history as build steps, one commit
+                               # per Changes line, each building alone (force push own branch) · off
+                               # — round commits kept. Not asked at setup.
                                # (name kept for old configs: gate commit /wa-close make)
                                # github backend: ignored — every round commit + push (board need it)
                                # no author here, ever: commit use git config user.name/email
@@ -169,11 +185,14 @@ Inside autopilot: never ask (nobody watching) — freeze task, log open question
 
 ## Project notes
 
-- Rust (edition 2024) TUI binary: `generic` module, no Rust-specific one. Proof = `cargo build` + `cargo test` — no CI, no fmt, no clippy.
+- Rust (edition 2024) TUI binary: `generic` module, no Rust-specific one. Proof = `cargo clippy --all-targets` + `cargo build` + `cargo test` — no CI, no fmt.
 - Fork of Veirt/weathr, customized with French village story. UI strings French, `tu`.
 - Versions: a release = merge `develop` → `main` (players install `main`), tagged `vX.Y.Z`. Sprints stay grouped by theme; the target version is a label on the issue:
   - `vX` (`v1`, `v2`, `v3`…) = any `X.y` release, e.g. `v2` = 2.0, 2.1…
   - `vX.Y` (`v1.6`…) = exactly that release.
+- **NEVER change the branch of the main checkout `~/Repos/weathr`: it always stays on `main`.** The installed `weathr` updates itself from it (`git pull` on its current branch, then `cargo build --release`); on any other branch, updates stop.
+  - Never `checkout`, `switch`, code, commit or test there. Every skill and subagent works in a worktree (`../.wa-worktrees/<key>`), in weathr-test or in weathr-develop, even when a skill says « main checkout ».
+  - Before any branch operation, check `git -C ~/Repos/weathr branch --show-current` = `main`. Not `main` → stop and tell the user.
 - `/wa-task` grill: always ask which version the task targets (`vX` or `vX.Y`), then put that label on the issue (create it if missing). Every open task carries one.
 - Never merge into `develop` a PR whose label targets a release not being prepared: `vX` waits for the first `X.y` release, `vX.Y` for `X.Y`.
 - Glossary and wiki: always write every glossary row (`+` / `~`) and every wiki page a task brings, at grill, close or wiki sync. Never ask for them.

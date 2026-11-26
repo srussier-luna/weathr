@@ -197,11 +197,7 @@ impl RaindropSystem {
             }
 
             // Out of horizontal bounds
-            if drop.x < -10.0 || drop.x > (terminal_width as f32 + 10.0) {
-                return false;
-            }
-
-            true
+            !(drop.x < -10.0 || drop.x > (terminal_width as f32 + 10.0))
         });
 
         self.splashes.append(&mut self.new_splashes);

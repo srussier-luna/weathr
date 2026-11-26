@@ -1,6 +1,6 @@
 [package]
 name = "weathr"
-version = "1.8.0"
+version = "1.8.1"
 edition = "2024"
 rust-version = "1.85.0"
 license = "GPL-3.0-or-later"
@@ -36,6 +36,9 @@ chrono = "0.4"
 thiserror = "2.0"
 clap_complete = "4.5.66"
 toml_edit = { version = "0.24", features = ["serde"] }
+
+[lints.clippy]
+all = "deny"
 
 [profile.release]
 lto = "thin"

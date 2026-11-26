@@ -63,6 +63,8 @@ impl Reach {
         }
         let unmet = self.unmet(progress);
         progress.badges.retain(|id| !unmet.contains(&id.as_str()));
+        let badges = &progress.badges;
+        progress.unseen_badges.retain(|id| badges.contains(id));
         counts(progress) != before
     }
 
@@ -73,6 +75,9 @@ impl Reach {
             ("streak_3", self.days >= 3),
             ("streak_7", self.days >= 7),
             ("streak_30", self.days >= 30),
+            ("streak_60", self.days >= 60),
+            ("streak_100", self.days >= 100),
+            ("streak_365", self.days >= 365),
             (
                 "all_letters",
                 progress.letters_read >= VILLAGE_LETTER_COUNT + CREEPY_LETTER_COUNT,
@@ -308,6 +313,9 @@ mod tests {
             "night_owl",
             "streak_3",
             "streak_30",
+            "streak_60",
+            "streak_100",
+            "streak_365",
             "all_letters",
             "riddle_1",
             "riddle_10",
@@ -327,5 +335,15 @@ mod tests {
         progress.badges = badges(&["all_letters"]);
         assert!(reach_on(90).fit(&mut progress));
         assert!(progress.badges.is_empty());
+    }
+
+    #[test]
+    fn test_dropped_badges_are_no_longer_unseen() {
+        let mut progress = Progress::default();
+        progress.streak = 2;
+        progress.badges = badges(&["rain", "streak_30"]);
+        progress.unseen_badges = badges(&["rain", "streak_30"]);
+        assert!(reach_on(5).fit(&mut progress));
+        assert_eq!(progress.unseen_badges, badges(&["rain"]));
     }
 }

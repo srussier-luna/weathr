@@ -2,13 +2,13 @@
 issue: 104
 status: to-close
 wiki: [[animation]]
-note: "Retour de Denis (Slack, 05/11) : nuages qui apparaissent d'un coup à gauche, immobiles quelques secondes, parfois blancs avant de passer gris. À corriger en v1.7 avant livraison."
+note: "Retour d'un joueur (Slack, 05/11) : nuages qui apparaissent d'un coup à gauche, immobiles quelques secondes, parfois blancs avant de passer gris. À corriger en v1.7 avant livraison."
 created: 2026-11-05
 ---
 
 ## Context / Decisions
 
-> Les nuages qui apparaissent à gauche apparaissent d'un coup et restent immobiles quelques secondes, puis commencent à bouger. Parfois, ils apparaissent en blanc avant de passer gris, ce qui fait un genre de flash pas top. (Denis, Slack)
+> Les nuages qui apparaissent à gauche apparaissent d'un coup et restent immobiles quelques secondes, puis commencent à bouger. Parfois, ils apparaissent en blanc avant de passer gris, ce qui fait un genre de flash pas top. (un joueur, Slack)
 
 - Deux défauts, au même moment : l'arrivée d'un Nuage par la gauche (`src/animation/clouds.rs`).
 - **Nuage figé** : un nouveau Nuage naît hors écran à gauche (`x = -largeur`), mais `render` ramène `x` à 0 (`max(0, x)`) et dessine la forme entière. Tant que `x < 0`, il reste affiché en entier à la colonne 0, sans bouger : `largeur / vitesse` frames, soit 4 à 13 s.

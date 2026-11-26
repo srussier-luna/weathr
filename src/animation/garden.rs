@@ -1,6 +1,6 @@
 use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
-use crate::scene::decorations::GardenPlan;
+use crate::scene::decorations::{FENCE_GAP, GardenPlan};
 use crate::scene::house::House;
 use crate::scene::tree::Growth;
 use crossterm::style::Color;
@@ -51,6 +51,10 @@ impl GardenLayout {
 
     pub fn key_x(&self) -> Option<u16> {
         self.plan.mailbox_x.map(|x| x + KEY_OFFSET)
+    }
+
+    pub fn fence_x(&self) -> u16 {
+        self.house_x + self.house.width() + FENCE_GAP
     }
 }
 

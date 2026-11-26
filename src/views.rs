@@ -1,4 +1,5 @@
 use crate::animation::lore::Unlocks;
+use crate::animation::trophies::Trophy;
 use crate::badges::{self, Award};
 use crate::holiday::HolidayBox;
 use crate::overlay::{self, Frame, Line, View};
@@ -7,9 +8,10 @@ use crate::release_notes::Section;
 use crate::settings::{AutoLocation, CitySearch, Row, SearchStatus, Settings};
 use crate::story::Entry;
 use crate::story::content::chronicles::{BOTTLE_MESSAGES, CHEST_SOUVENIRS, DRAWINGS, OBJECTS};
-use crate::story::content::letters::{Choice, answered_choices};
+use crate::story::content::letters::answered_choices;
 use crate::story::content::neighbours_note::{self, NeighboursNote};
 use crate::story::content::recipes::{Diet, RECIPES, diet_labels};
+use crate::story::content::tabs::{self, Tab};
 use crate::story::content::{
     self, MONTHS, ReadContext, diet_checklist, postcard_lines, postcard_title, text,
 };
@@ -19,7 +21,8 @@ use chrono::{Datelike, NaiveDate};
 use std::collections::BTreeSet;
 use std::path::Path;
 
-const INDEX_FOOTER: &str = "[↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer";
+const INDEX_FOOTER: &str =
+    "[←] [→] onglets  [↑] [↓] choisir  [Entrée] relire  [l] ou [Echap] fermer";
 const ALBUM_FOOTER: &str = "[<] [>] pages  [a] ou [Echap] fermer";
 const ANSWERS_FOOTER: &str =
     "[↑] [↓] choisir  [1] [2] changer  [<] [>] pages  [a] ou [Echap] fermer";
@@ -42,35 +45,45 @@ const NOTES_INDENT: &str = "  ";
 pub const NOTES_FRAME: Frame = Frame::Plain;
 pub const INDEX_FRAME: Frame = Frame::Plain;
 pub const ANSWERS_PAGE: usize = 2;
+pub const TROPHIES_PAGE: usize = ANSWERS_PAGE + 1;
 pub const POSTMAN_SIGNATURE: &str = "— Le Facteur";
 const FULL_BOX_NOTE: &str =
     "Pendant ton absence, tout le village en a profité pour prendre des vacances\u{202F}!";
 
 pub fn index_view(
     read_entries: &[(usize, Entry)],
+    tab: Tab,
     selected: usize,
     rows: usize,
     context: &ReadContext,
 ) -> View {
-    let rows = rows.max(1);
+    let shown = tabs::entries_in(read_entries, tab);
+    let mut lines = Vec::new();
+    if !shown.is_empty() {
+        lines.push(Line::Preformatted(tab_bar(read_entries, tab)));
+        lines.push(Line::Blank);
+    }
+    let rows = rows.saturating_sub(lines.len()).max(1);
     let first = selected
         .saturating_sub(rows / 2)
-        .min(read_entries.len().saturating_sub(rows));
-    let mut lines: Vec<Line> = read_entries
-        .iter()
-        .enumerate()
-        .skip(first)
-        .take(rows)
-        .map(|(index, (day, entry))| {
-            let marker = if index == selected { '>' } else { ' ' };
-            Line::Preformatted(format!(
-                "{marker} {:>3}. {}  {}",
-                index + 1,
-                context.clock.date_of(*day).format("%d/%m"),
-                content::label(*entry, context)
-            ))
-        })
-        .collect();
+        .min(shown.len().saturating_sub(rows));
+    lines.extend(
+        shown
+            .iter()
+            .enumerate()
+            .skip(first)
+            .take(rows)
+            .map(|(position, &index)| {
+                let (day, entry) = read_entries[index];
+                let marker = if position == selected { '>' } else { ' ' };
+                Line::Preformatted(format!(
+                    "{marker} {:>3}. {}  {}",
+                    position + 1,
+                    context.clock.date_of(day).format("%d/%m"),
+                    content::label(entry, context)
+                ))
+            }),
+    );
     if lines.is_empty() {
         lines.push(text("Aucune lettre lue pour l'instant."));
     }
@@ -80,6 +93,20 @@ pub fn index_view(
         footer: INDEX_FOOTER.to_string(),
         frame: INDEX_FRAME,
     }
+}
+
+fn tab_bar(read_entries: &[(usize, Entry)], current: Tab) -> String {
+    tabs::visible_tabs(read_entries)
+        .into_iter()
+        .map(|tab| {
+            if tab == current {
+                format!("[{}]", tab.label())
+            } else {
+                tab.label().to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("  ")
 }
 
 fn day_and_month(date: NaiveDate) -> String {
@@ -157,6 +184,7 @@ pub fn neighbours_note_view(note: NeighboursNote) -> View {
 
 pub fn full_box_index_view(
     read_entries: &[(usize, Entry)],
+    tab: Tab,
     selected: usize,
     rows: usize,
     width: usize,
@@ -168,6 +196,7 @@ pub fn full_box_index_view(
     let note_rows = overlay::lay_out(&note, width).len();
     let mut view = index_view(
         read_entries,
+        tab,
         selected,
         rows.saturating_sub(note_rows),
         context,
@@ -311,7 +340,7 @@ fn settings_row(settings: &Settings, row: Row) -> (&'static str, String) {
         ),
         Row::MailHour => ("Heure du Facteur", format!("{} h", settings.mail_hour)),
         Row::Hud => (
-            "Barre du haut",
+            "Barres",
             if settings.hide_hud {
                 "masquée"
             } else {
@@ -512,24 +541,42 @@ fn answers_page(progress: &Progress, selected: usize) -> View {
     let items: Vec<String> = answered_choices(&progress.answers)
         .enumerate()
         .map(|(index, (choice, answer))| {
-            if index == selected {
-                format!("> {} {}", choice.prompt, both_options(choice, answer))
-            } else {
-                format!("- {} {}", choice.prompt, choice.options[answer])
-            }
+            choice_line(choice.prompt, &choice.options, answer, index == selected)
         })
         .collect();
+    choices_page("Album : tes réponses", items)
+}
+
+fn trophies_page(progress: &Progress, selected: usize) -> View {
+    let items: Vec<String> = Trophy::won(&progress.badges)
+        .enumerate()
+        .map(|(index, trophy)| {
+            let place = usize::from(progress.hidden_trophies.contains(trophy.id()));
+            choice_line(trophy.name(), &trophy.places(), place, index == selected)
+        })
+        .collect();
+    choices_page("Album : tes trophées", items)
+}
+
+fn choices_page(title: &str, items: Vec<String>) -> View {
     let footer = if items.is_empty() {
         ALBUM_FOOTER
     } else {
         ANSWERS_FOOTER
     };
-    album_page("Album : tes réponses", items, footer)
+    album_page(title, items, footer)
 }
 
-fn both_options(choice: &Choice, answer: usize) -> String {
-    choice
-        .options
+fn choice_line(label: &str, options: &[&str], answer: usize, is_selected: bool) -> String {
+    if is_selected {
+        format!("> {label} {}", both_options(options, answer))
+    } else {
+        format!("- {label} {}", options[answer])
+    }
+}
+
+fn both_options(options: &[&str], answer: usize) -> String {
+    options
         .iter()
         .enumerate()
         .map(|(index, option)| {
@@ -544,7 +591,7 @@ pub fn album_pages(
     read_entries: &[(usize, Entry)],
     progress: &Progress,
     unlocks: &Unlocks,
-    selected_answer: usize,
+    selected: usize,
 ) -> Vec<View> {
     let postcards: Vec<usize> = read_entries
         .iter()
@@ -555,10 +602,7 @@ pub fn album_pages(
         .collect();
     let recipes: Vec<usize> = read_entries
         .iter()
-        .filter_map(|(_, entry)| match entry {
-            Entry::Recipe(index) | Entry::DietRecipe(index) => Some(*index),
-            _ => None,
-        })
+        .filter_map(|(_, entry)| entry.recipe_index())
         .collect();
     let drawings: Vec<&[&str]> = DRAWINGS
         .iter()
@@ -595,7 +639,8 @@ pub fn album_pages(
             "Album : cadeaux du village",
             gifts.iter().map(|gift| gift.to_string()).collect(),
         ),
-        answers_page(progress, selected_answer),
+        answers_page(progress, selected),
+        trophies_page(progress, selected),
         list_page("Album : objets trouvés", objects),
     ];
     if unlocks.chest {
@@ -671,7 +716,13 @@ mod tests {
             .first_mail(save.progress.letters_read.min(save.available));
 
         let mut out = format!("opens: {opened}\n");
-        out.push_str(&render(&index_view(read, 0, 200, &save.context(12))));
+        out.push_str(&render(&index_view(
+            read,
+            Tab::Letters,
+            0,
+            200,
+            &save.context(12),
+        )));
         assert_eq!(out, courrier_fixture());
     }
 
@@ -686,9 +737,10 @@ mod tests {
         let save = SavedGame::load();
         let read = save.timeline.first_mail(10);
         let context = save.context(12);
-        let plain = render(&index_view(read, 0, 20, &context));
+        let plain = render(&index_view(read, Tab::Letters, 0, 20, &context));
         let full = render(&full_box_index_view(
             read,
+            Tab::Letters,
             0,
             20,
             200,
@@ -796,7 +848,7 @@ mod tests {
         let read = save.timeline.first_mail(10);
         let context = save.context(12);
         let (rows, width) = (12, 30);
-        let view = full_box_index_view(read, 0, rows, width, &context, day(10, 31));
+        let view = full_box_index_view(read, Tab::Letters, 0, rows, width, &context, day(10, 31));
 
         assert!(overlay::lay_out(&view.lines, width).len() <= rows);
         assert!(render(&view).contains("pre: >"));
@@ -1099,6 +1151,7 @@ mod tests {
             "Album : sommaire",
             "Album : cadeaux du village",
             "Album : tes réponses",
+            "Album : tes trophées",
             "Album : objets trouvés",
         ];
         for (page, title) in pages.iter().zip(titles) {
@@ -1108,6 +1161,50 @@ mod tests {
             pages[ANSWERS_PAGE]
                 .title
                 .starts_with("Album : tes réponses")
+        );
+        assert!(
+            pages[TROPHIES_PAGE]
+                .title
+                .starts_with("Album : tes trophées")
+        );
+    }
+
+    #[test]
+    fn test_trophies_page_lists_won_trophies_only() {
+        let pages = album_pages(&[], &Progress::default(), &Unlocks::default(), 0);
+        let view = &pages[TROPHIES_PAGE];
+        assert_eq!(overlay::lay_out(&view.lines, 60), ["Rien pour l'instant."]);
+        assert_eq!(view.footer, ALBUM_FOOTER);
+
+        let mut progress = Progress::default();
+        progress.badges.insert("streak_60".to_string());
+        let pages = album_pages(&[], &progress, &Unlocks::default(), 0);
+        let view = &pages[TROPHIES_PAGE];
+        assert_eq!(
+            overlay::lay_out(&view.lines, 200),
+            ["> Nain de jardin [1]\u{a0}au jardin\u{a0}✓ [2]\u{a0}rangé"]
+        );
+        assert_eq!(view.footer, ANSWERS_FOOTER);
+    }
+
+    #[test]
+    fn test_trophies_page_shows_where_each_trophy_is() {
+        let mut progress = Progress::default();
+        progress.badges = BTreeSet::from([
+            "streak_60".to_string(),
+            "streak_100".to_string(),
+            "streak_365".to_string(),
+        ]);
+        progress.hidden_trophies.insert("statue".to_string());
+        progress.hidden_trophies.insert("sundial".to_string());
+        let pages = album_pages(&[], &progress, &Unlocks::default(), 1);
+        assert_eq!(
+            overlay::lay_out(&pages[TROPHIES_PAGE].lines, 200),
+            [
+                "- Nain de jardin au jardin",
+                "> Statue [1]\u{a0}au jardin [2]\u{a0}rangée\u{a0}✓",
+                "- Cadran solaire rangé",
+            ]
         );
     }
 

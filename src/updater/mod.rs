@@ -1,4 +1,5 @@
 mod banner;
+mod forced;
 mod progress;
 
 use crate::prompt::{PREFIX, confirm};
@@ -18,10 +19,6 @@ const LOG_FILE: &str = "update.log";
 const NEW_VERSION_MESSAGE: &str = "Une nouvelle version est arrivée\u{202F}!";
 
 pub async fn offer_update() {
-    if !io::stdin().is_terminal() {
-        return;
-    }
-
     let source = Path::new(SOURCE_DIR);
     if !is_git_checkout(source) || !is_clean(source) || !fetch(source).await {
         return;
@@ -30,15 +27,23 @@ pub async fn offer_update() {
         return;
     }
 
+    let interactive = io::stdin().is_terminal();
+    let forced = is_update_forced(source);
+    if !forced && !interactive {
+        return;
+    }
+
     banner::show(Some(NEW_VERSION_MESSAGE));
-    if !confirm("Mettre à jour maintenant\u{202F}?", true) {
+    if !forced && !confirm("Mettre à jour maintenant\u{202F}?", true) {
         return;
     }
     match update(source) {
         Ok(()) => restart(),
         Err(error) => {
             eprintln!("{PREFIX} {error}");
-            wait_for_enter();
+            if interactive {
+                wait_for_enter();
+            }
         }
     }
 }
@@ -129,6 +134,11 @@ fn uses_default_ssh(source: &Path) -> bool {
 
 fn has_pending_changes(source: &Path) -> bool {
     pending_count(source).is_some_and(|count| count > 0)
+}
+
+fn is_update_forced(source: &Path) -> bool {
+    git_output(source, &["show", "@{u}:Cargo.toml"])
+        .is_some_and(|manifest| forced::is_forced(env!("CARGO_PKG_VERSION"), &manifest))
 }
 
 pub(crate) fn pending_count(source: &Path) -> Option<usize> {

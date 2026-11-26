@@ -37,12 +37,14 @@ Requests ask Open-Meteo for user units, then `normalize_*`
 
 ## Location — `src/geolocation.rs`
 
-`detect_location` (`src/geolocation.rs:34`), at launch when `location.auto`, in game
+`detect_location` (`src/geolocation.rs:51`), at launch when `location.auto`, in game
 when « Position auto » → oui:
 
 1. `CoreLocationCLI` (macOS device location, 10 s timeout) if installed.
 2. Cached `location.json` (24 h).
 3. ipinfo.io, 3 retries + backoff; result cached.
+
+Returns `DetectedLocation { location, is_from_device }`: `is_from_device` only when step 1 answered (`detect_from`). `App::is_located_by_device` (set at launch, `|=` from Réglages) awards the Commun Badge « Boussole » (`compass`, #155), only outside simulations and `--day`.
 
 `reverse_geocode` (`:170`) asks Nominatim for city/town/village name when
 `location.display` is `city` or `mixed`; cached per coordinates + language.
@@ -99,7 +101,7 @@ decimals), `location.json` + `geocode.json` (24 h). Writes fire-and-forget
 
 - `rain_alert.rs` — own task every 10 min (`src/rain_alert.rs:43`): first 15-min slot
   with ≥0.1 mm in next hour → `RainAlert::At("HH:MM")`, else ≥50 % hourly
-  probability → `Soon`. HUD shows umbrella hint, hidden when already wet.
+  probability → `Soon`. Barre du haut shows `Pluie vers HH:MM` / `Pluie dans l'heure`, hidden when already wet.
   Disabled in simulation.
 - `remote_weather.rs` — one-shot fetches for story content (`src/remote_weather.rs:46`):
   `Request::Postcard(i)` gets current weather in Carte postale's city;
@@ -109,7 +111,7 @@ decimals), `location.json` + `geocode.json` (24 h). Writes fire-and-forget
 ## Offline and simulation
 
 - First fetch fails → `generate_offline_weather` (`src/app.rs:77`) picks random
-  plausible condition, HUD shows `OFFLINE`. Later failures keep last data.
+  plausible condition, Barre du haut shows `Hors ligne`. Later failures keep last data.
 - `--simulate <condition>` / `--demo` skip client entirely. Condition names parse
   via `FromStr` on `WeatherCondition`.
 

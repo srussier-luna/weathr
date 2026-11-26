@@ -6,6 +6,7 @@ use std::io;
 
 pub const PINE_OFFSET: u16 = 18;
 pub const PINE_WIDTH: u16 = 10;
+pub const FENCE_GAP: u16 = 2;
 const MAILBOX_WIDTH: u16 = 7;
 const MAILBOX_DAY: Color = Color::Rgb {
     r: 255,
@@ -75,7 +76,7 @@ impl Decorations {
         let (fence_lines, fence_color) = self.get_fence(config.is_day);
         let fence_height = fence_lines.len() as u16;
         let fence_y = config.horizon_y.saturating_sub(fence_height); // Sitting on ground
-        let fence_x = config.house_x + config.house_width + 2; // Slight gap
+        let fence_x = config.house_x + config.house_width + FENCE_GAP; // Slight gap
 
         if fence_x < config.width {
             for (i, line) in fence_lines.iter().enumerate() {

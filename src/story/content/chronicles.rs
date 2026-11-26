@@ -1,28 +1,30 @@
+use std::collections::BTreeSet;
+
 pub const SAM_SENDER: &str = "Sam, le voisin du moulin";
 pub const SAM_LETTERS: [&str; 5] = [
-    "Bonjour d'en face ! Je suis Sam, j'habite le vieux moulin au bord de la rivière. Je dessinais des cartes, autrefois. Aujourd'hui, je les regarde surtout. Ton jardin figure sur trois de mes plans, tu savais ?",
-    "Rose m'a vendu un croissant brûlé, je l'ai mangé quand même. Le soir, je trace des routes sur de vieilles cartes, vers des villes que je n'ai jamais vues.",
-    "J'ai retrouvé une carte du monde de mon grand-père, couverte de petites croix. Chaque croix est une ville qu'il rêvait de voir. Il n'en a vu aucune.",
-    "Paulo dit que les rêves se fanent comme les fleurs qu'on oublie d'arroser. Il a raison, pour une fois. J'ai acheté une valise. Elle est encore vide.",
-    "Je pars demain. Je vais suivre les croix de mon grand-père, une par une. Je t'enverrai une carte postale chaque semaine, avec le temps qu'il fait là-bas. Garde un œil sur mon moulin.",
+    "Bonjour d'en face\u{202F}! Moi c'est Sam, le vieux moulin au bord de la rivière. Je dessinais des cartes, avant. Maintenant je les regarde, surtout. Tu savais\u{202F}? Ton jardin est sur trois de mes plans. Sur le plus vieux, ta maison n'a même pas de cheminée.",
+    "Rose m'a vendu un croissant brûlé. Le moins brûlé, d'après elle. Je l'ai mangé en traçant une route au crayon, d'ici jusqu'à Valparaíso. Onze centimètres sur ma carte. Vu comme ça, ça paraît faisable, non\u{202F}?",
+    "Quarante petites croix. C'est ce qu'il y a sur la carte du monde de mon grand-père, retrouvée au grenier. Chaque croix, une ville qu'il voulait voir. Il n'en a vu aucune, tu savais\u{202F}? Celle de Lisbonne, il l'a appuyée si fort que le papier est troué.",
+    "J'ai acheté une valise. Marron, avec des coins en cuir. Elle est encore vide, au milieu du moulin. Paulo est passé, il l'a regardée longtemps et il a dit\u{202F}: «\u{202F}Faut la remplir.\u{202F}» C'est la plus longue phrase qu'il m'ait jamais dite.",
+    "Je pars demain, par le car de 6 h 10. Je vais suivre les croix de mon grand-père, une par une. Chaque semaine, je t'envoie une carte postale avec le temps qu'il fait là-bas. Tu me diras s'il fait meilleur chez toi\u{202F}? Garde un œil sur mon moulin. La porte du bas ferme mal, faut la soulever un peu.",
 ];
 
 pub const NEIGHBOURS_SENDER: &str = "Nadia et Claire, les apicultrices";
 pub const NEIGHBOURS_LETTERS: [&str; 5] = [
-    "Bonjour ! Nous sommes Nadia et Claire. On vient d'emménager dans la maison derrière le verger, avec nos quatre ruches. Si tu vois des abeilles dans ton jardin, ce sont les nôtres : elles adorent ton arbre.",
-    "Rose nous apprend quelques mots en langue des signes. Claire a retenu « miel » et « merci ». Nadia confond encore les deux, ce qui donne des conversations très polies.",
-    "Premier pot de miel ! On en a déposé un sur ta boîte aux lettres. Rose en a pris dix pour ses gâteaux. Marcel n'en veut pas : il dit que nos abeilles évitent le n°13 et que ce n'est pas bon signe.",
-    "Ce soir, cela fait dix ans que nous sommes mariées. C'est Odile qui nous a mariées, à la mairie, sous une pluie battante. Claire dit que ça porte bonheur. Nadia dit surtout que ça mouille. On fête ça avec une tarte au miel.",
-    "Une ruche a essaimé ce matin : tout un nuage d'abeilles s'est posé dans ton arbre. Claire est montée les chercher avec un carton, Nadia tenait l'échelle et donnait des conseils. Si une abeille se perd chez toi, ne t'inquiète pas, elle sait rentrer.",
+    "Coucou\u{202F}! Nadia et Claire, les nouvelles de la maison derrière le verger. On est arrivées avec quatre ruches (Claire en voulait six). Si tu vois des abeilles chez toi, ce sont les nôtres. Elles adorent ton arbre\u{202F}: Claire dit qu'elles ont bon goût, Nadia dit qu'elles sont juste gourmandes. Le premier pot est pour toi.",
+    "Rose nous apprend la langue des signes, le jeudi, entre deux fournées. Claire a retenu «\u{202F}miel\u{202F}» et «\u{202F}merci\u{202F}» dès la première leçon. Nadia confond encore les deux. Du coup, elle remercie tout le monde pour le miel. Même Gaston, qui n'avait rien demandé.",
+    "Premier pot de miel. Il t'attend sur ta boîte aux lettres. Rose en a pris dix pour ses gâteaux, Claire voulait lui en vendre vingt. Marcel n'en veut pas. Il dit que nos abeilles évitent le n°13 et que c'est mauvais signe. Nadia a regardé\u{202F}: c'est vrai qu'elles font un détour. Claire trouve qu'il se fait des idées.",
+    "Dix ans ce soir. C'est Odile qui nous a mariées, à la mairie, sous une pluie battante, l'écharpe tricolore trempée. Claire dit que ça porte bonheur, Nadia dit surtout que ça mouille. On fête ça avec une tarte au miel. Claire l'a sortie du four trop tôt, on ne lui dira pas.",
+    "Une ruche a essaimé ce matin. Tout le nuage d'abeilles s'est posé dans ton arbre, sur la troisième branche. Claire est montée avec un carton avant qu'on trouve les gants. Nadia tenait l'échelle et donnait des conseils, que personne n'a suivis. Si une abeille traîne chez toi, t'inquiète pas, elle connaît le chemin.",
 ];
 
 pub const MARCEL_SENDER: &str = "Marcel, le garde champêtre";
 pub const MARCEL_LETTERS: [&str; 5] = [
-    "Bonsoir. Marcel, garde champêtre. Je fais ma ronde chaque nuit, de la mairie jusqu'au bout de ton chemin. Si tu vois une lanterne passer derrière ta haie vers minuit, c'est moi. En général, rien à signaler.",
-    "On m'a dit que tu posais des questions sur une maison numéro 13. Je fais cette ronde depuis vingt-deux ans. Le village a toujours eu douze maisons. Toujours.",
-    "Ronde de cette nuit : de la boue près du puits, encore. Des pas qui vont vers ta maison, aucun qui en revient. Ce sont sûrement les miens. J'ai dû mal compter.",
-    "Je compte les maisons à chaque ronde. Douze. Cette nuit, j'ai compté treize fenêtres allumées. J'ai recommencé : douze. Je n'ai rien noté dans le registre. Il vaut mieux ne rien noter.",
-    "La fête approche, alors un conseil. Le soir, si on frappe trois coups à ta porte, ne réponds pas. Nous avons tous appris à ne pas répondre. Moi aussi, j'ai appris.",
+    "Bonsoir. Marcel, garde champêtre. Ronde chaque nuit, de la mairie au bout de ton chemin. Si tu vois une lanterne derrière ta haie vers minuit, c'est moi. Rien à signaler. Sauf ta haie, qui déborde de quarante centimètres. Je note pas. Pour cette fois.",
+    "Paraît que tu poses des questions sur un numéro 13. Vingt-deux ans que je fais cette ronde. Le village a toujours eu douze maisons. Je les compte tous les soirs. Douze.",
+    "Ronde de 0 h 40. Boue près du puits, encore. Rien à signaler. Des pas vers ta maison, aucun qui revient. Sûrement les miens. J'ai dû mal compter.",
+    "Ronde de 23 h 15. Compté les maisons, comme chaque soir. Douze. Au retour, treize fenêtres allumées. Recompté\u{202F}: douze. Pas noté au registre. Odile dit de tout noter. Pas ça. C'était la buée sur ma lanterne.",
+    "La fête approche. Un conseil, un seul. Le soir, si on frappe trois coups à ta porte, réponds pas. Tout le village a appris à pas répondre. Moi aussi, j'ai appris. Ma première année de ronde. Je dors très bien, merci.",
 ];
 
 pub struct City {
@@ -685,6 +687,14 @@ pub fn is_right_answer(riddle: &Riddle, attempt: &str) -> bool {
         .any(|answer| normalize_answer(answer) == attempt)
 }
 
+pub fn has_solved_every_riddle(solved_weeks: &BTreeSet<usize>) -> bool {
+    let riddles: BTreeSet<usize> = solved_weeks
+        .iter()
+        .map(|week| week % RIDDLES.len())
+        .collect();
+    riddles.len() == RIDDLES.len()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -695,5 +705,20 @@ mod tests {
         assert!(is_right_answer(&RIDDLES[10], "un écho"));
         assert!(is_right_answer(&RIDDLES[27], "Treize"));
         assert!(!is_right_answer(&RIDDLES[0], "un mensonge"));
+    }
+
+    #[test]
+    fn test_every_riddle_needs_all_thirty_solved() {
+        assert!(!has_solved_every_riddle(&(0..29).collect()));
+        assert!(has_solved_every_riddle(&(0..30).collect()));
+    }
+
+    #[test]
+    fn test_a_riddle_back_in_a_later_gazette_counts_once() {
+        let mut weeks: BTreeSet<usize> = (0..29).collect();
+        weeks.insert(30);
+        assert!(!has_solved_every_riddle(&weeks));
+        weeks.insert(59);
+        assert!(has_solved_every_riddle(&weeks));
     }
 }
