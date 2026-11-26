@@ -644,7 +644,6 @@ pub struct App {
     overlay: Option<Overlay>,
     is_simulated: bool,
     awards_badges: bool,
-    is_sky_lookout: bool,
     is_time_master: bool,
     toasts: VecDeque<String>,
     toast_started: Option<Instant>,
@@ -789,6 +788,7 @@ impl App {
 
         let is_forced = is_simulated || simulation.night;
         let has_backup = opening.recovery.is_some();
+        // Kept on purpose for future contributor Badges: do not remove.
         let user_name = updater::git_user_name();
         let mut app = Self {
             state,
@@ -812,7 +812,6 @@ impl App {
             bare_village: false,
             is_simulated: is_forced,
             awards_badges: simulation.day.is_none(),
-            is_sky_lookout: badges::is_sky_lookout(user_name.as_deref()),
             is_time_master: badges::is_time_master(user_name.as_deref()),
             toasts: VecDeque::new(),
             toast_started: None,
@@ -888,11 +887,9 @@ impl App {
         self.animations.set_story_frozen(
             self.clock.is_frozen() || self.is_box_full() || self.is_mail_banned(),
         );
-        let earned = badges::collection()
-            .filter(|badge| self.progress.badges.contains(badge.id))
-            .count();
+        let (earned, total) = badges::collection_progress(&self.progress.badges);
         self.state
-            .set_progress_summary(is_mail_waiting, earned, badges::collection().count());
+            .set_progress_summary(is_mail_waiting, earned, total);
         self.state
             .set_new_badge(!self.progress.unseen_badges.is_empty());
     }
@@ -925,7 +922,6 @@ impl App {
             ),
             (self.has_received_every_recipe(), "all_recipes"),
             (!self.progress.bottles.is_empty(), "first_bottle"),
-            (self.is_sky_lookout, "sky_lookout"),
             (self.is_time_master, "time_master"),
         ];
         found.extend(

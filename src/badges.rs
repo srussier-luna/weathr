@@ -1,4 +1,5 @@
 use crate::weather::WeatherCondition;
+use std::collections::BTreeSet;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum BadgeKind {
@@ -183,7 +184,6 @@ pub fn sam_trail_line(sam_cities: usize) -> Option<String> {
     })
 }
 
-const SKY_LOOKOUT_NAME: &str = "Denis Richard";
 pub const CHEATER: &str = "cheater";
 
 const TIERS: [Tier; 5] = [
@@ -201,7 +201,10 @@ pub const SAM_TRAIL: Badge = secret(
     ["   ::", " ::  ", "::   "],
 );
 
-const CONTRIBUTORS: [&str; 1] = ["bpisano"];
+// Kept on purpose for future contributor Badges: do not remove.
+const CONTRIBUTORS: &[&str] = &[];
+
+const RETIRED: [&str; 2] = ["sky_lookout", "time_master"];
 
 pub const KINDS: [BadgeKind; 8] = [
     BadgeKind::Weather,
@@ -549,10 +552,23 @@ pub const BADGES: &[Badge] = &[
     ),
 ];
 
-pub fn collection() -> impl Iterator<Item = &'static Badge> {
+pub fn collection(earned: &BTreeSet<String>) -> impl Iterator<Item = &'static Badge> + '_ {
     BADGES
         .iter()
-        .filter(|badge| badge.kind != BadgeKind::Demerit)
+        .filter(move |badge| badge.kind != BadgeKind::Demerit && is_shown(badge, earned))
+}
+
+pub fn collection_progress(earned: &BTreeSet<String>) -> (usize, usize) {
+    let shown: Vec<&Badge> = collection(earned).collect();
+    let owned = shown
+        .iter()
+        .filter(|badge| earned.contains(badge.id))
+        .count();
+    (owned, shown.len())
+}
+
+pub fn is_shown(badge: &Badge, earned: &BTreeSet<String>) -> bool {
+    earned.contains(badge.id) || (badge.kind != BadgeKind::Demerit && !RETIRED.contains(&badge.id))
 }
 
 pub fn weather_badges() -> impl Iterator<Item = &'static Badge> {
@@ -588,12 +604,8 @@ pub fn name(id: &str) -> &'static str {
     find(id).map_or("?", |badge| badge.name)
 }
 
-pub fn is_sky_lookout(user_name: Option<&str>) -> bool {
-    is_listed(user_name, &[SKY_LOOKOUT_NAME])
-}
-
 pub fn is_time_master(user_name: Option<&str>) -> bool {
-    is_listed(user_name, &CONTRIBUTORS)
+    is_listed(user_name, CONTRIBUTORS)
 }
 
 fn is_listed(user_name: Option<&str>, logins: &[&str]) -> bool {
@@ -624,8 +636,8 @@ mod tests {
             .collect();
         assert_eq!(demerits, [CHEATER]);
         assert!(find(CHEATER).is_some_and(|badge| badge.hint.is_some()));
-        assert_eq!(collection().count(), BADGES.len() - 1);
-        assert!(collection().all(|badge| badge.id != CHEATER));
+        let cheater = BTreeSet::from([CHEATER.to_string()]);
+        assert!(collection(&cheater).all(|badge| badge.id != CHEATER));
     }
 
     #[test]
@@ -834,52 +846,45 @@ mod tests {
     }
 
     #[test]
-    fn test_sky_lookout_matches_exact_name() {
-        assert!(is_sky_lookout(Some("Denis Richard")));
+    fn test_is_listed_matches_exact_name() {
+        assert!(is_listed(Some("Alex Martin"), &["Alex Martin"]));
     }
 
     #[test]
-    fn test_sky_lookout_ignores_surrounding_whitespace() {
-        assert!(is_sky_lookout(Some("Denis Richard\n")));
-        assert!(is_sky_lookout(Some(" Denis Richard ")));
+    fn test_is_listed_ignores_surrounding_whitespace() {
+        assert!(is_listed(Some(" Alex Martin\n"), &["Alex Martin"]));
     }
 
     #[test]
-    fn test_sky_lookout_rejects_other_name() {
-        assert!(!is_sky_lookout(Some("srussier-luna")));
-        assert!(!is_sky_lookout(Some("drichard-luna")));
+    fn test_is_listed_rejects_other_name() {
+        assert!(!is_listed(Some("Alex Martinez"), &["Alex Martin"]));
     }
 
     #[test]
-    fn test_sky_lookout_does_not_grant_time_master() {
-        assert!(!is_time_master(Some("Denis Richard")));
+    fn test_is_listed_rejects_missing_name() {
+        assert!(!is_listed(None, &["Alex Martin"]));
+        assert!(!is_listed(Some(""), &["Alex Martin"]));
     }
 
     #[test]
-    fn test_sky_lookout_rejects_missing_name() {
-        assert!(!is_sky_lookout(None));
-        assert!(!is_sky_lookout(Some("")));
-    }
-
-    #[test]
-    fn test_time_master_matches_each_contributor() {
-        assert!(is_time_master(Some("bpisano")));
-    }
-
-    #[test]
-    fn test_time_master_ignores_surrounding_whitespace() {
-        assert!(is_time_master(Some(" bpisano\n")));
-    }
-
-    #[test]
-    fn test_time_master_rejects_other_name() {
-        assert!(!is_time_master(Some("srussier-luna")));
-        assert!(!is_time_master(Some("drichard-luna")));
-    }
-
-    #[test]
-    fn test_time_master_rejects_missing_name() {
-        assert!(!is_time_master(None));
+    fn test_time_master_is_out_of_reach_while_contributors_is_empty() {
+        assert!(CONTRIBUTORS.is_empty());
+        assert!(!is_time_master(Some("Alex Martin")));
         assert!(!is_time_master(Some("")));
+        assert!(!is_time_master(None));
+    }
+
+    #[test]
+    fn test_retired_badges_stay_known_for_saves_that_own_them() {
+        assert!(RETIRED.iter().all(|id| find(id).is_some()));
+    }
+
+    #[test]
+    fn test_retired_badges_leave_the_collection_unless_owned() {
+        let none = BTreeSet::new();
+        let owned = BTreeSet::from(["sky_lookout".to_string(), "time_master".to_string()]);
+        assert!(collection(&none).all(|badge| !RETIRED.contains(&badge.id)));
+        assert_eq!(collection(&none).count(), BADGES.len() - 3);
+        assert_eq!(collection(&owned).count(), BADGES.len() - 1);
     }
 }
