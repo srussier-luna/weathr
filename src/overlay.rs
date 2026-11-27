@@ -387,6 +387,7 @@ pub fn render_badges(
     earned: &BTreeSet<String>,
     unseen: &BTreeSet<String>,
     streak: u32,
+    visit_days: u32,
     sam_cities: usize,
 ) -> io::Result<()> {
     let box_width = Frame::Stars.fit(MAX_BADGES_WIDTH.min(renderer.get_size().0.saturating_sub(4)));
@@ -394,6 +395,7 @@ pub fn render_badges(
         earned,
         unseen,
         streak,
+        visit_days,
         sam_cities,
         Frame::Stars.inner_width(box_width),
     );
@@ -410,6 +412,11 @@ pub fn render_badges(
     Ok(())
 }
 
+fn days(count: u32) -> String {
+    let plural = if count > 1 { "s" } else { "" };
+    format!("{count} jour{plural}")
+}
+
 fn badges_title(earned: &BTreeSet<String>) -> String {
     let (owned, total) = badges::collection_progress(earned);
     format!("Badges {owned}/{total}")
@@ -419,11 +426,15 @@ fn badge_lines(
     earned: &BTreeSet<String>,
     unseen: &BTreeSet<String>,
     streak: u32,
+    visit_days: u32,
     sam_cities: usize,
     inner: usize,
 ) -> BadgeLines {
-    let plural = if streak > 1 { "s" } else { "" };
-    let mut lines = vec![format!("Série en cours : {streak} jour{plural} d'affilée")];
+    let mut lines = vec![format!(
+        "Série en cours : {} d'affilée · {} de visite",
+        days(streak),
+        days(visit_days)
+    )];
     let mut highlights = Vec::new();
 
     for kind in KINDS {
@@ -722,17 +733,37 @@ mod tests {
     }
 
     #[test]
+    fn test_header_counts_streak_and_visit_days() {
+        let earned = BTreeSet::new();
+        let header = |streak, visit_days| {
+            badge_lines(&earned, &BTreeSet::new(), streak, visit_days, 0, 76).lines[0].clone()
+        };
+        assert_eq!(
+            header(1, 1),
+            "Série en cours : 1 jour d'affilée · 1 jour de visite"
+        );
+        assert_eq!(
+            header(1, 2),
+            "Série en cours : 1 jour d'affilée · 2 jours de visite"
+        );
+        assert_eq!(
+            header(3, 150),
+            "Série en cours : 3 jours d'affilée · 150 jours de visite"
+        );
+    }
+
+    #[test]
     fn test_cheater_family_shows_only_once_earned_and_never_counts() {
         let honest = BTreeSet::from(["rain".to_string()]);
         let cheater = BTreeSet::from(["rain".to_string(), badges::CHEATER.to_string()]);
         let total = BADGES.len() - 4;
 
-        let lines = badge_lines(&honest, &BTreeSet::new(), 1, 0, 76).lines;
+        let lines = badge_lines(&honest, &BTreeSet::new(), 1, 1, 0, 76).lines;
         assert!(!lines.iter().any(|line| line.contains("Mauvais points")));
         assert!(!lines.iter().any(|line| line.contains("Tricheur")));
         assert_eq!(badges_title(&honest), format!("Badges 1/{total}"));
 
-        let lines = badge_lines(&cheater, &BTreeSet::new(), 1, 0, 76).lines;
+        let lines = badge_lines(&cheater, &BTreeSet::new(), 1, 1, 0, 76).lines;
         let family = lines
             .iter()
             .position(|line| line == "Mauvais points")
@@ -754,7 +785,7 @@ mod tests {
             .filter(|badge| badge.kind == BadgeKind::Secret)
             .count();
 
-        let lines = badge_lines(&fresh, &BTreeSet::new(), 1, 0, 76).lines;
+        let lines = badge_lines(&fresh, &BTreeSet::new(), 1, 1, 0, 76).lines;
         assert!(!lines.iter().any(|line| line.starts_with("Contribution")));
         assert!(!lines.iter().any(|line| line.contains("Vigie du ciel")));
         assert!(!lines.iter().any(|line| line.contains("Maître du temps")));
@@ -769,7 +800,7 @@ mod tests {
             format!("Badges 1/{}", BADGES.len() - 4)
         );
 
-        let lines = badge_lines(&owner, &BTreeSet::new(), 1, 0, 76).lines;
+        let lines = badge_lines(&owner, &BTreeSet::new(), 1, 1, 0, 76).lines;
         let secrets_row = lines
             .iter()
             .position(|line| *line == format!("Secrets (0/{secrets})"))
@@ -852,10 +883,10 @@ mod tests {
         let earned = BTreeSet::from(["rain".to_string(), "clear".to_string()]);
         let unseen = BTreeSet::from(["rain".to_string()]);
 
-        let badges = badge_lines(&earned, &unseen, 1, 0, 76);
+        let badges = badge_lines(&earned, &unseen, 1, 1, 0, 76);
         assert_eq!(highlighted(&badges), ["[x] Pluie"]);
         assert!(
-            badge_lines(&earned, &BTreeSet::new(), 1, 0, 76)
+            badge_lines(&earned, &BTreeSet::new(), 1, 1, 0, 76)
                 .highlights
                 .is_empty()
         );
@@ -870,7 +901,7 @@ mod tests {
         ]);
         let unseen = BTreeSet::from(["clear".to_string(), "patience".to_string()]);
 
-        let badges = badge_lines(&earned, &unseen, 1, 0, 76);
+        let badges = badge_lines(&earned, &unseen, 1, 1, 0, 76);
         assert_eq!(
             highlighted(&badges),
             [
@@ -885,7 +916,7 @@ mod tests {
         let earned = BTreeSet::from([SAM_TRAIL.id.to_string()]);
         let unseen = earned.clone();
 
-        let badges = badge_lines(&earned, &unseen, 1, 12, 40);
+        let badges = badge_lines(&earned, &unseen, 1, 1, 12, 40);
         let rows = wrap_cell(&badge_cell(&SAM_TRAIL, true, 12), 40);
         assert!(rows.len() > 1);
         assert_eq!(badges.highlights.len(), rows.len());
