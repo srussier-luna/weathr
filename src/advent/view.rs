@@ -2,6 +2,7 @@ use super::chocolates::DRAWING_WIDTH;
 use super::chocolutin::{INTRODUCTION, SIGNATURE, speech};
 use super::{Cell, DAYS, chocolate, note};
 use crate::overlay::{Frame, Line, View};
+use crate::story::content::REREAD_LETTER_FOOTER;
 use chrono::{Datelike, NaiveDate};
 
 pub const COLUMNS: usize = 6;
@@ -169,6 +170,13 @@ pub fn note_view(date: NaiveDate) -> Option<View> {
     })
 }
 
+pub fn reread_note_view(date: NaiveDate) -> Option<View> {
+    note_view(date).map(|view| View {
+        footer: REREAD_LETTER_FOOTER.to_string(),
+        ..view
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -291,5 +299,16 @@ mod tests {
                 .any(|line| matches!(line, Line::Text(text) if SPEECHES.contains(&text.as_str())))
         );
         assert!(note_view(december(25)).is_none());
+    }
+
+    #[test]
+    fn test_reread_note_shows_the_same_note_without_next() {
+        let note = note_view(december(2)).unwrap();
+        let reread = reread_note_view(december(2)).unwrap();
+        assert_eq!(reread.title, note.title);
+        assert_eq!(reread.lines.len(), note.lines.len());
+        assert_eq!(reread.footer, REREAD_LETTER_FOOTER);
+        assert!(!reread.footer.contains("[c]"));
+        assert!(reread_note_view(december(25)).is_none());
     }
 }

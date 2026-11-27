@@ -1,3 +1,4 @@
+use crate::advent::note;
 use crate::animation::lore::Unlocks;
 use crate::animation::trophies::Trophy;
 use crate::badges::{self, Award};
@@ -57,33 +58,37 @@ pub fn index_view(
     rows: usize,
     context: &ReadContext,
 ) -> View {
+    let notes = context.progress.read_chocolutin_notes();
     let shown = tabs::entries_in(read_entries, tab);
+    let count = match tab {
+        Tab::Advent => notes.len(),
+        _ => shown.len(),
+    };
+    let row = |position: usize| match tab {
+        Tab::Advent => note::title(notes[position]),
+        _ => {
+            let (day, entry) = read_entries[shown[position]];
+            format!(
+                "{:>3}. {}  {}",
+                position + 1,
+                context.clock.date_of(day).format("%d/%m"),
+                content::label(day, entry, context)
+            )
+        }
+    };
     let mut lines = Vec::new();
-    if !shown.is_empty() {
-        lines.push(Line::Preformatted(tab_bar(read_entries, tab)));
+    if count > 0 {
+        lines.push(Line::Preformatted(tab_bar(read_entries, &notes, tab)));
         lines.push(Line::Blank);
     }
     let rows = rows.saturating_sub(lines.len()).max(1);
     let first = selected
         .saturating_sub(rows / 2)
-        .min(shown.len().saturating_sub(rows));
-    lines.extend(
-        shown
-            .iter()
-            .enumerate()
-            .skip(first)
-            .take(rows)
-            .map(|(position, &index)| {
-                let (day, entry) = read_entries[index];
-                let marker = if position == selected { '>' } else { ' ' };
-                Line::Preformatted(format!(
-                    "{marker} {:>3}. {}  {}",
-                    position + 1,
-                    context.clock.date_of(day).format("%d/%m"),
-                    content::label(day, entry, context)
-                ))
-            }),
-    );
+        .min(count.saturating_sub(rows));
+    lines.extend((first..count).take(rows).map(|position| {
+        let marker = if position == selected { '>' } else { ' ' };
+        Line::Preformatted(format!("{marker} {}", row(position)))
+    }));
     if lines.is_empty() {
         lines.push(text("Aucune lettre lue pour l'instant."));
     }
@@ -95,8 +100,8 @@ pub fn index_view(
     }
 }
 
-fn tab_bar(read_entries: &[(usize, Entry)], current: Tab) -> String {
-    tabs::visible_tabs(read_entries)
+fn tab_bar(read_entries: &[(usize, Entry)], notes: &[NaiveDate], current: Tab) -> String {
+    tabs::visible_tabs(read_entries, notes)
         .into_iter()
         .map(|tab| {
             if tab == current {
@@ -756,6 +761,47 @@ mod tests {
             let day: u32 = day.parse().unwrap();
             assert_eq!(title, format!("Gazette du lundi {day} {month}"));
         }
+    }
+
+    fn advent_tab_rows(view: &View) -> Vec<String> {
+        view.lines
+            .iter()
+            .filter_map(|line| match line {
+                Line::Preformatted(row) if row.contains("Mot de Chocolutin") => Some(row.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_advent_tab_lists_read_notes_newest_first() {
+        let mut save = SavedGame::load();
+        save.progress.mark_chocolutin_note_read(day(12, 2));
+        save.progress.mark_chocolutin_note_read(day(12, 5));
+        let read = save.timeline.first_mail(10);
+        let view = index_view(read, Tab::Advent, 0, 200, &save.context(12));
+
+        assert!(matches!(&view.lines[0], Line::Preformatted(bar) if bar.ends_with("[Avent]")));
+        assert_eq!(
+            advent_tab_rows(&view),
+            [
+                "> Mot de Chocolutin du 5 décembre",
+                "  Mot de Chocolutin du 2 décembre"
+            ]
+        );
+    }
+
+    #[test]
+    fn test_read_notes_leave_the_timeline_tabs_unchanged() {
+        let mut save = SavedGame::load();
+        let read = save.timeline.first_mail(10);
+        let before = render(&index_view(read, Tab::Letters, 0, 200, &save.context(12)));
+        assert!(!before.contains("Avent"));
+        save.progress.mark_chocolutin_note_read(day(12, 2));
+        let read = save.timeline.first_mail(10);
+        let after = render(&index_view(read, Tab::Letters, 0, 200, &save.context(12)));
+
+        assert_eq!(after.replace("  Avent", ""), before);
     }
 
     fn day(month: u32, day: u32) -> NaiveDate {

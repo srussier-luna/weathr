@@ -195,7 +195,22 @@ fn next_overlay(overlay: Option<Overlay>, pending_badges: &mut VecDeque<Award>) 
 }
 
 fn is_reread(overlay: Option<Overlay>) -> bool {
-    matches!(overlay, Some(Overlay::Letter { from: Some(_), .. }))
+    matches!(
+        overlay,
+        Some(Overlay::Letter { from: Some(_), .. } | Overlay::RereadChocolutinNote(_))
+    )
+}
+
+fn read_chocolutin_note(progress: &mut Progress, date: NaiveDate) -> bool {
+    let received = progress.receive_advent_day(date.year(), date.day());
+    let noted = progress.mark_chocolutin_note_read(date);
+    received || noted
+}
+
+fn note_beside(notes: &[NaiveDate], selected: usize, step: isize) -> Option<usize> {
+    selected
+        .checked_add_signed(step)
+        .filter(|&beside| beside < notes.len())
 }
 
 fn closed_overlay(overlay: Option<Overlay>) -> Option<Overlay> {
@@ -206,6 +221,10 @@ fn closed_overlay(overlay: Option<Overlay>) -> Option<Overlay> {
             from: Some((tab, selected)),
             ..
         }) => Some(Overlay::Index { tab, selected }),
+        Some(Overlay::RereadChocolutinNote(selected)) => Some(Overlay::Index {
+            tab: Tab::Advent,
+            selected,
+        }),
         _ => None,
     }
 }
@@ -693,6 +712,7 @@ enum Overlay {
     NoteBadge(Award),
     Notes(usize),
     PostmanNote,
+    RereadChocolutinNote(usize),
     Settings(usize),
     Welcome(Step),
 }
@@ -1133,7 +1153,7 @@ impl App {
             return;
         };
         self.overlay = Some(Overlay::ChocolutinNote(date));
-        if self.progress.receive_advent_day(year, day) {
+        if read_chocolutin_note(&mut self.progress, date) {
             self.progress.save();
         }
     }
@@ -1543,6 +1563,21 @@ impl App {
                 Some(view) => view,
                 None => return Ok(()),
             },
+            Some(Overlay::RereadChocolutinNote(selected)) => {
+                let notes = self.progress.read_chocolutin_notes();
+                let Some(view) = notes
+                    .get(selected)
+                    .and_then(|&date| advent_view::reread_note_view(date))
+                else {
+                    return Ok(());
+                };
+                return overlay::render_with_chevrons(
+                    renderer,
+                    &view,
+                    note_beside(&notes, selected, -1).is_some(),
+                    note_beside(&notes, selected, 1).is_some(),
+                );
+            }
             Some(Overlay::NeighboursNote) => match self.neighbours_note {
                 Some(note) => views::neighbours_note_view(note),
                 None => return Ok(()),
@@ -1579,7 +1614,11 @@ impl App {
                         &self.read_context(),
                     )
                 };
-                let (has_previous, has_next) = tabs::has_neighbours(self.read_entries(), tab);
+                let (has_previous, has_next) = tabs::has_neighbours(
+                    self.read_entries(),
+                    &self.progress.read_chocolutin_notes(),
+                    tab,
+                );
                 return overlay::render_with_chevrons(renderer, &view, has_previous, has_next);
             }
             Some(Overlay::Help) => views::help_view(
@@ -1838,7 +1877,10 @@ impl App {
     fn toggle_index(&mut self) {
         self.overlay = match self.overlay {
             Some(Overlay::Index { .. }) => None,
-            _ => Some(self.index_on(tabs::opening_tab(self.read_entries()))),
+            _ => Some(self.index_on(tabs::opening_tab(
+                self.read_entries(),
+                &self.progress.read_chocolutin_notes(),
+            ))),
         };
     }
 
@@ -1850,9 +1892,11 @@ impl App {
     }
 
     fn last_in_tab(&self, tab: Tab) -> usize {
-        tabs::entries_in(self.read_entries(), tab)
-            .len()
-            .saturating_sub(1)
+        let count = match tab {
+            Tab::Advent => self.progress.read_chocolutin_notes().len(),
+            _ => tabs::entries_in(self.read_entries(), tab).len(),
+        };
+        count.saturating_sub(1)
     }
 
     fn select_in_index(&mut self, step: isize) {
@@ -1868,7 +1912,12 @@ impl App {
 
     fn switch_tab(&mut self, step: isize) {
         if let Some(Overlay::Index { tab, .. }) = self.overlay {
-            let tab = tabs::switch_tab(self.read_entries(), tab, step);
+            let tab = tabs::switch_tab(
+                self.read_entries(),
+                &self.progress.read_chocolutin_notes(),
+                tab,
+                step,
+            );
             self.overlay = Some(self.index_on(tab));
         }
     }
@@ -1914,10 +1963,19 @@ impl App {
     }
 
     fn reread_selected(&mut self) {
-        if let Some(Overlay::Index { tab, selected }) = self.overlay
-            && let Some(&index) = tabs::entries_in(self.read_entries(), tab).get(selected)
-        {
-            self.open_letter_from(index, Some((tab, selected)));
+        match self.overlay {
+            Some(Overlay::Index {
+                tab: Tab::Advent,
+                selected,
+            }) if selected < self.progress.read_chocolutin_notes().len() => {
+                self.overlay = Some(Overlay::RereadChocolutinNote(selected));
+            }
+            Some(Overlay::Index { tab, selected }) => {
+                if let Some(&index) = tabs::entries_in(self.read_entries(), tab).get(selected) {
+                    self.open_letter_from(index, Some((tab, selected)));
+                }
+            }
+            _ => {}
         }
     }
 
@@ -2203,6 +2261,13 @@ impl App {
                 });
             }
             Some(Overlay::Letter { .. }) => self.browse_letters(step),
+            Some(Overlay::RereadChocolutinNote(selected)) => {
+                if let Some(beside) =
+                    note_beside(&self.progress.read_chocolutin_notes(), selected, step)
+                {
+                    self.overlay = Some(Overlay::RereadChocolutinNote(beside));
+                }
+            }
             Some(Overlay::Index { .. }) => self.switch_tab(step),
             Some(Overlay::Settings(_)) => self.change_setting(step),
             Some(Overlay::Calendar(selected)) => {
@@ -2743,6 +2808,59 @@ mod tests {
         let cells = advent::cells(&progress.advent_days(2026), today);
         assert!(matches!(cells[1], advent::Cell::Received(_)));
         assert!(matches!(cells[0], advent::Cell::Missed));
+    }
+
+    #[test]
+    fn test_reading_a_note_lists_it_in_the_advent_tab() {
+        let mut progress = Progress::default();
+        assert!(progress.read_chocolutin_notes().is_empty());
+        assert!(read_chocolutin_note(&mut progress, date(2026, 12, 2)));
+        assert_eq!(progress.read_chocolutin_notes(), vec![date(2026, 12, 2)]);
+        assert_eq!(progress.advent_days(2026), BTreeSet::from([2]));
+        assert!(!read_chocolutin_note(&mut progress, date(2026, 12, 2)));
+    }
+
+    #[test]
+    fn test_chocolate_received_in_person_is_not_a_note() {
+        let mut progress = Progress::default();
+        progress.receive_advent_day(2026, 3);
+        read_chocolutin_note(&mut progress, date(2026, 12, 2));
+        assert_eq!(progress.read_chocolutin_notes(), vec![date(2026, 12, 2)]);
+    }
+
+    #[test]
+    fn test_read_notes_stay_in_the_advent_tab_in_january() {
+        let mut progress = Progress::default();
+        read_chocolutin_note(&mut progress, date(2026, 12, 2));
+        read_chocolutin_note(&mut progress, date(2026, 12, 4));
+        assert!(progress.advent_days(2027).is_empty());
+        assert_eq!(
+            progress.read_chocolutin_notes(),
+            vec![date(2026, 12, 4), date(2026, 12, 2)]
+        );
+    }
+
+    #[test]
+    fn test_arrows_move_between_reread_notes_inside_the_tab() {
+        let notes = [date(2026, 12, 4), date(2026, 12, 2)];
+        assert_eq!(note_beside(&notes, 0, 1), Some(1));
+        assert_eq!(note_beside(&notes, 1, -1), Some(0));
+        assert_eq!(note_beside(&notes, 1, 1), None);
+        assert_eq!(note_beside(&notes, 0, -1), None);
+    }
+
+    #[test]
+    fn test_reread_note_ignores_the_mail_key_and_goes_back_to_the_advent_tab() {
+        let reread = Some(Overlay::RereadChocolutinNote(1));
+        assert!(is_reread(reread));
+        assert!(!is_reread(Some(Overlay::ChocolutinNote(date(2026, 12, 2)))));
+        assert!(matches!(
+            closed_overlay(reread),
+            Some(Overlay::Index {
+                tab: Tab::Advent,
+                selected: 1
+            })
+        ));
     }
 
     #[test]

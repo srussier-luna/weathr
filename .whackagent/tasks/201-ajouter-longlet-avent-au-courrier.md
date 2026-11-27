@@ -1,6 +1,6 @@
 ---
 issue: 201
-status: todo
+status: to-test
 wiki: [[mail]]
 note: "dans L ajoute un onglet calendrier de l'avent — suite de l'écart de #197 (mots lus via [c], pas relisibles dans [l])"
 created: 2026-11-27
@@ -31,8 +31,21 @@ created: 2026-11-27
 
 ## Implementation
 
+stacked on: #203 (wa/203-ajouter-la-date-de-test, contient #196 et #197)
+
+- Sauvegarde : `chocolutin_notes_read: BTreeMap<i32, BTreeSet<u32>>` (`#[serde(default)]`), `mark_chocolutin_note_read(date)`, `read_chocolutin_notes()` (dernière année avec des mots lus, du plus récent au plus ancien). Écrit seulement à la lecture via `[c]`.
+- `src/story/content/tabs.rs` : `Tab::Advent` « Avent », dernier onglet, hors timeline ; `visible_tabs`, `opening_tab`, `switch_tab`, `has_neighbours` prennent la liste des mots.
+- `src/views.rs` : lignes « > Mot de Chocolutin du 2 décembre » dans l'onglet Avent.
+- `src/advent/view.rs` : `reread_note_view(date)` (pied de page de relecture, sans `[c]`).
+- `src/app.rs` : `Overlay::RereadChocolutinNote(usize)` ; flèches dans l'onglet ; `[c]` sans effet en relecture ; Echap → onglet Avent sur le même mot. Relire ne change ni le calendrier ni la sauvegarde.
+- Timeline intacte : `read_entries`, `letters_read`, `entries_in`, `entry_beside`, `album_pages`, « Lettres reçues (n) ».
+- Choix : seule la dernière année avec des mots lus est affichée.
+- Build : clippy OK (avec et sans dev-date), build OK, fmt OK ; tests sans 185 + 696, avec 189 + 701 (+ suites annexes), 0 échec.
+
 ## Review
 
 ## Verification
+
+round 1: manual validation — not run by agent.
 
 ## Feedback

@@ -1,7 +1,7 @@
 mod journal;
 
 use crate::clock;
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::{Datelike, NaiveDate, NaiveDateTime};
 use journal::Journal;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
@@ -146,6 +146,8 @@ pub struct Progress {
     advent_days: BTreeSet<u32>,
     #[serde(default)]
     pub chocolutin_introduced: bool,
+    #[serde(default)]
+    chocolutin_notes_read: BTreeMap<i32, BTreeSet<u32>>,
     #[serde(default, skip_serializing)]
     format: u32,
     #[serde(skip)]
@@ -347,6 +349,26 @@ impl Progress {
         self.advent_days.insert(day)
     }
 
+    pub fn mark_chocolutin_note_read(&mut self, date: NaiveDate) -> bool {
+        self.chocolutin_notes_read
+            .entry(date.year())
+            .or_default()
+            .insert(date.day())
+    }
+
+    pub fn read_chocolutin_notes(&self) -> Vec<NaiveDate> {
+        self.chocolutin_notes_read
+            .iter()
+            .next_back()
+            .map(|(&year, days)| {
+                days.iter()
+                    .rev()
+                    .filter_map(|&day| NaiveDate::from_ymd_opt(year, 12, day))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
     pub fn previous_mail_hour(&self) -> Option<(NaiveDate, u32)> {
         let change = self.mail_hour_change.as_ref()?;
         Some((parse_date(&change.on)?, change.previous_hour))
@@ -433,6 +455,39 @@ mod tests {
         let saved = serde_json::to_string(&progress).unwrap();
         let loaded: Progress = serde_json::from_str(&saved).unwrap();
         assert_eq!(loaded.advent_days(2026), BTreeSet::from([1, 2]));
+    }
+
+    #[test]
+    fn test_save_without_read_notes_loads_with_none() {
+        let progress: Progress =
+            serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":4}"#).unwrap();
+        assert!(progress.read_chocolutin_notes().is_empty());
+    }
+
+    #[test]
+    fn test_read_notes_list_newest_first_and_survive_a_restart() {
+        let mut progress = Progress::default();
+        assert!(progress.mark_chocolutin_note_read(december(2026, 2)));
+        assert!(progress.mark_chocolutin_note_read(december(2026, 5)));
+        assert!(!progress.mark_chocolutin_note_read(december(2026, 2)));
+        let saved = serde_json::to_string(&progress).unwrap();
+        let loaded: Progress = serde_json::from_str(&saved).unwrap();
+        assert_eq!(
+            loaded.read_chocolutin_notes(),
+            vec![december(2026, 5), december(2026, 2)]
+        );
+    }
+
+    #[test]
+    fn test_read_notes_show_the_latest_advent_only() {
+        let mut progress = Progress::default();
+        progress.mark_chocolutin_note_read(december(2026, 2));
+        progress.mark_chocolutin_note_read(december(2027, 3));
+        assert_eq!(progress.read_chocolutin_notes(), vec![december(2027, 3)]);
+    }
+
+    fn december(year: i32, day: u32) -> NaiveDate {
+        NaiveDate::from_ymd_opt(year, 12, day).unwrap()
     }
 
     #[test]
