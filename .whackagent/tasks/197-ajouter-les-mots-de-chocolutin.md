@@ -41,6 +41,8 @@ stacked on: #196 (wa/196-ajouter-le-calendrier-de-lavent)
 
 ## Verification
 
+round 3: manual validation — not run by agent.
+
 round 2: manual validation — not run by agent.
 
 round 1: build + tests only — date réelle non simulable (27/11). À tester : run: yours.
@@ -54,4 +56,12 @@ round 1: build + tests only — date réelle non simulable (27/11). À tester : 
 - Changes : `note_view` passe au cadre `Frame::Gift` et reprend la nouvelle carte du chocolat (phrase du jour) ; `note.rs` utilise `chocolutin::SIGNATURE`. Les 8 textes suivent la fiche de voix.
 - Review : deferred. Verify : manual, run: yours.
 - Build : clippy OK, fmt OK, tests 183 + 677 + 10 + 7 + 3 + 5, 0 échec.
+
+### Round 3 — 2026-11-27
+
+- Asked : suite du tour 4 de #196 (nouvelle histoire de Chocolutin, discours + papillote).
+- Triage : défaut d'empilement + ajustement de ton → rebase sur #196 (5dbb4d5), conflit src/advent/view.rs résolu par l'implementer.
+- Changes : `note_view` = mot + « — Chocolutin » + `chocolate_lines(day)` (dessin, n°, nom, papillote, sans discours) dans `Frame::Gift` ; 8 mots réécrits (maladresses à la porte / boîte aux lettres, questions naïves sur l'atelier).
+- Review : deferred. Verify : manual, run: yours.
+- Build : clippy OK, fmt OK, tests 184 + 679 + 10 + 7 + 3 + 5, 0 échec.
 
