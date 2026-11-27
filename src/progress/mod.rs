@@ -143,6 +143,8 @@ pub struct Progress {
     advent_year: Option<i32>,
     #[serde(default)]
     advent_days: BTreeSet<u32>,
+    #[serde(default)]
+    pub chocolutin_introduced: bool,
     #[serde(default, skip_serializing)]
     format: u32,
     #[serde(skip)]
@@ -418,6 +420,7 @@ mod tests {
         let progress: Progress =
             serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":4}"#).unwrap();
         assert!(progress.advent_days(2026).is_empty());
+        assert!(!progress.chocolutin_introduced);
     }
 
     #[test]

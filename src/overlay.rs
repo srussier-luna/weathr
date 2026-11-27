@@ -23,6 +23,7 @@ const DROPS: [&str; 2] = ["'", "."];
 const WET_CUT: [&str; 3] = ["/", " /", "  /"];
 const FLOPPY_LABEL: &str = "-[#]";
 const ROOFS: &str = "/\\_";
+const GIFT_BOW: &str = "}@{";
 const MAX_BUBBLE_WIDTH: u16 = 40;
 const BUBBLE_GAP: &str = ". .";
 const BUBBLE_TAIL: &str = "V";
@@ -91,6 +92,7 @@ pub enum Frame {
     Notice,
     Floppy,
     Roofs,
+    Gift,
 }
 
 impl Frame {
@@ -108,6 +110,7 @@ impl Frame {
             Self::Stars => (255, 210, 90),
             Self::Floppy => (150, 165, 190),
             Self::Roofs => (205, 95, 70),
+            Self::Gift => (210, 40, 50),
         };
         Some(Color::Rgb { r, g, b })
     }
@@ -151,6 +154,7 @@ impl Frame {
             Self::Waves => (0, "  ", "  "),
             Self::Stars => (0, "* ", " *"),
             Self::Notice => (0, "║ ", " ║"),
+            Self::Gift => (0, "[ ", " ]"),
         }
     }
 
@@ -196,6 +200,18 @@ impl Frame {
                 ),
             )],
             Self::Roofs => vec![(0, ROOFS.chars().cycle().take(width).collect())],
+            Self::Gift => {
+                let ribbon = width.saturating_sub(GIFT_BOW.len() + 2);
+                let left = ribbon / 2;
+                vec![(
+                    0,
+                    format!(
+                        "+{}{GIFT_BOW}{}+",
+                        "=".repeat(left),
+                        "=".repeat(ribbon - left)
+                    ),
+                )]
+            }
         }
     }
 
@@ -220,6 +236,7 @@ impl Frame {
             Self::Bubble => vec![(0, rule('\'', "-", '\'', width))],
             Self::Notice => vec![(0, rule('╚', "═", '╝', width))],
             Self::Floppy => vec![(0, rule('+', "-", '+', width))],
+            Self::Gift => vec![(0, rule('+', "=", '+', width))],
             _ => self.top(width),
         }
     }
@@ -948,7 +965,7 @@ mod tests {
         }
     }
 
-    const FRAMES: [Frame; 14] = [
+    const FRAMES: [Frame; 15] = [
         Frame::Plain,
         Frame::Parchment,
         Frame::Wet,
@@ -963,6 +980,7 @@ mod tests {
         Frame::Notice,
         Frame::Floppy,
         Frame::Roofs,
+        Frame::Gift,
     ];
 
     fn draw(frame: Frame, title: &str, lines: &[&str], footer: &str, width: u16) -> Vec<String> {
@@ -1135,6 +1153,11 @@ mod tests {
         assert_eq!(roofs[0], "/\\_/\\_/\\_/\\_/\\_/\\_/\\_/\\_");
         assert_eq!(roofs[1], "| Tricher, c'est nul.  |");
         assert_eq!(roofs.last().unwrap(), "|______________________|");
+
+        let gift = draw(Frame::Gift, "", &["Hop."], "", 16);
+        assert_eq!(gift[0], "+=====}@{======+");
+        assert_eq!(gift[1], "[ Hop.         ]");
+        assert_eq!(gift.last().unwrap(), "+==============+");
     }
 
     #[test]

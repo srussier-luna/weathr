@@ -200,6 +200,7 @@ fn is_reread(overlay: Option<Overlay>) -> bool {
 fn closed_overlay(overlay: Option<Overlay>) -> Option<Overlay> {
     match overlay {
         Some(Overlay::NoteBadge(_)) => Some(Overlay::PostmanNote),
+        Some(Overlay::ChocolutinIntroduction(day)) => Some(Overlay::Chocolate(day)),
         Some(Overlay::Letter {
             from: Some((tab, selected)),
             ..
@@ -410,12 +411,26 @@ fn chocolutin_move(
     has_arrived: bool,
 ) -> ChocolutinMove {
     match chocolate_day {
-        None if matches!(overlay, Some(Overlay::Chocolate(_))) => ChocolutinMove::Wait,
+        None if matches!(
+            overlay,
+            Some(Overlay::Chocolate(_) | Overlay::ChocolutinIntroduction(_))
+        ) =>
+        {
+            ChocolutinMove::Wait
+        }
         None => ChocolutinMove::Leave,
         Some(_) if overlay.is_some() => ChocolutinMove::Wait,
         Some(_) if !is_visiting => ChocolutinMove::Visit,
         Some(day) if has_arrived => ChocolutinMove::Give(day),
         Some(_) => ChocolutinMove::Wait,
+    }
+}
+
+fn chocolate_overlay(day: u32, is_introduced: bool) -> Overlay {
+    if is_introduced {
+        Overlay::Chocolate(day)
+    } else {
+        Overlay::ChocolutinIntroduction(day)
     }
 }
 
@@ -657,6 +672,7 @@ enum Overlay {
     Bottle(usize),
     Calendar(u32),
     Chocolate(u32),
+    ChocolutinIntroduction(u32),
     Help,
     HolidayBox(&'static HolidayBox),
     Index {
@@ -1072,14 +1088,14 @@ impl App {
         self.overlay = holiday_box_after_launch(self.overlay, &mut self.pending_holiday_box);
     }
 
-    fn bring_chocolate(&mut self, term_width: u16, term_height: u16) {
+    fn bring_chocolate(&mut self) {
         match chocolutin_move(
             self.chocolate_day,
             self.overlay,
             self.animations.is_chocolutin_visiting(),
             self.animations.has_chocolutin_arrived(),
         ) {
-            ChocolutinMove::Visit => self.animations.chocolutin_visit(term_width, term_height),
+            ChocolutinMove::Visit => self.animations.chocolutin_visit(),
             ChocolutinMove::Give(day) => self.give_chocolate(day),
             ChocolutinMove::Leave => self.animations.chocolutin_leave(),
             ChocolutinMove::Wait => {}
@@ -1088,13 +1104,11 @@ impl App {
 
     fn give_chocolate(&mut self, day: u32) {
         self.chocolate_day = None;
-        self.overlay = Some(Overlay::Chocolate(day));
-        if self
-            .progress
-            .receive_advent_day(Local::now().date_naive().year(), day)
-        {
-            self.progress.save();
-        }
+        self.overlay = Some(chocolate_overlay(day, self.progress.chocolutin_introduced));
+        self.progress.chocolutin_introduced = true;
+        self.progress
+            .receive_advent_day(Local::now().date_naive().year(), day);
+        self.progress.save();
     }
 
     fn advent_cells(&self) -> Vec<advent::Cell> {
@@ -1486,6 +1500,7 @@ impl App {
                 Some(view) => view,
                 None => return Ok(()),
             },
+            Some(Overlay::ChocolutinIntroduction(_)) => advent_view::introduction_view(),
             Some(Overlay::NeighboursNote) => match self.neighbours_note {
                 Some(note) => views::neighbours_note_view(note),
                 None => return Ok(()),
@@ -1871,7 +1886,8 @@ impl App {
                 | Overlay::NoteBadge(_)
                 | Overlay::Notes(_)
                 | Overlay::PostmanNote
-                | Overlay::Chocolate(_),
+                | Overlay::Chocolate(_)
+                | Overlay::ChocolutinIntroduction(_),
             ) => self.overlay = closed_overlay(self.overlay),
             Some(Overlay::Settings(_)) => self.change_setting(1),
             Some(Overlay::Letter { .. }) if self.is_diet_letter_waiting() => self.send_diets(),
@@ -2259,7 +2275,7 @@ impl App {
             self.collect_badges();
             self.open_holiday_box();
             self.open_pending_badge();
-            self.bring_chocolate(term_width, term_height);
+            self.bring_chocolate();
             self.update_welcome(term_width, term_height);
             self.update_toasts(term_width);
             self.refresh_rain_alert();
@@ -2692,9 +2708,25 @@ mod tests {
             ChocolutinMove::Wait
         );
         assert_eq!(
+            chocolutin_move(None, Some(Overlay::ChocolutinIntroduction(24)), true, true),
+            ChocolutinMove::Wait
+        );
+        assert_eq!(
             chocolutin_move(None, None, true, true),
             ChocolutinMove::Leave
         );
+    }
+
+    #[test]
+    fn test_chocolutin_introduces_himself_once_before_the_chocolate() {
+        let first = chocolate_overlay(3, false);
+        assert!(matches!(first, Overlay::ChocolutinIntroduction(3)));
+        assert!(matches!(
+            closed_overlay(Some(first)),
+            Some(Overlay::Chocolate(3))
+        ));
+        assert!(matches!(chocolate_overlay(4, true), Overlay::Chocolate(4)));
+        assert!(closed_overlay(Some(Overlay::Chocolate(4))).is_none());
     }
 
     #[test]

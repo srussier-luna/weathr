@@ -4,13 +4,18 @@ use crossterm::style::Color;
 use std::io;
 
 const SPEED: f32 = 0.4;
-const DOOR_GAP: u16 = 1;
+const SPRITE_WIDTH: f32 = 8.0;
+const DOOR_CENTER: u16 = 2;
+const FACE_CENTER: u16 = 4;
 const STEP_COLUMNS: i32 = 2;
-const HAT: &str = "   /\\*";
-const GIFT: &str = "[]";
-const FACE: &str = "(oo)";
-const FACE_COLUMN: i32 = 2;
-const LEGS: [&str; 2] = ["/##\\", "|##|"];
+const HAT: [&str; 2] = ["   __", "  /  \\*"];
+const FACE: &str = " <(°◡°)>";
+const ARMS: &str = "  /    \\";
+const TRAY_COLUMN: i32 = 3;
+const FULL_TRAY: &str = "[##]";
+const EMPTY_TRAY: &str = "[  ]";
+const FEET: [&str; 2] = ["   d  b", "  d  b"];
+const SPRITE_ROWS: u16 = 5;
 const ELF_RED: Color = Color::Rgb {
     r: 210,
     g: 40,
@@ -48,8 +53,8 @@ impl Chocolutin {
         }
     }
 
-    pub fn visit(&mut self, layout: &GardenLayout) {
-        self.x = f32::from(layout.width);
+    pub fn visit(&mut self) {
+        self.x = -SPRITE_WIDTH;
         self.trip = Trip::Arriving;
     }
 
@@ -68,15 +73,17 @@ impl Chocolutin {
     }
 
     fn stop_x(layout: &GardenLayout) -> f32 {
-        f32::from(layout.house_x + layout.house.width() + DOOR_GAP)
+        f32::from(
+            (layout.house_x + layout.house.door_x() + DOOR_CENTER).saturating_sub(FACE_CENTER),
+        )
     }
 
     pub fn update(&mut self, layout: &GardenLayout) {
         let stop_x = Self::stop_x(layout);
         self.trip = match self.trip {
             Trip::Arriving => {
-                self.x -= SPEED;
-                if self.x <= stop_x {
+                self.x += SPEED;
+                if self.x >= stop_x {
                     self.x = stop_x;
                     Trip::Staying
                 } else {
@@ -84,8 +91,8 @@ impl Chocolutin {
                 }
             }
             Trip::Leaving => {
-                self.x += SPEED;
-                if self.x > f32::from(layout.width) {
+                self.x -= SPEED;
+                if self.x < -SPRITE_WIDTH {
                     Trip::Waiting
                 } else {
                     Trip::Leaving
@@ -100,17 +107,21 @@ impl Chocolutin {
             return Ok(());
         }
         let x = self.x.round() as i32;
-        let y = layout.horizon_y.saturating_sub(2);
-        let legs = match self.trip {
-            Trip::Staying => LEGS[0],
-            _ => LEGS[(x / STEP_COLUMNS).rem_euclid(2) as usize],
+        let y = layout.horizon_y.saturating_sub(SPRITE_ROWS - 1);
+        let feet = match self.trip {
+            Trip::Staying => FEET[0],
+            _ => FEET[(x / STEP_COLUMNS).rem_euclid(2) as usize],
         };
-        garden::draw_clipped(renderer, x, y, &[HAT], ELF_RED)?;
-        if self.is_visiting() {
-            garden::draw_clipped(renderer, x, y + 1, &[GIFT], CHOCOLATE_BROWN)?;
-        }
-        garden::draw_clipped(renderer, x + FACE_COLUMN, y + 1, &[FACE], Color::White)?;
-        garden::draw_clipped(renderer, x + FACE_COLUMN, y + 2, &[legs], ELF_GREEN)
+        let tray = if self.is_visiting() {
+            FULL_TRAY
+        } else {
+            EMPTY_TRAY
+        };
+        garden::draw_clipped(renderer, x, y, &HAT, ELF_RED)?;
+        garden::draw_clipped(renderer, x, y + 2, &[FACE], Color::White)?;
+        garden::draw_clipped(renderer, x, y + 3, &[ARMS], ELF_GREEN)?;
+        garden::draw_clipped(renderer, x + TRAY_COLUMN, y + 3, &[tray], CHOCOLATE_BROWN)?;
+        garden::draw_clipped(renderer, x, y + 4, &[feet], ELF_GREEN)
     }
 }
 
@@ -137,7 +148,7 @@ mod tests {
         let mut chocolutin = Chocolutin::new();
         assert!(!chocolutin.is_visiting());
 
-        chocolutin.visit(&layout);
+        chocolutin.visit();
         assert!(chocolutin.is_visiting());
         assert!(!chocolutin.has_arrived());
         chocolutin.update(&layout);
@@ -155,7 +166,7 @@ mod tests {
         chocolutin.leave();
         assert_eq!(chocolutin.trip, Trip::Waiting);
 
-        chocolutin.visit(&layout);
+        chocolutin.visit();
         walk(&mut chocolutin, &layout);
         chocolutin.leave();
         assert!(!chocolutin.is_visiting());
@@ -164,11 +175,26 @@ mod tests {
     }
 
     #[test]
-    fn test_narrow_scene_lets_chocolutin_arrive_at_once() {
-        let layout = GardenLayout::new(40, 20, Growth::Full);
-        let mut chocolutin = Chocolutin::new();
-        chocolutin.visit(&layout);
-        chocolutin.update(&layout);
-        assert!(chocolutin.has_arrived());
+    fn test_chocolutin_stops_in_front_of_the_door_clear_of_the_postman() {
+        for (width, height) in [(120, 40), (200, 60)] {
+            let layout = GardenLayout::new(width, height, Growth::Full);
+            let stop = Chocolutin::stop_x(&layout) as u16;
+            assert_eq!(
+                stop + FACE_CENTER,
+                layout.house_x + layout.house.door_x() + DOOR_CENTER
+            );
+            let mailbox_x = layout.plan.mailbox_x.unwrap();
+            assert!(stop > mailbox_x + SPRITE_WIDTH as u16);
+        }
+    }
+
+    #[test]
+    fn test_sprite_fits_its_width() {
+        let rows = [HAT[0], HAT[1], FACE, ARMS, FEET[0], FEET[1]];
+        assert!(
+            rows.iter()
+                .all(|row| row.chars().count() <= SPRITE_WIDTH as usize)
+        );
+        assert!(TRAY_COLUMN as usize + FULL_TRAY.len() <= ARMS.len());
     }
 }

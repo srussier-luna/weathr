@@ -178,6 +178,18 @@ Plus:
 
 > Ronde de 0 h 40. Boue près du puits, encore. Rien à signaler. Des pas vers ta maison, aucun qui revient. Sûrement les miens. J'ai dû mal compter.
 
+## Chocolutin — le lutin chocolatier du Père Noël
+
+Comes Dec 1–24 with the chocolate of the day (#196), leaves a dated note when the player is away (#197). Own frame, distinct from the village Lettres.
+
+- Voix: elf from the Père Noël's workshop, cheerful and always in a hurry. Short sentences, written on the run. Talks about the workshop, the reindeer, the sleigh, the chocolate tempering. Every visit: one small funny line — a joke, a pun, or a « fun fact » about the Père Noël — then the chocolate.
+- Tic: « hop » — once per text at most, never the last word.
+- Ne dit jamais: a reproach for an absence; « Joyeux Noël » before the 24th; the chocolate's name (the card shows it); anything sad or scary.
+- First visit (Dec 1st, or the first day he comes): a short self-introduction before the chocolate.
+
+> Hop, me voilà ! Chocolutin, lutin chocolatier de l'atelier. Le Père Noël m'envoie te gâter jusqu'au 24.
+> Le savais-tu ? Le Père Noël goûte chaque chocolat avant la tournée. Il dit que c'est du contrôle qualité.
+
 ## Le village — la boîte Nouveautés
 
 Not a Lettre: the in-game release notes (`NOUVEAUTES.md`, see [[updater]]). Factual GitHub notes stay outside this sheet (see `wording.md`).

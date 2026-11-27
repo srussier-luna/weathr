@@ -1,4 +1,5 @@
 pub mod chocolates;
+pub mod chocolutin;
 pub mod view;
 
 use chocolates::{CHOCOLATES, Chocolate};

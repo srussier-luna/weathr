@@ -24,7 +24,9 @@ created: 2026-11-27
 
 ## Acceptance criteria
 
-- 1er décembre, premier lancement : Chocolutin traverse la scène jusqu'à la maison, puis une carte montre le chocolat n° 1 (nom + dessin).
+- 1er passage : Chocolutin entre par la gauche comme le Facteur et s'arrête devant la porte ; une lettre de présentation s'affiche dans le cadre de Chocolutin, puis la carte du chocolat n° 1 (phrase du jour, dessin, nom).
+- Passages suivants : pas de présentation ; la carte du chocolat montre une petite phrase (blague ou anecdote sur le Père Noël) différente chaque jour.
+- Chocolutin a le dessin « bonnet long » (5 lignes).
 - Relancer le même jour : Chocolutin ne revient pas, pas de carte.
 - 30 novembre ou 26 décembre : Chocolutin ne vient pas.
 - En décembre, la Barre du bas montre `[v] calendrier` ; `[v]` ouvre la grille de 24 cases.
@@ -47,6 +49,20 @@ created: 2026-11-27
 
 ## Verification
 
+round 2: manual validation — not run by agent (date non simulable sur cette branche ; #203 le permet).
+
 round 1: build + tests only — date réelle non simulable (27/11), Chocolutin non observé à l'écran. À tester : run: yours.
 
 ## Feedback
+
+### Round 2 — 2026-11-27
+
+- Asked : « chocolutin devrait arriver par la droite » (précisé : entrer par la gauche comme le Facteur, s'arrêter devant la porte) · « le premier jour il devrait se présenter » (précisé : lettre avant le chocolat, une petite phrase drôle ou anecdote sur le Père Noël chaque jour, cadre propre au lutin, ton particulier) · « propose d'autres designs » (choisi : lutin à bonnet long).
+- Triage : 3 ajustements (critères mis à jour).
+- Changes (implementer) : entrée par la gauche, arrêt visage centré sur la porte, sortie à gauche plateau vide ; sprite 5 lignes bonnet long ; `src/advent/chocolutin.rs` (présentation, signature, 24 phrases) ; `Frame::Gift` ; champ `chocolutin_introduced` ; carte du chocolat avec phrase du jour. Fichiers : src/advent/chocolutin.rs (nouveau), src/animation/chocolutin.rs, src/animation_manager.rs, src/advent/mod.rs, src/advent/view.rs, src/overlay.rs, src/progress/mod.rs, src/app.rs.
+- Inline : `src/advent/chocolutin.rs` « Fringuant » → « Fringant » (nom du renne).
+- Wiki : fiche de voix « Chocolutin » ajoutée dans letters.md.
+- Review : deferred (→ /wa-validate). Verify : manual, run: yours.
+- Note : ° est de largeur ambiguë (2 colonnes en terminal CJK).
+- Build : clippy OK, fmt OK, tests 183 + 667 + 10 + 7 + 3 + 5, 0 échec.
+

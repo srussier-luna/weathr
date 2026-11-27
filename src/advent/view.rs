@@ -1,4 +1,5 @@
 use super::chocolates::DRAWING_WIDTH;
+use super::chocolutin::{INTRODUCTION, SIGNATURE, day_line};
 use super::{Cell, DAYS, chocolate};
 use crate::overlay::{Frame, Line, View};
 
@@ -9,6 +10,7 @@ const GRID_INDENT: &str = "   ";
 const CALENDAR_TITLE: &str = "Calendrier de l'Avent";
 const CALENDAR_FOOTER: &str = "[←] [→] [↑] [↓] choisir  [v] ou [Echap] fermer";
 const CARD_FOOTER: &str = "[Entrée] ou [Echap] fermer";
+const INTRODUCTION_FOOTER: &str = "[Entrée] suite";
 
 struct Border {
     corner: char,
@@ -107,7 +109,7 @@ pub fn calendar_view(cells: &[Cell], selected: u32) -> View {
 
 pub fn chocolate_card_view(day: u32) -> Option<View> {
     let chocolate = chocolate(day)?;
-    let mut lines = vec![Line::Blank];
+    let mut lines = vec![Line::Centered(day_line(day)?.to_string()), Line::Blank];
     lines.extend(
         chocolate
             .drawing
@@ -123,8 +125,21 @@ pub fn chocolate_card_view(day: u32) -> Option<View> {
         title: String::new(),
         lines,
         footer: CARD_FOOTER.to_string(),
-        frame: Frame::Stars,
+        frame: Frame::Gift,
     })
+}
+
+pub fn introduction_view() -> View {
+    View {
+        title: String::new(),
+        lines: vec![
+            Line::Text(INTRODUCTION.to_string()),
+            Line::Blank,
+            Line::Text(SIGNATURE.to_string()),
+        ],
+        footer: INTRODUCTION_FOOTER.to_string(),
+        frame: Frame::Gift,
+    }
 }
 
 #[cfg(test)]
@@ -132,6 +147,7 @@ mod tests {
     use super::*;
     use crate::advent::cells;
     use crate::advent::chocolates::CHOCOLATES;
+    use crate::advent::chocolutin::DAY_LINES;
     use chrono::NaiveDate;
     use std::collections::BTreeSet;
 
@@ -192,7 +208,7 @@ mod tests {
     }
 
     #[test]
-    fn test_chocolate_card_shows_the_drawing_number_and_name() {
+    fn test_chocolate_card_shows_the_line_drawing_number_and_name() {
         let view = chocolate_card_view(1).unwrap();
         let texts: Vec<&str> = view
             .lines
@@ -202,8 +218,18 @@ mod tests {
                 _ => None,
             })
             .collect();
-        assert_eq!(texts[..3], CHOCOLATES[0].drawing);
-        assert_eq!(texts[3..], ["Chocolat n°1", CHOCOLATES[0].name]);
+        assert_eq!(texts[0], DAY_LINES[0]);
+        assert_eq!(texts[1..4], CHOCOLATES[0].drawing);
+        assert_eq!(texts[4..], ["Chocolat n°1", CHOCOLATES[0].name]);
+        assert_eq!(view.frame, Frame::Gift);
         assert!(chocolate_card_view(25).is_none());
+    }
+
+    #[test]
+    fn test_introduction_is_signed_in_chocolutin_frame() {
+        let view = introduction_view();
+        assert_eq!(view.frame, Frame::Gift);
+        assert!(matches!(view.lines.first(), Some(Line::Text(text)) if text == INTRODUCTION));
+        assert!(matches!(view.lines.last(), Some(Line::Text(text)) if text == SIGNATURE));
     }
 }

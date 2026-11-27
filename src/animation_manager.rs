@@ -290,9 +290,8 @@ impl AnimationManager {
             .is_arriving(&self.garden_layout(term_width, term_height))
     }
 
-    pub fn chocolutin_visit(&mut self, term_width: u16, term_height: u16) {
-        self.chocolutin
-            .visit(&self.garden_layout(term_width, term_height));
+    pub fn chocolutin_visit(&mut self) {
+        self.chocolutin.visit();
     }
 
     pub fn chocolutin_leave(&mut self) {
