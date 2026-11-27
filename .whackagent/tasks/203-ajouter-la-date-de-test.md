@@ -46,6 +46,17 @@ stacked on: #197 (wa/197-ajouter-les-mots-de-chocolutin, contient #196)
 
 ## Verification
 
+round 2: manual validation — not run by agent.
+
 round 1: build + tests + preuves CLI ; jeu non piloté. À tester : run: yours.
 
 ## Feedback
+
+### Round 2 — 2026-11-27
+
+- Asked : « tu as oublié de remettre today ? » — `--today` absente de la branche de test après le tour 2 de #196.
+- Triage : défaut d'empilement → rebase sur #197 (289f1df), conflit src/app.rs (`give_chocolate`) résolu en gardant le code #196/#197 avec `clock::now()`.
+- Contrôle : aucun appel direct à l'horloge dans src/ (le code Avent neuf n'en ajoute pas).
+- Review : deferred. Verify : manual, run: yours.
+- Build : clippy OK (avec et sans dev-date), fmt OK ; tests sans 184 + 680 + 10 + 7 + 3 + 5, avec 188 + 685 + 10 + 7 + 3 + 5, 0 échec.
+
