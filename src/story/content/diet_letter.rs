@@ -1,5 +1,5 @@
 use super::recipes::{DIETS, Diet, ROSE_SENDER, diet_labels, diets_from_ids};
-use super::{LETTER_FOOTER, MailContent, ReadContext, text};
+use super::{LETTER_FOOTER, MailContent, REREAD_LETTER_FOOTER, ReadContext, text};
 use crate::overlay::{Frame, Line, View};
 use std::collections::BTreeSet;
 
@@ -31,7 +31,7 @@ impl MailContent for DietLetter {
         let footer = if progress.diet_answered_day.is_some() {
             let diets = diets_from_ids(&progress.diets);
             lines.push(text(format!("Ta réponse\u{202F}: {}", answer(&diets))));
-            LETTER_FOOTER
+            ctx.footer(LETTER_FOOTER, REREAD_LETTER_FOOTER)
         } else {
             lines.extend(diet_checklist(ctx.diet_draft));
             CHECKLIST_FOOTER
@@ -91,6 +91,7 @@ mod tests {
             reading_hour: 12,
             riddle_input: None,
             diet_draft: draft,
+            from_courrier: false,
         };
         DietLetter::new("3/9".to_string()).compose(&context)
     }

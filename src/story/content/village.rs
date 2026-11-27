@@ -1,9 +1,10 @@
 use super::chronicles::DRAWINGS;
 use super::letters::{choice_for, echo_for};
-use super::{LETTER_FOOTER, ReadContext, text};
+use super::{LETTER_FOOTER, REREAD_LETTER_FOOTER, ReadContext, text};
 use crate::overlay::{Frame, Line, View};
 
 const QUESTION_FOOTER: &str = "[1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer";
+const REREAD_QUESTION_FOOTER: &str = "[1] [2] répondre  [<] [>]  [Echap] fermer";
 
 pub struct VillageLetter {
     main: usize,
@@ -51,7 +52,7 @@ impl VillageLetter {
         }
         lines.extend([Line::Blank, text(format!("— {}", letter.sender))]);
 
-        let mut footer = LETTER_FOOTER;
+        let mut footer = ctx.footer(LETTER_FOOTER, REREAD_LETTER_FOOTER);
         if let Some(choice) = choice_for(number) {
             lines.extend([Line::Blank, text(format!("Question : {}", choice.prompt))]);
             let answer = answers
@@ -64,7 +65,7 @@ impl VillageLetter {
                         "[1] {}   [2] {}",
                         choice.options[0], choice.options[1]
                     )));
-                    footer = QUESTION_FOOTER;
+                    footer = ctx.footer(QUESTION_FOOTER, REREAD_QUESTION_FOOTER);
                 }
             }
         }

@@ -34,6 +34,7 @@ pub use night_postscript::is_night_hour;
 pub use postcard::{postcard_lines, postcard_title};
 
 const LETTER_FOOTER: &str = "[c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer";
+const REREAD_LETTER_FOOTER: &str = "[<] [>] parcourir  [l] sommaire  [Echap] fermer";
 pub const MONTHS: [&str; 12] = [
     "janvier",
     "février",
@@ -60,6 +61,17 @@ pub struct ReadContext<'a> {
     pub reading_hour: u32,
     pub riddle_input: Option<&'a str>,
     pub diet_draft: &'a BTreeSet<Diet>,
+    pub from_courrier: bool,
+}
+
+impl ReadContext<'_> {
+    fn footer(&self, from_garden: &'static str, from_courrier: &'static str) -> &'static str {
+        if self.from_courrier {
+            from_courrier
+        } else {
+            from_garden
+        }
+    }
 }
 
 pub trait MailContent {
@@ -168,14 +180,14 @@ fn content_for(day: usize, entry: Entry, counter: String) -> Box<dyn MailContent
     }
 }
 
-pub fn label(entry: Entry, ctx: &ReadContext) -> String {
+pub fn label(day: usize, entry: Entry, ctx: &ReadContext) -> String {
     match entry {
         Entry::Main(main) => ctx.letters[main].sender.clone(),
         Entry::Sam(_) => SAM_SENDER.to_string(),
         Entry::Neighbours(_) => NEIGHBOURS_SENDER.to_string(),
         Entry::Marcel(_) => MARCEL_SENDER.to_string(),
         Entry::Archive(index) => format!("Archives : {}", ARCHIVES[index].0),
-        Entry::Gazette(_) => "La Gazette du lundi".to_string(),
+        Entry::Gazette(_) => gazette::title(ctx.clock, day),
         Entry::Recipe(month) => format!("Recette du mois : {}", RECIPES[month].name),
         Entry::DietRecipe(index) => format!("Recette\u{202F}: {}", RECIPES[index].name),
         Entry::DietLetter => ROSE_SENDER.to_string(),
@@ -251,6 +263,7 @@ pub(crate) mod save_golden {
                 reading_hour,
                 riddle_input: None,
                 diet_draft: &NO_DIET,
+                from_courrier: false,
             }
         }
     }
@@ -312,6 +325,26 @@ mod tests {
     }
 
     #[test]
+    fn test_entries_opened_from_the_courrier_drop_the_mail_key() {
+        let save = SavedGame::load();
+        let mut context = save.context(12);
+        context.from_courrier = true;
+        let delivered = save.timeline.first_mail(save.available);
+        let footers: Vec<String> = (0..delivered.len())
+            .map(|index| entry_view(delivered, index, &context).unwrap().footer)
+            .collect();
+
+        assert!(footers.iter().all(|footer| !footer.contains("[c]")));
+        for expected in [
+            "[<] [>] parcourir  [l] sommaire  [Echap] fermer",
+            "[1] [2] répondre  [<] [>]  [Echap] fermer",
+            "[e] répondre à l'énigme  [<] [>]  [Echap]",
+        ] {
+            assert!(footers.iter().any(|footer| footer == expected));
+        }
+    }
+
+    #[test]
     fn test_gazette_does_not_bump_the_lettre_counter() {
         let titles = titles(&[
             Entry::Main(0),
@@ -324,7 +357,7 @@ mod tests {
             Entry::Main(6),
         ]);
         assert_eq!(titles[3], "Lettre 4/7");
-        assert!(titles[4].starts_with("LA GAZETTE · "));
+        assert!(titles[4].starts_with("Gazette du lundi "));
         assert!(!titles[4].contains('/'));
         assert_eq!(titles[5], "Lettre 5/7");
     }

@@ -192,6 +192,10 @@ fn next_overlay(overlay: Option<Overlay>, pending_badges: &mut VecDeque<Award>) 
     }
 }
 
+fn is_reread(overlay: Option<Overlay>) -> bool {
+    matches!(overlay, Some(Overlay::Letter { from: Some(_), .. }))
+}
+
 fn closed_overlay(overlay: Option<Overlay>) -> Option<Overlay> {
     match overlay {
         Some(Overlay::NoteBadge(_)) => Some(Overlay::PostmanNote),
@@ -1220,6 +1224,9 @@ impl App {
     }
 
     fn press_mail(&mut self) {
+        if is_reread(self.overlay) {
+            return;
+        }
         let is_note_waiting = postman_note::is_postman_note_waiting(
             self.is_box_full(),
             self.progress.postman_note_day,
@@ -1251,12 +1258,26 @@ impl App {
     }
 
     fn browse_letters(&mut self, step: isize) {
-        if let Some(Overlay::Letter { index, .. }) = self.overlay
-            && let Some(target) = self
-                .today_letters()
-                .browse(index, step, self.available_letters())
-        {
-            self.open_letter(target);
+        match self.overlay {
+            Some(Overlay::Letter {
+                from: Some((tab, selected)),
+                ..
+            }) => {
+                if let Some((selected, index)) =
+                    tabs::entry_beside(self.read_entries(), tab, selected, step)
+                {
+                    self.open_letter_from(index, Some((tab, selected)));
+                }
+            }
+            Some(Overlay::Letter { index, from: None }) => {
+                if let Some(target) =
+                    self.today_letters()
+                        .browse(index, step, self.available_letters())
+                {
+                    self.open_letter(target);
+                }
+            }
+            _ => {}
         }
     }
 
@@ -1323,18 +1344,30 @@ impl App {
         }
 
         let view = match self.overlay {
-            Some(Overlay::Letter { index, .. }) => {
+            Some(Overlay::Letter { index, from }) => {
                 let delivered = self.timeline.first_mail(self.available_letters());
                 let Some(view) = content::entry_view(delivered, index, &self.read_context()) else {
                     return Ok(());
                 };
-                let has_unread_mail = self.today_letters().contains(index)
-                    && postman_note::has_unread_after(
-                        index,
-                        self.available_letters(),
-                        self.progress.letters_read,
-                    );
-                return overlay::render_with_chevrons(renderer, &view, false, has_unread_mail);
+                let (has_previous, has_next) = match from {
+                    Some((tab, selected)) => {
+                        let read = self.read_entries();
+                        (
+                            tabs::entry_beside(read, tab, selected, -1).is_some(),
+                            tabs::entry_beside(read, tab, selected, 1).is_some(),
+                        )
+                    }
+                    None => (
+                        false,
+                        self.today_letters().contains(index)
+                            && postman_note::has_unread_after(
+                                index,
+                                self.available_letters(),
+                                self.progress.letters_read,
+                            ),
+                    ),
+                };
+                return overlay::render_with_chevrons(renderer, &view, has_previous, has_next);
             }
             Some(Overlay::Album { page, selected }) => {
                 let mut pages = self.album_pages(selected);
@@ -1448,6 +1481,7 @@ impl App {
             reading_hour: Local::now().hour(),
             riddle_input: self.riddle_input.as_deref(),
             diet_draft: &self.diet_draft,
+            from_courrier: is_reread(self.overlay),
         }
     }
 
@@ -2398,6 +2432,48 @@ mod tests {
             })
         ));
         assert!(closed_overlay(from_mail).is_none());
+    }
+
+    #[test]
+    fn test_only_a_letter_opened_from_the_courrier_ignores_the_mail_key() {
+        assert!(is_reread(Some(Overlay::Letter {
+            index: 2,
+            from: Some((Tab::Letters, 1)),
+        })));
+        assert!(!is_reread(Some(Overlay::Letter {
+            index: 2,
+            from: None,
+        })));
+        assert!(!is_reread(Some(Overlay::Index {
+            tab: Tab::Letters,
+            selected: 1,
+        })));
+        assert!(!is_reread(None));
+    }
+
+    #[test]
+    fn test_courrier_selection_follows_the_last_browsed_entry() {
+        let read = [
+            (1, Entry::Main(0)),
+            (2, Entry::Gazette(0)),
+            (3, Entry::Main(1)),
+            (4, Entry::Main(2)),
+            (9, Entry::Main(3)),
+        ];
+        let (selected, _) = tabs::entry_beside(&read, Tab::Letters, 1, 1).unwrap();
+        let (selected, index) = tabs::entry_beside(&read, Tab::Letters, selected, 1).unwrap();
+        assert_eq!(index, 4);
+
+        assert!(matches!(
+            closed_overlay(Some(Overlay::Letter {
+                index,
+                from: Some((Tab::Letters, selected)),
+            })),
+            Some(Overlay::Index {
+                tab: Tab::Letters,
+                selected: 3
+            })
+        ));
     }
 
     #[test]
