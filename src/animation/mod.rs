@@ -31,6 +31,8 @@ pub mod owl;
 pub mod postman;
 pub mod rainbow;
 pub mod raindrops;
+pub mod reindeer;
+pub mod santa;
 pub mod sky_sprite;
 pub mod snail;
 pub mod snow;

@@ -11,6 +11,7 @@ use crate::story::content::chronicles::{BOTTLE_MESSAGES, CHEST_SOUVENIRS, DRAWIN
 use crate::story::content::letters::answered_choices;
 use crate::story::content::neighbours_note::{self, NeighboursNote};
 use crate::story::content::recipes::{Diet, RECIPES, diet_labels};
+use crate::story::content::santa_note;
 use crate::story::content::tabs::{self, Tab};
 use crate::story::content::{
     self, MONTHS, ReadContext, day_and_month, diet_checklist, postcard_lines, postcard_title, text,
@@ -34,6 +35,8 @@ const SETTINGS_FOOTER: &str = "[↑] [↓] choisir  [<] [>] changer  [s] ou [Ech
 const SETTINGS_LABEL_WIDTH: usize = 18;
 const CITY_SEARCH_FOOTER: &str = "[Entrée] chercher  [Echap] retour";
 const CITY_RESULTS_FOOTER: &str = "[↑] [↓] choisir  [Entrée] valider  [Echap] retour";
+const REINDEER_FOOTER: &str = "[Entrée] valider";
+const SANTA_NOTE_FOOTER: &str = "[Entrée] continuer";
 const DIET_FOOTER: &str = "[1]…[8] cocher  [Entrée] valider  [Echap] retour";
 const LISTED_DIETS: usize = 2;
 const CLOSE_FOOTER: &str = "[Entrée] ou [Echap] fermer";
@@ -407,6 +410,30 @@ pub fn city_search_view(search: &CitySearch) -> View {
         title: "Ville".to_string(),
         lines,
         footer: footer.to_string(),
+        frame: Frame::Plain,
+    }
+}
+
+pub fn santa_note_view() -> View {
+    let mut lines: Vec<Line> = santa_note::LINES.into_iter().map(text).collect();
+    lines.extend([Line::Blank, text(santa_note::SIGNATURE)]);
+    View {
+        title: String::new(),
+        lines,
+        footer: SANTA_NOTE_FOOTER.to_string(),
+        frame: Frame::Parchment,
+    }
+}
+
+pub fn reindeer_view(draft: &str) -> View {
+    View {
+        title: "Bébé renne".to_string(),
+        lines: vec![
+            text("Comment veux-tu l'appeler\u{202F}?"),
+            Line::Blank,
+            Line::Preformatted(format!("> {draft}_")),
+        ],
+        footer: REINDEER_FOOTER.to_string(),
         frame: Frame::Plain,
     }
 }

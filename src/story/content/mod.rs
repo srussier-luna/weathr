@@ -7,6 +7,7 @@ mod night_postscript;
 mod postcard;
 mod previous_letters;
 pub mod recipes;
+pub mod santa_note;
 pub mod tabs;
 mod village;
 mod written;

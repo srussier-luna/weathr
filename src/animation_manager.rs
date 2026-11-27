@@ -34,6 +34,8 @@ use crate::animation::{
     postman::Postman,
     rainbow::Rainbow,
     raindrops::RaindropSystem,
+    reindeer::Reindeer,
+    santa::Sleigh,
     sky_sprite::{self, SkySprite},
     snail::Snail,
     snow::SnowSystem,
@@ -116,6 +118,8 @@ pub struct AnimationManager {
     cat: Cat,
     dog: Dog,
     trophies: Trophies,
+    reindeer: Reindeer,
+    sleigh: Sleigh,
     duck: Duck,
     owl: Owl,
     snowman: Snowman,
@@ -174,6 +178,8 @@ impl AnimationManager {
             cat: Cat::new(),
             dog: Dog::new(),
             trophies: Trophies::new(),
+            reindeer: Reindeer::new(),
+            sleigh: Sleigh::new(),
             duck: Duck::new(),
             owl: Owl::new(),
             snowman: Snowman,
@@ -243,6 +249,18 @@ impl AnimationManager {
 
     pub fn set_trophies(&mut self, shown: Vec<Trophy>) {
         self.trophies.set_shown(shown);
+    }
+
+    pub fn set_reindeer_home(&mut self, is_home: bool) {
+        self.reindeer.set_home(is_home);
+    }
+
+    pub fn send_santa(&mut self) {
+        self.sleigh.take_off();
+    }
+
+    pub fn is_santa_flying(&self) -> bool {
+        self.sleigh.is_flying()
     }
 
     pub fn set_guests(&mut self, guests: Vec<Neighbour>) {
@@ -425,7 +443,10 @@ impl AnimationManager {
             conditions.is_day,
             term_width,
             horizon_y,
-        )
+        )?;
+
+        self.sleigh.update(term_width);
+        self.sleigh.render(renderer, horizon_y)
     }
 
     fn render_sun(
@@ -565,6 +586,10 @@ impl AnimationManager {
         self.lore.render_scenery(renderer, &layout, conditions)?;
         self.trophies
             .render(renderer, &layout, &river, conditions.is_day)?;
+        if !self.sleigh.is_flying() {
+            self.reindeer
+                .render(renderer, &layout, &river, &self.trophies, conditions.is_day)?;
+        }
 
         if holiday.is_epiphany {
             epiphany::render_crown(renderer, &layout)?;
