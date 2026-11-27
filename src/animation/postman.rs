@@ -1,6 +1,7 @@
 use crate::animation::garden::{self, GardenLayout};
+use crate::clock;
 use crate::render::TerminalRenderer;
-use chrono::{Duration, Local, NaiveDate, NaiveDateTime};
+use chrono::{Duration, NaiveDate, NaiveDateTime};
 use crossterm::style::Color;
 use std::io;
 
@@ -151,7 +152,7 @@ impl Postman {
         let stop_x = mailbox_x as f32;
 
         self.trip = match self.trip {
-            Trip::Waiting => match self.due_round(stop_x, Local::now().naive_local()) {
+            Trip::Waiting => match self.due_round(stop_x, clock::now().naive_local()) {
                 Some(round) => {
                     self.last_round = Some(round);
                     self.x = -SPRITE_WIDTH;

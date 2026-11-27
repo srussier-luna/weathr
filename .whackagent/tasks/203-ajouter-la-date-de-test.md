@@ -1,6 +1,6 @@
 ---
 issue: 203
-status: todo
+status: to-test
 wiki: [[architecture]], [[updater]]
 note: "pour tester le sprint Avent avant le 1er décembre : la vraie date ne se simule pas (--holiday / --day désactivent Chocolutin, les mots et le Père Noël)"
 created: 2026-11-27
@@ -29,8 +29,23 @@ created: 2026-11-27
 
 ## Implementation
 
+stacked on: #197 (wa/197-ajouter-les-mots-de-chocolutin, contient #196)
+
+- `src/clock.rs` (nouveau) : `now()` unique ; sous `dev-date`, `set_today(NaiveDate)` fixe un décalage en jours (`OnceLock`), l'heure locale est gardée (même à travers un changement d'heure).
+- `clippy.toml` (nouveau) : `disallowed-methods` sur `chrono::Local::now` et `chrono::Utc::now` (« use clock::now »).
+- `Cargo.toml` : `[features] dev-date = []`.
+- `src/main.rs` : champ `today` caché (`hide = true`), seulement avec `dev-date` ; `clock::set_today` juste après la lecture des options.
+- Les 35 appels directs à l'horloge passent par `clock::now()` (overlay, holiday, demo, animation_manager, app_state, app, progress, postman, scene/house/river/tree, story/clock/reach).
+- `--today` compte comme vraie date (`is_real_date` inchangé).
+- Limites : jeu ouvert au-delà de minuit → la date de test avance aussi ; `--today` apparaît dans les complétions shell du build `dev-date` (pas du build joueur).
+- Script local `~/.local/bin/weathr-test` : `cargo build --release --features dev-date`.
+- Build : clippy OK (avec et sans `dev-date`), build OK, fmt OK ; tests sans 183 + 672 + 10 + 7 + 3 + 5, avec 187 + 677 + 10 + 7 + 3 + 5, 0 échec.
+- Preuves CLI : build `dev-date` `--today 2026-13-01` → erreur, sortie 2 ; `--today 2026-12-01 --version` → OK ; `--help` sans `--today`. Build joueur `--today` → « unexpected argument », sortie 2.
+
 ## Review
 
 ## Verification
+
+round 1: build + tests + preuves CLI ; jeu non piloté. À tester : run: yours.
 
 ## Feedback

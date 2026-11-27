@@ -1,6 +1,7 @@
+use crate::clock;
 use crate::render::TerminalRenderer;
 use crate::scene::tree::Tree;
-use chrono::{Local, Timelike};
+use chrono::Timelike;
 use crossterm::style::Color;
 use std::io;
 use std::ops::Range;
@@ -275,7 +276,7 @@ impl House {
         } else {
             Color::DarkMagenta
         };
-        let now = Local::now();
+        let now = clock::now();
         let minutes_since_evening =
             (now.hour() * 60 + now.minute() + 24 * 60 - EVENING_START_MINUTES) % (24 * 60);
         let grass_color = if is_day {

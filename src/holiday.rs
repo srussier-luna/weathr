@@ -1,4 +1,5 @@
-use chrono::{Datelike, Days, Local, NaiveDate, Weekday};
+use crate::clock;
+use chrono::{Datelike, Days, NaiveDate, Weekday};
 
 const NEW_YEAR_WINDOW_DAYS: i64 = 7;
 const EASTER_WINDOW_DAYS: i64 = 7;
@@ -61,7 +62,7 @@ pub struct Holiday {
 
 impl Holiday {
     pub fn today() -> Self {
-        Self::on(Local::now().date_naive())
+        Self::on(clock::now().date_naive())
     }
 
     pub fn on(date: NaiveDate) -> Self {

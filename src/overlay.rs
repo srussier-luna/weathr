@@ -1,7 +1,7 @@
 use crate::badges::{self, BADGES, Badge, BadgeKind, KINDS, SAM_TRAIL};
+use crate::clock;
 use crate::hud::PINK;
 use crate::render::TerminalRenderer;
-use chrono::Local;
 use crossterm::style::Color;
 use std::collections::BTreeSet;
 use std::io;
@@ -310,7 +310,7 @@ pub fn render_view(renderer: &mut TerminalRenderer, view: &View) -> io::Result<(
 }
 
 pub fn blink_tick() -> usize {
-    (Local::now().timestamp_millis() / CHEVRON_STEP_MILLIS) as usize
+    (clock::now().timestamp_millis() / CHEVRON_STEP_MILLIS) as usize
 }
 
 pub fn is_blink_lit() -> bool {

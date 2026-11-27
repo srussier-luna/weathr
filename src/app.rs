@@ -5,6 +5,7 @@ use crate::animation::trophies::Trophy;
 use crate::animation_manager::AnimationManager;
 use crate::app_state::AppState;
 use crate::badges::{self, Award, SAM_TRAIL, Tier};
+use crate::clock;
 use crate::config::{Config, LocationDisplay, Setting};
 use crate::demo::{Demo, SCENE_DURATION};
 use crate::error::{GeolocationError, WeatherError};
@@ -40,7 +41,7 @@ use crate::weather::{
     OpenMeteoProvider, WeatherClient, WeatherCondition, WeatherData, WeatherLocation, WeatherUnits,
 };
 use crate::welcome::{self, Step};
-use chrono::{Datelike, Local, NaiveDate, Timelike};
+use chrono::{Datelike, NaiveDate, Timelike};
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::io;
@@ -566,7 +567,7 @@ fn spawn_weather(
 fn generate_offline_weather(rng: &mut impl rand::Rng) -> WeatherData {
     use rand::RngExt;
 
-    let now = Local::now();
+    let now = clock::now();
     let hour = now.hour();
     let is_day = (6..18).contains(&hour);
 
@@ -837,7 +838,7 @@ impl App {
         };
         let (mut progress, letters, clock, opening) = match simulation.day {
             Some(day) => {
-                let clock = StoryClock::frozen(Local::now().date_naive(), config.mail.hour, day);
+                let clock = StoryClock::frozen(clock::now().date_naive(), config.mail.hour, day);
                 let mut progress = Progress::in_memory(clock.date_of(1));
                 progress.diet_letter_day = Some(sources::diet_letter_day(1));
                 (progress, letters::read(), clock, Opening::default())
@@ -892,7 +893,7 @@ impl App {
             is_forced,
             simulation.day,
             &progress,
-            Local::now().date_naive(),
+            clock::now().date_naive(),
         );
         let has_backup = opening.recovery.is_some();
         // Kept on purpose for future contributor Badges: do not remove.
@@ -973,7 +974,7 @@ impl App {
             self.progress.save();
         }
         self.animations
-            .set_mail_hour(self.clock.mail_hour_on(Local::now().date_naive()));
+            .set_mail_hour(self.clock.mail_hour_on(clock::now().date_naive()));
         self.refresh_timeline();
         self.state.set_story_day(self.timeline_day);
         self.request_remote_weather();
@@ -1007,7 +1008,7 @@ impl App {
 
     fn collect_badges(&mut self) {
         let mut found = Vec::new();
-        let hour = Local::now().hour();
+        let hour = clock::now().hour();
         let milestones = [
             ((0..5).contains(&hour), "night_owl"),
             ((5..7).contains(&hour), "early_bird"),
@@ -1118,16 +1119,16 @@ impl App {
         self.overlay = Some(chocolate_overlay(day, self.progress.chocolutin_introduced));
         self.progress.chocolutin_introduced = true;
         self.progress
-            .receive_advent_day(Local::now().date_naive().year(), day);
+            .receive_advent_day(clock::now().date_naive().year(), day);
         self.progress.save();
     }
 
     fn chocolutin_notes(&self) -> Vec<u32> {
-        chocolutin_notes(self.is_real_date, &self.progress, Local::now().date_naive())
+        chocolutin_notes(self.is_real_date, &self.progress, clock::now().date_naive())
     }
 
     fn open_chocolutin_note(&mut self, day: u32) {
-        let year = Local::now().date_naive().year();
+        let year = clock::now().date_naive().year();
         let Some(date) = NaiveDate::from_ymd_opt(year, 12, day) else {
             return;
         };
@@ -1138,7 +1139,7 @@ impl App {
     }
 
     fn advent_cells(&self) -> Vec<advent::Cell> {
-        let today = Local::now().date_naive();
+        let today = clock::now().date_naive();
         advent::cells(&self.progress.advent_days(today.year()), today)
     }
 
@@ -1146,7 +1147,7 @@ impl App {
         self.overlay = toggled_calendar(
             self.overlay,
             self.state.holiday.is_december,
-            Local::now().date_naive(),
+            clock::now().date_naive(),
         );
     }
 
@@ -1257,7 +1258,7 @@ impl App {
     }
 
     fn mail_date(&self) -> NaiveDate {
-        self.clock.mail_date(Local::now().naive_local())
+        self.clock.mail_date(clock::now().naive_local())
     }
 
     fn is_mail_banned(&self) -> bool {
@@ -1461,7 +1462,7 @@ impl App {
 
     fn open_letter_from(&mut self, index: usize, from: Option<(Tab, usize)>) {
         self.overlay = Some(Overlay::Letter { index, from });
-        if content::is_night_hour(Local::now().hour()) {
+        if content::is_night_hour(clock::now().hour()) {
             self.award(vec!["night_reading"]);
         }
         if index + 1 > self.progress.letters_read {
@@ -1594,7 +1595,7 @@ impl App {
                 (None, None) => views::settings_view(
                     &self.settings(),
                     selected,
-                    self.clock.mail_hour_on(Local::now().date_naive()) != self.clock.mail_hour(),
+                    self.clock.mail_hour_on(clock::now().date_naive()) != self.clock.mail_hour(),
                 ),
             },
             Some(Overlay::Badges) => {
@@ -1639,7 +1640,7 @@ impl App {
             letters: &self.letters,
             progress: &self.progress,
             clock: &self.clock,
-            reading_hour: Local::now().hour(),
+            reading_hour: clock::now().hour(),
             riddle_input: self.riddle_input.as_deref(),
             diet_draft: &self.diet_draft,
             from_courrier: is_reread(self.overlay),
@@ -1661,14 +1662,14 @@ impl App {
     }
 
     fn back_to_school(&self) -> NaiveDate {
-        self.clock.next_rollover(Local::now().naive_local())
+        self.clock.next_rollover(clock::now().naive_local())
     }
 
     fn hold_full_box(&mut self) {
         if self.clock.is_frozen() {
             return;
         }
-        let today = self.clock.mail_date(Local::now().naive_local());
+        let today = self.clock.mail_date(clock::now().naive_local());
         if let Some(checked_on) = pause::hold_since(
             &mut self.clock,
             &self.timeline,
@@ -2044,7 +2045,7 @@ impl App {
             return;
         }
         let mut clock = self.clock.clone();
-        clock.change_mail_hour(hour, Local::now().naive_local());
+        clock.change_mail_hour(hour, clock::now().naive_local());
         self.progress
             .set_previous_mail_hour(clock.previous_mail_hour());
         if self.progress.try_save().is_ok() && Config::save(Setting::MailHour(hour)).is_ok() {
@@ -3431,7 +3432,7 @@ mod tests {
     #[test]
     fn test_fresh_progress_starts_on_day_one() {
         let mut progress = Progress::default();
-        progress.started_on = Some(Local::now().format(DATE_FORMAT).to_string());
+        progress.started_on = Some(clock::now().format(DATE_FORMAT).to_string());
         for mail_hour in [0, 23] {
             assert_eq!(StoryClock::for_progress(&progress, mail_hour).today(), 1);
         }
