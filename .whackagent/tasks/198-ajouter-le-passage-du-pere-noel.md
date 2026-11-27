@@ -28,6 +28,8 @@ created: 2026-11-27
 
 ## Implementation
 
+stacked on: #203 (wa/203-ajouter-la-date-de-test, contient #196 et #197)
+
 - Nouveaux : `src/animation/santa.rs` (`Sleigh`, traverse le ciel une fois, gauche → droite, 21×3), `src/animation/reindeer.rs` (`Reindeer`, 3×3, nez rouge), `src/progress/reindeer.rs` (`is_santa_due`, `welcome_reindeer`, `has_reindeer`, `awaits_reindeer_name`, `name_reindeer`, `reindeer_name`).
 - Sauvegarde : `reindeer_arrived_on`, `reindeer_name` (`#[serde(default)]`, fin de `Progress`).
 - `src/animation/trophies.rs` : `Trophies::free_spot(height, layout, river)` ; le renne se place dans la rangée des Trophées après le Nain et la Statue, avant la clôture, hors rivière ; pas de place → pas dessiné.
@@ -42,6 +44,8 @@ created: 2026-11-27
 
 ## Verification
 
+round 3: manual validation — not run by agent.
+
 round 2: manual validation — not run by agent.
 
 round 1: build + tests only — date réelle non simulable. À tester : run: yours.
@@ -55,4 +59,12 @@ round 1: build + tests only — date réelle non simulable. À tester : run: you
 - Changes (implementer) : `src/story/content/santa_note.rs` (nouveau : texte + signature « — Le Père Noël ») ; `Overlay::SantaNote` avant la carte du nom (cadre Parchment, « [Entrée] continuer », Entrée ou Echap → carte du nom) ; carte du nom sans « Le Père Noël vient de le déposer au jardin ». Relance le 25 avant d'avoir nommé → message puis carte ; dès le 26 → Rudolf.
 - Review : deferred. Verify : manual, run: yours.
 - Build : clippy OK, fmt OK, tests 189 + 655 + 10 + 7 + 3 + 5, 0 échec.
+
+### Round 3 — 2026-11-27
+
+- Asked : « ok, continue » — mettre tout le sprint Avent dans la branche de test.
+- Triage : empilement sur #203 (conflits src/app.rs aux 2 arrêts, résolus par l'implementer).
+- Changes : `santa_due_on_launch(is_real_date, …)` réutilise la garde de #196 ; `clock::now()` partout ; ordre au lancement le 25 : cartes de base, tour de Chocolutin (pas le 25), traîneau, renne, message du Père Noël, carte du nom.
+- Review : deferred. Verify : manual, run: yours.
+- Build : clippy OK (avec et sans dev-date), fmt OK ; tests sans 195 + 705 + 10 + 7 + 3 + 5, avec 199 + 710 + 10 + 7 + 3 + 5, 0 échec.
 
