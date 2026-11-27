@@ -19,6 +19,7 @@ use chronicles::{
     ARCHIVES, CITIES, MARCEL_LETTERS, MARCEL_SENDER, NEIGHBOURS_LETTERS, NEIGHBOURS_SENDER,
     SAM_LETTERS, SAM_SENDER,
 };
+use chrono::{Datelike, NaiveDate};
 use diet_letter::DietLetter;
 use gazette::Gazette;
 use letters::{CREEPY_LETTERS, CREEPY_SENDER, Letter};
@@ -52,6 +53,14 @@ pub const MONTHS: [&str; 12] = [
 pub const WEEKDAYS: [&str; 7] = [
     "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche",
 ];
+
+pub fn day_and_month(date: NaiveDate) -> String {
+    let day = match date.day() {
+        1 => "1er".to_string(),
+        day => day.to_string(),
+    };
+    format!("{day} {}", MONTHS[date.month0() as usize])
+}
 
 /// Content never fetches anything itself: everything a Lettre may read is passed in here.
 pub struct ReadContext<'a> {

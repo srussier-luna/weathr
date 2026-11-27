@@ -446,6 +446,13 @@ fn chocolate_due_on_launch(
     advent::due_day(&progress.advent_days(today.year()), today)
 }
 
+fn chocolutin_notes(is_real_date: bool, progress: &Progress, today: NaiveDate) -> Vec<u32> {
+    if !is_real_date {
+        return Vec::new();
+    }
+    advent::missed_days(&progress.advent_days(today.year()), today)
+}
+
 fn toggled_calendar(
     overlay: Option<Overlay>,
     is_december: bool,
@@ -673,6 +680,7 @@ enum Overlay {
     Calendar(u32),
     Chocolate(u32),
     ChocolutinIntroduction(u32),
+    ChocolutinNote(NaiveDate),
     Help,
     HolidayBox(&'static HolidayBox),
     Index {
@@ -742,6 +750,7 @@ pub struct App {
     revealed_badges: BTreeSet<String>,
     pending_holiday_box: Option<&'static HolidayBox>,
     chocolate_day: Option<u32>,
+    is_real_date: bool,
     session_start: Instant,
     star_watch: StarWatch,
     rain_receiver: Option<mpsc::Receiver<Option<RainAlert>>>,
@@ -918,6 +927,7 @@ impl App {
             revealed_badges: BTreeSet::new(),
             pending_holiday_box,
             chocolate_day,
+            is_real_date: !is_forced && simulation.day.is_none(),
             session_start: Instant::now(),
             star_watch: StarWatch::default(),
             rain_receiver,
@@ -982,7 +992,8 @@ impl App {
         let unread = self
             .available_letters()
             .saturating_sub(self.progress.letters_read);
-        let is_mail_waiting = unread > 0 && !self.hides_mail();
+        let is_mail_waiting =
+            (unread > 0 || !self.chocolutin_notes().is_empty()) && !self.hides_mail();
         self.animations.set_mail_waiting(is_mail_waiting);
         self.animations.set_story_frozen(
             self.clock.is_frozen() || self.is_box_full() || self.is_mail_banned(),
@@ -1109,6 +1120,21 @@ impl App {
         self.progress
             .receive_advent_day(Local::now().date_naive().year(), day);
         self.progress.save();
+    }
+
+    fn chocolutin_notes(&self) -> Vec<u32> {
+        chocolutin_notes(self.is_real_date, &self.progress, Local::now().date_naive())
+    }
+
+    fn open_chocolutin_note(&mut self, day: u32) {
+        let year = Local::now().date_naive().year();
+        let Some(date) = NaiveDate::from_ymd_opt(year, 12, day) else {
+            return;
+        };
+        self.overlay = Some(Overlay::ChocolutinNote(date));
+        if self.progress.receive_advent_day(year, day) {
+            self.progress.save();
+        }
     }
 
     fn advent_cells(&self) -> Vec<advent::Cell> {
@@ -1338,11 +1364,22 @@ impl App {
         if is_reread(self.overlay) {
             return;
         }
+        if let Some(&day) = self.chocolutin_notes().first() {
+            self.open_chocolutin_note(day);
+            return;
+        }
         let is_note_waiting = postman_note::is_postman_note_waiting(
             self.is_box_full(),
             self.progress.postman_note_day,
             self.timeline_day,
         );
+        if matches!(self.overlay, Some(Overlay::ChocolutinNote(_)))
+            && !is_note_waiting
+            && self.available_letters() <= self.progress.letters_read
+        {
+            self.overlay = None;
+            return;
+        }
         let open_letter = match self.overlay {
             Some(Overlay::Letter { index, .. }) => Some(index),
             _ => None,
@@ -1501,6 +1538,10 @@ impl App {
                 None => return Ok(()),
             },
             Some(Overlay::ChocolutinIntroduction(_)) => advent_view::introduction_view(),
+            Some(Overlay::ChocolutinNote(date)) => match advent_view::note_view(date) {
+                Some(view) => view,
+                None => return Ok(()),
+            },
             Some(Overlay::NeighboursNote) => match self.neighbours_note {
                 Some(note) => views::neighbours_note_view(note),
                 None => return Ok(()),
@@ -1887,7 +1928,8 @@ impl App {
                 | Overlay::Notes(_)
                 | Overlay::PostmanNote
                 | Overlay::Chocolate(_)
-                | Overlay::ChocolutinIntroduction(_),
+                | Overlay::ChocolutinIntroduction(_)
+                | Overlay::ChocolutinNote(_),
             ) => self.overlay = closed_overlay(self.overlay),
             Some(Overlay::Settings(_)) => self.change_setting(1),
             Some(Overlay::Letter { .. }) if self.is_diet_letter_waiting() => self.send_diets(),
@@ -2674,6 +2716,37 @@ mod tests {
             chocolate_due_on_launch(false, NonZeroU16::new(3), &progress, date(2026, 12, 2)),
             None
         );
+    }
+
+    #[test]
+    fn test_chocolutin_leaves_a_note_for_the_day_the_game_stayed_closed() {
+        let mut progress = Progress::default();
+        progress.receive_advent_day(2026, 1);
+        let today = date(2026, 12, 3);
+        assert_eq!(chocolutin_notes(true, &progress, today), vec![2]);
+        assert_eq!(
+            chocolate_due_on_launch(false, None, &progress, today),
+            Some(3)
+        );
+        progress.receive_advent_day(2026, 3);
+        assert_eq!(chocolutin_notes(true, &progress, today), vec![2]);
+    }
+
+    #[test]
+    fn test_reading_a_note_gives_its_chocolate_to_the_calendar() {
+        let mut progress = Progress::default();
+        let today = date(2026, 12, 5);
+        assert_eq!(chocolutin_notes(true, &progress, today), vec![1, 2, 3, 4]);
+        progress.receive_advent_day(2026, 2);
+        assert_eq!(chocolutin_notes(true, &progress, today), vec![1, 3, 4]);
+        let cells = advent::cells(&progress.advent_days(2026), today);
+        assert!(matches!(cells[1], advent::Cell::Received(_)));
+        assert!(matches!(cells[0], advent::Cell::Missed));
+    }
+
+    #[test]
+    fn test_chocolutin_leaves_no_note_in_simulations() {
+        assert!(chocolutin_notes(false, &Progress::default(), date(2026, 12, 5)).is_empty());
     }
 
     #[test]
