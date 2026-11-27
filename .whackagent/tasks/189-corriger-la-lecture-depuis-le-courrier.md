@@ -1,6 +1,6 @@
 ---
 issue: 189
-status: to-test
+status: to-close
 wiki: [[mail]]
 note: "hot fix 1.8.2 : quand on lit les Lettres depuis L, garder les flèches jaunes pour passer à la suivante et la précédente ; depuis un courrier lu depuis L, Échap retourne sur L au lieu de tout quitter"
 created: 2026-11-26
@@ -41,6 +41,9 @@ Correctif de #105, livré en 1.8.2 (depuis `develop`, puis release 1.8.2).
 - Preuve : clippy, build, tests, fmt verts.
 
 ## Review
+
+Round validation — 2026-11-27, one wa-verifier, LENSES style ✓ elegance ✓ structure ✓ correctness ✓.
+- Clean, no finding.
 
 ## Verification
 
