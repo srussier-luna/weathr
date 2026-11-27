@@ -41,6 +41,17 @@ stacked on: #196 (wa/196-ajouter-le-calendrier-de-lavent)
 
 ## Verification
 
+round 2: manual validation — not run by agent.
+
 round 1: build + tests only — date réelle non simulable (27/11). À tester : run: yours.
 
 ## Feedback
+
+### Round 2 — 2026-11-27
+
+- Asked : « tu as oublié de remettre today ? » — #197 et #203 en retard sur #196 tour 2.
+- Triage : défaut d'empilement → rebase sur #196 (945bc4f), conflits src/advent/mod.rs, view.rs, app.rs résolus par l'implementer.
+- Changes : `note_view` passe au cadre `Frame::Gift` et reprend la nouvelle carte du chocolat (phrase du jour) ; `note.rs` utilise `chocolutin::SIGNATURE`. Les 8 textes suivent la fiche de voix.
+- Review : deferred. Verify : manual, run: yours.
+- Build : clippy OK, fmt OK, tests 183 + 677 + 10 + 7 + 3 + 5, 0 échec.
+
