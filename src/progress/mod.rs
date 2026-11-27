@@ -139,6 +139,12 @@ pub struct Progress {
     today_letters_day: Option<usize>,
     #[serde(default)]
     today_letters_start: usize,
+    #[serde(default)]
+    advent_year: Option<i32>,
+    #[serde(default)]
+    advent_days: BTreeSet<u32>,
+    #[serde(default)]
+    pub chocolutin_introduced: bool,
     #[serde(default, skip_serializing)]
     format: u32,
     #[serde(skip)]
@@ -324,6 +330,22 @@ impl Progress {
         self.mail_ban_until = Some(date.format(DATE_FORMAT).to_string());
     }
 
+    pub fn advent_days(&self, year: i32) -> BTreeSet<u32> {
+        if self.advent_year == Some(year) {
+            self.advent_days.clone()
+        } else {
+            BTreeSet::new()
+        }
+    }
+
+    pub fn receive_advent_day(&mut self, year: i32, day: u32) -> bool {
+        if self.advent_year != Some(year) {
+            self.advent_year = Some(year);
+            self.advent_days.clear();
+        }
+        self.advent_days.insert(day)
+    }
+
     pub fn previous_mail_hour(&self) -> Option<(NaiveDate, u32)> {
         let change = self.mail_hour_change.as_ref()?;
         Some((parse_date(&change.on)?, change.previous_hour))
@@ -391,6 +413,37 @@ mod tests {
             serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":4}"#).unwrap();
         assert_eq!(progress.letters_read, 4);
         assert_eq!(progress.notes_seen_date(), None);
+    }
+
+    #[test]
+    fn test_save_without_advent_fields_loads_with_an_empty_calendar() {
+        let progress: Progress =
+            serde_json::from_str(r#"{"started_on":"2026-09-01","letters_read":4}"#).unwrap();
+        assert!(progress.advent_days(2026).is_empty());
+        assert!(!progress.chocolutin_introduced);
+    }
+
+    #[test]
+    fn test_advent_day_is_received_once_and_survives_a_restart() {
+        let mut progress = Progress::default();
+        assert!(progress.receive_advent_day(2026, 1));
+        assert!(!progress.receive_advent_day(2026, 1));
+        assert!(progress.receive_advent_day(2026, 2));
+        let saved = serde_json::to_string(&progress).unwrap();
+        let loaded: Progress = serde_json::from_str(&saved).unwrap();
+        assert_eq!(loaded.advent_days(2026), BTreeSet::from([1, 2]));
+    }
+
+    #[test]
+    fn test_next_year_starts_an_empty_calendar() {
+        let mut progress = Progress::default();
+        progress.receive_advent_day(2026, 1);
+        progress.receive_advent_day(2026, 2);
+        assert!(progress.advent_days(2027).is_empty());
+
+        assert!(progress.receive_advent_day(2027, 1));
+        assert_eq!(progress.advent_days(2027), BTreeSet::from([1]));
+        assert!(progress.advent_days(2026).is_empty());
     }
 
     #[test]

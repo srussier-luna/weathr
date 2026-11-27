@@ -3,6 +3,7 @@ pub mod birds;
 pub mod candlemas;
 pub mod cat;
 pub mod chimney;
+pub mod chocolutin;
 pub mod cloud_bank;
 pub mod clouds;
 pub mod constellation;

@@ -1,3 +1,4 @@
+mod advent;
 mod animation;
 mod animation_manager;
 mod app;

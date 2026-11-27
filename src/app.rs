@@ -1,3 +1,4 @@
+use crate::advent::{self, view as advent_view};
 use crate::animation::lore::{Choices, Unlocks};
 use crate::animation::neighbours_party::Neighbour;
 use crate::animation::trophies::Trophy;
@@ -39,7 +40,7 @@ use crate::weather::{
     OpenMeteoProvider, WeatherClient, WeatherCondition, WeatherData, WeatherLocation, WeatherUnits,
 };
 use crate::welcome::{self, Step};
-use chrono::{Local, NaiveDate, Timelike};
+use chrono::{Datelike, Local, NaiveDate, Timelike};
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::io;
@@ -199,6 +200,7 @@ fn is_reread(overlay: Option<Overlay>) -> bool {
 fn closed_overlay(overlay: Option<Overlay>) -> Option<Overlay> {
     match overlay {
         Some(Overlay::NoteBadge(_)) => Some(Overlay::PostmanNote),
+        Some(Overlay::ChocolutinIntroduction(day)) => Some(Overlay::Chocolate(day)),
         Some(Overlay::Letter {
             from: Some((tab, selected)),
             ..
@@ -392,6 +394,68 @@ fn holiday_box_after_launch(
     pending_holiday_box: &mut Option<&'static HolidayBox>,
 ) -> Option<Overlay> {
     overlay.or_else(|| pending_holiday_box.take().map(Overlay::HolidayBox))
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ChocolutinMove {
+    Wait,
+    Visit,
+    Give(u32),
+    Leave,
+}
+
+fn chocolutin_move(
+    chocolate_day: Option<u32>,
+    overlay: Option<Overlay>,
+    is_visiting: bool,
+    has_arrived: bool,
+) -> ChocolutinMove {
+    match chocolate_day {
+        None if matches!(
+            overlay,
+            Some(Overlay::Chocolate(_) | Overlay::ChocolutinIntroduction(_))
+        ) =>
+        {
+            ChocolutinMove::Wait
+        }
+        None => ChocolutinMove::Leave,
+        Some(_) if overlay.is_some() => ChocolutinMove::Wait,
+        Some(_) if !is_visiting => ChocolutinMove::Visit,
+        Some(day) if has_arrived => ChocolutinMove::Give(day),
+        Some(_) => ChocolutinMove::Wait,
+    }
+}
+
+fn chocolate_overlay(day: u32, is_introduced: bool) -> Overlay {
+    if is_introduced {
+        Overlay::Chocolate(day)
+    } else {
+        Overlay::ChocolutinIntroduction(day)
+    }
+}
+
+fn chocolate_due_on_launch(
+    is_forced: bool,
+    day: Option<NonZeroU16>,
+    progress: &Progress,
+    today: NaiveDate,
+) -> Option<u32> {
+    if is_forced || day.is_some() {
+        return None;
+    }
+    advent::due_day(&progress.advent_days(today.year()), today)
+}
+
+fn toggled_calendar(
+    overlay: Option<Overlay>,
+    is_december: bool,
+    today: NaiveDate,
+) -> Option<Overlay> {
+    match overlay {
+        Some(Overlay::Calendar(_)) => None,
+        _ if is_december => Some(Overlay::Calendar(advent::opening_day(today))),
+        overlay => overlay,
+    }
 }
 
 fn backup_after_key(
@@ -606,6 +670,9 @@ enum Overlay {
         shows_welcome: bool,
     },
     Bottle(usize),
+    Calendar(u32),
+    Chocolate(u32),
+    ChocolutinIntroduction(u32),
     Help,
     HolidayBox(&'static HolidayBox),
     Index {
@@ -674,6 +741,7 @@ pub struct App {
     pending_badges: VecDeque<Award>,
     revealed_badges: BTreeSet<String>,
     pending_holiday_box: Option<&'static HolidayBox>,
+    chocolate_day: Option<u32>,
     session_start: Instant,
     star_watch: StarWatch,
     rain_receiver: Option<mpsc::Receiver<Option<RainAlert>>>,
@@ -811,6 +879,12 @@ impl App {
             .and_then(|holiday| holiday.holiday_box());
 
         let is_forced = is_simulated || simulation.night;
+        let chocolate_day = chocolate_due_on_launch(
+            is_forced,
+            simulation.day,
+            &progress,
+            Local::now().date_naive(),
+        );
         let has_backup = opening.recovery.is_some();
         // Kept on purpose for future contributor Badges: do not remove.
         let user_name = updater::git_user_name();
@@ -843,6 +917,7 @@ impl App {
             pending_badges: trip.tier_cards.into(),
             revealed_badges: BTreeSet::new(),
             pending_holiday_box,
+            chocolate_day,
             session_start: Instant::now(),
             star_watch: StarWatch::default(),
             rain_receiver,
@@ -1011,6 +1086,42 @@ impl App {
 
     fn open_holiday_box(&mut self) {
         self.overlay = holiday_box_after_launch(self.overlay, &mut self.pending_holiday_box);
+    }
+
+    fn bring_chocolate(&mut self) {
+        match chocolutin_move(
+            self.chocolate_day,
+            self.overlay,
+            self.animations.is_chocolutin_visiting(),
+            self.animations.has_chocolutin_arrived(),
+        ) {
+            ChocolutinMove::Visit => self.animations.chocolutin_visit(),
+            ChocolutinMove::Give(day) => self.give_chocolate(day),
+            ChocolutinMove::Leave => self.animations.chocolutin_leave(),
+            ChocolutinMove::Wait => {}
+        }
+    }
+
+    fn give_chocolate(&mut self, day: u32) {
+        self.chocolate_day = None;
+        self.overlay = Some(chocolate_overlay(day, self.progress.chocolutin_introduced));
+        self.progress.chocolutin_introduced = true;
+        self.progress
+            .receive_advent_day(Local::now().date_naive().year(), day);
+        self.progress.save();
+    }
+
+    fn advent_cells(&self) -> Vec<advent::Cell> {
+        let today = Local::now().date_naive();
+        advent::cells(&self.progress.advent_days(today.year()), today)
+    }
+
+    fn toggle_calendar(&mut self) {
+        self.overlay = toggled_calendar(
+            self.overlay,
+            self.state.holiday.is_december,
+            Local::now().date_naive(),
+        );
     }
 
     fn open_pending_badge(&mut self) {
@@ -1382,6 +1493,14 @@ impl App {
                 None => return Ok(()),
             },
             Some(Overlay::Bottle(index)) => views::bottle_view(index),
+            Some(Overlay::Calendar(selected)) => {
+                advent_view::calendar_view(&self.advent_cells(), selected)
+            }
+            Some(Overlay::Chocolate(day)) => match advent_view::chocolate_card_view(day) {
+                Some(view) => view,
+                None => return Ok(()),
+            },
+            Some(Overlay::ChocolutinIntroduction(_)) => advent_view::introduction_view(),
             Some(Overlay::NeighboursNote) => match self.neighbours_note {
                 Some(note) => views::neighbours_note_view(note),
                 None => return Ok(()),
@@ -1426,6 +1545,7 @@ impl App {
                 count_read(&self.timeline, &self.progress, |entry| {
                     matches!(entry, Entry::Gazette(_))
                 }) > 0,
+                self.state.holiday.is_december,
             ),
             Some(Overlay::Settings(selected)) => match (&self.city_search, &self.diet_editor) {
                 (Some(search), _) => views::city_search_view(search),
@@ -1717,6 +1837,12 @@ impl App {
                 let last = views::notes_scroll_limit(&self.release_notes, rows, width);
                 self.overlay = Some(Overlay::Notes(first.saturating_add_signed(step).min(last)));
             }
+            Some(Overlay::Calendar(selected)) => {
+                self.overlay = Some(Overlay::Calendar(advent_view::step(
+                    selected,
+                    step * advent_view::COLUMNS as isize,
+                )));
+            }
             Some(Overlay::Settings(selected)) => {
                 let last = self.settings().rows().len() - 1;
                 self.overlay = Some(Overlay::Settings(
@@ -1759,7 +1885,9 @@ impl App {
                 Overlay::NewBadge(_)
                 | Overlay::NoteBadge(_)
                 | Overlay::Notes(_)
-                | Overlay::PostmanNote,
+                | Overlay::PostmanNote
+                | Overlay::Chocolate(_)
+                | Overlay::ChocolutinIntroduction(_),
             ) => self.overlay = closed_overlay(self.overlay),
             Some(Overlay::Settings(_)) => self.change_setting(1),
             Some(Overlay::Letter { .. }) if self.is_diet_letter_waiting() => self.send_diets(),
@@ -2034,6 +2162,9 @@ impl App {
             Some(Overlay::Letter { .. }) => self.browse_letters(step),
             Some(Overlay::Index { .. }) => self.switch_tab(step),
             Some(Overlay::Settings(_)) => self.change_setting(step),
+            Some(Overlay::Calendar(selected)) => {
+                self.overlay = Some(Overlay::Calendar(advent_view::step(selected, step)));
+            }
             _ => {}
         }
     }
@@ -2144,6 +2275,7 @@ impl App {
             self.collect_badges();
             self.open_holiday_box();
             self.open_pending_badge();
+            self.bring_chocolate();
             self.update_welcome(term_width, term_height);
             self.update_toasts(term_width);
             self.refresh_rain_alert();
@@ -2217,6 +2349,7 @@ impl App {
                             }
                             KeyCode::Char('c') | KeyCode::Char('C') => self.press_mail(),
                             KeyCode::Char('b') | KeyCode::Char('B') => self.toggle_badges(),
+                            KeyCode::Char('v') | KeyCode::Char('V') => self.toggle_calendar(),
                             KeyCode::Char(key @ '1'..='8') => self.press_number(key),
                             KeyCode::Char('a') | KeyCode::Char('A') => self.toggle_album(),
                             KeyCode::Char('h') | KeyCode::Char('H') => self.toggle_help(),
@@ -2504,6 +2637,114 @@ mod tests {
         let overlay = next_overlay(opening_overlay(false, true, None), &mut pending);
         assert!(matches!(overlay, Some(Overlay::Welcome(_))));
         assert_eq!(pending.len(), 1);
+    }
+
+    #[test]
+    fn test_chocolutin_comes_once_on_the_first_launch_of_an_advent_day() {
+        let mut progress = Progress::default();
+        assert_eq!(
+            chocolate_due_on_launch(false, None, &progress, date(2026, 12, 1)),
+            Some(1)
+        );
+        progress.receive_advent_day(2026, 1);
+        assert_eq!(
+            chocolate_due_on_launch(false, None, &progress, date(2026, 12, 1)),
+            None
+        );
+        assert_eq!(
+            chocolate_due_on_launch(false, None, &progress, date(2026, 12, 24)),
+            Some(24)
+        );
+        for (month, day) in [(11, 30), (12, 25), (12, 26)] {
+            assert_eq!(
+                chocolate_due_on_launch(false, None, &progress, date(2026, month, day)),
+                None
+            );
+        }
+    }
+
+    #[test]
+    fn test_chocolutin_stays_home_in_simulations() {
+        let progress = Progress::default();
+        assert_eq!(
+            chocolate_due_on_launch(true, None, &progress, date(2026, 12, 2)),
+            None
+        );
+        assert_eq!(
+            chocolate_due_on_launch(false, NonZeroU16::new(3), &progress, date(2026, 12, 2)),
+            None
+        );
+    }
+
+    #[test]
+    fn test_chocolutin_waits_for_the_launch_cards_then_gives_the_chocolate() {
+        let holiday_box = Holiday::christmas().holiday_box().map(Overlay::HolidayBox);
+        assert_eq!(
+            chocolutin_move(Some(24), holiday_box, false, false),
+            ChocolutinMove::Wait
+        );
+        assert_eq!(
+            chocolutin_move(Some(24), Some(Overlay::Notes(0)), false, false),
+            ChocolutinMove::Wait
+        );
+        assert_eq!(
+            chocolutin_move(Some(24), None, false, false),
+            ChocolutinMove::Visit
+        );
+        assert_eq!(
+            chocolutin_move(Some(24), None, true, false),
+            ChocolutinMove::Wait
+        );
+        assert_eq!(
+            chocolutin_move(Some(24), holiday_box, true, true),
+            ChocolutinMove::Wait
+        );
+        assert_eq!(
+            chocolutin_move(Some(24), None, true, true),
+            ChocolutinMove::Give(24)
+        );
+        assert_eq!(
+            chocolutin_move(None, Some(Overlay::Chocolate(24)), true, true),
+            ChocolutinMove::Wait
+        );
+        assert_eq!(
+            chocolutin_move(None, Some(Overlay::ChocolutinIntroduction(24)), true, true),
+            ChocolutinMove::Wait
+        );
+        assert_eq!(
+            chocolutin_move(None, None, true, true),
+            ChocolutinMove::Leave
+        );
+    }
+
+    #[test]
+    fn test_chocolutin_introduces_himself_once_before_the_chocolate() {
+        let first = chocolate_overlay(3, false);
+        assert!(matches!(first, Overlay::ChocolutinIntroduction(3)));
+        assert!(matches!(
+            closed_overlay(Some(first)),
+            Some(Overlay::Chocolate(3))
+        ));
+        assert!(matches!(chocolate_overlay(4, true), Overlay::Chocolate(4)));
+        assert!(closed_overlay(Some(Overlay::Chocolate(4))).is_none());
+    }
+
+    #[test]
+    fn test_calendar_key_works_only_in_december() {
+        assert!(toggled_calendar(None, false, date(2026, 11, 30)).is_none());
+        assert!(matches!(
+            toggled_calendar(Some(Overlay::Help), false, date(2026, 1, 4)),
+            Some(Overlay::Help)
+        ));
+        assert!(matches!(
+            toggled_calendar(None, true, date(2026, 12, 9)),
+            Some(Overlay::Calendar(9))
+        ));
+        assert!(matches!(
+            toggled_calendar(Some(Overlay::Help), true, date(2026, 12, 31)),
+            Some(Overlay::Calendar(24))
+        ));
+        assert!(toggled_calendar(Some(Overlay::Calendar(3)), true, date(2026, 12, 9)).is_none());
     }
 
     fn holiday_box_title(overlay: Option<Overlay>) -> Option<&'static str> {
