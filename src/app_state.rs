@@ -164,7 +164,7 @@ impl AppState {
     }
 
     pub fn update_clock(&mut self) {
-        let clock = chrono::Local::now().format("%H:%M").to_string();
+        let clock = crate::clock::now().format("%H:%M").to_string();
         if clock != self.displayed_clock {
             self.displayed_clock = clock;
             self.weather_info_needs_update = true;

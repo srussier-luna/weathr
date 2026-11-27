@@ -1,0 +1,4 @@
+disallowed-methods = [
+    { path = "chrono::Local::now", reason = "use clock::now" },
+    { path = "chrono::Utc::now", reason = "use clock::now" },
+]

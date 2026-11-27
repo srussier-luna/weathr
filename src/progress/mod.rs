@@ -1,6 +1,7 @@
 mod journal;
 
-use chrono::{Local, NaiveDate, NaiveDateTime};
+use crate::clock;
+use chrono::{NaiveDate, NaiveDateTime};
 use journal::Journal;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
@@ -160,7 +161,7 @@ impl Progress {
         match progress_path() {
             Some(path) => Self::load_at(&path, journal::path().as_deref()),
             None => (
-                Self::in_memory(Local::now().date_naive()),
+                Self::in_memory(clock::now().date_naive()),
                 Opening::default(),
             ),
         }
@@ -168,9 +169,9 @@ impl Progress {
 
     pub(crate) fn load_at(path: &Path, journal: Option<&Path>) -> (Self, Opening) {
         let (mut progress, opening) =
-            Self::load_from_path(path, journal, Local::now().naive_local());
+            Self::load_from_path(path, journal, clock::now().naive_local());
         if progress.start_date().is_none() {
-            progress.started_on = Some(Local::now().format(DATE_FORMAT).to_string());
+            progress.started_on = Some(clock::now().format(DATE_FORMAT).to_string());
         }
         let _ = progress.save_to_path(path, journal);
         (progress, opening)
@@ -288,7 +289,7 @@ impl Progress {
     }
 
     pub fn record_visit(&mut self) -> bool {
-        let today = Local::now().date_naive();
+        let today = clock::now().date_naive();
         let last_seen = self.last_seen_on.as_deref().and_then(parse_date);
         if last_seen == Some(today) {
             return false;

@@ -6,6 +6,7 @@ mod app_state;
 mod backup;
 mod badges;
 mod cache;
+mod clock;
 mod config;
 mod demo;
 mod diagnostic;
@@ -117,6 +118,10 @@ struct Cli {
     )]
     day: Option<NonZeroU16>,
 
+    #[cfg(feature = "dev-date")]
+    #[arg(long, value_name = "AAAA-MM-JJ", hide = true)]
+    today: Option<chrono::NaiveDate>,
+
     #[arg(long, help = "Auto-detect location via IP (uses ipinfo.io)")]
     auto_location: bool,
 
@@ -224,6 +229,11 @@ async fn main() -> io::Result<()> {
             }
         }
     };
+
+    #[cfg(feature = "dev-date")]
+    if let Some(today) = cli.today {
+        clock::set_today(today);
+    }
 
     if let Some(shell) = cli.completions {
         let mut cmd = Cli::command();
@@ -466,5 +476,36 @@ mod tests {
     fn test_help_lists_day_flag() {
         let help = Cli::command().render_help().to_string();
         assert!(help.contains("--day <N>"));
+    }
+
+    #[test]
+    fn test_help_hides_today_flag() {
+        let help = Cli::command().render_long_help().to_string();
+        assert!(!help.contains("--today"));
+    }
+
+    #[cfg(not(feature = "dev-date"))]
+    #[test]
+    fn test_today_flag_is_unknown_without_dev_date() {
+        let err = Cli::try_parse_from(["weathr", "--today", "2026-12-01"])
+            .err()
+            .unwrap();
+        assert_eq!(err.kind(), clap::error::ErrorKind::UnknownArgument);
+    }
+
+    #[cfg(feature = "dev-date")]
+    #[test]
+    fn test_today_flag_parses_a_date() {
+        let cli = Cli::try_parse_from(["weathr", "--today", "2026-12-01"]).unwrap();
+        assert_eq!(cli.today, chrono::NaiveDate::from_ymd_opt(2026, 12, 1));
+    }
+
+    #[cfg(feature = "dev-date")]
+    #[test]
+    fn test_today_flag_refuses_an_invalid_date() {
+        let err = Cli::try_parse_from(["weathr", "--today", "2026-13-01"])
+            .err()
+            .unwrap();
+        assert_eq!(err.kind(), clap::error::ErrorKind::ValueValidation);
     }
 }

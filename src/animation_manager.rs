@@ -445,7 +445,7 @@ impl AnimationManager {
         let progress = day_progress(
             state.location.latitude,
             state.location.longitude,
-            chrono::Utc::now(),
+            crate::clock::now().to_utc(),
         );
 
         let Some(progress) = progress else {
@@ -494,7 +494,7 @@ impl AnimationManager {
             let progress = day_progress(
                 state.location.latitude,
                 state.location.longitude,
-                chrono::Utc::now(),
+                crate::clock::now().to_utc(),
             );
             sky_sprite::in_place_of_sun(progress, size, term_width, horizon_y)
         } else {

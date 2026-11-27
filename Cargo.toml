@@ -37,6 +37,9 @@ thiserror = "2.0"
 clap_complete = "4.5.66"
 toml_edit = { version = "0.24", features = ["serde"] }
 
+[features]
+dev-date = []
+
 [lints.clippy]
 all = "deny"
 

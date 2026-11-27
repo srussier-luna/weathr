@@ -1,6 +1,7 @@
+use crate::clock;
 use crate::holiday::{Holiday, MeteorShower};
 use crate::weather::WeatherCondition;
-use chrono::{Datelike, Local};
+use chrono::Datelike;
 use std::time::{Duration, Instant};
 
 pub const SCENE_DURATION: Duration = Duration::from_secs(1);
@@ -58,7 +59,7 @@ impl Demo {
             scene(
                 WeatherCondition::Clear,
                 false,
-                Holiday::new_year(Local::now().year() + 1),
+                Holiday::new_year(clock::now().year() + 1),
             ),
             scene(WeatherCondition::Clear, true, Holiday::easter()),
             scene(WeatherCondition::Clear, true, Holiday::neighbours_party()),

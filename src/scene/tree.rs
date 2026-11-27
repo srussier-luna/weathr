@@ -1,7 +1,7 @@
 use crate::animation::garden::scatter;
+use crate::clock;
 use crate::holiday::{Holiday, Season};
 use crate::render::TerminalRenderer;
-use chrono::Local;
 use crossterm::style::Color;
 use std::cmp::Ordering;
 use std::io;
@@ -198,7 +198,7 @@ impl Tree {
         is_day: bool,
         is_snowing: bool,
     ) -> io::Result<()> {
-        let tick = (Local::now().timestamp_millis() / BLINK_MILLIS) as usize;
+        let tick = (clock::now().timestamp_millis() / BLINK_MILLIS) as usize;
         let center = self.center_x();
 
         for row in 0..self.canopy_height {

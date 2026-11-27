@@ -1,8 +1,8 @@
 use crate::animation::duck::{PUDDLE_WIDTH, puddle_x};
+use crate::clock;
 use crate::render::TerminalRenderer;
 use crate::scene::WorldScene;
 use crate::scene::mountains::Mountains;
-use chrono::Local;
 use crossterm::style::Color;
 use std::io;
 use std::ops::Range;
@@ -187,7 +187,7 @@ impl River {
     }
 
     fn flow_shift() -> usize {
-        (Local::now().timestamp_millis() / FLOW_STEP_MILLIS) as usize % FLOWING.len()
+        (clock::now().timestamp_millis() / FLOW_STEP_MILLIS) as usize % FLOWING.len()
     }
 }
 

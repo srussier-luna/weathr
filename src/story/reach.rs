@@ -5,8 +5,9 @@ use super::event::{Entry, Thing};
 use super::sources::Recipes;
 use super::timeline::Timeline;
 use crate::badges;
+use crate::clock;
 use crate::progress::Progress;
-use chrono::{Local, NaiveDate};
+use chrono::NaiveDate;
 use std::collections::BTreeSet;
 
 pub struct Reach {
@@ -106,7 +107,7 @@ pub(crate) fn launch_reach(
         &Timeline::for_village(village_count, clock, next_day, recipes),
         next_day,
         clock.start(),
-        Local::now().date_naive(),
+        clock::now().date_naive(),
     )
 }
 
