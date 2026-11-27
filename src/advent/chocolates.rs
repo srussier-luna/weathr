@@ -120,7 +120,7 @@ pub const CHOCOLATES: [Chocolate; 24] = [
     Chocolate {
         name: "Cloche à la cannelle",
         drawing: ["  /^^\\  ", " /    \\ ", " '-o--' "],
-        wrapper: "Que dit le sapin quand on le décore\u{202F}? J'ai les boules.",
+        wrapper: "Avant la grande tournée, le Père Noël cire les patins du traîneau. Il y passe la nuit.",
     },
     Chocolate {
         name: "Bûche grand cru",

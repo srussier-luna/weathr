@@ -49,6 +49,8 @@ created: 2026-11-27
 
 ## Verification
 
+round 5: manual validation — not run by agent.
+
 round 4: manual validation — not run by agent.
 
 round 3: manual validation — not run by agent.
@@ -86,4 +88,12 @@ round 1: build + tests only — date réelle non simulable (27/11), Chocolutin n
 - Wiki : fiche Chocolutin — ligne Lore + Voix mise à jour.
 - Review : deferred. Verify : manual, run: yours.
 - Build : clippy OK, fmt OK, tests 184 + 669 + 10 + 7 + 3 + 5, 0 échec.
+
+### Round 5 — 2026-11-27
+
+- Asked : « remplace la papillote du 23 » (« J'ai les boules », double sens).
+- Triage : ajustement de texte, inline.
+- Changes (inline) : `src/advent/chocolates.rs` papillote 23 → « Avant la grande tournée, le Père Noël cire les patins du traîneau. Il y passe la nuit. »
+- Review : deferred. Verify : manual, run: yours.
+- Build : clippy OK, fmt OK, tests 0 échec.
 
