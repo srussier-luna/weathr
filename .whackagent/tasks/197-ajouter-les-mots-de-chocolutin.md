@@ -41,6 +41,8 @@ stacked on: #196 (wa/196-ajouter-le-calendrier-de-lavent)
 
 ## Verification
 
+round 4: manual validation — not run by agent.
+
 round 3: manual validation — not run by agent.
 
 round 2: manual validation — not run by agent.
@@ -62,6 +64,14 @@ round 1: build + tests only — date réelle non simulable (27/11). À tester : 
 - Asked : suite du tour 4 de #196 (nouvelle histoire de Chocolutin, discours + papillote).
 - Triage : défaut d'empilement + ajustement de ton → rebase sur #196 (5dbb4d5), conflit src/advent/view.rs résolu par l'implementer.
 - Changes : `note_view` = mot + « — Chocolutin » + `chocolate_lines(day)` (dessin, n°, nom, papillote, sans discours) dans `Frame::Gift` ; 8 mots réécrits (maladresses à la porte / boîte aux lettres, questions naïves sur l'atelier).
+- Review : deferred. Verify : manual, run: yours.
+- Build : clippy OK, fmt OK, tests 184 + 679 + 10 + 7 + 3 + 5, 0 échec.
+
+### Round 4 — 2026-11-27
+
+- Asked : « il faut ajouter un ton simplet et bienheureux à Chocolutin » (tour 6 de #196).
+- Triage : rebase propre sur #196 + ajustement de ton.
+- Changes (implementer) : `src/advent/note.rs` — 8 mots réécrits (petites maladresses racontées comme des merveilles, lecture naïve et heureuse des indices de l'atelier), sans reprendre les anecdotes des 24 discours.
 - Review : deferred. Verify : manual, run: yours.
 - Build : clippy OK, fmt OK, tests 184 + 679 + 10 + 7 + 3 + 5, 0 échec.
 

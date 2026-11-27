@@ -2,14 +2,14 @@ use crate::story::content::day_and_month;
 use chrono::{Datelike, NaiveDate};
 
 const NOTES: [&str; 8] = [
-    "Toc toc. Personne\u{202F}? J'ai voulu glisser ton chocolat sous la porte. Il passait pas. Je l'ai mis dans la boîte aux lettres, et ma moufle avec.",
-    "Ta boîte aux lettres m'a pincé le doigt. Hop, je l'ai pas laissée gagner. Elle a gardé un bout de mon bonnet, par contre.",
-    "À l'atelier du chocolat, ils ont accroché un panneau «\u{202F}Interdit aux lutins pressés\u{202F}». Je me demande bien pour qui.",
-    "J'ai sonné, j'ai attendu, j'ai sonné encore. Puis j'ai compris que j'appuyais sur le drapeau de ta boîte aux lettres.",
-    "Le Père Noël dit que je suis bien plus utile sur les routes qu'à l'atelier du chocolat. Il a dit ça en rangeant les casseroles. Tu crois qu'il me rappellera après les fêtes\u{202F}?",
-    "J'ai glissé sur ton paillasson. Le chocolat n'a rien. Ta porte non plus, c'est moi qui ai tout pris.",
-    "Question\u{202F}: pourquoi la porte de l'atelier du chocolat a une deuxième serrure depuis que je suis parti\u{202F}? Sûrement des voleurs.",
-    "Ton chocolat est dans la boîte. Le mot aussi. Mon crayon aussi, je crois. Si tu le trouves, garde-le, j'en perds un par jour.",
+    "Toc toc. Personne\u{202F}? Alors j'ai glissé ton chocolat dans la boîte aux lettres, et ma moufle avec. Elle a l'air bien, là-dedans, au chaud.",
+    "Ta boîte aux lettres m'a pincé le doigt. Hop, comme une poignée de main. Elle est très accueillante, ta boîte.",
+    "Le jour où je suis parti en tournée, l'atelier du chocolat a fait une grande fête. Avec des guirlandes et tout. Ils sont tellement contents pour moi.",
+    "J'ai sonné, sonné, sonné. Et puis j'ai vu que j'appuyais sur le drapeau de ta boîte aux lettres. Il monte et il descend, c'est formidable.",
+    "Le Père Noël a rangé toutes les casseroles de l'atelier sur la plus haute étagère. Il sait que j'adore grimper. Je les attraperai à mon retour.",
+    "Ta porte s'est refermée sur mon bonnet. Je l'ai laissé là, il garde ta maison en attendant. Il a l'air très fier.",
+    "Ton paillasson dit «\u{202F}Bienvenue\u{202F}». Personne ne m'avait jamais écrit ça. Je me suis assis dessus un petit moment, pour en profiter.",
+    "Ce mot sent bon\u{202F}? Je l'ai écrit avec un crayon en chocolat. Il en reste un bout dans la boîte, il est pour toi.",
 ];
 
 pub fn title(date: NaiveDate) -> String {
