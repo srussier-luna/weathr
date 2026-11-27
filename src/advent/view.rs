@@ -1,5 +1,5 @@
 use super::chocolates::DRAWING_WIDTH;
-use super::chocolutin::{INTRODUCTION, SIGNATURE, day_line};
+use super::chocolutin::{INTRODUCTION, SIGNATURE, speech};
 use super::{Cell, DAYS, chocolate};
 use crate::overlay::{Frame, Line, View};
 
@@ -107,20 +107,30 @@ pub fn calendar_view(cells: &[Cell], selected: u32) -> View {
     }
 }
 
-pub fn chocolate_card_view(day: u32) -> Option<View> {
+pub fn chocolate_lines(day: u32) -> Option<Vec<Line>> {
     let chocolate = chocolate(day)?;
-    let mut lines = vec![Line::Centered(day_line(day)?.to_string()), Line::Blank];
-    lines.extend(
-        chocolate
-            .drawing
-            .iter()
-            .map(|line| Line::Centered(line.to_string())),
-    );
+    let mut lines: Vec<Line> = chocolate
+        .drawing
+        .iter()
+        .map(|line| Line::Centered(line.to_string()))
+        .collect();
     lines.extend([
         Line::Blank,
         Line::Centered(format!("Chocolat n°{day}")),
         Line::Centered(chocolate.name.to_string()),
+        Line::Blank,
+        Line::Centered(chocolate.wrapper.to_string()),
     ]);
+    Some(lines)
+}
+
+pub fn chocolate_card_view(day: u32) -> Option<View> {
+    let mut lines = vec![
+        Line::Text(speech(day)?.to_string()),
+        Line::Text(SIGNATURE.to_string()),
+        Line::Blank,
+    ];
+    lines.extend(chocolate_lines(day)?);
     Some(View {
         title: String::new(),
         lines,
@@ -147,7 +157,7 @@ mod tests {
     use super::*;
     use crate::advent::cells;
     use crate::advent::chocolates::CHOCOLATES;
-    use crate::advent::chocolutin::DAY_LINES;
+    use crate::advent::chocolutin::SPEECHES;
     use chrono::NaiveDate;
     use std::collections::BTreeSet;
 
@@ -208,7 +218,7 @@ mod tests {
     }
 
     #[test]
-    fn test_chocolate_card_shows_the_line_drawing_number_and_name() {
+    fn test_chocolate_card_shows_the_speech_then_the_chocolate_and_its_wrapper() {
         let view = chocolate_card_view(1).unwrap();
         let texts: Vec<&str> = view
             .lines
@@ -218,9 +228,13 @@ mod tests {
                 _ => None,
             })
             .collect();
-        assert_eq!(texts[0], DAY_LINES[0]);
-        assert_eq!(texts[1..4], CHOCOLATES[0].drawing);
-        assert_eq!(texts[4..], ["Chocolat n°1", CHOCOLATES[0].name]);
+        assert!(matches!(&view.lines[0], Line::Text(text) if text == SPEECHES[0]));
+        assert!(matches!(&view.lines[1], Line::Text(text) if text == SIGNATURE));
+        assert_eq!(texts[..3], CHOCOLATES[0].drawing);
+        assert_eq!(
+            texts[3..],
+            ["Chocolat n°1", CHOCOLATES[0].name, CHOCOLATES[0].wrapper]
+        );
         assert_eq!(view.frame, Frame::Gift);
         assert!(chocolate_card_view(25).is_none());
     }

@@ -25,8 +25,8 @@ created: 2026-11-27
 ## Acceptance criteria
 
 - 1er passage : Chocolutin entre par la gauche comme le Facteur et s'arrête devant la porte ; une lettre de présentation s'affiche dans le cadre de Chocolutin, puis la carte du chocolat n° 1 (phrase du jour, dessin, nom).
-- Passages suivants : pas de présentation ; la carte du chocolat montre une petite phrase (blague ou anecdote sur le Père Noël) différente chaque jour.
-- Chocolutin a le dessin « bonnet long » (5 lignes).
+- Passages suivants : pas de présentation. Chaque jour, la carte montre ce que dit Chocolutin (2–3 phrases : ses maladresses, l'atelier de chocolat qu'il regrette) puis le chocolat avec sa phrase de papillote (blague ou anecdote sur le Père Noël), différente de ce qu'il dit.
+- Chocolutin a le dessin bonnet plein + pompon (5 lignes) et sautille à chaque pas en marchant ; il est au sol devant la porte.
 - Relancer le même jour : Chocolutin ne revient pas, pas de carte.
 - 30 novembre ou 26 décembre : Chocolutin ne vient pas.
 - En décembre, la Barre du bas montre `[v] calendrier` ; `[v]` ouvre la grille de 24 cases.
@@ -48,6 +48,8 @@ created: 2026-11-27
 ## Review
 
 ## Verification
+
+round 4: manual validation — not run by agent.
 
 round 3: manual validation — not run by agent.
 
@@ -75,4 +77,13 @@ round 1: build + tests only — date réelle non simulable (27/11), Chocolutin n
 - Changes (inline) : `src/animation/chocolutin.rs` — bonnet plein `/███\` rouge, pompon `*` blanc au-dessus ; tout le sprite centré sur la colonne 5 (visage, bras, plateau `[###]`, pieds) ; `SPRITE_WIDTH` 9, `FACE_CENTER` 5 (arrêt devant la porte conservé).
 - Review : deferred. Verify : manual, run: yours.
 - Build : clippy OK, fmt OK, tests 183 + 667 + 10 + 7 + 3 + 5, 0 échec.
+
+### Round 4 — 2026-11-27
+
+- Asked : « dans le lore, vu que c'est pas le plus malin des lutins, c'est pour ça que le Père Noël l'envoie mettre le chocolat » · « remets-le comme avant » (dessin collé par le joueur) · « il faut qu'il sautille à chaque pas » · « Chocolutin se pose des questions, se demande pourquoi il ne travaille plus à l'atelier de chocolat, raconte ses maladresses un peu tous les jours » · « il faut que Chocolutin nous parle tous les jours en nous donnant notre chocolat » · « les phrases du jour dans le chocolat et celle dite par Chocolutin ne doivent pas être les mêmes ».
+- Triage : 4 ajustements (critères mis à jour).
+- Changes (implementer) : sprite du joueur (bonnet plein, pompon, `[##]`, `SPRITE_WIDTH` 8, `FACE_CENTER` 4) ; saut d'une ligne un pas sur deux ; présentation réécrite (sous-entend la raison, ne la dit pas) ; `SPEECHES`/`speech` (24 discours) + champ `wrapper` sur chaque chocolat (24 phrases de papillote) ; carte : discours, « — Chocolutin », dessin, n°, nom, papillote ; `advent::view::chocolate_lines(day)` pour #197. Fichiers : src/animation/chocolutin.rs, src/advent/chocolutin.rs, src/advent/chocolates.rs, src/advent/view.rs.
+- Wiki : fiche Chocolutin — ligne Lore + Voix mise à jour.
+- Review : deferred. Verify : manual, run: yours.
+- Build : clippy OK, fmt OK, tests 184 + 669 + 10 + 7 + 3 + 5, 0 échec.
 

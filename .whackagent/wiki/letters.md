@@ -182,7 +182,8 @@ Plus:
 
 Comes Dec 1–24 with the chocolate of the day (#196), leaves a dated note when the player is away (#197). Own frame, distinct from the village Lettres.
 
-- Voix: elf from the Père Noël's workshop, cheerful and always in a hurry. Short sentences, written on the run. Talks about the workshop, the reindeer, the sleigh, the chocolate tempering. Every visit: one small funny line — a joke, a pun, or a « fun fact » about the Père Noël — then the chocolate.
+- Lore: not the brightest elf of the workshop — too many accidents at the chocolate workshop, so the Père Noël sends him out to deliver the chocolates instead. He doesn't quite get why: he keeps wondering why he no longer works at the chocolate workshop, never bitter, always hopeful he'll be called back.
+- Voix: elf from the Père Noël's workshop, cheerful, clumsy and always in a hurry. Short sentences, written on the run. Talks about the workshop, the reindeer, the sleigh, the chocolate tempering. Every visit: one small funny line, most days a mishap of his own (« ce matin, j'ai… ») or a question about why he left the chocolate workshop; sometimes a joke or a Père Noël fun fact — then the chocolate. The player gets the joke before he does.
 - Tic: « hop » — once per text at most, never the last word.
 - Ne dit jamais: a reproach for an absence; « Joyeux Noël » before the 24th; the chocolate's name (the card shows it); anything sad or scary.
 - First visit (Dec 1st, or the first day he comes): a short self-introduction before the chocolate.

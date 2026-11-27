@@ -4,17 +4,18 @@ use crossterm::style::Color;
 use std::io;
 
 const SPEED: f32 = 0.4;
-const SPRITE_WIDTH: f32 = 9.0;
+const SPRITE_WIDTH: f32 = 8.0;
 const DOOR_CENTER: u16 = 2;
-const FACE_CENTER: u16 = 5;
+const FACE_CENTER: u16 = 4;
 const STEP_COLUMNS: i32 = 2;
-const HAT: [&str; 2] = ["     *", "   /███\\"];
-const FACE: &str = "  <(°◡°)>";
-const ARMS: &str = "  /     \\";
+const HAT: [&str; 2] = ["    *", "  /██\\"];
+const FACE: &str = " <(°◡°)>";
+const ARMS: &str = "  /    \\";
 const TRAY_COLUMN: i32 = 3;
-const FULL_TRAY: &str = "[###]";
-const EMPTY_TRAY: &str = "[   ]";
-const FEET: [&str; 2] = ["   d   b", "    d b"];
+const FULL_TRAY: &str = "[##]";
+const EMPTY_TRAY: &str = "[  ]";
+const GROUND_FEET: &str = "   d   b";
+const TUCKED_FEET: &str = "   d  b";
 const SPRITE_ROWS: u16 = 5;
 const ELF_RED: Color = Color::Rgb {
     r: 210,
@@ -102,16 +103,22 @@ impl Chocolutin {
         };
     }
 
+    fn is_hopping(&self) -> bool {
+        matches!(self.trip, Trip::Arriving | Trip::Leaving)
+            && (self.x.round() as i32 / STEP_COLUMNS).rem_euclid(2) == 1
+    }
+
     pub fn render(&self, renderer: &mut TerminalRenderer, layout: &GardenLayout) -> io::Result<()> {
         if matches!(self.trip, Trip::Waiting) {
             return Ok(());
         }
         let x = self.x.round() as i32;
-        let y = layout.horizon_y.saturating_sub(SPRITE_ROWS - 1);
-        let feet = match self.trip {
-            Trip::Staying => FEET[0],
-            _ => FEET[(x / STEP_COLUMNS).rem_euclid(2) as usize],
+        let (lift, feet) = if self.is_hopping() {
+            (1, TUCKED_FEET)
+        } else {
+            (0, GROUND_FEET)
         };
+        let y = layout.horizon_y.saturating_sub(SPRITE_ROWS - 1 + lift);
         let tray = if self.is_visiting() {
             FULL_TRAY
         } else {
@@ -190,8 +197,30 @@ mod tests {
     }
 
     #[test]
+    fn test_chocolutin_hops_while_walking_and_stands_at_the_door() {
+        let layout = GardenLayout::new(160, 40, Growth::Full);
+        let mut chocolutin = Chocolutin::new();
+        chocolutin.visit();
+        let mut hops = Vec::new();
+        while !chocolutin.has_arrived() {
+            hops.push(chocolutin.is_hopping());
+            chocolutin.update(&layout);
+        }
+        assert!(hops.contains(&true) && hops.contains(&false));
+        assert!(!chocolutin.is_hopping());
+
+        chocolutin.leave();
+        let mut hops = Vec::new();
+        for _ in 0..20 {
+            chocolutin.update(&layout);
+            hops.push(chocolutin.is_hopping());
+        }
+        assert!(hops.contains(&true) && hops.contains(&false));
+    }
+
+    #[test]
     fn test_sprite_fits_its_width() {
-        let rows = [HAT[0], HAT[1], FACE, ARMS, FEET[0], FEET[1]];
+        let rows = [HAT[0], HAT[1], FACE, ARMS, GROUND_FEET, TUCKED_FEET];
         assert!(
             rows.iter()
                 .all(|row| row.chars().count() <= SPRITE_WIDTH as usize)
