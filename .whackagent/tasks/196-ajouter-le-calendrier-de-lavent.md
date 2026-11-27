@@ -49,6 +49,8 @@ created: 2026-11-27
 
 ## Verification
 
+round 3: manual validation — not run by agent.
+
 round 2: manual validation — not run by agent (date non simulable sur cette branche ; #203 le permet).
 
 round 1: build + tests only — date réelle non simulable (27/11), Chocolutin non observé à l'écran. À tester : run: yours.
@@ -64,5 +66,13 @@ round 1: build + tests only — date réelle non simulable (27/11), Chocolutin n
 - Wiki : fiche de voix « Chocolutin » ajoutée dans letters.md.
 - Review : deferred (→ /wa-validate). Verify : manual, run: yours.
 - Note : ° est de largeur ambiguë (2 colonnes en terminal CJK).
+- Build : clippy OK, fmt OK, tests 183 + 667 + 10 + 7 + 3 + 5, 0 échec.
+
+### Round 3 — 2026-11-27
+
+- Asked : « le bonnet est transparent, mets le pompon au-dessus du bonnet » · « il a la tête un peu trop sur la gauche, recentre la tête sur le corps ».
+- Triage : 2 ajustements visuels, inline (1 fichier, constantes du sprite).
+- Changes (inline) : `src/animation/chocolutin.rs` — bonnet plein `/███\` rouge, pompon `*` blanc au-dessus ; tout le sprite centré sur la colonne 5 (visage, bras, plateau `[###]`, pieds) ; `SPRITE_WIDTH` 9, `FACE_CENTER` 5 (arrêt devant la porte conservé).
+- Review : deferred. Verify : manual, run: yours.
 - Build : clippy OK, fmt OK, tests 183 + 667 + 10 + 7 + 3 + 5, 0 échec.
 

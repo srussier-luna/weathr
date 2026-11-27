@@ -4,17 +4,17 @@ use crossterm::style::Color;
 use std::io;
 
 const SPEED: f32 = 0.4;
-const SPRITE_WIDTH: f32 = 8.0;
+const SPRITE_WIDTH: f32 = 9.0;
 const DOOR_CENTER: u16 = 2;
-const FACE_CENTER: u16 = 4;
+const FACE_CENTER: u16 = 5;
 const STEP_COLUMNS: i32 = 2;
-const HAT: [&str; 2] = ["   __", "  /  \\*"];
-const FACE: &str = " <(°◡°)>";
-const ARMS: &str = "  /    \\";
+const HAT: [&str; 2] = ["     *", "   /███\\"];
+const FACE: &str = "  <(°◡°)>";
+const ARMS: &str = "  /     \\";
 const TRAY_COLUMN: i32 = 3;
-const FULL_TRAY: &str = "[##]";
-const EMPTY_TRAY: &str = "[  ]";
-const FEET: [&str; 2] = ["   d  b", "  d  b"];
+const FULL_TRAY: &str = "[###]";
+const EMPTY_TRAY: &str = "[   ]";
+const FEET: [&str; 2] = ["   d   b", "    d b"];
 const SPRITE_ROWS: u16 = 5;
 const ELF_RED: Color = Color::Rgb {
     r: 210,
@@ -117,7 +117,8 @@ impl Chocolutin {
         } else {
             EMPTY_TRAY
         };
-        garden::draw_clipped(renderer, x, y, &HAT, ELF_RED)?;
+        garden::draw_clipped(renderer, x, y, &[HAT[0]], Color::White)?;
+        garden::draw_clipped(renderer, x, y + 1, &[HAT[1]], ELF_RED)?;
         garden::draw_clipped(renderer, x, y + 2, &[FACE], Color::White)?;
         garden::draw_clipped(renderer, x, y + 3, &[ARMS], ELF_GREEN)?;
         garden::draw_clipped(renderer, x + TRAY_COLUMN, y + 3, &[tray], CHOCOLATE_BROWN)?;
