@@ -74,6 +74,10 @@ fn items(state: &AppState) -> Vec<Item> {
         Some(mail),
         finds,
         Some(badges),
+        state
+            .holiday
+            .is_december
+            .then_some(Item::Key('v', "Calendrier")),
         Some(Item::Key('h', "Aide")),
         Some(Item::Key('q', "Quitter")),
     ]
@@ -98,8 +102,10 @@ fn join(items: &[Item], is_compact: bool, is_lit: bool) -> Line {
 mod tests {
     use super::*;
     use crate::config::LocationDisplay;
+    use crate::holiday::Holiday;
     use crate::hud::text;
     use crate::weather::{WeatherLocation, WeatherUnits};
+    use chrono::NaiveDate;
 
     fn state() -> AppState {
         let location = WeatherLocation {
@@ -203,6 +209,36 @@ mod tests {
             "[c] Lettre\u{202F}!  [r] Objet et bouteille\u{202F}!  [b] Badge\u{202F}!  [h]  [q]"
         );
         assert!(colors(&line)[..3].iter().all(|(_, color)| *color == PINK));
+    }
+
+    #[test]
+    fn test_calendar_key_shows_only_in_december() {
+        let mut state = state();
+        state.holiday = Holiday::on(NaiveDate::from_ymd_opt(2026, 12, 1).unwrap());
+        assert_eq!(
+            text(&line(&state, true, 80)),
+            "[c] Courrier   [b] Badges 3/12   [v] Calendrier   [h] Aide   [q] Quitter"
+        );
+        state.holiday = Holiday::on(NaiveDate::from_ymd_opt(2026, 12, 31).unwrap());
+        assert!(text(&line(&state, true, 80)).contains("[v] Calendrier"));
+
+        for (month, day) in [(11, 30), (1, 1)] {
+            state.holiday = Holiday::on(NaiveDate::from_ymd_opt(2026, month, day).unwrap());
+            assert!(!text(&line(&state, true, 80)).contains("[v]"));
+        }
+    }
+
+    #[test]
+    fn test_crowded_december_toolbar_fits_70_columns() {
+        let mut state = state();
+        state.holiday = Holiday::on(NaiveDate::from_ymd_opt(2026, 12, 24).unwrap());
+        state.set_progress_summary(true, 54, 54);
+        state.set_finds_hint(Some("Objet et bouteille"));
+        state.set_new_badge(true);
+
+        let line = line(&state, true, 66);
+        assert!(width(&line) <= 66, "{}", text(&line));
+        assert!(text(&line).ends_with("[v]  [h]  [q]"));
     }
 
     #[test]

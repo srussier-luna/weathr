@@ -256,7 +256,7 @@ pub fn badge_card_view(award: Award) -> View {
     }
 }
 
-pub fn help_view(unlocks: &Unlocks, has_gazette: bool) -> View {
+pub fn help_view(unlocks: &Unlocks, has_gazette: bool, is_december: bool) -> View {
     let pick_up = match (unlocks.found_objects, unlocks.bottles) {
         (true, true) => Some("ramasser un objet ou une bouteille"),
         (true, false) => Some("ramasser un objet"),
@@ -272,6 +272,7 @@ pub fn help_view(unlocks: &Unlocks, has_gazette: bool) -> View {
         Some(("[l]", "relire les lettres reçues")),
         Some(("[a]", "album des souvenirs")),
         Some(("[b]", "badges")),
+        is_december.then_some(("[v]", "calendrier de l'Avent")),
         Some(("[s]", "réglages")),
         Some(("[h]", "cette aide")),
         Some(("[Echap]", "fermer la fenêtre")),
@@ -706,6 +707,18 @@ mod tests {
     use crate::story::content::letters::CHOICES;
     use crate::story::content::save_golden::{SavedGame, courrier_fixture, render};
     use std::collections::BTreeMap;
+
+    #[test]
+    fn test_help_lists_the_calendar_only_in_december() {
+        let has_calendar = |is_december| {
+            help_view(&Unlocks::default(), false, is_december)
+                .lines
+                .iter()
+                .any(|line| matches!(line, Line::Preformatted(text) if text.starts_with("[v]")))
+        };
+        assert!(has_calendar(true));
+        assert!(!has_calendar(false));
+    }
 
     #[test]
     fn test_save_lists_in_courrier_as_before_refactor() {

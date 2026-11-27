@@ -6,6 +6,7 @@ use crate::animation::{
     candlemas::GiantCrepe,
     cat::Cat,
     chimney::ChimneySmoke,
+    chocolutin::Chocolutin,
     cloud_bank::CloudBank,
     clouds::{self, CloudSystem},
     constellation::StarGazing,
@@ -123,6 +124,7 @@ pub struct AnimationManager {
     snail: Snail,
     squirrel: Squirrel,
     postman: Postman,
+    chocolutin: Chocolutin,
     halloween: Halloween,
     music_notes: MusicNotes,
     sky_notes: SkyNotes,
@@ -180,6 +182,7 @@ impl AnimationManager {
             snail: Snail::new(),
             squirrel: Squirrel::new(),
             postman: Postman::new(),
+            chocolutin: Chocolutin::new(),
             halloween: Halloween::new(),
             music_notes: MusicNotes::new(),
             sky_notes: SkyNotes::new(),
@@ -285,6 +288,23 @@ impl AnimationManager {
     pub fn is_postman_arriving(&self, term_width: u16, term_height: u16) -> bool {
         self.postman
             .is_arriving(&self.garden_layout(term_width, term_height))
+    }
+
+    pub fn chocolutin_visit(&mut self, term_width: u16, term_height: u16) {
+        self.chocolutin
+            .visit(&self.garden_layout(term_width, term_height));
+    }
+
+    pub fn chocolutin_leave(&mut self) {
+        self.chocolutin.leave();
+    }
+
+    pub fn is_chocolutin_visiting(&self) -> bool {
+        self.chocolutin.is_visiting()
+    }
+
+    pub fn has_chocolutin_arrived(&self) -> bool {
+        self.chocolutin.has_arrived()
     }
 
     pub fn postman_head(&self, term_width: u16, term_height: u16) -> Option<(u16, u16)> {
@@ -627,6 +647,8 @@ impl AnimationManager {
         self.postman.set_april_fools(holiday.is_april_fools);
         self.postman.update(&layout);
         self.postman.render(renderer, &layout)?;
+        self.chocolutin.update(&layout);
+        self.chocolutin.render(renderer, &layout)?;
 
         if !is_leo_at_table {
             self.kid.update(&layout, conditions, &mut rng);
