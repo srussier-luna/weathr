@@ -932,6 +932,8 @@ impl App {
             (self.progress.streak >= 60, "streak_60"),
             (self.progress.streak >= 100, "streak_100"),
             (self.progress.streak >= 365, "streak_365"),
+            (self.progress.visit_days() >= 150, "visit_150"),
+            (self.progress.visit_days() >= 365, "visit_365"),
             (self.progress.visited_cities.len() >= 7, "traveller"),
             (self.progress.visited_cities.len() >= 15, "backpacker"),
             (self.has_read_all_letters(), "all_letters"),
@@ -1442,6 +1444,7 @@ impl App {
                     &self.progress.badges,
                     &self.revealed_badges,
                     self.progress.streak,
+                    self.progress.visit_days(),
                     self.progress.sam_cities.len(),
                 );
             }

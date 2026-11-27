@@ -417,6 +417,18 @@ pub const BADGES: &[Badge] = &[
         ["[===]", "|365|", "|___|"],
     ),
     badge(
+        "visit_150",
+        "Habitué",
+        BadgeKind::Loyalty,
+        [" /^\\ ", "|150|", "|___|"],
+    ),
+    badge(
+        "visit_365",
+        "Pilier du village",
+        BadgeKind::Loyalty,
+        [" /^\\ ", "|365|", "|___|"],
+    ),
+    badge(
         "traveller",
         "Voyageur",
         BadgeKind::Common,
@@ -780,12 +792,12 @@ mod tests {
     }
 
     #[test]
-    fn test_loyalty_keeps_only_the_streaks() {
+    fn test_loyalty_keeps_only_the_streaks_and_visit_days() {
         assert!(
             BADGES
                 .iter()
                 .filter(|badge| badge.kind == BadgeKind::Loyalty)
-                .all(|badge| badge.id.starts_with("streak_"))
+                .all(|badge| badge.id.starts_with("streak_") || badge.id.starts_with("visit_"))
         );
         for id in ["streak_3", "streak_7", "streak_30"] {
             assert!(find(id).is_some_and(|badge| badge.kind == BadgeKind::Loyalty));
@@ -850,6 +862,21 @@ mod tests {
         assert_eq!(find("streak_60").unwrap().name, "60 jours d'affilée");
         assert_eq!(find("streak_100").unwrap().name, "100 jours d'affilée");
         assert_eq!(find("streak_365").unwrap().name, "365 jours d'affilée");
+    }
+
+    #[test]
+    fn test_visit_day_badges_come_after_the_streaks_in_loyalty() {
+        let loyalty: Vec<_> = BADGES
+            .iter()
+            .filter(|badge| badge.kind == BadgeKind::Loyalty)
+            .map(|badge| badge.name)
+            .collect();
+        assert_eq!(
+            loyalty[loyalty.len() - 3..],
+            ["365 jours d'affilée", "Habitué", "Pilier du village"]
+        );
+        assert_eq!(find("visit_150").unwrap().name, "Habitué");
+        assert_eq!(find("visit_365").unwrap().name, "Pilier du village");
     }
 
     #[test]

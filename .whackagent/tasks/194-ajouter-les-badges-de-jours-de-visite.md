@@ -1,6 +1,6 @@
 ---
 issue: 194
-status: todo
+status: to-test
 wiki: [[mail]], [[animation]]
 note: "ajouter des badges ouvert x fois, pas forcement d'affilé, compte le nom de jours ou l'app est ouverte mais pas grave si on saute des jours, mettre ouvert 100 jours et ouvert 365 jours dans fidelité — pour la 1.9"
 created: 2026-11-27
@@ -35,8 +35,17 @@ created: 2026-11-27
 
 ## Implementation
 
+- `src/progress/mod.rs` : champ `visit_days: Option<u32>` (`#[serde(default)]`), accesseur `visit_days()`, `record_visit` → `record_visit_on(today)` (+1 par nouveau jour). Ancienne sauvegarde : jours de `started_on` à aujourd'hui inclus (au moins 1) ; si déjà vue aujourd'hui, l'accesseur compte jusqu'à `last_seen_on`.
+- `src/badges.rs` : `visit_150` « Habitué », `visit_365` « Pilier du village », Fidélité, après `streak_365`.
+- `src/app.rs` : deux paliers dans `collect_badges`. Pas de Trophée.
+- `src/overlay.rs` : en-tête « Série en cours : N jour(s) d'affilée · M jour(s) de visite », helper `days(count)`.
+- Tests : nouvelle partie, même jour, lendemain, jour sauté, anciennes sauvegardes (vue hier / il y a 6 jours / aujourd'hui), JSON sans champ, ordre Fidélité, pluriel de l'en-tête.
+- Build : clippy OK, build OK, fmt OK, tests 179 + 641 + 10 + 7 + 3 + 5, 0 échec.
+
 ## Review
 
 ## Verification
+
+round 1: manual validation — not run by agent
 
 ## Feedback

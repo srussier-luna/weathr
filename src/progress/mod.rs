@@ -90,6 +90,8 @@ pub struct Progress {
     #[serde(default)]
     pub streak: u32,
     #[serde(default)]
+    visit_days: Option<u32>,
+    #[serde(default)]
     pub riddles_solved: BTreeSet<usize>,
     #[serde(default)]
     pub found_objects: Vec<usize>,
@@ -282,7 +284,10 @@ impl Progress {
     }
 
     pub fn record_visit(&mut self) -> bool {
-        let today = Local::now().date_naive();
+        self.record_visit_on(Local::now().date_naive())
+    }
+
+    fn record_visit_on(&mut self, today: NaiveDate) -> bool {
         let last_seen = self.last_seen_on.as_deref().and_then(parse_date);
         if last_seen == Some(today) {
             return false;
@@ -292,8 +297,28 @@ impl Progress {
             Some(day) if today.pred_opt() == Some(day) => self.streak + 1,
             _ => 1,
         };
+        self.visit_days = Some(match self.visit_days {
+            Some(days) => days + 1,
+            None => self.days_since_start(today),
+        });
         self.last_seen_on = Some(today.format(DATE_FORMAT).to_string());
         true
+    }
+
+    pub fn visit_days(&self) -> u32 {
+        self.visit_days.unwrap_or_else(|| {
+            self.last_seen_on
+                .as_deref()
+                .and_then(parse_date)
+                .map_or(0, |last_seen| self.days_since_start(last_seen))
+        })
+    }
+
+    fn days_since_start(&self, day: NaiveDate) -> u32 {
+        self.start_date()
+            .and_then(|start| u32::try_from((day - start).num_days() + 1).ok())
+            .unwrap_or(1)
+            .max(1)
     }
 
     pub fn start_date(&self) -> Option<NaiveDate> {
@@ -553,6 +578,88 @@ mod tests {
         let saved = serde_json::to_string(&progress).unwrap();
         let loaded: Progress = serde_json::from_str(&saved).unwrap();
         assert_eq!(loaded.notes_seen_date(), Some(date));
+    }
+
+    fn day(offset: i64) -> NaiveDate {
+        NaiveDate::from_ymd_opt(2026, 11, 27).unwrap() + chrono::Duration::days(offset)
+    }
+
+    fn visited(started: i64, last_seen: Option<i64>) -> Progress {
+        let mut progress = Progress::in_memory(day(started));
+        progress.last_seen_on = last_seen.map(|offset| day(offset).format(DATE_FORMAT).to_string());
+        progress
+    }
+
+    #[test]
+    fn test_new_game_counts_one_visit_day_after_the_first_launch() {
+        let mut progress = visited(0, None);
+        assert_eq!(progress.visit_days(), 0);
+        assert!(progress.record_visit_on(day(0)));
+        assert_eq!(progress.visit_days(), 1);
+    }
+
+    #[test]
+    fn test_relaunch_on_the_same_day_keeps_the_visit_days() {
+        let mut progress = visited(0, None);
+        progress.record_visit_on(day(0));
+        assert!(!progress.record_visit_on(day(0)));
+        assert_eq!(progress.visit_days(), 1);
+        assert_eq!(progress.streak, 1);
+    }
+
+    #[test]
+    fn test_next_day_adds_a_visit_day_and_a_streak_day() {
+        let mut progress = visited(0, None);
+        progress.record_visit_on(day(0));
+        progress.record_visit_on(day(1));
+        assert_eq!(progress.visit_days(), 2);
+        assert_eq!(progress.streak, 2);
+    }
+
+    #[test]
+    fn test_skipped_day_resets_the_streak_but_not_the_visit_days() {
+        let mut progress = visited(0, None);
+        progress.record_visit_on(day(0));
+        progress.record_visit_on(day(2));
+        assert_eq!(progress.visit_days(), 2);
+        assert_eq!(progress.streak, 1);
+    }
+
+    #[test]
+    fn test_old_save_counts_every_day_since_the_start() {
+        let mut seen_yesterday = visited(-10, Some(-1));
+        seen_yesterday.record_visit_on(day(0));
+        assert_eq!(seen_yesterday.visit_days(), 11);
+
+        let mut seen_long_ago = visited(-10, Some(-6));
+        seen_long_ago.record_visit_on(day(0));
+        assert_eq!(seen_long_ago.visit_days(), 11);
+
+        let mut seen_today = visited(-10, Some(0));
+        assert!(!seen_today.record_visit_on(day(0)));
+        assert_eq!(seen_today.visit_days(), 11);
+        seen_today.record_visit_on(day(1));
+        assert_eq!(seen_today.visit_days(), 12);
+    }
+
+    #[test]
+    fn test_save_without_visit_days_loads() {
+        let progress: Progress = serde_json::from_str(
+            r#"{"started_on":"2026-11-17","last_seen_on":"2026-11-27","streak":4}"#,
+        )
+        .unwrap();
+        assert_eq!(progress.visit_days, None);
+        assert_eq!(progress.visit_days(), 11);
+    }
+
+    #[test]
+    fn test_visit_days_round_trip() {
+        let mut progress = visited(0, None);
+        progress.record_visit_on(day(0));
+        progress.record_visit_on(day(3));
+        let saved = serde_json::to_string(&progress).unwrap();
+        let loaded: Progress = serde_json::from_str(&saved).unwrap();
+        assert_eq!(loaded.visit_days(), 2);
     }
 
     #[test]
