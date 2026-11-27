@@ -525,6 +525,21 @@ fn shows_every_habitant(is_forced: bool, day: Option<NonZeroU16>) -> bool {
     is_forced && day.is_none()
 }
 
+fn santa_visit_overlay(
+    is_real_date: bool,
+    is_santa_flying: bool,
+    awaits_reindeer_name: bool,
+) -> Option<Overlay> {
+    (is_real_date && !is_santa_flying && awaits_reindeer_name).then_some(Overlay::SantaNote)
+}
+
+fn santa_note_after_key(code: KeyCode) -> Option<Overlay> {
+    match code {
+        KeyCode::Enter | KeyCode::Esc => Some(Overlay::Reindeer),
+        _ => Some(Overlay::SantaNote),
+    }
+}
+
 fn santa_due_on_launch(is_real_date: bool, progress: &Progress, today: NaiveDate) -> bool {
     is_real_date && progress.is_santa_due(today)
 }
@@ -700,6 +715,7 @@ enum Overlay {
     PostmanNote,
     Settings(usize),
     Welcome(Step),
+    SantaNote,
     Reindeer,
 }
 
@@ -1178,11 +1194,12 @@ impl App {
             self.progress.save();
             self.animations.send_santa();
             self.refresh_unlocks();
-        } else if self.is_real_date
-            && !self.animations.is_santa_flying()
-            && self.progress.awaits_reindeer_name(today)
-        {
-            self.overlay = Some(Overlay::Reindeer);
+        } else {
+            self.overlay = santa_visit_overlay(
+                self.is_real_date,
+                self.animations.is_santa_flying(),
+                self.progress.awaits_reindeer_name(today),
+            );
         }
     }
 
@@ -1664,6 +1681,7 @@ impl App {
                 );
             }
             Some(Overlay::Welcome(step)) => return self.render_welcome(renderer, step),
+            Some(Overlay::SantaNote) => views::santa_note_view(),
             Some(Overlay::Reindeer) => views::reindeer_view(&self.reindeer_draft),
             None => return Ok(()),
         };
@@ -2454,6 +2472,9 @@ impl App {
                             _ if matches!(self.overlay, Some(Overlay::NeighboursNote)) => {
                                 self.press_neighbours_note_key(key_event.code);
                             }
+                            _ if matches!(self.overlay, Some(Overlay::SantaNote)) => {
+                                self.overlay = santa_note_after_key(key_event.code);
+                            }
                             KeyCode::Char('c') | KeyCode::Char('C') => self.press_mail(),
                             KeyCode::Char('b') | KeyCode::Char('B') => self.toggle_badges(),
                             KeyCode::Char('v') | KeyCode::Char('V') => self.toggle_calendar(),
@@ -2896,6 +2917,43 @@ mod tests {
             &progress,
             christmas.succ_opt().unwrap()
         ));
+    }
+
+    #[test]
+    fn test_santa_note_opens_once_the_sleigh_has_left_until_the_reindeer_is_named() {
+        let christmas = NaiveDate::from_ymd_opt(2026, 12, 25).unwrap();
+        let mut progress = Progress::default();
+        progress.welcome_reindeer(christmas);
+        let awaits = progress.awaits_reindeer_name(christmas);
+        assert!(santa_visit_overlay(true, true, awaits).is_none());
+        assert!(santa_visit_overlay(false, false, awaits).is_none());
+        assert!(matches!(
+            santa_visit_overlay(true, false, awaits),
+            Some(Overlay::SantaNote)
+        ));
+        progress.name_reindeer("Comète");
+        let awaits = progress.awaits_reindeer_name(christmas);
+        assert!(santa_visit_overlay(true, false, awaits).is_none());
+        let next_day = christmas.succ_opt().unwrap();
+        let mut unnamed = Progress::default();
+        unnamed.welcome_reindeer(christmas);
+        assert!(santa_visit_overlay(true, false, unnamed.awaits_reindeer_name(next_day)).is_none());
+    }
+
+    #[test]
+    fn test_santa_note_leads_to_the_naming_card_only() {
+        for code in [KeyCode::Enter, KeyCode::Esc] {
+            assert!(matches!(
+                santa_note_after_key(code),
+                Some(Overlay::Reindeer)
+            ));
+        }
+        for code in [KeyCode::Char('c'), KeyCode::Char('a'), KeyCode::Left] {
+            assert!(matches!(
+                santa_note_after_key(code),
+                Some(Overlay::SantaNote)
+            ));
+        }
     }
 
     fn holiday_box_title(overlay: Option<Overlay>) -> Option<&'static str> {

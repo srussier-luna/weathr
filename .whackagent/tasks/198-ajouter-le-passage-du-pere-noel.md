@@ -19,7 +19,7 @@ created: 2026-11-27
 
 ## Acceptance criteria
 
-- 25 décembre, premier lancement : le traîneau traverse le ciel, le bébé renne apparaît au jardin, puis la carte demande son nom.
+- 25 décembre, premier lancement : le traîneau traverse le ciel, le bébé renne apparaît au jardin, puis un message du Père Noël (merci d'avoir pris soin de Chocolutin, il espère qu'il n'a pas fait n'importe quoi, le renne est un cadeau de remerciement), puis la carte demande son nom.
 - Nom saisi « Comète » → le renne s'appelle Comète partout où son nom apparaît.
 - Nom laissé vide → Rudolf.
 - Relancer le 25 : pas de nouveau passage.
@@ -42,6 +42,17 @@ created: 2026-11-27
 
 ## Verification
 
+round 2: manual validation — not run by agent.
+
 round 1: build + tests only — date réelle non simulable. À tester : run: yours.
 
 ## Feedback
+
+### Round 2 — 2026-11-27
+
+- Asked : « le jour où on reçoit le renne, le Père Noël nous laisse un message pour nous dire merci de nous être occupés de Chocolutin et qu'il espère qu'il n'a pas fait n'importe quoi, et du coup en remerciement on a le bébé renne ».
+- Triage : ajustement (critère mis à jour).
+- Changes (implementer) : `src/story/content/santa_note.rs` (nouveau : texte + signature « — Le Père Noël ») ; `Overlay::SantaNote` avant la carte du nom (cadre Parchment, « [Entrée] continuer », Entrée ou Echap → carte du nom) ; carte du nom sans « Le Père Noël vient de le déposer au jardin ». Relance le 25 avant d'avoir nommé → message puis carte ; dès le 26 → Rudolf.
+- Review : deferred. Verify : manual, run: yours.
+- Build : clippy OK, fmt OK, tests 189 + 655 + 10 + 7 + 3 + 5, 0 échec.
+
