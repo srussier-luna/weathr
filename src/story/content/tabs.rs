@@ -1,5 +1,6 @@
 use super::{Series, series};
 use crate::story::Entry;
+use chrono::NaiveDate;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Tab {
@@ -8,14 +9,16 @@ pub enum Tab {
     Archives,
     Recipes,
     Gazettes,
+    Advent,
 }
 
-const TABS: [Tab; 5] = [
+const TABS: [Tab; 6] = [
     Tab::Letters,
     Tab::Postcards,
     Tab::Archives,
     Tab::Recipes,
     Tab::Gazettes,
+    Tab::Advent,
 ];
 
 impl Tab {
@@ -26,10 +29,14 @@ impl Tab {
             Tab::Archives => "Archives",
             Tab::Recipes => "Recettes",
             Tab::Gazettes => "Gazettes",
+            Tab::Advent => "Avent",
         }
     }
 
     fn holds(self, entry: Entry) -> bool {
+        if self == Tab::Advent {
+            return false;
+        }
         let tab = match series(entry) {
             Some(Series::Letter) => Tab::Letters,
             Some(Series::Postcard) => Tab::Postcards,
@@ -41,9 +48,12 @@ impl Tab {
     }
 }
 
-pub fn visible_tabs(read: &[(usize, Entry)]) -> Vec<Tab> {
+pub fn visible_tabs(read: &[(usize, Entry)], notes: &[NaiveDate]) -> Vec<Tab> {
     TABS.into_iter()
-        .filter(|tab| read.iter().any(|&(_, entry)| tab.holds(entry)))
+        .filter(|&tab| match tab {
+            Tab::Advent => !notes.is_empty(),
+            _ => read.iter().any(|&(_, entry)| tab.holds(entry)),
+        })
         .collect()
 }
 
@@ -67,20 +77,23 @@ pub fn entry_beside(
         .map(|&index| (beside, index))
 }
 
-pub fn opening_tab(read: &[(usize, Entry)]) -> Tab {
-    visible_tabs(read).first().copied().unwrap_or(Tab::Letters)
+pub fn opening_tab(read: &[(usize, Entry)], notes: &[NaiveDate]) -> Tab {
+    visible_tabs(read, notes)
+        .first()
+        .copied()
+        .unwrap_or(Tab::Letters)
 }
 
-pub fn switch_tab(read: &[(usize, Entry)], tab: Tab, step: isize) -> Tab {
-    let visible = visible_tabs(read);
+pub fn switch_tab(read: &[(usize, Entry)], notes: &[NaiveDate], tab: Tab, step: isize) -> Tab {
+    let visible = visible_tabs(read, notes);
     match visible.iter().position(|&shown| shown == tab) {
         Some(position) => visible[position.saturating_add_signed(step).min(visible.len() - 1)],
-        None => opening_tab(read),
+        None => opening_tab(read, notes),
     }
 }
 
-pub fn has_neighbours(read: &[(usize, Entry)], tab: Tab) -> (bool, bool) {
-    let visible = visible_tabs(read);
+pub fn has_neighbours(read: &[(usize, Entry)], notes: &[NaiveDate], tab: Tab) -> (bool, bool) {
+    let visible = visible_tabs(read, notes);
     match visible.iter().position(|&shown| shown == tab) {
         Some(position) => (position > 0, position + 1 < visible.len()),
         None => (false, false),
@@ -115,29 +128,29 @@ mod tests {
     #[test]
     fn test_tabs_without_a_read_entry_are_hidden() {
         assert_eq!(
-            visible_tabs(&read()),
+            visible_tabs(&read(), &[]),
             vec![Tab::Letters, Tab::Recipes, Tab::Gazettes]
         );
-        assert!(visible_tabs(&[]).is_empty());
+        assert!(visible_tabs(&[], &[]).is_empty());
     }
 
     #[test]
     fn test_courrier_opens_on_letters_or_the_first_shown_tab() {
-        assert_eq!(opening_tab(&read()), Tab::Letters);
-        assert_eq!(opening_tab(&[(3, Entry::Gazette(0))]), Tab::Gazettes);
-        assert_eq!(opening_tab(&[]), Tab::Letters);
+        assert_eq!(opening_tab(&read(), &[]), Tab::Letters);
+        assert_eq!(opening_tab(&[(3, Entry::Gazette(0))], &[]), Tab::Gazettes);
+        assert_eq!(opening_tab(&[], &[]), Tab::Letters);
     }
 
     #[test]
     fn test_tab_switch_skips_hidden_tabs_and_clamps() {
         let read = read();
 
-        assert_eq!(switch_tab(&read, Tab::Letters, 1), Tab::Recipes);
-        assert_eq!(switch_tab(&read, Tab::Recipes, 1), Tab::Gazettes);
-        assert_eq!(switch_tab(&read, Tab::Gazettes, 1), Tab::Gazettes);
-        assert_eq!(switch_tab(&read, Tab::Recipes, -1), Tab::Letters);
-        assert_eq!(switch_tab(&read, Tab::Letters, -1), Tab::Letters);
-        assert_eq!(switch_tab(&[], Tab::Letters, 1), Tab::Letters);
+        assert_eq!(switch_tab(&read, &[], Tab::Letters, 1), Tab::Recipes);
+        assert_eq!(switch_tab(&read, &[], Tab::Recipes, 1), Tab::Gazettes);
+        assert_eq!(switch_tab(&read, &[], Tab::Gazettes, 1), Tab::Gazettes);
+        assert_eq!(switch_tab(&read, &[], Tab::Recipes, -1), Tab::Letters);
+        assert_eq!(switch_tab(&read, &[], Tab::Letters, -1), Tab::Letters);
+        assert_eq!(switch_tab(&[], &[], Tab::Letters, 1), Tab::Letters);
     }
 
     #[test]
@@ -173,10 +186,42 @@ mod tests {
     fn test_neighbours_follow_the_shown_tabs() {
         let read = read();
 
-        assert_eq!(has_neighbours(&read, Tab::Letters), (false, true));
-        assert_eq!(has_neighbours(&read, Tab::Recipes), (true, true));
-        assert_eq!(has_neighbours(&read, Tab::Gazettes), (true, false));
-        assert_eq!(has_neighbours(&read, Tab::Postcards), (false, false));
-        assert_eq!(has_neighbours(&[], Tab::Letters), (false, false));
+        assert_eq!(has_neighbours(&read, &[], Tab::Letters), (false, true));
+        assert_eq!(has_neighbours(&read, &[], Tab::Recipes), (true, true));
+        assert_eq!(has_neighbours(&read, &[], Tab::Gazettes), (true, false));
+        assert_eq!(has_neighbours(&read, &[], Tab::Postcards), (false, false));
+        assert_eq!(has_neighbours(&[], &[], Tab::Letters), (false, false));
+    }
+
+    fn notes() -> Vec<NaiveDate> {
+        vec![NaiveDate::from_ymd_opt(2026, 12, 2).unwrap()]
+    }
+
+    #[test]
+    fn test_advent_tab_shows_last_once_a_note_is_read() {
+        assert!(!visible_tabs(&read(), &[]).contains(&Tab::Advent));
+        assert_eq!(
+            visible_tabs(&read(), &notes()),
+            vec![Tab::Letters, Tab::Recipes, Tab::Gazettes, Tab::Advent]
+        );
+        assert_eq!(Tab::Advent.label(), "Avent");
+    }
+
+    #[test]
+    fn test_tab_switch_reaches_the_advent_tab() {
+        let read = read();
+        let notes = notes();
+
+        assert_eq!(switch_tab(&read, &notes, Tab::Gazettes, 1), Tab::Advent);
+        assert_eq!(switch_tab(&read, &notes, Tab::Advent, 1), Tab::Advent);
+        assert_eq!(switch_tab(&read, &notes, Tab::Advent, -1), Tab::Gazettes);
+        assert_eq!(has_neighbours(&read, &notes, Tab::Gazettes), (true, true));
+        assert_eq!(has_neighbours(&read, &notes, Tab::Advent), (true, false));
+    }
+
+    #[test]
+    fn test_advent_tab_holds_no_timeline_entry() {
+        assert!(entries_in(&read(), Tab::Advent).is_empty());
+        assert_eq!(entries_in(&read(), Tab::Letters), vec![0, 2, 4]);
     }
 }

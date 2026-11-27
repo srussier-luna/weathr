@@ -35,7 +35,7 @@ pub use night_postscript::is_night_hour;
 pub use postcard::{postcard_lines, postcard_title};
 
 const LETTER_FOOTER: &str = "[c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer";
-const REREAD_LETTER_FOOTER: &str = "[<] [>] parcourir  [l] sommaire  [Echap] fermer";
+pub const REREAD_LETTER_FOOTER: &str = "[<] [>] parcourir  [l] sommaire  [Echap] fermer";
 pub const MONTHS: [&str; 12] = [
     "janvier",
     "février",
