@@ -13,7 +13,7 @@ use crate::story::content::neighbours_note::{self, NeighboursNote};
 use crate::story::content::recipes::{Diet, RECIPES, diet_labels};
 use crate::story::content::tabs::{self, Tab};
 use crate::story::content::{
-    self, MONTHS, ReadContext, diet_checklist, postcard_lines, postcard_title, text,
+    self, MONTHS, ReadContext, day_and_month, diet_checklist, postcard_lines, postcard_title, text,
 };
 use crate::story::punishment::Punishment;
 use crate::weather::units::{precipitation_symbol, temperature_symbol, wind_speed_symbol};
@@ -107,14 +107,6 @@ fn tab_bar(read_entries: &[(usize, Entry)], current: Tab) -> String {
         })
         .collect::<Vec<_>>()
         .join("  ")
-}
-
-fn day_and_month(date: NaiveDate) -> String {
-    let day = match date.day() {
-        1 => "1er".to_string(),
-        day => day.to_string(),
-    };
-    format!("{day} {}", MONTHS[date.month0() as usize])
 }
 
 fn full_box_note(back_to_school: NaiveDate) -> Vec<Line> {

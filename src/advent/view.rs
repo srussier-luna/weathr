@@ -1,7 +1,8 @@
 use super::chocolates::DRAWING_WIDTH;
 use super::chocolutin::{INTRODUCTION, SIGNATURE, speech};
-use super::{Cell, DAYS, chocolate};
+use super::{Cell, DAYS, chocolate, note};
 use crate::overlay::{Frame, Line, View};
+use chrono::{Datelike, NaiveDate};
 
 pub const COLUMNS: usize = 6;
 const CELL_ROWS: usize = 3;
@@ -11,6 +12,7 @@ const CALENDAR_TITLE: &str = "Calendrier de l'Avent";
 const CALENDAR_FOOTER: &str = "[←] [→] [↑] [↓] choisir  [v] ou [Echap] fermer";
 const CARD_FOOTER: &str = "[Entrée] ou [Echap] fermer";
 const INTRODUCTION_FOOTER: &str = "[Entrée] suite";
+const NOTE_FOOTER: &str = "[c] suivante  [Echap] fermer";
 
 struct Border {
     corner: char,
@@ -152,6 +154,21 @@ pub fn introduction_view() -> View {
     }
 }
 
+pub fn note_view(date: NaiveDate) -> Option<View> {
+    let mut lines = vec![
+        Line::Text(note::text(date).to_string()),
+        Line::Text(SIGNATURE.to_string()),
+        Line::Blank,
+    ];
+    lines.extend(chocolate_lines(date.day())?);
+    Some(View {
+        title: note::title(date),
+        lines,
+        footer: NOTE_FOOTER.to_string(),
+        frame: Frame::Gift,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -245,5 +262,34 @@ mod tests {
         assert_eq!(view.frame, Frame::Gift);
         assert!(matches!(view.lines.first(), Some(Line::Text(text)) if text == INTRODUCTION));
         assert!(matches!(view.lines.last(), Some(Line::Text(text)) if text == SIGNATURE));
+    }
+
+    #[test]
+    fn test_note_is_signed_and_carries_the_chocolate_of_its_day() {
+        let view = note_view(december(2)).unwrap();
+        assert_eq!(view.title, "Mot de Chocolutin du 2 décembre");
+        assert!(matches!(&view.lines[0], Line::Text(text) if text == note::text(december(2))));
+        assert!(matches!(&view.lines[1], Line::Text(signature) if signature == SIGNATURE));
+        assert_eq!(view.frame, Frame::Gift);
+        let centered: Vec<&str> = view
+            .lines
+            .iter()
+            .filter_map(|line| match line {
+                Line::Centered(text) => Some(text.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(centered[..3], CHOCOLATES[1].drawing);
+        assert_eq!(
+            centered[3..],
+            ["Chocolat n°2", CHOCOLATES[1].name, CHOCOLATES[1].wrapper]
+        );
+        assert!(
+            !view
+                .lines
+                .iter()
+                .any(|line| matches!(line, Line::Text(text) if SPEECHES.contains(&text.as_str())))
+        );
+        assert!(note_view(december(25)).is_none());
     }
 }

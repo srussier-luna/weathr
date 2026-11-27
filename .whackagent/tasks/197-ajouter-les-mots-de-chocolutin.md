@@ -1,6 +1,6 @@
 ---
 issue: 197
-status: todo
+status: to-test
 wiki: [[mail]]
 note: "split de #196 (calendrier de l'Avent)"
 created: 2026-11-27
@@ -26,8 +26,21 @@ created: 2026-11-27
 
 ## Implementation
 
+stacked on: #196 (wa/196-ajouter-le-calendrier-de-lavent)
+
+- `src/advent/note.rs` (nouveau) : 8 textes en alternance, signature « — Chocolutin », titre « Mot de Chocolutin du 1er/2 décembre ».
+- `src/advent/mod.rs` : `missed_days(received, today)` = cases `Missed` du calendrier.
+- `src/advent/view.rs` : `card_lines` extrait ; `note_view(date)` = mot + signature + carte du chocolat n°d.
+- `src/app.rs` : `Overlay::ChocolutinNote(NaiveDate)`, `chocolutin_notes(...)`, garde date réelle (`is_real_date`). `[c]` ouvre d'abord le mot non lu le plus ancien, puis le courrier habituel. Mots non lus → signal courrier allumé. Lire → `receive_advent_day`.
+- `day_and_month` (règle « 1er ») déplacé de `views.rs` vers `story/content/mod.rs`.
+- **Écart** : les mots passent par le flux `[c]` (comme le mot du Facteur), pas dans la liste `[l]` onglet Lettres. La liste `[l]` suit la timeline par jour d'histoire ; y mêler des dates réelles demande un champ sauvegardé et une liste mixte. Relecture depuis `[l]` = brique à part si voulue.
+- Proposition de fiche de voix (letters.md, à valider) : Chocolutin — lutin chocolatier, joyeux et pressé, phrases courtes, parle de sa tournée ; Tic « hop » ; ne dit jamais de reproche, « Joyeux Noël » avant le 24, ni le nom du chocolat.
+- Build : clippy OK, build OK, fmt OK ; tests 182 + 669 + 10 + 7 + 3 + 5, 0 échec.
+
 ## Review
 
 ## Verification
+
+round 1: build + tests only — date réelle non simulable (27/11). À tester : run: yours.
 
 ## Feedback

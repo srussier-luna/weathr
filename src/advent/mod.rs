@@ -1,5 +1,6 @@
 pub mod chocolates;
 pub mod chocolutin;
+pub mod note;
 pub mod view;
 
 use chocolates::{CHOCOLATES, Chocolate};
@@ -37,6 +38,12 @@ pub fn cell(day: u32, received: &BTreeSet<u32>, today: NaiveDate) -> Cell {
 
 pub fn cells(received: &BTreeSet<u32>, today: NaiveDate) -> Vec<Cell> {
     (1..=DAYS).map(|day| cell(day, received, today)).collect()
+}
+
+pub fn missed_days(received: &BTreeSet<u32>, today: NaiveDate) -> Vec<u32> {
+    (1..=DAYS)
+        .filter(|&day| matches!(cell(day, received, today), Cell::Missed))
+        .collect()
 }
 
 pub fn opening_day(today: NaiveDate) -> u32 {
@@ -106,6 +113,40 @@ mod tests {
         let cells = cells(&BTreeSet::from([24]), december(31));
         assert!(matches!(cells[0], Cell::Missed));
         assert!(matches!(cells[23], Cell::Received(_)));
+    }
+
+    #[test]
+    fn test_days_missed_between_two_visits_are_the_only_ones_left() {
+        let received = BTreeSet::from([1, 3]);
+        assert_eq!(missed_days(&received, december(3)), vec![2]);
+        assert_eq!(missed_days(&received, december(4)), vec![2]);
+    }
+
+    #[test]
+    fn test_first_launch_on_the_fifth_misses_the_first_four_days() {
+        assert_eq!(missed_days(&BTreeSet::new(), december(5)), vec![1, 2, 3, 4]);
+        assert!(missed_days(&BTreeSet::new(), december(1)).is_empty());
+    }
+
+    #[test]
+    fn test_after_christmas_unreceived_days_stay_missed_until_the_new_year() {
+        let received: BTreeSet<u32> = (2..=23).collect();
+        assert_eq!(missed_days(&received, december(26)), vec![1, 24]);
+        assert_eq!(missed_days(&received, december(31)), vec![1, 24]);
+        assert!(
+            missed_days(
+                &BTreeSet::new(),
+                NaiveDate::from_ymd_opt(2027, 1, 1).unwrap()
+            )
+            .is_empty()
+        );
+        assert!(
+            missed_days(
+                &BTreeSet::new(),
+                NaiveDate::from_ymd_opt(2026, 11, 30).unwrap()
+            )
+            .is_empty()
+        );
     }
 
     #[test]
