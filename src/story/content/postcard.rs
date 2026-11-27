@@ -1,5 +1,5 @@
 use super::chronicles::CITIES;
-use super::{LETTER_FOOTER, MailContent, ReadContext, text};
+use super::{LETTER_FOOTER, MailContent, REREAD_LETTER_FOOTER, ReadContext, text};
 use crate::overlay::{Frame, Line, View};
 use crate::progress::Progress;
 
@@ -23,7 +23,7 @@ impl MailContent for Postcard {
                 postcard_title(self.index)
             ),
             lines: postcard_lines(self.index, ctx.progress),
-            footer: LETTER_FOOTER.to_string(),
+            footer: ctx.footer(LETTER_FOOTER, REREAD_LETTER_FOOTER).to_string(),
             frame: Frame::Postcard,
         }
     }

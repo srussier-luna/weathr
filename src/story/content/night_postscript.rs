@@ -59,6 +59,7 @@ mod tests {
                 reading_hour,
                 riddle_input: None,
                 diet_draft: &BTreeSet::new(),
+                from_courrier: false,
             };
             NightPostscript::new(VillageLetter::new(2, "3/10".to_string())).compose(&ctx)
         };

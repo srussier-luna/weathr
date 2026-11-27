@@ -104,7 +104,7 @@ text: Ta réponse : Des tuiles rouges
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 8 night false
-title: LA GAZETTE · lundi 7 septembre
+title: Gazette du lundi 7 septembre
 text: Ta semaine : soleil et 21 °C.
 blank
 text: Les échos : On dit que Rose prépare un croissant au chocolat… et à la noisette.
@@ -214,7 +214,7 @@ text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 22 night false
-title: LA GAZETTE · lundi 14 septembre
+title: Gazette du lundi 14 septembre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Gaston aurait été vu en train de parler à sa sacoche. Il dément.
@@ -319,7 +319,7 @@ text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 34 night false
-title: LA GAZETTE · lundi 21 septembre
+title: Gazette du lundi 21 septembre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Le canard de la mare a été élu « canard le plus bavard » du canton.
@@ -425,7 +425,7 @@ text: — Copie transmise par Odile
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Folder
 == entry 47 night false
-title: LA GAZETTE · lundi 28 septembre
+title: Gazette du lundi 28 septembre
 text: Ta semaine : pluie.
 blank
 text: Les échos : Quelqu'un a repeint la boîte aux lettres de la mairie en rose. Enquête en cours.
@@ -540,7 +540,7 @@ text: — L'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 61 night false
-title: LA GAZETTE · lundi 5 octobre
+title: Gazette du lundi 5 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Paulo a pêché une botte. Il la garde « pour la paire ».
@@ -641,7 +641,7 @@ text: [1] Oui, attendons   [2] Deux canetons, c'est bien
 footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 74 night false
-title: LA GAZETTE · lundi 12 octobre
+title: Gazette du lundi 12 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Les chats du village tiendraient des réunions secrètes sur le toit de l'église.
@@ -739,7 +739,7 @@ text: — Gaston, le facteur
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 87 night false
-title: LA GAZETTE · lundi 19 octobre
+title: Gazette du lundi 19 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Odile cherche un nom pour le chemin qui mène au puits. Les propositions sont ouvertes.
@@ -843,7 +843,7 @@ text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 100 night false
-title: LA GAZETTE · lundi 26 octobre
+title: Gazette du lundi 26 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Léo affirme avoir vu un écureuil faire ses comptes.
@@ -935,7 +935,7 @@ text: Ta réponse : Des tuiles rouges
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 8 night true
-title: LA GAZETTE · lundi 7 septembre
+title: Gazette du lundi 7 septembre
 text: Ta semaine : soleil et 21 °C.
 blank
 text: Les échos : On dit que Rose prépare un croissant au chocolat… et à la noisette.
@@ -1059,7 +1059,7 @@ text: — Sam, le voisin du moulin
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 22 night true
-title: LA GAZETTE · lundi 14 septembre
+title: Gazette du lundi 14 septembre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Gaston aurait été vu en train de parler à sa sacoche. Il dément.
@@ -1178,7 +1178,7 @@ text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 34 night true
-title: LA GAZETTE · lundi 21 septembre
+title: Gazette du lundi 21 septembre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Le canard de la mare a été élu « canard le plus bavard » du canton.
@@ -1298,7 +1298,7 @@ text: — Copie transmise par Odile
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Folder
 == entry 47 night true
-title: LA GAZETTE · lundi 28 septembre
+title: Gazette du lundi 28 septembre
 text: Ta semaine : pluie.
 blank
 text: Les échos : Quelqu'un a repeint la boîte aux lettres de la mairie en rose. Enquête en cours.
@@ -1427,7 +1427,7 @@ text: — L'encre bleue
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 61 night true
-title: LA GAZETTE · lundi 5 octobre
+title: Gazette du lundi 5 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Paulo a pêché une botte. Il la garde « pour la paire ».
@@ -1542,7 +1542,7 @@ text: [1] Oui, attendons   [2] Deux canetons, c'est bien
 footer: [1] [2] répondre  [c] suivante  [<] [>]  [Echap] fermer
 frame: Parchment
 == entry 74 night true
-title: LA GAZETTE · lundi 12 octobre
+title: Gazette du lundi 12 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Les chats du village tiendraient des réunions secrètes sur le toit de l'église.
@@ -1654,7 +1654,7 @@ text: — Gaston, le facteur
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 87 night true
-title: LA GAZETTE · lundi 19 octobre
+title: Gazette du lundi 19 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Odile cherche un nom pour le chemin qui mène au puits. Les propositions sont ouvertes.
@@ -1772,7 +1772,7 @@ text: — Marcel, le garde champêtre
 footer: [c] suivante  [<] [>] parcourir  [l] sommaire  [Echap] fermer
 frame: Parchment
 == entry 100 night true
-title: LA GAZETTE · lundi 26 octobre
+title: Gazette du lundi 26 octobre
 text: Les prévisions ne sont pas encore arrivées.
 blank
 text: Les échos : Léo affirme avoir vu un écureuil faire ses comptes.

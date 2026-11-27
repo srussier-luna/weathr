@@ -1,4 +1,4 @@
-use super::{LETTER_FOOTER, MailContent, ReadContext, text};
+use super::{LETTER_FOOTER, MailContent, REREAD_LETTER_FOOTER, ReadContext, text};
 use crate::overlay::{Frame, Line, View};
 
 pub struct Written {
@@ -20,7 +20,7 @@ impl Written {
 }
 
 impl MailContent for Written {
-    fn compose(&self, _ctx: &ReadContext) -> View {
+    fn compose(&self, ctx: &ReadContext) -> View {
         View {
             title: self.title.clone(),
             lines: vec![
@@ -28,7 +28,7 @@ impl MailContent for Written {
                 Line::Blank,
                 text(format!("— {}", self.sender)),
             ],
-            footer: LETTER_FOOTER.to_string(),
+            footer: ctx.footer(LETTER_FOOTER, REREAD_LETTER_FOOTER).to_string(),
             frame: self.frame,
         }
     }
