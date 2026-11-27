@@ -49,6 +49,8 @@ created: 2026-11-27
 
 ## Verification
 
+round 6: manual validation — not run by agent.
+
 round 5: manual validation — not run by agent.
 
 round 4: manual validation — not run by agent.
@@ -96,4 +98,13 @@ round 1: build + tests only — date réelle non simulable (27/11), Chocolutin n
 - Changes (inline) : `src/advent/chocolates.rs` papillote 23 → « Avant la grande tournée, le Père Noël cire les patins du traîneau. Il y passe la nuit. »
 - Review : deferred. Verify : manual, run: yours.
 - Build : clippy OK, fmt OK, tests 0 échec.
+
+### Round 6 — 2026-11-27
+
+- Asked : « il faut ajouter un ton simplet et bienheureux à Chocolutin ».
+- Triage : ajustement de ton (textes seulement).
+- Changes (implementer) : `src/advent/chocolutin.rs` — présentation et 24 discours réécrits : tout l'émerveille, il prend chaque allusion pour une bonne nouvelle ; discours 23 change de sujet (grelot cousu sur le bonnet) pour ne pas doubler la papillote du traîneau. Papillotes inchangées.
+- Wiki : fiche Chocolutin — Voix « simplet et bienheureux », Ne dit jamais : plainte, doute de soi, ironie.
+- Review : deferred. Verify : manual, run: yours.
+- Build : clippy OK, fmt OK, tests 184 + 669 + 10 + 7 + 3 + 5, 0 échec.
 
