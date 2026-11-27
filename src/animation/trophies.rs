@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 use std::io;
 
 const GAP: u16 = 1;
-const WIDTH: u16 = 3;
+pub const WIDTH: u16 = 3;
 const HAT: Color = Color::Red;
 const FACE: Color = Color::Rgb {
     r: 240,
@@ -131,6 +131,10 @@ impl Trophies {
         self.shown = shown;
     }
 
+    pub fn free_spot(&self, height: u16, layout: &GardenLayout, river: &River) -> Option<u16> {
+        free_spot(&self.shown, height, layout, river)
+    }
+
     pub fn render(
         &self,
         renderer: &mut TerminalRenderer,
@@ -148,8 +152,12 @@ impl Trophies {
     }
 }
 
+fn beside_doghouse_end(layout: &GardenLayout) -> u16 {
+    layout.fence_x().saturating_sub(GAP).min(layout.width)
+}
+
 fn spots(shown: &[Trophy], layout: &GardenLayout, river: &River) -> Vec<(Trophy, u16)> {
-    let end = layout.fence_x().saturating_sub(GAP).min(layout.width);
+    let end = beside_doghouse_end(layout);
     let mut x = Dog::seat_end(layout) + GAP;
     let mut spots = Vec::new();
     for &trophy in shown {
@@ -164,15 +172,27 @@ fn spots(shown: &[Trophy], layout: &GardenLayout, river: &River) -> Vec<(Trophy,
                 (spot + WIDTH <= layout.width).then_some(spot)
             }
         };
-        if let Some(spot) = spot.filter(|&spot| clear_of_river(trophy, spot, layout, river)) {
+        if let Some(spot) =
+            spot.filter(|&spot| clear_of_river(trophy.height(), spot, layout, river))
+        {
             spots.push((trophy, spot));
         }
     }
     spots
 }
 
-fn clear_of_river(trophy: Trophy, x: u16, layout: &GardenLayout, river: &River) -> bool {
-    let top = layout.horizon_y.saturating_sub(trophy.height());
+fn free_spot(shown: &[Trophy], height: u16, layout: &GardenLayout, river: &River) -> Option<u16> {
+    let taken = shown
+        .iter()
+        .filter(|trophy| trophy.spot() == Spot::BesideDoghouse)
+        .count() as u16;
+    let x = Dog::seat_end(layout) + GAP + taken * (WIDTH + GAP);
+    (x + WIDTH <= beside_doghouse_end(layout) && clear_of_river(height, x, layout, river))
+        .then_some(x)
+}
+
+fn clear_of_river(height: u16, x: u16, layout: &GardenLayout, river: &River) -> bool {
+    let top = layout.horizon_y.saturating_sub(height);
     (0..river.stretch_count())
         .filter_map(|index| river.stretch(index))
         .filter(|stretch| (top..layout.horizon_y).contains(&stretch.y))
@@ -314,6 +334,52 @@ mod tests {
             ..layout
         };
         assert!(placed(&TROPHIES, &narrow).is_empty());
+    }
+
+    fn free(shown: &[Trophy], layout: &GardenLayout) -> Option<u16> {
+        free_spot(
+            shown,
+            3,
+            layout,
+            &River::new(layout.width, layout.horizon_y),
+        )
+    }
+
+    #[test]
+    fn test_free_spot_without_trophies_is_the_first_spot() {
+        let layout = GardenLayout::new(120, 40, Growth::Full);
+        assert_eq!(free(&[], &layout), Some(placed(&TROPHIES, &layout)[0].1));
+    }
+
+    #[test]
+    fn test_free_spot_stands_after_the_trophies_beside_the_doghouse() {
+        let layout = GardenLayout::new(200, 40, Growth::Full);
+        let spots = placed(&TROPHIES, &layout);
+        let x = free(&TROPHIES, &layout).unwrap();
+        assert!(x > Dog::seat_end(&layout));
+        assert!(
+            spots
+                .iter()
+                .all(|&(_, spot)| spot + WIDTH < x || x + WIDTH < spot)
+        );
+        assert!(x + WIDTH < layout.fence_x());
+    }
+
+    #[test]
+    fn test_free_spot_skips_the_sundial_in_front_of_the_fence() {
+        let layout = GardenLayout::new(120, 40, Growth::Full);
+        assert_eq!(free(&[Trophy::Sundial], &layout), free(&[], &layout));
+    }
+
+    #[test]
+    fn test_no_free_spot_without_room() {
+        let layout = GardenLayout::new(120, 40, Growth::Full);
+        assert_eq!(free(&[Trophy::GardenGnome, Trophy::Statue], &layout), None);
+        let narrow = GardenLayout {
+            width: Dog::seat_end(&layout) + 2,
+            ..layout
+        };
+        assert_eq!(free(&[], &narrow), None);
     }
 
     #[test]

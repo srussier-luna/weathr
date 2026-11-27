@@ -57,6 +57,7 @@ const PATIENCE: Duration = Duration::from_secs(60 * 60);
 const STARS_FOR_HUNTER: u32 = 3;
 const REMOTE_CHECK_FRAMES: u32 = 300;
 const MAX_ANSWER_LENGTH: usize = 30;
+const MAX_REINDEER_NAME_LENGTH: usize = 20;
 const REMOTE_CHANNEL_SIZE: usize = 16;
 const OVERLAY_MARGIN_ROWS: u16 = 12;
 const NEIGHBOUR_FIRST_LETTERS: [(Neighbour, usize); 5] = [
@@ -524,6 +525,10 @@ fn shows_every_habitant(is_forced: bool, day: Option<NonZeroU16>) -> bool {
     is_forced && day.is_none()
 }
 
+fn santa_due_on_launch(is_real_date: bool, progress: &Progress, today: NaiveDate) -> bool {
+    is_real_date && progress.is_santa_due(today)
+}
+
 fn freeze_recipes(progress: &mut Progress, clock: &StoryClock, today: usize) -> Recipes {
     let recipes = Recipes::from_progress(progress);
     if progress.diet_answered_day.is_some() && progress.diet_recipes_until != Some(today) {
@@ -695,6 +700,7 @@ enum Overlay {
     PostmanNote,
     Settings(usize),
     Welcome(Step),
+    Reindeer,
 }
 
 #[derive(Default)]
@@ -771,6 +777,8 @@ pub struct App {
     shows_every_habitant: bool,
     diet_draft: BTreeSet<Diet>,
     diet_editor: Option<BTreeSet<Diet>>,
+    is_santa_due: bool,
+    reindeer_draft: String,
 }
 
 impl App {
@@ -895,6 +903,8 @@ impl App {
             &progress,
             clock::now().date_naive(),
         );
+        let is_real_date = !is_forced && simulation.day.is_none();
+        let is_santa_due = santa_due_on_launch(is_real_date, &progress, clock::now().date_naive());
         let has_backup = opening.recovery.is_some();
         // Kept on purpose for future contributor Badges: do not remove.
         let user_name = updater::git_user_name();
@@ -928,7 +938,7 @@ impl App {
             revealed_badges: BTreeSet::new(),
             pending_holiday_box,
             chocolate_day,
-            is_real_date: !is_forced && simulation.day.is_none(),
+            is_real_date,
             session_start: Instant::now(),
             star_watch: StarWatch::default(),
             rain_receiver,
@@ -948,6 +958,8 @@ impl App {
             shows_every_habitant: shows_every_habitant(is_forced, simulation.day),
             diet_draft: BTreeSet::new(),
             diet_editor: None,
+            is_santa_due,
+            reindeer_draft: String::new(),
         };
         app.hold_full_box();
         let mail_date = app.mail_date();
@@ -1155,6 +1167,48 @@ impl App {
         self.overlay = next_overlay(self.overlay, &mut self.pending_badges);
     }
 
+    fn update_santa_visit(&mut self) {
+        if self.overlay.is_some() {
+            return;
+        }
+        let today = clock::now().date_naive();
+        if self.is_santa_due {
+            self.is_santa_due = false;
+            self.progress.welcome_reindeer(today);
+            self.progress.save();
+            self.animations.send_santa();
+            self.refresh_unlocks();
+        } else if self.is_real_date
+            && !self.animations.is_santa_flying()
+            && self.progress.awaits_reindeer_name(today)
+        {
+            self.overlay = Some(Overlay::Reindeer);
+        }
+    }
+
+    fn handle_reindeer_key(&mut self, code: KeyCode) {
+        match code {
+            KeyCode::Char(ch) if self.reindeer_draft.chars().count() < MAX_REINDEER_NAME_LENGTH => {
+                self.reindeer_draft.push(ch)
+            }
+            KeyCode::Backspace => {
+                self.reindeer_draft.pop();
+            }
+            KeyCode::Enter => self.name_reindeer(),
+            _ => {}
+        }
+    }
+
+    fn name_reindeer(&mut self) {
+        self.progress
+            .name_reindeer(&std::mem::take(&mut self.reindeer_draft));
+        self.progress.save();
+        self.overlay = None;
+        if let Some(name) = self.progress.reindeer_name() {
+            push_toast(&mut self.toasts, &format!("Bienvenue au jardin, {name}"));
+        }
+    }
+
     fn hides_mail(&self) -> bool {
         matches!(self.overlay, Some(Overlay::Welcome(step)) if step.hides_mail())
     }
@@ -1247,6 +1301,8 @@ impl App {
             unlocks
         });
         self.animations.set_guests(self.guests());
+        self.animations
+            .set_reindeer_home(self.progress.has_reindeer() && !self.bare_village);
         self.refresh_trophies();
     }
 
@@ -1608,6 +1664,7 @@ impl App {
                 );
             }
             Some(Overlay::Welcome(step)) => return self.render_welcome(renderer, step),
+            Some(Overlay::Reindeer) => views::reindeer_view(&self.reindeer_draft),
             None => return Ok(()),
         };
         overlay::render_view(renderer, &view)
@@ -2319,6 +2376,7 @@ impl App {
             self.open_holiday_box();
             self.open_pending_badge();
             self.bring_chocolate();
+            self.update_santa_visit();
             self.update_welcome(term_width, term_height);
             self.update_toasts(term_width);
             self.refresh_rain_alert();
@@ -2359,6 +2417,12 @@ impl App {
                             && !key_event.modifiers.contains(KeyModifiers::CONTROL) =>
                     {
                         self.handle_city_key(key_event.code);
+                    }
+                    Event::Key(key_event)
+                        if matches!(self.overlay, Some(Overlay::Reindeer))
+                            && !key_event.modifiers.contains(KeyModifiers::CONTROL) =>
+                    {
+                        self.handle_reindeer_key(key_event.code);
                     }
                     Event::Key(key_event)
                         if self.diet_editor.is_some()
@@ -2819,6 +2883,19 @@ mod tests {
             Some(Overlay::Calendar(24))
         ));
         assert!(toggled_calendar(Some(Overlay::Calendar(3)), true, date(2026, 12, 9)).is_none());
+    }
+
+    #[test]
+    fn test_santa_comes_on_a_real_christmas_launch_only() {
+        let christmas = NaiveDate::from_ymd_opt(2026, 12, 25).unwrap();
+        let progress = Progress::default();
+        assert!(santa_due_on_launch(true, &progress, christmas));
+        assert!(!santa_due_on_launch(false, &progress, christmas));
+        assert!(!santa_due_on_launch(
+            true,
+            &progress,
+            christmas.succ_opt().unwrap()
+        ));
     }
 
     fn holiday_box_title(overlay: Option<Overlay>) -> Option<&'static str> {

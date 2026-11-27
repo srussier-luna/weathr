@@ -1,4 +1,5 @@
 mod journal;
+mod reindeer;
 
 use crate::clock;
 use chrono::{NaiveDate, NaiveDateTime};
@@ -150,6 +151,10 @@ pub struct Progress {
     format: u32,
     #[serde(skip)]
     in_memory: bool,
+    #[serde(default)]
+    reindeer_arrived_on: Option<String>,
+    #[serde(default)]
+    reindeer_name: Option<String>,
 }
 
 impl Progress {

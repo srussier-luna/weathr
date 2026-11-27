@@ -34,6 +34,7 @@ const SETTINGS_FOOTER: &str = "[↑] [↓] choisir  [<] [>] changer  [s] ou [Ech
 const SETTINGS_LABEL_WIDTH: usize = 18;
 const CITY_SEARCH_FOOTER: &str = "[Entrée] chercher  [Echap] retour";
 const CITY_RESULTS_FOOTER: &str = "[↑] [↓] choisir  [Entrée] valider  [Echap] retour";
+const REINDEER_FOOTER: &str = "[Entrée] valider";
 const DIET_FOOTER: &str = "[1]…[8] cocher  [Entrée] valider  [Echap] retour";
 const LISTED_DIETS: usize = 2;
 const CLOSE_FOOTER: &str = "[Entrée] ou [Echap] fermer";
@@ -407,6 +408,20 @@ pub fn city_search_view(search: &CitySearch) -> View {
         title: "Ville".to_string(),
         lines,
         footer: footer.to_string(),
+        frame: Frame::Plain,
+    }
+}
+
+pub fn reindeer_view(draft: &str) -> View {
+    View {
+        title: "Bébé renne".to_string(),
+        lines: vec![
+            text("Le Père Noël vient de le déposer au jardin."),
+            text("Comment veux-tu l'appeler\u{202F}?"),
+            Line::Blank,
+            Line::Preformatted(format!("> {draft}_")),
+        ],
+        footer: REINDEER_FOOTER.to_string(),
         frame: Frame::Plain,
     }
 }

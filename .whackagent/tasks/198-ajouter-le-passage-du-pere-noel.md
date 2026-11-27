@@ -1,6 +1,6 @@
 ---
 issue: 198
-status: todo
+status: to-test
 wiki: [[animation]]
 note: "split de #196 (calendrier de l'Avent)"
 created: 2026-11-27
@@ -28,8 +28,20 @@ created: 2026-11-27
 
 ## Implementation
 
+- Nouveaux : `src/animation/santa.rs` (`Sleigh`, traverse le ciel une fois, gauche → droite, 21×3), `src/animation/reindeer.rs` (`Reindeer`, 3×3, nez rouge), `src/progress/reindeer.rs` (`is_santa_due`, `welcome_reindeer`, `has_reindeer`, `awaits_reindeer_name`, `name_reindeer`, `reindeer_name`).
+- Sauvegarde : `reindeer_arrived_on`, `reindeer_name` (`#[serde(default)]`, fin de `Progress`).
+- `src/animation/trophies.rs` : `Trophies::free_spot(height, layout, river)` ; le renne se place dans la rangée des Trophées après le Nain et la Statue, avant la clôture, hors rivière ; pas de place → pas dessiné.
+- `src/app.rs` : `Overlay::Reindeer`, garde date réelle (`santa_due_on_launch`), le traîneau part une fois les cartes de lancement fermées (Bienvenue, Noël, Badges). Arrivée enregistrée au départ du traîneau.
+- Carte « Bébé renne » : « Le Père Noël vient de le déposer au jardin. » / « Comment veux-tu l'appeler ? », champ « > nom_ », 20 caractères max, `[Entrée] valider` ; Echap ne ferme pas. Vide → Rudolf.
+- Ajout hors spec (petit, retirable) : toast « Bienvenue au jardin, <nom> » après validation — seul endroit où le nom réapparaît (aucun écran ne nomme les Habitants).
+- Quitter avant de nommer : la carte revient le 25 ; dès le 26, Rudolf.
+- Village dégarni : le renne est caché comme les autres Habitants.
+- Build : clippy OK, build OK, fmt OK ; tests 189 + 651 + 10 + 7 + 3 + 5, 0 échec (19 nouveaux).
+
 ## Review
 
 ## Verification
+
+round 1: build + tests only — date réelle non simulable. À tester : run: yours.
 
 ## Feedback
